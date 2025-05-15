@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "May 27, 2025" "" "git-machete"
+.TH "GIT-MACHETE" "1" "May 30, 2025" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.35.2
+git-machete \- git-machete 3.36.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -821,10 +821,10 @@ git machete fork\-point \-\-unset\-override [<branch>]
 Note: in all three forms, if no \fB<branch>\fP is specified, the currently checked out branch is assumed.
 The branch in question does not need to occur in the branch layout file.
 .sp
-Without any option, \fBgit machete fork\-point\fP displays full hash of the fork point commit for the \fB<branch>\fP\&.
-Fork point of the given \fB<branch>\fP is the commit at which the history of the \fB<branch>\fP diverges from history of any other branch.
+Without any option, \fBgit machete fork\-point\fP displays full hash of the fork point commit for \fB<branch>\fP\&.
+Fork point of the given \fB<branch>\fP is the commit at which the history of \fB<branch>\fP diverges from history of any other branch.
 .sp
-Fork point is assumed by many \fBgit machete\fP commands as the place where the unique history of the \fB<branch>\fP starts.
+Fork point is assumed by many \fBgit machete\fP commands as the place where the unique history of \fB<branch>\fP starts.
 The range of commits between the fork point and the tip of the given branch is, for instance:
 .INDENT 0.0
 .IP \(bu 2
@@ -848,25 +848,26 @@ since the latter takes into account only the reflog of the one provided upstream
 while the former scans reflogs of all local branches and their remote tracking branches.
 This makes git machete\(aqs \fBfork\-point\fP more resilient to modifications of \fB\&.git/machete\fP \fI\%file\fP when certain branches are re\-attached under new parents (upstreams).
 .sp
-With \fB\-\-override\-to=<revision>\fP, sets up a fork point override for \fB<branch>\fP\&.
-Fork point for \fB<branch>\fP will be overridden to the provided <revision> (commit) as long as the \fB<branch>\fP still points to (or is descendant of) that commit.
+With \fB\-\-override\-to\-parent\fP, overrides fork point of \fB<branch>\fP to the commit pointed by \fB<branch>\fP\(aqs parent in branch layout.
 The override data is stored under \fBmachete.overrideForkPoint.<branch>.to\fP git config key.
-Note: the provided fork point \fB<revision>\fP must be an ancestor of the current \fB<branch>\fP commit.
+Note: the override only works as long as parent of \fB<branch>\fP is an ancestor of current \fB<branch>\fP commit.
 .sp
-With \fB\-\-override\-to\-parent\fP, overrides fork point of the \fB<branch>\fP to the commit currently pointed by \fB<branch>\fP\(aqs parent in the branch dependency tree.
-Note: this will only work if \fB<branch>\fP has a parent at all (is not a root branch) and parent of \fB<branch>\fP is an ancestor of current \fB<branch>\fP commit.
+With \fB\-\-override\-to=<revision>\fP, overrides fork point of \fB<branch>\fP to the selected commit.
+Note: this option is \fBdeprecated\fP since it may lead to confusing user experience (due to the \(dqhidden\(dq commits between fork point and parent branch in green\-edge case).
+Use \fB\-\-override\-to\-parent\fP, or rebase the branch onto its parent with \fBgit machete update \-\-fork\-point=<revision>\fP\&.
 .sp
-With \fB\-\-inferred\fP, displays the commit that \fBgit machete fork\-point\fP infers to be the fork point of \fB<branch>\fP\&.
+With \fB\-\-inferred\fP, displays the commit that \fBgit machete fork\-point\fP infers to be fork point of \fB<branch>\fP\&.
 If there is NO fork point override for \fB<branch>\fP, this is identical to the output of \fBgit machete fork\-point\fP\&.
 If there is a fork point override for \fB<branch>\fP, this is identical to the what the output of \fBgit machete fork\-point\fP would be if the override was NOT present.
-.sp
-With \fB\-\-override\-to\-inferred\fP option, overrides fork point of the \fB<branch>\fP to the commit that \fBgit machete fork\-point\fP infers to be the fork point of \fB<branch>\fP\&.
 Note: this piece of information is also displayed by \fBgit machete status \-\-list\-commits\fP in case a yellow edge occurs.
 .sp
-With \fB\-\-unset\-override\fP, the fork point override for \fB<branch>\fP is unset.
-This is simply done by removing the corresponding \fBmachete.overrideForkPoint.<branch>.to\fP config entry.
+With \fB\-\-override\-to\-inferred\fP option, overrides fork point of \fB<branch>\fP to the result of \fBgit machete fork\-point \-\-inferred\fP for \fB<branch>\fP\&.
+Note: similarly to \fB\-\-override\-to=<revision>\fP, this option is \fBdeprecated\fP\&.
 .sp
-Note: if an overridden fork point applies to a branch \fBB\fP, then it\(aqs considered to be connected with a green edge to its upstream (parent) \fBU\fP,
+With \fB\-\-unset\-override\fP, the fork point override for \fB<branch>\fP is unset.
+This is simply done by removing the corresponding \fBmachete.overrideForkPoint.<branch>.to\fP git config entry.
+.sp
+Note: if branch \fBB\fP has an overridden fork point, then \fBB\fP is considered to be connected with a green edge to its upstream (parent) \fBU\fP,
 even if the overridden fork point of \fBB\fP is NOT equal to the commit pointed by \fBU\fP\&.
 .SH FORMAT
 .sp

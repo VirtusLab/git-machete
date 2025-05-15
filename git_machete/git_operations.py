@@ -439,12 +439,19 @@ class GitContext:
         return ShortCommitHash.of(self._popen_git("rev-parse", "--short", revision + "^{commit}").stdout.rstrip())  # noqa: FS003
 
     def get_short_commit_hash_by_revision_or_none(self, revision: AnyRevision) -> Optional[ShortCommitHash]:
+        # Btw, it looks that modern git returns the same prefix length for each commit in the given repo
+        # (even if for some hashes, a shorter prefix could be enough).
+        # Easy to check with `git log -100 --format=%H | xargs -L1 git rev-parse --short`.
         if revision not in self.__short_commit_hash_by_revision_cached:
             try:
                 self.__short_commit_hash_by_revision_cached[revision] = self.__find_short_commit_hash_by_revision(revision)
             except UnderlyingGitException:
                 self.__short_commit_hash_by_revision_cached[revision] = None
         return self.__short_commit_hash_by_revision_cached[revision]
+
+    def get_short_commit_hash_by_revision(self, hash: FullCommitHash) -> ShortCommitHash:
+        # For a full commit hash, a short hash should always be available
+        return self.get_short_commit_hash_by_revision_or_none(hash)  # type: ignore[return-value]
 
     def __find_commit_hash_by_revision(self, revision: AnyRevision) -> Optional[FullCommitHash]:
         # Without ^{commit}, 'git rev-parse --verify' will not only accept references to other kinds of objects (like trees and blobs),
@@ -710,13 +717,6 @@ class GitContext:
         self._run_git("branch", branch, out_of_revision, flush_caches=True)
         if switch_head:
             self._run_git("checkout", branch, flush_caches=True)
-
-    def get_revision_repr(self, revision: AnyRevision) -> str:
-        short_hash = self.get_short_commit_hash_by_revision_or_none(revision)
-        if not short_hash or self.is_full_hash(revision.full_name()) or revision == short_hash:
-            return f"commit <b>{revision}</b>"
-        else:
-            return f"<b>{revision}</b> (commit <b>{short_hash}</b>)"
 
     # Note: while rebase is ongoing, the repository is always in a detached HEAD state,
     # so we need to extract the name of the currently rebased branch from the rebase-specific internals

@@ -170,7 +170,21 @@ class TestForkPoint(BaseTest):
 
         assert_failure(["fork-point", "--override-to-parent", "master"], "Branch master does not have upstream (parent) branch")
 
-        launch_command("fork-point", "--override-to-inferred")
+        assert_success(
+            ["fork-point", "--override-to-inferred"],
+            """
+            Fork point for develop is overridden to commit ad97c34.
+            This applies as long as develop points to a descendant of commit ad97c34.
+
+            Warn: git machete fork-point --override-to-inferred may lead to a confusing user experience and is deprecated.
+
+            If the commits between master (parent of develop) and inferred commit ad97c34 do NOT belong to develop, consider using:
+                git machete update --fork-point="ad97c343b69296e96858058d8d668cca0132402a" develop
+
+            Otherwise, if you're okay with treating these commits as a part of develop's unique history, use instead:
+                git machete fork-point --override-to-parent develop
+            """
+        )
         assert launch_command("fork-point").strip() == "ad97c343b69296e96858058d8d668cca0132402a"
         assert launch_command("fork-point", "--inferred").strip() == "ad97c343b69296e96858058d8d668cca0132402a"
         assert_success(
@@ -187,11 +201,11 @@ class TestForkPoint(BaseTest):
         create_repo()
         with fixed_author_and_committer_date_in_past():
             new_branch("branch-0")
-            commit()
+            commit("0")
             new_branch("branch-1")
-            commit()
+            commit("1")
             new_branch("branch-2")
-            commit()
+            commit("2")
 
         body: str = \
             """
@@ -199,7 +213,21 @@ class TestForkPoint(BaseTest):
                 branch-2
             """
         rewrite_branch_layout_file(body)
-        launch_command('fork-point', '--override-to=branch-0')
+        assert_success(
+            ['fork-point', '--override-to=5e35f5b'],
+            """
+            Fork point for branch-2 is overridden to commit 5e35f5b.
+            This applies as long as branch-2 points to a descendant of commit 5e35f5b.
+
+            Warn: git machete fork-point --override-to=... may lead to a confusing user experience and is deprecated.
+
+            If the commits between branch-1 (parent of branch-2) and selected commit 5e35f5b do NOT belong to branch-2, consider using:
+                git machete update --fork-point="5e35f5b" branch-2
+
+            Otherwise, if you're okay with treating these commits as a part of branch-2's unique history, use instead:
+                git machete fork-point --override-to-parent branch-2
+            """
+        )
 
         assert launch_command("fork-point").strip() == get_commit_hash("branch-1")
 

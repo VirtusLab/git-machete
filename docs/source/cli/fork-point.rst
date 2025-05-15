@@ -23,10 +23,10 @@ Note: in all three forms, if no ``<branch>`` is specified, the currently checked
 The branch in question does not need to occur in the branch layout file.
 
 
-Without any option, ``git machete fork-point`` displays full hash of the fork point commit for the ``<branch>``.
-Fork point of the given ``<branch>`` is the commit at which the history of the ``<branch>`` diverges from history of any other branch.
+Without any option, ``git machete fork-point`` displays full hash of the fork point commit for ``<branch>``.
+Fork point of the given ``<branch>`` is the commit at which the history of ``<branch>`` diverges from history of any other branch.
 
-Fork point is assumed by many ``git machete`` commands as the place where the unique history of the ``<branch>`` starts.
+Fork point is assumed by many ``git machete`` commands as the place where the unique history of ``<branch>`` starts.
 The range of commits between the fork point and the tip of the given branch is, for instance:
 
 * listed for each branch by ``git machete status --list-commits``
@@ -46,25 +46,25 @@ since the latter takes into account only the reflog of the one provided upstream
 while the former scans reflogs of all local branches and their remote tracking branches.
 This makes git machete's ``fork-point`` more resilient to modifications of ``.git/machete`` :ref:`file` when certain branches are re-attached under new parents (upstreams).
 
-
-With ``--override-to=<revision>``, sets up a fork point override for ``<branch>``.
-Fork point for ``<branch>`` will be overridden to the provided <revision> (commit) as long as the ``<branch>`` still points to (or is descendant of) that commit.
+With ``--override-to-parent``, overrides fork point of ``<branch>`` to the commit pointed by ``<branch>``'s parent in branch layout.
 The override data is stored under ``machete.overrideForkPoint.<branch>.to`` git config key.
-Note: the provided fork point ``<revision>`` must be an ancestor of the current ``<branch>`` commit.
+Note: the override only works as long as parent of ``<branch>`` is an ancestor of current ``<branch>`` commit.
 
-With ``--override-to-parent``, overrides fork point of the ``<branch>`` to the commit currently pointed by ``<branch>``'s parent in the branch dependency tree.
-Note: this will only work if ``<branch>`` has a parent at all (is not a root branch) and parent of ``<branch>`` is an ancestor of current ``<branch>`` commit.
+With ``--override-to=<revision>``, overrides fork point of ``<branch>`` to the selected commit.
+Note: this option is **deprecated** since it may lead to confusing user experience (due to the "hidden" commits between fork point and parent branch in green-edge case).
+Use ``--override-to-parent``, or rebase the branch onto its parent with ``git machete update --fork-point=<revision>``.
 
-With ``--inferred``, displays the commit that ``git machete fork-point`` infers to be the fork point of ``<branch>``.
+With ``--inferred``, displays the commit that ``git machete fork-point`` infers to be fork point of ``<branch>``.
 If there is NO fork point override for ``<branch>``, this is identical to the output of ``git machete fork-point``.
 If there is a fork point override for ``<branch>``, this is identical to the what the output of ``git machete fork-point`` would be if the override was NOT present.
-
-With ``--override-to-inferred`` option, overrides fork point of the ``<branch>`` to the commit that ``git machete fork-point`` infers to be the fork point of ``<branch>``.
 Note: this piece of information is also displayed by ``git machete status --list-commits`` in case a :yellow:`yellow` edge occurs.
 
+With ``--override-to-inferred`` option, overrides fork point of ``<branch>`` to the result of ``git machete fork-point --inferred`` for ``<branch>``.
+Note: similarly to ``--override-to=<revision>``, this option is **deprecated**.
+
 With ``--unset-override``, the fork point override for ``<branch>`` is unset.
-This is simply done by removing the corresponding ``machete.overrideForkPoint.<branch>.to`` config entry.
+This is simply done by removing the corresponding ``machete.overrideForkPoint.<branch>.to`` git config entry.
 
 
-Note: if an overridden fork point applies to a branch ``B``, then it's considered to be connected with a :green:`green` edge to its upstream (parent) ``U``,
+Note: if branch ``B`` has an overridden fork point, then ``B`` is considered to be connected with a :green:`green` edge to its upstream (parent) ``U``,
 even if the overridden fork point of ``B`` is NOT equal to the commit pointed by ``U``.

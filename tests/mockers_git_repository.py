@@ -1,7 +1,5 @@
 import os
-import random
 import re
-import string
 import subprocess
 from os import mkdir
 from tempfile import mkdtemp
@@ -44,9 +42,16 @@ def check_out(branch: str) -> None:
     execute(f"git checkout {branch}")
 
 
+counter = 0
+def next_integer() -> int:  # noqa: E302
+    global counter
+    counter += 1
+    return counter
+
+
 def commit(message: Optional[str] = None) -> None:
     if message is None:
-        message = f"Some commit message-{random_letters()}"
+        message = f"Some commit message-{next_integer()}"
     f = message.splitlines()[0].replace(' ', '').replace('.', '')
     f += '.txt'
     execute(f"touch {f}")
@@ -146,7 +151,3 @@ def set_git_config_key(key: str, value: str) -> None:
 
 def unset_git_config_key(key: str) -> None:
     execute(f'git config --unset {key}')
-
-
-def random_letters() -> str:
-    return ''.join(random.choices(string.ascii_uppercase, k=5))

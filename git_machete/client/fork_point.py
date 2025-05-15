@@ -17,7 +17,7 @@ class ForkPointMacheteClient(MacheteClient):
             raise MacheteException(f"Cannot find revision {bold(to_revision)}")
         if not self._git.is_ancestor_or_equal(to_hash.full_name(), branch.full_name()):
             raise MacheteException(
-                f"Cannot override fork point: {bold(self._git.get_revision_repr(to_revision))} is not an ancestor of {bold(branch)}")
+                f"Cannot override fork point: {bold(self._get_revision_repr(to_revision))} is not an ancestor of {bold(branch)}")
 
         to_key = git_config_keys.override_fork_point_to(branch)
         self._git.set_config_attr(to_key, to_hash)
@@ -27,7 +27,14 @@ class ForkPointMacheteClient(MacheteClient):
         while_descendant_of_key = git_config_keys.override_fork_point_while_descendant_of(branch)
         self._git.set_config_attr(while_descendant_of_key, to_hash)
 
-        print(fmt(f"Fork point for <b>{branch}</b> is overridden to {self._git.get_revision_repr(to_revision)}.\n",
-                  f"This applies as long as <b>{branch}</b> is a descendant of commit <b>{to_hash}</b>.\n\n"
-                  f"This information is stored under `{to_key}` git config key.\n\n"
-                  f"To unset this override, use:\n  `git machete fork-point --unset-override {branch}`"))
+        short_hash = self._git.get_short_commit_hash_by_revision(to_hash)
+        print(fmt(f"Fork point for <b>{branch}</b> is overridden to {self._get_revision_repr(to_revision)}.\n",
+                  f"This applies as long as <b>{branch}</b> points to a descendant of commit <b>{short_hash}</b>."))
+
+    def _get_revision_repr(self, revision: AnyRevision) -> str:
+        short_hash = self._git.get_short_commit_hash_by_revision_or_none(revision)
+        if not short_hash or revision == short_hash:
+            return f"commit <b>{revision}</b>"
+        if self._git.is_full_hash(revision.full_name()):
+            return f"commit <b>{short_hash}</b>"
+        return f"<b>{revision}</b> (commit <b>{short_hash}</b>)"

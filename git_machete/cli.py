@@ -720,16 +720,43 @@ def launch(orig_args: List[str]) -> None:
             fork_point_client = ForkPointMacheteClient(git)
             fork_point_client.read_branch_layout_file()
             branch = cli_opts.opt_branch or git.get_current_branch()
+            upstream = fork_point_client.up_branch_for(branch)
             fork_point_client.expect_in_local_branches(branch)
+
+            def warn_on_deprecation(*, flag: str, revision: AnyRevision, revision_str: str) -> None:
+                if upstream:
+                    print()
+                    warn(
+                        f"`git machete fork-point {flag}` may lead to a confusing user experience and is deprecated.\n\n"
+                        f"If the commits between <b>{upstream}</b> (parent of <b>{branch}</b>) "
+                        f"and {revision_str} <b>{git.get_short_commit_hash_by_revision_or_none(revision) or ''}</b> "
+                        f"do NOT belong to <b>{branch}</b>, consider using:\n"
+                        f"    `git machete update --fork-point=\"{revision}\" {branch}`\n\n"
+                        "Otherwise, if you're okay with treating these commits "
+                        f"as a part of <b>{branch}</b>'s unique history, use instead:\n"
+                        f"    `git machete fork-point --override-to-parent {branch}`"
+                    )
+                # It's unlikely that anyone overrides fork point for a branch that doesn't have a parent,
+                # also it's unclear what the suggested action should even be - let's skip this case.
+
             if cli_opts.opt_inferred:
                 print(fork_point_client.fork_point(branch=branch, use_overrides=False))
             elif cli_opts.opt_override_to:
-                fork_point_client.set_fork_point_override(branch, AnyRevision.of(cli_opts.opt_override_to))
+                override_to = AnyRevision.of(cli_opts.opt_override_to)
+                fork_point_client.set_fork_point_override(branch, override_to)
+                # Let's issue the warning only if there are no errors from set_fork_point_override.
+                warn_on_deprecation(
+                    flag="--override-to=...",
+                    revision=override_to,
+                    revision_str="selected commit")
             elif cli_opts.opt_override_to_inferred:
                 fork_point = fork_point_client.fork_point(branch=branch, use_overrides=False)
                 fork_point_client.set_fork_point_override(branch, fork_point)
+                warn_on_deprecation(
+                    flag="--override-to-inferred",
+                    revision=fork_point,
+                    revision_str="inferred commit")
             elif cli_opts.opt_override_to_parent:
-                upstream = fork_point_client.up_branch_for(branch)
                 if upstream:
                     fork_point_client.set_fork_point_override(branch, upstream)
                 else:
