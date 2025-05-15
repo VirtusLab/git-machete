@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.36.0
+
+- deprecated: `git machete fork-point --override-to=...` and `--override-to-inferred` options; use `--override-to-parent`, or run `git machete update [--fork-point=...]` instead
+
 ## New in git-machete 3.35.1
 
 - fixed: `git machete git{hub,lab} update-{pr,mr}-descriptions --related` could not update the current PR/MR in default intro style
