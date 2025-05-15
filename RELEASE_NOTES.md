@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.36.0
+
+- deprecated: `git machete fork-point --override-to=...` and `--override-to-inferred` options; use `--override-to-parent`, or run `git machete update [--fork-point=...]` instead
+
 ## New in git-machete 3.35.0
 
 - added: `git machete traverse --sync-github-prs`/`--sync-gitlab-mrs` suggests creating PRs/MRs for branches without one (suggested by @bradneuman and @tir38)
