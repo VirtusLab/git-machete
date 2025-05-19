@@ -39,26 +39,13 @@ jobs:
           command: |
             set -x
             python --version
-
             pip3 install tox
-
-            # For completion tests
-
-            # `add-apt-repository` was getting stuck on CI for some reason
-            echo 'deb     https://ppa.launchpadcontent.net/fish-shell/release-3/ubuntu jammy main' | sudo tee -a /etc/apt/sources.list
-            echo 'deb-src https://ppa.launchpadcontent.net/fish-shell/release-3/ubuntu jammy main' | sudo tee -a /etc/apt/sources.list
-            sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 59FDA1CE1B84B3FAD89366C027557F056DC33CA5
-            sudo apt-get update
-            sudo apt-get install fish
-            fish --version
-
-            sudo apt-get install zsh
 
             # For enforce-shell-scripts-pass-shellcheck.sh
             sudo apt-get install shellcheck
 
             # For enforce-links-correct.sh
-            npm install --global remark-cli remark-lint-no-dead-urls remark-validate-links
+            npm install --global remark-cli remark-validate-links
       - run:
           name: Perform general checks
           command: ci/checks/run-all-checks.sh
@@ -71,6 +58,28 @@ jobs:
       - store_artifacts:
           path: docs/html/
           destination: docs
+
+  "completion tests":
+    executor: ubuntu_executor
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          # language=sh
+          command: |
+            set -x
+            python --version
+            pip3 install tox
+
+            # `add-apt-repository` was getting stuck on CI for some reason
+            echo 'deb     https://ppa.launchpadcontent.net/fish-shell/release-3/ubuntu jammy main' | sudo tee -a /etc/apt/sources.list
+            echo 'deb-src https://ppa.launchpadcontent.net/fish-shell/release-3/ubuntu jammy main' | sudo tee -a /etc/apt/sources.list
+            sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 59FDA1CE1B84B3FAD89366C027557F056DC33CA5
+            sudo apt-get update
+            sudo apt-get install fish
+            fish --version
+
+            sudo apt-get install zsh
       - run:
           name: Test shell completions
           command: tox -e test-completions -- -vv
@@ -283,6 +292,7 @@ jobs:
 # they're just to introduce reusable anchors to be referenced further down the line.
 test_jobs: &test_jobs
   - general checks
+  - completion tests
   - python 3_6 git 1_8_0
   - python 3_7 git 2_7_6
   - python 3_8 git 2_25_0
@@ -312,6 +322,7 @@ workflows:
   build:
     jobs:
       - general checks
+      - completion tests
       - python 3_6 git 1_8_0
       - python 3_7 git 2_7_6
       - python 3_8 git 2_25_0

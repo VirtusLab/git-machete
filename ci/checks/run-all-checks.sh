@@ -16,10 +16,10 @@ enforce-consistent-style-for-gitlab.sh
 enforce-correct-shebangs.sh
 enforce-indent-two-spaces-outside-python.sh
 enforce-issue-number-for-todos.sh
-if [[ $0 != *.git/hooks/pre-commit ]]; then
-  # This one needs to connect to the linked websites and can potentially run long,
-  # let's skip it when this script is executed as git pre-commit hook.
+if [[ $CI ]] || command -v remark; then
   enforce-links-correct.sh
+else
+  echo 'Warning: remark CLI not installed, link check will be skipped. Use `npm install remark-cli remark-validate-links`'
 fi
 enforce-mocking-only-whitelisted-methods.sh
 enforce-newline-at-eof.sh
