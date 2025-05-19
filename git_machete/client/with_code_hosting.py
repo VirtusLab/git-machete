@@ -762,6 +762,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
             related_to = None
         applicable_prs: List[PullRequest] = self._get_applicable_pull_requests(
             all=all, by=current_user if mine else by, related_to=related_to)
+        debug("applicable PRs: " + ", ".join(pr.display_text() for pr in applicable_prs))
 
         for pr in applicable_prs:
             new_description = self._get_updated_pull_request_description(pr)
@@ -935,9 +936,10 @@ class MacheteClientWithCodeHosting(MacheteClient):
             return result
         elif related_to:
             style = self.__get_pr_description_into_style_from_config()
-            result = []
             if style in (PRDescriptionIntroStyle.FULL, PRDescriptionIntroStyle.FULL_NO_BRANCHES):
-                result += reversed(self.__get_upwards_path_including_pr(related_to))
+                result = list(reversed(self.__get_upwards_path_including_pr(related_to)))
+            else:
+                result = [related_to]
             result += [pr_ for pr_, _ in self.__get_downwards_tree_excluding_pr(related_to)]
             return result
 

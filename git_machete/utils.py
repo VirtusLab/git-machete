@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import sys
+import textwrap
 import time
 from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, Optional,
                     Set, Tuple, TypeVar)
@@ -113,16 +114,18 @@ def debug(msg: str) -> None:
         function_name = bold(inspect.stack()[1].function)
         args, _, _, values_original = inspect.getargvalues(inspect.stack()[1].frame)
         # Do not write over the original values!
-        # Since Python 3.13, this keeps a map of local variables that the code actually sees,
-        # so overwriting a key in values_original actually changes the local variable.
-        values = dict(values_original)
+        # Since Python 3.13, the result of `getargvalues` keeps a map of local variables
+        # that the Python runtime actually keeps on the stack,
+        # so overwriting a key in values_original changes the local variable.
+        values: Dict[str, Any] = dict(values_original)
 
         args_to_be_redacted = {'access_token', 'password', 'secret', 'token'}
         for arg, value in values.items():
             if arg in args_to_be_redacted or any(value_ in str(value) for value_ in CODE_HOSTING_TOKEN_PREFIXES):
                 values[arg] = '***'
-            if type(values[arg]) is dict:
-                values[arg] = compact_dict(values[arg])
+            elif type(value) is dict:
+                values[arg] = compact_dict(value)
+            values[arg] = textwrap.shorten(str(values[arg]), width=50, placeholder="...")
 
         args_and_values_list = [arg + '=' + str(values[arg]) for arg in excluding(args, {'self'})]
         args_and_values_str = ', '.join(args_and_values_list)

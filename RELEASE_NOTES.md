@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.35.1
 
+- fixed: `git machete git{hub,lab} update-{pr,mr}-descriptions --related` could not update the current PR/MR in default intro style
+
 ## New in git-machete 3.35.0
 
 - added: `git machete traverse --sync-github-prs`/`--sync-gitlab-mrs` suggests creating PRs/MRs for branches without one (suggested by @bradneuman and @tir38)

@@ -119,6 +119,7 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             """
         )
 
+        check_out('chore/redundant_checks')
         assert_success(
             ['github', 'update-pr-descriptions', '--related'],
             """
