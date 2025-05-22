@@ -187,11 +187,11 @@ class TestForkPoint(BaseTest):
         create_repo()
         with fixed_author_and_committer_date_in_past():
             new_branch("branch-0")
-            commit()
+            commit("0")
             new_branch("branch-1")
-            commit()
+            commit("1")
             new_branch("branch-2")
-            commit()
+            commit("2")
 
         body: str = \
             """
@@ -199,7 +199,21 @@ class TestForkPoint(BaseTest):
                 branch-2
             """
         rewrite_branch_layout_file(body)
-        launch_command('fork-point', '--override-to=branch-0')
+        assert_success(
+            ['fork-point', '--override-to=branch-0'],
+            """
+            Fork point for branch-2 is overridden to branch-0 (commit 5e35f5b).
+            This applies as long as branch-2 points to a descendant of commit 5e35f5b.
+
+            Warn: git machete fork-point --override-to=... may lead to a confusing user experience and is deprecated.
+            
+            If the commits between branch-1 and branch-0 do NOT belong to branch-2, consider using:
+                git machete update --fork-point="branch-0" branch-2
+            
+            Otherwise, if you're okay with treating these commits as a part of branch-2's unique history, use instead:
+                git machete fork-point --override-to-parent branch-2
+            """
+        )
 
         assert launch_command("fork-point").strip() == get_commit_hash("branch-1")
 
