@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.35.2
+
 ## New in git-machete 3.35.1
 
 - fixed: `git machete git{hub,lab} update-{pr,mr}-descriptions --related` could not update the current PR/MR in default intro style
