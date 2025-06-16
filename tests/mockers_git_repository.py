@@ -43,7 +43,9 @@ def check_out(branch: str) -> None:
 
 
 counter = 0
-def next_integer() -> int:  # noqa: E302
+
+
+def next_integer() -> int:
     global counter
     counter += 1
     return counter
