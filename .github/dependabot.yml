@@ -17,3 +17,6 @@ updates:
         patterns:
           # To lump all updated dependencies together into a single PR (instead of PR-per-dependency)
           - "*"
+    ignore:
+      # This library needs to be updated in tandem with sphinx-book-theme
+      - dependency-name: pydata-sphinx-theme
