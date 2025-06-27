@@ -285,11 +285,24 @@ class TestTraverseGitHub(BaseTest):
             """
         )
 
+        check_out("develop")
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("yq"))
         assert_success(
             ["traverse", "--sync-github-prs"],
             """
             Checking for open GitHub PRs... OK
+            Checking out allow-ownership-link
+
+              develop
+              |
+              o-allow-ownership-link *
+                |
+                o-build-chain (untracked)
+                  |
+                  o-call-ws  PR #1
+                    |
+                    o-drop-constraint (untracked)
+
             Branch allow-ownership-link does not have a PR in GitHub.
             Create a PR from allow-ownership-link to develop? (y, d[raft], N, q, yq)
             Checking if base branch develop exists in origin remote... YES

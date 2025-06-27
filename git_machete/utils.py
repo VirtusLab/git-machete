@@ -285,7 +285,9 @@ def slurp_file(path: str) -> str:
 def is_terminal_fully_fledged() -> bool:
     try:
         stdout = popen_cmd('tput', 'colors')[1]
-        number_of_supported_colors = int(stdout)  # in CI, this line is only covered by tests on macOS
+        # In CI, this line is only covered by tests on macOS, which don't run on PRs by default.
+        # Let's skip to keep coverage results consistent between develop/master and PRs.
+        number_of_supported_colors = int(stdout)  # pragma: no cover
     except Exception:
         # If we cannot retrieve the number of supported colors, let's defensively assume it's low.
         number_of_supported_colors = 8

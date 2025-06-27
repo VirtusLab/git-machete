@@ -137,7 +137,8 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 if needs_parent_sync and branch in self.annotations:
                     needs_parent_sync = self.annotations[branch].qualifiers.rebase
 
-            if branch != current_branch and (needs_slide_out or needs_parent_sync or needs_remote_sync or needs_retarget_pr):
+            needs_any_action = needs_slide_out or needs_parent_sync or needs_remote_sync or needs_retarget_pr or needs_create_pr
+            if branch != current_branch and needs_any_action:
                 self._print_new_line(False)
                 print(f"Checking out {bold(branch)}")
                 self._git.checkout(branch)

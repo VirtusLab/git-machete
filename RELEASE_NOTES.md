@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.36.1
 
+- fixed: incorrect `Could not determine base branch for PR` error messages when creating PRs from `git machete traverse -H`
+
 ## New in git-machete 3.36.0
 
 - deprecated: `git machete fork-point --override-to=...` and `--override-to-inferred` options; use `--override-to-parent`, or run `git machete update [--fork-point=...]` instead
