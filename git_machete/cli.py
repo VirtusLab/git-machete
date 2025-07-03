@@ -6,8 +6,8 @@ import os
 import pkgutil
 import sys
 import textwrap
-from typing import (Any, Dict, Iterable, List, Optional, Sequence, Tuple,
-                    TypeVar, Union)
+from typing import (Any, Dict, Iterable, List, NoReturn, Optional, Sequence,
+                    Tuple, TypeVar, Union)
 
 import git_machete.options
 from git_machete import __version__, git_config_keys, utils
@@ -143,11 +143,31 @@ def create_cli_parser() -> argparse.ArgumentParser:
     common_args_parser.add_argument('--version', action='version', version=f'git-machete version {__version__}')
     common_args_parser.add_argument('-v', '--verbose', action='store_true')
 
-    cli_parser = argparse.ArgumentParser(
-        prog='git machete',
-        argument_default=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    class CustomArgumentParser(argparse.ArgumentParser):
+        def error(self, message: str) -> NoReturn:
+            if "the following arguments are required: github subcommand" in message:
+                print(f"{message.replace(', request_id', '')}\nPossible values for subcommand are: "
+                      "anno-prs, checkout-prs, create-pr, restack-pr, retarget-pr, update-pr-descriptions, sync", file=sys.stderr)
+                self.exit(2)
+            elif "the following arguments are required: gitlab subcommand" in message:
+                print(f"{message.replace(', request_id', '')}\nPossible values for subcommand are: "
+                      "anno-mrs, checkout-mrs, create-mr, restack-mr, retarget-mr, update-mr-descriptions", file=sys.stderr)
+                self.exit(2)
+            elif "the following arguments are required: go direction" in message:
+                print(f"{message}\nPossible values for go direction are: "
+                      f"d, down, f, first, l, last, n, next, p, prev, r, root, u, up", file=sys.stderr)
+                self.exit(2)
+            elif "the following arguments are required: show direction" in message:
+                print(f"{message}\nPossible values for show direction are: "
+                      f"c, current, d, down, f, first, l, last, n, next, p, prev, r, root, u, up", file=sys.stderr)
+                self.exit(2)
+            else:
+                super().error(message)
+
+    cli_parser: argparse.ArgumentParser = CustomArgumentParser(prog='git machete',
+                                                               argument_default=argparse.SUPPRESS,
+                                                               add_help=False,
+                                                               parents=[common_args_parser])
 
     subparsers = cli_parser.add_subparsers(dest='command')
 
@@ -258,7 +278,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
             usage=argparse.SUPPRESS,
             add_help=False,
             parents=[common_args_parser])
-        parser.add_argument('subcommand', choices=[
+        parser.add_argument('subcommand', metavar=f'{command} subcommand', choices=[
             f'anno-{pr_or_mr}s',
             f'checkout-{pr_or_mr}s',
             f'create-{pr_or_mr}',
@@ -288,10 +308,9 @@ def create_cli_parser() -> argparse.ArgumentParser:
         usage=argparse.SUPPRESS,
         add_help=False,
         parents=[common_args_parser])
-    go_parser.add_argument(
-        'direction',
-        choices=['d', 'down', 'f', 'first', 'l', 'last', 'n', 'next',
-                 'p', 'prev', 'r', 'root', 'u', 'up']
+    go_parser.add_argument('direction', metavar='go direction', choices=[
+        'd', 'down', 'f', 'first', 'l', 'last', 'n', 'next',
+        'p', 'prev', 'r', 'root', 'u', 'up']
     )
 
     help_parser = subparsers.add_parser(
@@ -341,10 +360,9 @@ def create_cli_parser() -> argparse.ArgumentParser:
         usage=argparse.SUPPRESS,
         add_help=False,
         parents=[common_args_parser])
-    show_parser.add_argument(
-        'direction',
-        choices=['c', 'current', 'd', 'down', 'f', 'first', 'l', 'last',
-                 'n', 'next', 'p', 'prev', 'r', 'root', 'u', 'up']
+    show_parser.add_argument('direction', metavar='show direction', choices=[
+        'c', 'current', 'd', 'down', 'f', 'first', 'l', 'last',
+        'n', 'next', 'p', 'prev', 'r', 'root', 'u', 'up']
     )
     show_parser.add_argument('branch', nargs='?', default=argparse.SUPPRESS)
 

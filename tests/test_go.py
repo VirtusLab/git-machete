@@ -1,10 +1,10 @@
-import pytest
 from pytest_mock import MockerFixture
 
 from git_machete.exceptions import ExitCode
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
+                      launch_command_capturing_output_and_exception,
                       mock_input_returning, rewrite_branch_layout_file)
 from .mockers_git_repository import (check_out, commit, create_repo,
                                      new_branch, new_orphan_branch)
@@ -17,18 +17,18 @@ class TestGo(BaseTest):
         new_branch("level-0-branch")
         commit()
 
-        with pytest.raises(SystemExit) as e:
-            launch_command("go", "current")
-        assert ExitCode.ARGUMENT_ERROR == e.value.code
+        output, e = launch_command_capturing_output_and_exception("go", "current")
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.ARGUMENT_ERROR
 
     def test_go_invalid_direction(self) -> None:
         create_repo()
         new_branch("level-0-branch")
         commit()
 
-        with pytest.raises(SystemExit) as e:
-            launch_command("go", "invalid")
-        assert ExitCode.ARGUMENT_ERROR == e.value.code
+        output, e = launch_command_capturing_output_and_exception("go", "invalid")
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.ARGUMENT_ERROR
 
     def test_go_up(self) -> None:
         """Verify behaviour of a 'git machete go up' command.
@@ -462,3 +462,11 @@ class TestGo(BaseTest):
           * git machete github checkout-prs --mine
           * git machete gitlab checkout-mrs --mine"""
         assert_failure(["g", "root"], expected_error_message)
+
+    def test_go_missing_direction(self) -> None:
+        output, e = launch_command_capturing_output_and_exception("go")
+        assert output == \
+            "the following arguments are required: go direction\n" \
+            "Possible values for go direction are: d, down, f, first, l, last, n, next, p, prev, r, root, u, up\n"
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.ARGUMENT_ERROR

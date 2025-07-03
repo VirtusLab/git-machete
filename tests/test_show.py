@@ -1,7 +1,10 @@
 import os
 
+from git_machete.exceptions import ExitCode
+
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, execute, launch_command,
+                      launch_command_capturing_output_and_exception,
                       remove_directory, rewrite_branch_layout_file, sleep)
 from .mockers_git_repository import (amend_commit, check_out, commit,
                                      create_repo, create_repo_with_remote,
@@ -383,3 +386,11 @@ class TestShow(BaseTest):
         assert 'level-0-branch' == launch_command("show", "r").strip(), \
             ("Verify that 'git machete show r' displays name of the root of "
              "the current branch.")
+
+    def test_show_missing_direction(self) -> None:
+        output, e = launch_command_capturing_output_and_exception("show")
+        assert output == \
+            "the following arguments are required: show direction\n" \
+            "Possible values for show direction are: c, current, d, down, f, first, l, last, n, next, p, prev, r, root, u, up\n"
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.ARGUMENT_ERROR

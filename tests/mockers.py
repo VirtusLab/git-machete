@@ -7,7 +7,7 @@ import textwrap
 import time
 from contextlib import (AbstractContextManager, contextmanager,
                         redirect_stderr, redirect_stdout)
-from typing import Any, Callable, Iterable, Iterator, Tuple, Type
+from typing import Any, Callable, Iterable, Iterator, Optional, Tuple, Type
 
 import pytest
 
@@ -36,6 +36,24 @@ def fixed_author_and_committer_date_in_past() -> AbstractContextManager:  # type
         GIT_COMMITTER_DATE=fixed_committer_and_author_date,
         GIT_AUTHOR_DATE=fixed_committer_and_author_date
     )
+
+
+def launch_command_capturing_output_and_exception(*cmd_and_args: str) -> Tuple[Optional[str], Optional[BaseException]]:
+    with io.StringIO() as out:
+        try:
+            with redirect_stdout(out):
+                with redirect_stderr(out):
+                    utils.displayed_warnings = set()
+                    cli.launch(list(cmd_and_args))
+                output = out.getvalue()
+                if sys.platform == 'win32':
+                    output = output.replace('.git\\machete', '.git/machete')
+                return output, None
+        except BaseException as e:
+            output = out.getvalue()
+            if sys.platform == 'win32':
+                output = output.replace('.git\\machete', '.git/machete')
+            return output, e
 
 
 def launch_command(*cmd_and_args: str) -> str:

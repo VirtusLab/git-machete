@@ -6,9 +6,11 @@ from unittest.mock import mock_open
 from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
+from git_machete.exceptions import ExitCode
 from git_machete.gitlab import GitLabClient, GitLabToken
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
+                           launch_command_capturing_output_and_exception,
                            mock__popen_cmd_with_fixed_results,
                            mock_input_returning_y, overridden_environment,
                            rewrite_branch_layout_file)
@@ -322,3 +324,11 @@ class TestGitLab(BaseTest):
                        "of the following options: --all, --by=..., --mine, --related")
         assert_failure(["gitlab", "update-mr-descriptions", "--update-related-descriptions"],
                        "--update-related-descriptions option is only valid with create-mr, restack-mr and retarget-mr subcommands.")
+
+    def test_gitlab_missing_direction(self) -> None:
+        output, e = launch_command_capturing_output_and_exception("gitlab")
+        assert output == \
+            "the following arguments are required: gitlab subcommand\n" \
+            "Possible values for subcommand are: anno-mrs, checkout-mrs, create-mr, restack-mr, retarget-mr, update-mr-descriptions\n"
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.ARGUMENT_ERROR

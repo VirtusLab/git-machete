@@ -7,9 +7,11 @@ from unittest.mock import mock_open
 from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
+from git_machete.exceptions import ExitCode
 from git_machete.github import GitHubClient, GitHubToken
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
+                           launch_command_capturing_output_and_exception,
                            mock__popen_cmd_with_fixed_results,
                            mock_input_returning_y, overridden_environment,
                            rewrite_branch_layout_file)
@@ -371,3 +373,11 @@ class TestGitHub(BaseTest):
                        "of the following options: --all, --by=..., --mine, --related")
         assert_failure(["github", "update-pr-descriptions", "--update-related-descriptions"],
                        "--update-related-descriptions option is only valid with create-pr, restack-pr and retarget-pr subcommands.")
+
+    def test_github_missing_direction(self) -> None:
+        output, e = launch_command_capturing_output_and_exception("github")
+        assert output == \
+            "the following arguments are required: github subcommand\n" \
+            "Possible values for subcommand are: anno-prs, checkout-prs, create-pr, restack-pr, retarget-pr, update-pr-descriptions, sync\n"
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.ARGUMENT_ERROR

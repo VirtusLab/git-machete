@@ -15,19 +15,19 @@ class TestCLI(BaseTest):
         assert len(alias_by_command.values()) == len(set(alias_by_command.values()))
 
     def test_main(self, mocker: MockerFixture) -> None:
-        with pytest.raises(SystemExit) as e:
+        with pytest.raises(SystemExit) as ei:
             self.patch_symbol(mocker, "sys.argv", ["go", "no-such-direction"])
             main()
-        assert ExitCode.ARGUMENT_ERROR == e.value.code
+        assert ExitCode.ARGUMENT_ERROR == ei.value.code
 
-        with pytest.raises(SystemExit) as e:
+        with pytest.raises(SystemExit) as ei:
             self.patch_symbol(mocker, "sys.argv", ["", "status", "--", "--patch"])
             main()
-        assert ExitCode.ARGUMENT_ERROR == e.value.code
+        assert ExitCode.ARGUMENT_ERROR == ei.value.code
 
         os.chdir(mkdtemp())
 
-        with pytest.raises(SystemExit) as e:
+        with pytest.raises(SystemExit) as ei:
             self.patch_symbol(mocker, "sys.argv", ["", "file"])
             main()
-        assert ExitCode.MACHETE_EXCEPTION == e.value.code
+        assert ExitCode.MACHETE_EXCEPTION == ei.value.code

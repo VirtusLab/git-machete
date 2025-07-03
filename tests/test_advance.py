@@ -1,10 +1,10 @@
-import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.exceptions import UnderlyingGitException
+from git_machete.exceptions import ExitCode, UnderlyingGitException
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
+                      launch_command_capturing_output_and_exception,
                       mock_input_returning, mock_input_returning_y,
                       rewrite_branch_layout_file)
 from .mockers_git_repository import (check_out, commit, create_repo,
@@ -169,14 +169,14 @@ class TestAdvance(BaseTest):
         assert_failure(['advance', '-y'], expected_error_message)
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning(""))
-        with pytest.raises(SystemExit) as e:
-            assert launch_command("advance")
-        assert e.value.code == 0
+        output, e = launch_command_capturing_output_and_exception("advance")
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.SUCCESS
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("not-a-valid-number"))
-        with pytest.raises(SystemExit) as e:
-            assert launch_command("advance")
-        assert e.value.code == 1
+        output, e = launch_command_capturing_output_and_exception("advance")
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.MACHETE_EXCEPTION
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("3"))
         assert_failure(["advance"], "Invalid index: 3")
