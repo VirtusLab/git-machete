@@ -218,16 +218,11 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                             from_exclusive=fork_point,
                             branch=branch,
                             opt_no_interactive_rebase=opt_no_interactive_rebase)
-                        # It's clearly possible that rebase can be in progress
-                        # after 'git rebase' returned non-zero exit code;
-                        # this happens most commonly in case of conflicts,
-                        # regardless of whether the rebase is interactive or not.
-                        # But for interactive rebases, it's still possible that
-                        # even if 'git rebase' returned zero, the rebase is still
-                        # in progress; e.g. when interactive rebase gets to 'edit'
-                        # command, it will exit returning zero, but the rebase
-                        # will be still in progress, waiting for user edits and
-                        # a subsequent 'git rebase --continue'.
+                        # It's clearly possible that rebase can be in progress after 'git rebase' returned non-zero exit code;
+                        # this happens most commonly in case of conflicts, regardless of whether the rebase is interactive or not.
+                        # But for interactive rebases, it's still possible that even if 'git rebase' returned zero, the rebase is still
+                        # in progress; e.g. when interactive rebase gets to 'edit' command, it will exit returning zero, but the rebase
+                        # will be still in progress, waiting for user edits and a subsequent 'git rebase --continue'.
                         rebased_branch = self._git.get_currently_rebased_branch_or_none()
                         if rebased_branch:  # 'rebased_branch' should be equal to 'branch' at this point anyway
                             print(fmt(f"\nRebase of {bold(rebased_branch)} in progress; stopping the traversal"))

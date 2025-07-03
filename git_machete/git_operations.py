@@ -557,6 +557,9 @@ class GitContext:
         # As of git 2.24.1, this is how 'cmd_rebase()' in builtin/rebase.c checks whether am is in progress.
         return os.path.isfile(self.get_worktree_git_subpath("rebase-apply", "applying"))
 
+    def is_bisect_in_progress(self) -> bool:
+        return os.path.isfile(self.get_worktree_git_subpath("BISECT_START"))
+
     def is_cherry_pick_in_progress(self) -> bool:
         return os.path.isfile(self.get_worktree_git_subpath("CHERRY_PICK_HEAD"))
 
@@ -718,10 +721,18 @@ class GitContext:
         if switch_head:
             self._run_git("checkout", branch, flush_caches=True)
 
+    def get_currently_bisected_branch_or_none(self) -> Optional[LocalBranchShortName]:
+        bisect_start_file = self.get_worktree_git_subpath("BISECT_START")
+        if not os.path.exists(bisect_start_file):
+            return None
+        with open(bisect_start_file, "r") as f:
+            raw = f.read().strip()
+            return LocalBranchShortName.of(raw)
+
     # Note: while rebase is ongoing, the repository is always in a detached HEAD state,
     # so we need to extract the name of the currently rebased branch from the rebase-specific internals
     # rather than rely on 'git symbolic-ref HEAD' (i.e. the contents of .git/HEAD).
-    def get_currently_rebased_branch_or_none(self) -> Optional[LocalBranchShortName]:  # utils/private
+    def get_currently_rebased_branch_or_none(self) -> Optional[LocalBranchShortName]:
         # https://stackoverflow.com/questions/3921409
 
         head_name_file = None
@@ -760,6 +771,9 @@ class GitContext:
         if self.is_am_in_progress():
             raise UnderlyingGitException(
                 "`git am` session in progress. Conclude `git am` first with `git am --continue` or `git am --abort`.")
+        if self.is_bisect_in_progress():
+            raise UnderlyingGitException(
+                "Bisecting in progress. Conclude the bisecting first with `git bisect reset`.")
         if self.is_cherry_pick_in_progress():
             raise UnderlyingGitException(
                 "Cherry pick in progress. Conclude the cherry pick first with `git cherry-pick --continue` or `git cherry-pick --abort`.")

@@ -499,6 +499,7 @@ class MacheteClient:
             else:
                 sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF
 
+        currently_bisected_branch = self._git.get_currently_bisected_branch_or_none()
         currently_rebased_branch = self._git.get_currently_rebased_branch_or_none()
         currently_checked_out_branch = self._git.get_currently_checked_out_branch_or_none()
 
@@ -573,10 +574,12 @@ class MacheteClient:
                     out.write("\n")
                 out.write("  " + maybe_space_before_branch_name)
 
-            if branch in (currently_checked_out_branch, currently_rebased_branch):
-                # i.e. if branch is the current branch (checked out or being rebased)
+            if branch in (currently_checked_out_branch, currently_rebased_branch, currently_bisected_branch):
+                # i.e. if branch is the current branch (checked out or being rebased or being bisected)
                 if branch == currently_rebased_branch:
                     prefix = "REBASING "
+                elif branch == currently_bisected_branch:
+                    prefix = "BISECTING "
                 elif self._git.is_am_in_progress():
                     prefix = "GIT AM IN PROGRESS "
                 elif self._git.is_cherry_pick_in_progress():

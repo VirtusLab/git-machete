@@ -811,6 +811,28 @@ class TestStatus(BaseTest):
 
         execute("git revert --abort")
 
+        # BISECT
+
+        commit("Another commit message.")
+        commit("Yet another commit message.")
+        execute("git bisect start")
+        execute("git bisect bad HEAD")
+        execute("git bisect good HEAD~3")
+
+        expected_status_output = (
+            """
+            master
+            |
+            | Some commit message.
+            | Another commit message.
+            | Yet another commit message.
+            o-BISECTING develop *
+            """
+        )
+        assert_success(['status', '-l'], expected_status_output)
+
+        execute("git bisect reset")
+
     def test_status_no_fork_point_for_child_branch(self) -> None:
         create_repo()
         new_branch("master")

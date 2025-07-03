@@ -387,3 +387,16 @@ class TestUpdate(BaseTest):
                        expected_type=UnderlyingGitException)
 
         execute("git revert --abort")
+
+        # BISECT
+
+        commit()
+        execute("git bisect start")
+        execute("git bisect bad HEAD")
+        execute("git bisect good HEAD~2")
+
+        assert_failure(["update"],
+                       "Bisecting in progress. Conclude the bisecting first with git bisect reset.",
+                       expected_type=UnderlyingGitException)
+
+        execute("git bisect reset")
