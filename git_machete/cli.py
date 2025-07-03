@@ -7,7 +7,7 @@ import pkgutil
 import sys
 import textwrap
 from typing import (Any, Dict, Iterable, List, Optional, Sequence, Tuple,
-                    TypeVar, Union)
+                    TypeVar, Union, NoReturn)
 
 import git_machete.options
 from git_machete import __version__, git_config_keys, utils
@@ -143,11 +143,16 @@ def create_cli_parser() -> argparse.ArgumentParser:
     common_args_parser.add_argument('--version', action='version', version=f'git-machete version {__version__}')
     common_args_parser.add_argument('-v', '--verbose', action='store_true')
 
-    cli_parser = argparse.ArgumentParser(
-        prog='git machete',
-        argument_default=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    class CustomArgumentParser(argparse.ArgumentParser):
+        def error(self, message) -> NoReturn:
+            if "the following arguments are required: direction" in message:
+                print(f"{message}\nPossible values for <direction> are: c, current, d, down, f, first, l, last, n, next, p, prev, r, root, u, up", file=sys.stderr)
+            self.exit(2)
+
+    cli_parser: argparse.ArgumentParser = CustomArgumentParser(prog='git machete',
+                                      argument_default=argparse.SUPPRESS,
+                                      add_help=False,
+                                      parents=[common_args_parser])
 
     subparsers = cli_parser.add_subparsers(dest='command')
 
