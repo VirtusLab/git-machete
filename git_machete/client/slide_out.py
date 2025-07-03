@@ -85,7 +85,9 @@ class SlideOutMacheteClient(MacheteClient):
             slid_out_branch=branches_to_slide_out[-1],
             new_downstreams=new_downstreams)
 
-        self._git.checkout(new_upstream)
+        if self._git.get_current_branch_or_none() in branches_to_slide_out:
+            self._git.checkout(new_upstream)
+
         for new_downstream in new_downstreams:
             anno = self.annotations.get(new_downstream)
             use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)

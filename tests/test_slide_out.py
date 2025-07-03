@@ -10,7 +10,7 @@ from .mockers import (assert_failure, assert_success,
                       set_file_executable, write_to_file)
 from .mockers_git_repository import (amend_commit, check_out, commit,
                                      create_repo, create_repo_with_remote,
-                                     delete_remote_branch,
+                                     delete_remote_branch, get_current_branch,
                                      get_current_commit_hash,
                                      get_local_branches, new_branch, push)
 
@@ -169,6 +169,27 @@ class TestSlideOut(BaseTest):
             o-child_b *
             """,
         )
+
+    def test_slide_out_branch_other_than_current(self) -> None:
+        create_repo()
+        new_branch('branch-0')
+        commit()
+        new_branch('branch-1')
+        commit()
+        new_branch('branch-2')
+        commit()
+
+        body: str = \
+            """
+            branch-0
+                branch-1
+                branch-2
+            """
+        rewrite_branch_layout_file(body)
+
+        launch_command("slide-out", "branch-1")
+        # Branch should not be changed by slide-out if the current branch has NOT been slid out
+        assert get_current_branch() == "branch-2"
 
     def test_slide_out_with_post_slide_out_hook(self) -> None:
         create_repo()

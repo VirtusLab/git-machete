@@ -5,6 +5,7 @@
 - fixed: incorrect `Could not determine base branch for PR` error messages when creating PRs from `git machete traverse -H`
 - fixed: `git bisect` is recognized as a separate repository state by `git machete status` and side-effecting operations
 - fixed: branches marked as `slide-out=no` are no longer slid out by `git machete slide-out --removed-from-remote`
+- fixed: if current branch hasn't been slid out, then `git machete slide-out` no longer switches the current branch
 
 ## New in git-machete 3.36.0
 
