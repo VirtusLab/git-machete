@@ -1,3 +1,4 @@
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -435,6 +436,7 @@ class TestSlideOut(BaseTest):
         new_branch('has_downstream')
         commit()
         push()
+        delete_remote_branch('origin/has_downstream')
         new_branch('downstream')
         commit()
         check_out('main')
@@ -442,7 +444,11 @@ class TestSlideOut(BaseTest):
         commit()
         push()
         delete_remote_branch('origin/should_be_pruned')
-        delete_remote_branch('origin/has_downstream')
+        check_out('main')
+        new_branch('with_qualifier')
+        commit()
+        push()
+        delete_remote_branch('origin/with_qualifier')
         check_out('main')
 
         body: str = \
@@ -453,14 +459,24 @@ class TestSlideOut(BaseTest):
                 has_downstream
                     downstream
                 should_be_pruned PR #123
+                with_qualifier slide-out=no
             """
         rewrite_branch_layout_file(body)
 
         assert_success(
             ['slide-out', '--removed-from-remote', '--delete'],
-            "Sliding out should_be_pruned\nDeleting branch should_be_pruned...\n")
+            "Sliding out should_be_pruned\n"
+            "Skipping with_qualifier as it's marked as slide-out=no\n"
+            "Deleting branch should_be_pruned...\n")
 
-        assert read_branch_layout_file() == "main\n    unpushed\n    not_deleted_remotely\n    has_downstream\n        downstream\n"
+        assert read_branch_layout_file().splitlines() == [
+            "main",
+            "    unpushed",
+            "    not_deleted_remotely",
+            "    has_downstream",
+            "        downstream",
+            "    with_qualifier slide-out=no"
+        ]
 
         expected_status_output = (
             """
@@ -471,8 +487,10 @@ class TestSlideOut(BaseTest):
               o-not_deleted_remotely
               |
               o-has_downstream (untracked)
-                |
-                o-downstream (untracked)
+              | |
+              | o-downstream (untracked)
+              |
+              o-with_qualifier  slide-out=no (untracked)
             """
         )
         assert_success(['status'], expected_status_output)
@@ -487,7 +505,13 @@ class TestSlideOut(BaseTest):
         delete_remote_branch('origin/not_deleted_remotely')
         launch_command('slide-out', '--removed-from-remote', '--verbose')
 
-        assert read_branch_layout_file() == "main\n    unpushed\n    has_downstream\n        downstream\n"
+        assert read_branch_layout_file().splitlines() == [
+            "main",
+            "    unpushed",
+            "    has_downstream",
+            "        downstream",
+            "    with_qualifier slide-out=no"
+        ]
         branches = get_local_branches()
         assert 'not_deleted_remotely' in branches
 

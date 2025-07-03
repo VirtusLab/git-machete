@@ -117,8 +117,12 @@ class SlideOutMacheteClient(MacheteClient):
         slid_out_branches: List[LocalBranchShortName] = []
         for branch in self.managed_branches.copy():
             if self._git.is_removed_from_remote(branch) and not self.down_branches_for(branch):
-                print(fmt(f"Sliding out <b>{branch}</b>"))
-                slid_out_branches.append(branch)
+                anno = self.annotations.get(branch)
+                if anno and not anno.qualifiers.slide_out:
+                    print(fmt(f"Skipping <b>{branch}</b> as it's marked as `slide-out=no`"))
+                else:
+                    print(fmt(f"Sliding out <b>{branch}</b>"))
+                    slid_out_branches.append(branch)
 
         self._remove_branches_from_layout(slid_out_branches)
         if opt_delete:
