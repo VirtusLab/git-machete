@@ -38,6 +38,7 @@ jobs:
           # language=sh
           command: |
             set -x
+
             python --version
             pip3 install tox
 
@@ -280,12 +281,13 @@ jobs:
     steps:
       - checkout
       - run:
-          name: 'Create GitHub release'
+          name: 'Create GitHub release and close milestone'
           # language=sh
           command: |
             sudo apt-get update
-            sudo apt-get install hub
-            bash ci/github-releases/ci-deploy.sh
+            sudo apt-get install gh
+            bash ci/github/create-release.sh
+            bash ci/github/close-milestone.sh
 
 
 # Note that these top-level keys are NOT consumed by CircleCI,
