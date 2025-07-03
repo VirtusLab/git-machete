@@ -55,15 +55,19 @@ long_docs: Dict[str, str] = {
         Note: all the effects of `add` (except git branch creation) can as well be achieved by manually editing the branch layout file.
 
         <b>Options:</b>
+
            <b>-f</b>, <b>--as-first-child</b>
               Add the given branch as the first (instead of last) child of its parent.
               Cannot be specified together with `-R/--as-root`.
+
            <b>-o</b>, <b>--onto=<target-upstream-branch></b>
               Specifies the target parent branch to add the given branch onto.
               Cannot be specified together with `-R/--as-root`.
+
            <b>-R</b>, <b>--as-root</b>
               Add the given branch as a new root (and not onto any other branch).
               Cannot be specified together with `-o/--onto`.
+
            <b>-y</b>, <b>--yes</b>
               Don't ask for confirmation whether to create the branch or whether to add onto the inferred upstream.
    """,
@@ -115,6 +119,7 @@ long_docs: Dict[str, str] = {
         See help for `traverse` for more details on the qualifiers.
 
         <b>Options:</b>
+
            <b>-y</b>, <b>--yes</b>
               Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream.
               Fails if the current branch has more than one <green>green-edge</green> downstream branch.
@@ -154,10 +159,13 @@ long_docs: Dict[str, str] = {
         Note: all the effects of `anno` can be always achieved by manually editing the branch layout file.
 
         <b>Options:</b>
+
            <b>-b</b>, <b>--branch=<branch></b>
               Branch to set the annotation for.
+
            <b>-H</b>, <b>--sync-github-prs</b>
               Annotate with GitHub PR numbers and author logins where applicable.
+
            <b>-L</b>, <b>--sync-gitlab-mrs</b>
               Annotate with GitLab MR numbers and author logins where applicable.
    """,
@@ -179,8 +187,10 @@ long_docs: Dict[str, str] = {
         For enterprise domains, non-standard URLs etc., check git config keys in `github` help.
 
         <b>Options:</b>
+
            <b>-c</b>, <b>--checkout-my-github-prs</b>
               Checkout your open PRs into local branches.
+
            <b>-y</b>, <b>--yes</b>
               Don't ask for confirmation when deleting branches from git.
 
@@ -404,6 +414,7 @@ long_docs: Dict[str, str] = {
         See help for `fork-point` for more details.
 
         <b>Options:</b>
+
            <b>-y</b>, <b>--yes</b>
               Don't ask for confirmation.
    """,
@@ -434,17 +445,21 @@ long_docs: Dict[str, str] = {
         `discover` retains the existing branch qualifiers used by `git machete traverse` (see help for `traverse`).
 
         <b>Options:</b>
+
            <b>-C</b>, <b>--checked-out-since=<date></b>
               Only consider branches checked out at least once since the given date.
               `<date>` can be, for example, `2 weeks ago` or `2020-06-01`, as in `git log --since=<date>`.
               If not present, the date is selected automatically so that around 10 branches are included.
+
            <b>-l</b>, <b>--list-commits</b>
               When printing the discovered tree, additionally lists the messages of commits introduced on each branch
               (as for `git machete status`).
+
            <b>-r</b>, <b>--roots=<branch1,...></b>
               Comma-separated list of branches that should be considered roots of trees of branch dependencies.
               If not present, `master` is assumed to be a root. Note that in the process of discovery,
               certain other branches can also be additionally deemed to be roots as well.
+
            <b>-y</b>, <b>--yes</b>
               Don't ask for confirmation before saving the newly-discovered tree.
               Mostly useful in scripts; not recommended for manual use.
@@ -1192,6 +1207,7 @@ long_docs: Dict[str, str] = {
         but there is also dedicated `squash` command that achieves the same goal without running `git rebase`.
 
         <b>Options:</b>
+
            <b>-f</b>, <b>--fork-point=<fork-point-commit></b>
               Specifies the alternative fork point commit after which the rebased part of history is meant to start.
 
@@ -1270,25 +1286,32 @@ long_docs: Dict[str, str] = {
         See help for `traverse` for more details on the qualifiers.
 
         <b>Options:</b>
+
            <b>-d</b>, <b>--down-fork-point=<down-fork-point-commit></b>
               If updating by rebase, specifies the alternative fork point for downstream branches for the operation.
               `git machete fork-point` overrides for downstream branches are recommended over use of this option.
               See also doc for `--fork-point` option in `git machete help reapply` and `git machete help update`.
               Not allowed if updating by merge.
+
            <b>--delete</b>
               Delete the branches after sliding them out.
+
            <b>-M</b>, <b>--merge</b>
               Update the downstream branch by merge rather than by rebase.
+
            <b>-n</b>
               If updating by rebase, equivalent to `--no-interactive-rebase`.
               If updating by merge, equivalent to `--no-edit-merge`.
+
            <b>--no-edit-merge</b>
               If updating by merge, skip opening the editor for merge commit message while doing
               `git merge` (that is, pass `--no-edit` flag to the underlying `git merge`).
               Not allowed if updating by rebase.
+
            <b>--no-interactive-rebase</b>
               If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
               Not allowed if updating by merge.
+
            <b>--removed-from-remote</b>
  
               Slide out managed branches whose remote tracking branches have been deleted and that have no downstreams.
@@ -1325,6 +1348,7 @@ long_docs: Dict[str, str] = {
         For more complex scenarios that require rewriting the history of current branch, see `reapply` and `update`.
 
         <b>Options:</b>
+
            <b>-f</b>, <b>--fork-point=<fork-point-commit></b>
               Specifies the alternative fork point commit after which the squashed part of history is meant to start.
    """,
@@ -1399,16 +1423,21 @@ long_docs: Dict[str, str] = {
         </dim>
 
         <b>Options:</b>
+
            <b>--color=WHEN</b>
               Colorize the output; WHEN can be `always`, `auto` (default: colorize only if stdout is a terminal), or `never`.
+
            <b>-l</b>, <b>--list-commits</b>
               Additionally list the commits introduced on each branch.
+
            <b>-L</b>, <b>--list-commits-with-hashes</b>
               Additionally list the short hashes and messages of commits introduced on each branch.
+
            <b>--no-detect-squash-merges</b>
               <b>Deprecated</b>, use `--squash-merge-detection=none` instead.
               Only consider strict (fast-forward or 2-parent) merges, rather than rebase/squash merges,
               when detecting if a branch is merged into its upstream (parent).
+
            <b>--squash-merge-detection=MODE</b>
               Specify the mode for detection of rebase/squash merges (grey edges).
               `MODE` can be `none` (fastest, no squash merges are detected), `simple` (default) or `exact` (slowest).
@@ -1518,58 +1547,77 @@ long_docs: Dict[str, str] = {
         when the current user is NOT the author of the PR/MR associated with that branch.
 
         <b>Options:</b>
+
            <b>-F</b>, <b>--fetch</b>
               Fetch the remotes of all managed branches at the beginning of traversal (no `git pull` involved, only `git fetch`).
+
            <b>-H</b>, <b>--sync-github-prs</b>
               Retarget the PR if it exists for the given branch and its base branch in GitHub is different than the upstream in machete file
+
            <b>-L</b>, <b>--sync-gitlab-mrs</b>
               Retarget the MR if it exists for the given branch and its target branch in GitLab is different than the upstream in machete file
+
            <b>-l</b>, <b>--list-commits</b>
               When printing the status, additionally list the messages of commits introduced on each branch.
+
            <b>-M</b>, <b>--merge</b>
               Update by merge rather than by rebase.
+
            <b>-n</b>
               If updating by rebase, equivalent to `--no-interactive-rebase`. If updating by merge, equivalent to `--no-edit-merge`.
+
            <b>--no-detect-squash-merges</b>
               <b>Deprecated</b>, use `--squash-merge-detection=none` instead.
               Only consider strict (fast-forward or 2-parent) merges, rather than rebase/squash merges,
               when detecting if a branch is merged into its upstream (parent).
+
            <b>--no-edit-merge</b>
               If updating by merge, skip opening the editor for merge commit message while doing `git merge`
               (that is, pass `--no-edit` flag to the underlying `git merge`). Not allowed if updating by rebase.
+
            <b>--no-interactive-rebase</b>
               If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
               Not allowed if updating by merge.
+
            <b>--no-push</b>
               Do not push any (neither tracked nor untracked) branches to remote, re-enable via `--push`.
+
            <b>--no-push-untracked</b>
               Do not push untracked branches to remote, re-enable via `--push-untracked`.
+
            <b>--push</b>
               Push all (both tracked and untracked) branches to remote — default behavior. Default behavior can be changed
               by setting git configuration key `git config machete.traverse.push false`.
               Configuration key value can be overridden by the presence of the flag.
+
            <b>--push-untracked</b>
               Push untracked branches to remote.
+
            <b>--return-to=WHERE</b>
               Specifies the branch to return after traversal is successfully completed;
               WHERE can be `here` (the current branch at the moment when traversal starts), `nearest-remaining`
               (nearest remaining branch in case the `here` branch has been slid out by the traversal) or
               `stay` (the default — just stay wherever the traversal stops). Note: when user quits by `q`/`yq`
               or when traversal is stopped because one of git actions fails, the behavior is always `stay`.
+
            <b>--squash-merge-detection=MODE</b>
               Specifies the mode for detection of rebase/squash merges (grey edges).
               `MODE` can be `none` (fastest, no squash merges are detected), `simple` (default) or `exact` (slowest).
               See the below paragraph on `machete.squashMergeDetection` git config key for more details.
+
            <b>--start-from=WHERE</b>
               Specifies the branch to start the traversal from; WHERE can be `here`
               (the default — current branch, must be managed by git machete), `root` (root branch of the current branch,
               as in `git machete show root`) or `first-root` (first listed managed branch).
+
            <b>-w</b>, <b>--whole</b>
               Equivalent to `-n --start-from=first-root --return-to=nearest-remaining`;
               useful for quickly traversing & syncing all branches (rather than doing more fine-grained operations on the
               local section of the branch tree).
+
            <b>-W</b>
               Equivalent to `--fetch --whole`; useful for even more automated traversal of all branches.
+
            <b>-y</b>, <b>--yes</b>
               Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies `-n`.
 
@@ -1626,17 +1674,22 @@ long_docs: Dict[str, str] = {
         If updating by merge, merges the upstream (parent) branch into the current branch.
 
         <b>Options:</b>
+
            <b>-f</b>, <b>--fork-point=<fork-point-commit></b>
               If updating by rebase, specifies the alternative fork point commit after which the rebased
               part of history is meant to start. Not allowed if updating by merge.
+
            <b>-M</b>, <b>--merge</b>
               Update by merge rather than by rebase.
+
            <b>-n</b>
               If updating by rebase, equivalent to `--no-interactive-rebase`.
               If updating by merge, equivalent to `--no-edit-merge`.
+
            <b>--no-edit-merge</b>
               If updating by merge, skip opening the editor for merge commit message while doing `git merge`
               (that is, pass `--no-edit` flag to underlying `git merge`). Not allowed if updating by rebase.
+
            <b>--no-interactive-rebase</b>
               If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
               Not allowed if updating by merge.

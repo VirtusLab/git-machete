@@ -98,7 +98,7 @@ def html2txt(html_: str):
 
     # format elements in the `Option:` section by adding new line and indent
     for tag in html_elements.select('kbd'):
-        tag.insert_before(f'\n{INDENT_LEN_3}')
+        tag.insert_before(f'\n\n{INDENT_LEN_3}')
 
     # add indent to the description list
     for tag in html_elements.select('dt'):
@@ -186,8 +186,7 @@ if __name__ == '__main__':
     INDENT_LEN_4 = 4 * ' '
     docs_source_path = 'docs/source'
     warning_text = '# ---------------------------------------------------------------------------------------------------------\n' \
-                   '# Warning: This file is NOT supposed to be edited directly, ' \
-                   'but instead regenerated via `tox -e py-docs`\n' \
+                   '# Warning: This file is NOT supposed to be edited directly, but instead regenerated via `tox -e py-docs`\n' \
                    '# ---------------------------------------------------------------------------------------------------------\n'
     output_text = 'from typing import Dict\n\n' + warning_text
 
