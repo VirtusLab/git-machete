@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.36.2
+
 ## New in git-machete 3.36.1
 
 - fixed: incorrect `Could not determine base branch for PR` error messages when creating PRs from `git machete traverse -H`

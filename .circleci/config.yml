@@ -276,7 +276,7 @@ jobs:
           name: 'Publish snap to the stable channel'
           command: bash ci/snap/ci-deploy.sh
 
-  "create github release":
+  "create github release and close milestone":
     executor: ubuntu_executor
     steps:
       - checkout
@@ -360,7 +360,7 @@ workflows:
             - dry run releases
       # Let's create a GitHub release even if some of the other release steps failed,
       # to keep GitHub release history consistent
-      - create github release:
+      - create github release and close milestone:
           <<: *only_master
           requires:
             - dry run releases
