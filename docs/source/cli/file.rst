@@ -15,6 +15,7 @@ Three cases are possible:
 
 * if ``git machete`` is executed from a regular working directory (not a worktree or submodule),
   the file is located under ``.git/machete``,
+
 * if ``git machete`` is executed from a **worktree**,
   the file path depends on the ``machete.worktree.useTopLevelMacheteFile`` config key value:
 

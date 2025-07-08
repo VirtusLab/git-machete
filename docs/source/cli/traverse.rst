@@ -32,7 +32,6 @@ For each branch, the command:
 
 * detects if the branch is merged (:grey:`grey` edge) to its parent (aka upstream):
 
-  - by commit equivalency (default), or by strict detection of merge commits (if ``--no-detect-squash-merges`` passed),
   - if so, asks the user whether to **slide out** the branch from the dependency tree (typically branches are no longer needed after they're merged);
 
 * otherwise, if the branch has a :red:`red` or :yellow:`yellow` edge to its parent/upstream (see help for :ref:`status`):
@@ -92,7 +91,6 @@ Operations like ``git machete github anno-prs`` (``git machete gitlab anno-mrs``
 and ``git machete github checkout-prs`` (``git machete gitlab checkout-mrs``) add ``rebase=no push=no`` branch qualifiers
 when the current user is NOT the author of the PR/MR associated with that branch.
 
-
 **Options:**
 
 -F, --fetch                    Fetch the remotes of all managed branches at the beginning of traversal (no ``git pull`` involved, only ``git fetch``).
@@ -149,12 +147,6 @@ when the current user is NOT the author of the PR/MR associated with that branch
 
 -y, --yes                      Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies ``-n``.
 
-**Environment variables:**
-
-``GIT_MACHETE_REBASE_OPTS``
-    Extra options to pass to the underlying ``git rebase`` invocations, space-separated.
-    Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse``.
-
 **Git config keys:**
 
 ``machete.squashMergeDetection``:
@@ -165,3 +157,9 @@ when the current user is NOT the author of the PR/MR associated with that branch
 
 ``machete.traverse.push``
     .. include:: git-config-keys/traverse_push.rst
+
+**Environment variables:**
+
+``GIT_MACHETE_REBASE_OPTS``
+    Extra options to pass to the underlying ``git rebase`` invocations, space-separated.
+    Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse``.

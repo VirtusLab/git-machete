@@ -39,7 +39,6 @@ Apart from simply ASCII-formatting the branch layout file, this also:
   - :grey:`grey/dimmed edge` means *merged*. The downstream branch has been merged to the upstream branch,
     detected by commit equivalency (default), or by strict detection of merge commits (if ``--no-detect-squash-merges`` passed).
 
-
 * prints (``untracked``/``ahead of <remote>``/``behind <remote>``/``diverged from [& older than] <remote>``) message if the branch
   is not in sync with its remote counterpart;
 
@@ -99,5 +98,5 @@ When colors are disabled, relation between branches is represented in the follow
     .. include:: git-config-keys/squashMergeDetection.rst
 
 ``machete.status.extraSpaceBeforeBranchName``
-  .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
+    .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
       :end-line: 3

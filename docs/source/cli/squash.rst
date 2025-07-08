@@ -17,7 +17,7 @@ The message for the resulting commit is taken from the earliest squashed commit 
 To simply squash the most recent N commits, use ``--fork-point=HEAD~<N>``,
 for example ``git machete squash --fork-point=HEAD~3``.
 
-Tip: ``squash`` does NOT run ``git rebase`` under the hood.
+Note: ``squash`` does NOT run ``git rebase`` under the hood.
 For more complex scenarios that require rewriting the history of current branch, see ``reapply`` and ``update``.
 
 **Options:**

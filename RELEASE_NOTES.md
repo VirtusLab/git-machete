@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.36.2
 
+- improved: formatting of the output of `git machete ... --help` and `git machete help ...`
+
 ## New in git-machete 3.36.1
 
 - fixed: incorrect `Could not determine base branch for PR` error messages when creating PRs from `git machete traverse -H`

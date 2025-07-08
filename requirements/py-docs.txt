@@ -1,3 +1,0 @@
-docutils==0.21.2
-pygments==2.19.2
-beautifulsoup4==4.13.4

@@ -14,6 +14,10 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
 .. note::
 
+    See **Git config keys** below in case the target repository cannot be detected automatically (for example, in case of GitHub Enterprise).
+
+.. note::
+
     To allow GitHub API access for private repositories (and also to perform side-effecting actions like opening a PR,
     even in case of public repositories), a GitHub API token with ``repo`` scope is required, see https://github.com/settings/tokens.
     This will be resolved from the first of:
@@ -33,12 +37,9 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 
     .. code-block::
 
-      ghp_mytoken_for_github_com
-      ghp_myothertoken_for_git_example_org git.example.org
-      ghp_yetanothertoken_for_git_example_com git.example.com
-
-.. note::
-  See **Git config keys** below in case the target repository cannot be detected automatically (for example, in case of GitHub Enterprise).
+          ghp_mytoken_for_github_com
+          ghp_myothertoken_for_git_example_org git.example.org
+          ghp_yetanothertoken_for_git_example_com git.example.com
 
 **Subcommands:**
 
@@ -106,7 +107,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 ``restack-pr [-U|--update-related-descriptions]``:
     Perform the following sequence of actions:
 
-    #. If the PR for the current branch is ready for review, it gets converted to a draft.
+    #. If the PR for the current branch is ready for review, it gets converted into a draft.
     #. The PR is retargeted to its upstream (parent) branch, as in ``retarget-pr``.
     #. The branch is (force-)pushed into remote.
     #. If the PR has been converted to draft in step 1, it's reverted to ready for review state.

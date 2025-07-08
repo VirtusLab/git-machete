@@ -13,12 +13,7 @@ anno
 If invoked without any <annotation text>, prints out the custom annotation for the given branch
 (or current branch, if none specified with ``-b/--branch``).
 
-If invoked with a single empty string <annotation text>, like:
-
-.. code-block:: shell
-
-    $ git machete anno ''
-
+If invoked with a single empty string <annotation text>, like ``git machete anno ''``,
 then clears the annotation for the current branch (or a branch specified with ``-b/--branch``).
 
 If invoked with ``-H``/``--sync-github-prs`` (for GitHub) or ``-L``/``--sync-gitlab-mrs`` (for GitLab),

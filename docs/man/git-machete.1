@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Jul 07, 2025" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Jul 08, 2025" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.36.2
 .sp
@@ -268,16 +268,7 @@ git machete anno \-L|\-\-sync\-gitlab\-mrs
 If invoked without any <annotation text>, prints out the custom annotation for the given branch
 (or current branch, if none specified with \fB\-b/\-\-branch\fP).
 .sp
-If invoked with a single empty string <annotation text>, like:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.EX
-$ git machete anno \(aq\(aq
-.EE
-.UNINDENT
-.UNINDENT
-.sp
+If invoked with a single empty string <annotation text>, like \fBgit machete anno \(aq\(aq\fP,
 then clears the annotation for the current branch (or a branch specified with \fB\-b/\-\-branch\fP).
 .sp
 If invoked with \fB\-H\fP/\fB\-\-sync\-github\-prs\fP (for GitHub) or \fB\-L\fP/\fB\-\-sync\-gitlab\-mrs\fP (for GitLab),
@@ -460,7 +451,7 @@ whether \fBtraverse\fP suggests to slide out the branch.
 .TP
 .B \fBmachete.status.extraSpaceBeforeBranchName\fP:
 To make it easier to select branch name from the \fBstatus\fP output on certain terminals
-(like \X'tty: link https://github.com/alacritty/alacritty'\fI\%Alacritty\fP\X'tty: link'), you can add an extra space between └─ and \fBbranch name\fP
+(like \X'tty: link https://github.com/alacritty/alacritty'\fI\%Alacritty\fP\X'tty: link'), you can add an extra space between └─ and branch name
 by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .sp
 For example, by default the status is displayed as:
@@ -676,14 +667,18 @@ git machete d[iff] [\-s|\-\-stat] [<branch>] [\-\- <pass\-through\-arguments>]
 .sp
 Runs \fBgit diff\fP of the given branch tip against its fork point or, if none specified,
 of the current working tree against the fork point of the currently checked out branch.
-See help for \fI\%fork\-point\fP for more details on the meaning of \fIfork point\fP\&.
+See help for \fI\%fork\-point\fP for more details.
 .sp
 Note: the branch in question does not need to occur in the branch layout file.
 .sp
 \fBOptions:\fP
 .sp
 \-\- <pass\-through\-arguments>    Arguments to pass directly to the underlying \fBgit diff\fP, for example \fBgit machete diff \-\- \-\-name\-only\fP\&.
-\-s, \-\-stat                     Makes \fBgit machete diff\fP pass \fB\-\-stat\fP option to \fBgit diff\fP, so that only summary (diffstat) is printed.
+.INDENT 0.0
+.TP
+.B  \-s\fP,\fB  \-\-stat
+Makes \fBgit machete diff\fP pass \fB\-\-stat\fP option to \fBgit diff\fP, so that only summary (diffstat) is printed.
+.UNINDENT
 .SH DISCOVER
 .sp
 \fBUsage:\fP
@@ -921,6 +916,13 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
+See \fBGit config keys\fP below in case the target repository cannot be detected automatically (for example, in case of GitHub Enterprise).
+.UNINDENT
+.UNINDENT
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
 To allow GitHub API access for private repositories (and also to perform side\-effecting actions like opening a PR,
 even in case of public repositories), a GitHub API token with \fBrepo\fP scope is required, see \X'tty: link https://github.com/settings/tokens'\fI\%https://github.com/settings/tokens\fP\X'tty: link'\&.
 This will be resolved from the first of:
@@ -952,13 +954,6 @@ ghp_yetanothertoken_for_git_example_com git.example.com
 .EE
 .UNINDENT
 .UNINDENT
-.UNINDENT
-.UNINDENT
-.sp
-\fBNOTE:\fP
-.INDENT 0.0
-.INDENT 3.5
-See \fBGit config keys\fP below in case the target repository cannot be detected automatically (for example, in case of GitHub Enterprise).
 .UNINDENT
 .UNINDENT
 .sp
@@ -1043,7 +1038,7 @@ Do not ask for confirmation whether to push the branch.
 Perform the following sequence of actions:
 .INDENT 7.0
 .IP 1. 3
-If the PR for the current branch is ready for review, it gets converted to a draft.
+If the PR for the current branch is ready for review, it gets converted into a draft.
 .IP 2. 3
 The PR is retargeted to its upstream (parent) branch, as in \fBretarget\-pr\fP\&.
 .IP 3. 3
@@ -1203,6 +1198,13 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
+See \fBGit config keys\fP below in case the target project cannot be detected automatically (for example, in case of GitLab self\-managed instance).
+.UNINDENT
+.UNINDENT
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
 To allow GitLab API access for private projects (and also to perform side\-effecting actions like opening a MR,
 even in case of public projects), a GitLab API token with \fBapi\fP scope is required, see \X'tty: link https://gitlab.com/-/user_settings/personal_access_tokens'\fI\%https://gitlab.com/\-/user_settings/personal_access_tokens\fP\X'tty: link'\&.
 This will be resolved from the first of:
@@ -1232,13 +1234,6 @@ glpat\-yetanothertoken_for_git_example_com git.example.com
 .EE
 .UNINDENT
 .UNINDENT
-.UNINDENT
-.UNINDENT
-.sp
-\fBNOTE:\fP
-.INDENT 0.0
-.INDENT 3.5
-See \fBGit config keys\fP below in case the target project cannot be detected automatically (for example, in case of GitLab self\-managed instance).
 .UNINDENT
 .UNINDENT
 .sp
@@ -1325,7 +1320,7 @@ Do not ask for confirmation whether to push the branch.
 Perform the following sequence of actions:
 .INDENT 7.0
 .IP 1. 3
-If the MR for the current branch is ready for review, it gets converted to a draft.
+If the MR for the current branch is ready for review, it gets converted into a draft.
 .IP 2. 3
 The MR is retargeted to its upstream (parent) branch, as in \fBretarget\-mr\fP\&.
 .IP 3. 3
@@ -1628,7 +1623,7 @@ Lists all branches that fall into one of the specified categories:
 .IP \(bu 2
 \fBmanaged\fP: all branches that appear in the branch layout file,
 .IP \(bu 2
-\fBslidable\fP: all managed branches that have an upstream and can be slid out with \fI\%slide\-out\fP command
+\fBslidable\fP: all managed branches that have an upstream and can be slid out with \fI\%slide\-out\fP command,
 .IP \(bu 2
 \fBslidable\-after <branch>\fP: the downstream branch of the <branch>, if it exists and is the only downstream of <branch>
 (and thus can be slid out immediately following <branch>),
@@ -1636,7 +1631,7 @@ Lists all branches that fall into one of the specified categories:
 \fBunmanaged\fP: all local branches that don\(aqt appear in the branch layout file,
 .IP \(bu 2
 \fBwith\-overridden\-fork\-point\fP: all local branches that have a \fI\%fork point\fP override set up
-(even if this override does not affect the location of their fork point anymore).
+(even if this override does not affect the location of their fork point anymore)
 .UNINDENT
 .sp
 This command is generally not meant for a day\-to\-day use, it\(aqs mostly needed for the sake of branch name completion in shell.
@@ -1878,7 +1873,7 @@ The message for the resulting commit is taken from the earliest squashed commit 
 To simply squash the most recent N commits, use \fB\-\-fork\-point=HEAD~<N>\fP,
 for example \fBgit machete squash \-\-fork\-point=HEAD~3\fP\&.
 .sp
-Tip: \fBsquash\fP does NOT run \fBgit rebase\fP under the hood.
+Note: \fBsquash\fP does NOT run \fBgit rebase\fP under the hood.
 For more complex scenarios that require rewriting the history of current branch, see \fBreapply\fP and \fBupdate\fP\&.
 .sp
 \fBOptions:\fP
@@ -1962,7 +1957,7 @@ m\-<branch4>     # grey (merged to parent)
 .UNINDENT
 .sp
 To make it easier to select branch name from the \fBstatus\fP output on certain terminals
-(like \X'tty: link https://github.com/alacritty/alacritty'\fI\%Alacritty\fP\X'tty: link'), you can add an extra space between └─ and \fBbranch name\fP
+(like \X'tty: link https://github.com/alacritty/alacritty'\fI\%Alacritty\fP\X'tty: link'), you can add an extra space between └─ and branch name
 by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .sp
 For example, by default the status is displayed as:
@@ -2043,7 +2038,7 @@ whether \fBtraverse\fP suggests to slide out the branch.
 .TP
 .B \fBmachete.status.extraSpaceBeforeBranchName\fP
 To make it easier to select branch name from the \fBstatus\fP output on certain terminals
-(like \X'tty: link https://github.com/alacritty/alacritty'\fI\%Alacritty\fP\X'tty: link'), you can add an extra space between └─ and \fBbranch name\fP
+(like \X'tty: link https://github.com/alacritty/alacritty'\fI\%Alacritty\fP\X'tty: link'), you can add an extra space between └─ and branch name
 by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .UNINDENT
 .SH TRAVERSE
@@ -2071,8 +2066,6 @@ For each branch, the command:
 .IP \(bu 2
 detects if the branch is merged (grey edge) to its parent (aka upstream):
 .INDENT 2.0
-.IP \(bu 2
-by commit equivalency (default), or by strict detection of merge commits (if \fB\-\-no\-detect\-squash\-merges\fP passed),
 .IP \(bu 2
 if so, asks the user whether to \fBslide out\fP the branch from the dependency tree (typically branches are no longer needed after they\(aqre merged);
 .UNINDENT
@@ -2228,14 +2221,6 @@ Equivalent to \fB\-\-fetch \-\-whole\fP; useful for even more automated traversa
 Don\(aqt ask for any interactive input, including confirmation of rebase/push/pull. Implies \fB\-n\fP\&.
 .UNINDENT
 .sp
-\fBEnvironment variables:\fP
-.INDENT 0.0
-.TP
-.B \fBGIT_MACHETE_REBASE_OPTS\fP
-Extra options to pass to the underlying \fBgit rebase\fP invocations, space\-separated.
-Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete traverse\fP\&.
-.UNINDENT
-.sp
 \fBGit config keys:\fP
 .INDENT 0.0
 .TP
@@ -2273,6 +2258,14 @@ you need to set config key \fBgit config machete.traverse.push false\fP\&.
 .sp
 Configuration key value can be overridden by the presence of the \fB\-\-push\fP or \fB\-\-push\-untracked\fP flags.
 .UNINDENT
+.sp
+\fBEnvironment variables:\fP
+.INDENT 0.0
+.TP
+.B \fBGIT_MACHETE_REBASE_OPTS\fP
+Extra options to pass to the underlying \fBgit rebase\fP invocations, space\-separated.
+Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete traverse\fP\&.
+.UNINDENT
 .SH UPDATE
 .sp
 \fBUsage:\fP
@@ -2290,7 +2283,7 @@ Synchronizes the current branch with its upstream (parent) branch either by reba
 If updating by rebase, interactively rebases the current branch on the top of its upstream (parent) branch.
 The chunk of the history to be rebased starts at the fork point of the current branch, which by default is inferred automatically,
 but can also be set explicitly by \fB\-\-fork\-point\fP\&.
-See help for \fI\%fork\-point\fP for more details on the meaning of \fIfork point\fP\&.
+See help for \fI\%fork\-point\fP for more details.
 .sp
 If updating by merge, merges the upstream (parent) branch into the current branch.
 .sp

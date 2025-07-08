@@ -14,6 +14,10 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 
 .. note::
 
+    See **Git config keys** below in case the target project cannot be detected automatically (for example, in case of GitLab self-managed instance).
+
+.. note::
+
     To allow GitLab API access for private projects (and also to perform side-effecting actions like opening a MR,
     even in case of public projects), a GitLab API token with ``api`` scope is required, see https://gitlab.com/-/user_settings/personal_access_tokens.
     This will be resolved from the first of:
@@ -32,12 +36,9 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 
     .. code-block::
 
-      glpat-mytoken_for_gitlab_com
-      glpat-myothertoken_for_git_example_org git.example.org
-      glpat-yetanothertoken_for_git_example_com git.example.com
-
-.. note::
-  See **Git config keys** below in case the target project cannot be detected automatically (for example, in case of GitLab self-managed instance).
+          glpat-mytoken_for_gitlab_com
+          glpat-myothertoken_for_git_example_org git.example.org
+          glpat-yetanothertoken_for_git_example_com git.example.com
 
 **Subcommands:**
 
@@ -107,7 +108,7 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 ``restack-mr [-U|--update-related-descriptions]``:
     Perform the following sequence of actions:
 
-    #. If the MR for the current branch is ready for review, it gets converted to a draft.
+    #. If the MR for the current branch is ready for review, it gets converted into a draft.
     #. The MR is retargeted to its upstream (parent) branch, as in ``retarget-mr``.
     #. The branch is (force-)pushed into remote.
     #. If the MR has been converted to draft in step 1, it's reverted to ready for review state.
