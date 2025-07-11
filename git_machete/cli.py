@@ -630,11 +630,10 @@ def launch(orig_args: List[str]) -> None:
             raise MacheteException(
                 "Option `-H/--sync-github-prs` cannot be specified together with `-L/--sync-gitlab-mrs`.")
 
-        if not direct_args:
+        cmd = parsed_cli.command
+        if not cmd:
             print(get_help_description(display_help_topics=False))
             sys.exit(ExitCode.ARGUMENT_ERROR)
-
-        cmd = parsed_cli.command
 
         if cmd not in ("d", "diff", "l", "log") and pass_through_args:
             print(fmt("Extra arguments after `--` are only allowed after `diff` and `log`"))

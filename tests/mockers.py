@@ -77,15 +77,15 @@ def assert_success(cmd_and_args: Iterable[str], expected_result: str) -> None:
     assert actual_result == expected_result
 
 
-def assert_failure(cmd_and_args: Iterable[str], expected_message: str, expected_type: Type[Exception] = MacheteException) -> None:
+def assert_failure(cmd_and_args: Iterable[str], expected_message: str, expected_type: Type[BaseException] = MacheteException) -> None:
     if expected_message.startswith("\n"):
         # removeprefix is only available since Python 3.9
         expected_message = expected_message[1:]
     expected_message = textwrap.dedent(expected_message)
 
-    with pytest.raises(expected_type) as e:
+    with pytest.raises(expected_type) as ei:
         launch_command(*cmd_and_args)
-    error_message = e.value.msg  # type: ignore[attr-defined]
+    error_message = ei.value.msg  # type: ignore[attr-defined]
     error_message = re.sub(" +$", "", error_message, flags=re.MULTILINE)
     if sys.platform == 'win32':
         error_message = error_message.replace('.git\\machete', '.git/machete')

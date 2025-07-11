@@ -13,6 +13,7 @@ class TestHelp(BaseTest):
 
     def test_help(self) -> None:
         output, e = launch_command_capturing_output_and_exception()
+        assert output and "Quick start tip" in output
         assert type(e) is SystemExit
         assert e.code == ExitCode.ARGUMENT_ERROR
 
