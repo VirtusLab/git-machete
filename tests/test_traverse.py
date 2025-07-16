@@ -133,7 +133,7 @@ class TestTraverse(BaseTest):
         merge("feature")
         check_out("feature")
 
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("y"))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("Y "))
         assert_success(
             ["traverse"],
             """
@@ -325,10 +325,10 @@ class TestTraverse(BaseTest):
 
         rewrite_branch_layout_file("master")
 
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("Q  "))
         assert_success(["traverse"], "Push master to origin? (y, N, q, yq)\n")
 
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n"))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning(" n"))
         assert_success(
             ["traverse"],
             """
@@ -340,7 +340,7 @@ class TestTraverse(BaseTest):
             """
         )
 
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("yq"))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning(" yQ "))
         assert_success(["traverse"], "Push master to origin? (y, N, q, yq)\n")
 
     def test_traverse_behind_remote_responses(self, mocker: MockerFixture) -> None:

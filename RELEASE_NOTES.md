@@ -4,6 +4,7 @@
 
 - improved: formatting of the output of `git machete ... --help` and `git machete help ...`
 - fixed: `git machete -v` (no command) crashing
+- fixed: leading and trailing whitespace is now ignored in all interactive input
 
 ## New in git-machete 3.36.1
 

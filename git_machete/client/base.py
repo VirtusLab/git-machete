@@ -1410,7 +1410,7 @@ class MacheteClient:
                 print(fmt(msg_if_opt_yes) if apply_fmt else msg_if_opt_yes)
             return 'y'
         try:
-            ans: str = input(fmt(msg) if apply_fmt else msg).lower()
+            ans: str = input(fmt(msg) if apply_fmt else msg).lower().strip()
         except InterruptedError:
             sys.exit(1)
         return ans
