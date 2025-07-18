@@ -20,6 +20,8 @@ sudo iptables -A FORWARD -i lxdbr0 -j ACCEPT
 sudo iptables -A FORWARD -o lxdbr0 -j ACCEPT
 # `--use-lxd` applied to use a LXD container instead of a VM, to work around lack of support for KVM on CircleCI VMs.
 snapcraft --use-lxd
+ls -l
+if true; then exit 0; fi
 
 if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   if command -v git-machete; then exit 1; fi

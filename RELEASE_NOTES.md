@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.36.3
+
 ## New in git-machete 3.36.2
 
 - improved: formatting of the output of `git machete ... --help` and `git machete help ...`

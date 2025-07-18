@@ -9,10 +9,14 @@ description: |
   - Automatic discovery of branch relations (`git machete discover`)
 # This software is unlikely to be used outside of desktop machines.
 # Let's limit the number of target architectures to reduce the build times.
-architectures:
-  - amd64
-  - arm64
-base: core22
+platforms:
+  amd64:
+    build-on: [amd64]
+    build-for: [amd64]
+  arm64:
+    build-on: [amd64]
+    build-for: [arm64]
+base: core24
 # See https://forum.snapcraft.io/t/-/15566 for discussion on why classic confinement was necessary.
 confinement: classic
 grade: stable
