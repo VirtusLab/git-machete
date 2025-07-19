@@ -4,7 +4,7 @@ set -e -o pipefail -u -x
 
 sudo apt-get update
 sudo apt-get install -y snapd
-sudo snap install review-tools
+#sudo snap install review-tools
 sudo snap install snapcraft --classic
 
 sudo snap install lxd
