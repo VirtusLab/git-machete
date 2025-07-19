@@ -26,9 +26,11 @@ if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   fi
   sudo snap remove git-machete
 
-  snapcraft upload --release=edge git-machete*.snap
+  snapcraft upload --release=edge git-machete_*_amd64.snap
+  snapcraft upload --release=edge git-machete_*_arm64.snap
 else
   # Relying on SNAPCRAFT_STORE_CREDENTIALS, provided by the CI
-  snapcraft upload --release=stable git-machete*.snap
+  snapcraft upload --release=stable git-machete_*_amd64.snap
+  snapcraft upload --release=stable git-machete_*_arm64.snap
   snapcraft status git-machete
 fi
