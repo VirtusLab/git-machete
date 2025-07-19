@@ -2,9 +2,15 @@
 
 set -e -o pipefail -u -x
 
+# By default, CircleCi VM's terminal width and height equals 0 which causes `craft_cli/messages.py`, line 279 to exit with `ZeroDivisionError`.
+# The terminal width in `craft_cli/messages.py` is being retrieved by `shutil.get_terminal_size()` using `COLUMNS` env var on line 1365
+# from `https://github.com/python/cpython/blob/3.10/Lib/shutil.py`, which can be easily fixed by setting `COLUMNS` env var value to some positive number.
+# Reference to the issue: https://github.com/canonical/craft-cli/issues/85
+export COLUMNS=1
+
 sudo apt-get update
 sudo apt-get install -y snapd
-#sudo snap install review-tools
+sudo snap install review-tools
 sudo snap install snapcraft --classic
 
 sudo snap install lxd
@@ -18,7 +24,7 @@ ls -l -- *.snap
 
 if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   if command -v git-machete; then exit 1; fi
-  sudo snap install git-machete_*.snap --dangerous --classic
+  sudo snap install git-machete_*_amd64.snap --dangerous --classic
   git machete version
   if ! git machete completion bash | grep '#!.*bash'; then
     echo "shell completion is not available in runtime, aborting"
