@@ -14,7 +14,7 @@ platforms:
     build-on: [amd64]
     build-for: [amd64]
   arm64:
-    build-on: [amd64]
+    build-on: [arm64]
     build-for: [arm64]
 base: core24
 # See https://forum.snapcraft.io/t/-/15566 for discussion on why classic confinement was necessary.

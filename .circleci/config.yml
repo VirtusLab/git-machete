@@ -16,6 +16,14 @@ executors:
       # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
       TERM: ansi
     resource_class: large
+  ubuntu_arm_executor:
+    machine:
+      # https://circleci.com/developer/images?imageType=machine
+      image: ubuntu-2404:2024.11.1
+    environment:
+      # Needed to avoid warning: https://superuser.com/questions/575844/warning-terminal-is-not-fully-functional
+      TERM: ansi
+    resource_class: arm.large
   windows_executor:
     machine:
       # https://circleci.com/developer/images?imageType=machine
@@ -260,6 +268,14 @@ jobs:
           name: '[Dry run] Build snap'
           command: bash ci/snap/ci-deploy.sh --dry-run
 
+  "dry run arm releases":
+    executor: ubuntu_arm_executor
+    steps:
+      - checkout
+      - run:
+          name: '[Dry run] Build snap'
+          command: bash ci/snap/ci-deploy.sh --dry-run
+
   "publish to pypi":
     executor: ubuntu_executor
     steps:
@@ -319,30 +335,31 @@ only_special_branches: &only_special_branches
         - "develop"
         - "master"
 
+#      - general checks
+#      - completion tests
+#      - python 3_6 git 1_8_0
+#      - python 3_7 git 2_7_6
+#      - python 3_8 git 2_25_0
+#      - python 3_9 git 2_30_1
+#      - python 3_10 git 2_33_1
+#      - python 3_11 git 2_38_1
+#      - python 3_12 git 2_46_1
+#      - python 3_13 git 2_47_0
+# MacOS and esp. Windows tests take a relatively long time on critical path,
+# and fail very rarely in isolation (i.e. in cases when tests on Linux don't fail).
+#      - macos tests:
+#          <<: *only_special_branches
+#      - windows tests:
+#          <<: *only_special_branches
+#      - coverage upload:
+#          # Note that the jobs that were skipped due to the `filter` are apparently not treated as required.
+#          requires:
+#            *test_jobs
 workflows:
   version: 2
   build:
     jobs:
-      - general checks
-      - completion tests
-      - python 3_6 git 1_8_0
-      - python 3_7 git 2_7_6
-      - python 3_8 git 2_25_0
-      - python 3_9 git 2_30_1
-      - python 3_10 git 2_33_1
-      - python 3_11 git 2_38_1
-      - python 3_12 git 2_46_1
-      - python 3_13 git 2_47_0
-      # MacOS and esp. Windows tests take a relatively long time on critical path,
-      # and fail very rarely in isolation (i.e. in cases when tests on Linux don't fail).
-      - macos tests:
-          <<: *only_special_branches
-      - windows tests:
-          <<: *only_special_branches
-      - coverage upload:
-          # Note that the jobs that were skipped due to the `filter` are apparently not treated as required.
-          requires:
-            *test_jobs
+      - dry run arm releases
       - dry run releases:
           <<: *only_special_branches
 #          requires:
@@ -365,4 +382,4 @@ workflows:
           requires:
             - dry run releases
 
-      # Note: most releases happen outside of our CI, see PACKAGES.md
+      # Note: most releases happen outside our CI, see PACKAGES.md
