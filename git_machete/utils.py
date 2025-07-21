@@ -43,7 +43,7 @@ def flat_map(func: Callable[[T], List[T]], iterable: Iterable[T]) -> List[T]:
 
 
 def find_or_none(func: Callable[[T], bool], iterable: Iterable[T]) -> Optional[T]:
-    return next(filter(func, iterable), None)  # type: ignore [arg-type]
+    return next(filter(func, iterable), None)
 
 
 def map_truthy_only(func: Callable[[T], Optional[U]], iterable: Iterable[T]) -> List[U]:
