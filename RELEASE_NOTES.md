@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.36.3
 
+- added: release of git-machete snap to arm64 (requested by @jeff-scifin)
+
 ## New in git-machete 3.36.2
 
 - improved: formatting of the output of `git machete ... --help` and `git machete help ...`
