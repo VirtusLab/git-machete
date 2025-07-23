@@ -692,9 +692,6 @@ def launch(orig_args: List[str]) -> None:
             spec = GITHUB_CLIENT_SPEC if cmd == "github" else GITLAB_CLIENT_SPEC
             pr_or_mr = spec.pr_short_name.lower()
 
-            github_or_gitlab_client = MacheteClientWithCodeHosting(git, spec)
-            github_or_gitlab_client.read_branch_layout_file()
-
             if "request_id" in parsed_cli and subcommand != f"checkout-{pr_or_mr}s":
                 raise MacheteException(f"{spec.pr_short_name} number is only valid with `checkout-{pr_or_mr}s` subcommand.")
             for name, value in (("all", cli_opts.opt_all), ("mine", cli_opts.opt_mine)):
@@ -722,6 +719,9 @@ def launch(orig_args: List[str]) -> None:
                 raise MacheteException(f"`--with-urls` option is only valid with `anno-{pr_or_mr}s` subcommand.")
             if cli_opts.opt_yes and subcommand != f"create-{pr_or_mr}":
                 raise MacheteException(f"`--yes` option is only valid with `create-{pr_or_mr}` subcommand.")
+
+            github_or_gitlab_client = MacheteClientWithCodeHosting(git, spec)
+            github_or_gitlab_client.read_branch_layout_file()
 
             if subcommand == f"anno-{pr_or_mr}s":
                 github_or_gitlab_client.sync_annotations_to_prs(include_urls=cli_opts.opt_with_urls)
@@ -778,13 +778,13 @@ def launch(orig_args: List[str]) -> None:
             if branch is None or branch not in is_managed_client.managed_branches:
                 sys.exit(ExitCode.MACHETE_EXCEPTION)
         elif cmd == "list":
-            list_client = MacheteClient(git)
             category = parsed_cli.category
             if category == 'slidable-after' and not cli_opts.opt_branch:
                 raise MacheteException(f"`git machete list {category}` requires an extra <branch> argument")
             elif category != 'slidable-after' and cli_opts.opt_branch:
                 raise MacheteException(f"`git machete list {category}` does not expect extra arguments")
 
+            list_client = MacheteClient(git)
             list_client.read_branch_layout_file()
             res = []
             if category == "addable":
@@ -827,11 +827,11 @@ def launch(orig_args: List[str]) -> None:
                 branch=current_branch,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase)
         elif cmd == "show":
-            show_client = GoShowMacheteClient(git)
             direction = parsed_cli.direction
             if direction == "current" and cli_opts.opt_branch:
                 raise MacheteException('`show current` with a `<branch>` argument does not make sense')
             branch = cli_opts.opt_branch or git.get_current_branch()
+            show_client = GoShowMacheteClient(git)
             show_client.read_branch_layout_file(verify_branches=False)
             print('\n'.join(show_client.parse_direction(direction, branch=branch, allow_current=True, pick_if_multiple=False)))
         elif cmd == "slide-out":

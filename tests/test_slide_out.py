@@ -538,6 +538,7 @@ class TestSlideOut(BaseTest):
 
     @pytest.mark.parametrize('extra_arg', ['foo', '-d=foo', '--down-fork-point=foo', '-M', '--merge', '-n', '--no-interactive-rebase'])
     def test_slide_out_removed_from_remote_with_extra_args(self, extra_arg: str) -> None:
+        create_repo()
         assert_failure(
             ['slide-out', '--removed-from-remote', extra_arg],
             "Only --delete can be passed with --removed-from-remote",

@@ -261,6 +261,7 @@ class TestForkPoint(BaseTest):
         )
 
     def test_fork_point_for_non_existent_branch(self) -> None:
+        create_repo()
         assert_failure(
             ["fork-point", "no-such-branch"],
             "no-such-branch is not a local branch"

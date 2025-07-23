@@ -27,6 +27,7 @@ class TestEdit(BaseTest):
         assert read_file(".git/machete").strip() == "foo"
 
     def test_edit_git_machete_editor_not_valid_executable(self) -> None:
+        create_repo()
         with overridden_environment(GIT_MACHETE_EDITOR="lolxd-this-doesnt-exist"):
             assert_failure(["edit"], "'$GIT_MACHETE_EDITOR' (lolxd-this-doesnt-exist) is not available")
 

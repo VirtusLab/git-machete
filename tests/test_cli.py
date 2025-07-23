@@ -9,6 +9,7 @@ from git_machete.exceptions import ExitCode
 
 from .base_test import BaseTest
 from .mockers import launch_command_capturing_output_and_exception
+from .mockers_git_repository import create_repo
 
 
 class TestCLI(BaseTest):
@@ -23,6 +24,7 @@ class TestCLI(BaseTest):
         assert e.code == ExitCode.ARGUMENT_ERROR
 
     def test_main(self, mocker: MockerFixture) -> None:
+        create_repo()
         self.patch_symbol(mocker, "sys.argv", ["", "show", "current"])
         main()
 

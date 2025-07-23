@@ -24,7 +24,7 @@ from .mockers_git_repository import (add_file_and_commit, add_remote,
 class TestStatus(BaseTest):
 
     def test_branch_reappears_in_branch_layout(self) -> None:
-
+        create_repo()
         body: str = \
             """
             master
@@ -39,6 +39,7 @@ class TestStatus(BaseTest):
         assert_failure(['status'], expected_error_message)
 
     def test_indent_not_multiply_of_base_indent(self) -> None:
+        create_repo()
         body: str = \
             """
             master
@@ -52,6 +53,7 @@ class TestStatus(BaseTest):
         assert_failure(['status'], expected_error_message)
 
     def test_indent_too_deep(self) -> None:
+        create_repo()
         body: str = \
             """
             master
@@ -505,6 +507,7 @@ class TestStatus(BaseTest):
         assert_success(['status'], expected_status_output_exact)
 
     def test_status_invalid_squash_merge_detection(self) -> None:
+        create_repo()
         assert_failure(["status", "--squash-merge-detection=invalid"],
                        "Invalid value for --squash-merge-detection flag: invalid. Valid values are none, simple, exact")
         assert_failure(["status", "--squash-merge-detection=none", "--squash-merge-detection=invalid"],

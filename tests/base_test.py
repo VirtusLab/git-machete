@@ -1,10 +1,13 @@
 import os
+from tempfile import mkdtemp
 from typing import Any, Set
 
 from pytest_mock import MockerFixture
 
 
 class BaseTest:
+    empty_temp_dir = mkdtemp()
+
     def setup_method(self) -> None:
         self.expected_mock_methods: Set[str] = set()
         # So that env vars coming from outside don't interfere with the tests.
@@ -28,3 +31,7 @@ class BaseTest:
             raise Exception("Patched method has never been called: " + list(self.expected_mock_methods)[0])
         elif len(self.expected_mock_methods) > 1:
             raise Exception("Patched methods have never been called: " + ", ".join(self.expected_mock_methods))
+
+        # Chdir into an empty directory which is NOT a git repository.
+        # This way, no test can accidentally use a repository set up by a previous test.
+        os.chdir(BaseTest.empty_temp_dir)

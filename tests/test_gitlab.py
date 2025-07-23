@@ -16,7 +16,7 @@ from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
 from tests.mockers_code_hosting import mock_from_url, mock_shutil_which
 from tests.mockers_git_repository import (add_remote, check_out, commit,
-                                          create_repo_with_remote,
+                                          create_repo, create_repo_with_remote,
                                           delete_branch, new_branch, push,
                                           set_git_config_key,
                                           unset_git_config_key)
@@ -296,6 +296,7 @@ class TestGitLab(BaseTest):
         assert gitlab_token.value == 'glpat-mytoken_for_gitlab_com_from_glab_cli'
 
     def test_gitlab_invalid_flag_combinations(self) -> None:
+        create_repo()
         assert_failure(["gitlab", "anno-mrs", "--draft"],
                        "--draft option is only valid with create-mr subcommand.")
         assert_failure(["gitlab", "anno-mrs", "--mine"],
