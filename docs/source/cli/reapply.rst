@@ -25,5 +25,4 @@ but there is also dedicated ``squash`` command that achieves the same goal witho
 **Environment variables:**
 
 ``GIT_MACHETE_REBASE_OPTS``
-    Extra options to pass to the underlying ``git rebase`` invocation, space-separated.
-    Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete reapply``.
+    .. include:: env-vars/git_machete_rebase_opts.rst

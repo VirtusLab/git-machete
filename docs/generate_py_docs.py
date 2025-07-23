@@ -173,7 +173,7 @@ if __name__ == '__main__':
         with open(file, 'r') as f:
             rst = f.read()
         rst = resolve_includes(rst_=rst, docs_source_path_=docs_source_path)
-        plain_text = rst2txt(rst)
+        plain_text = rst2txt(rst).rstrip()
         output_text += f'    "{command}": """\n' + indent(plain_text, '        ') + '\n   """,\n'
         output_text = re.sub('\n{2,}', '\n\n', output_text)  # noqa: FS003
 

@@ -67,9 +67,8 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     Name of the editor used by ``git machete e[dit]``, example: ``vim`` or ``nano``.
 
 ``GIT_MACHETE_REBASE_OPTS``
-    Used to pass extra options to the underlying ``git rebase`` invocation (called by the executed command,
-    such as: ``reapply``, ``slide-out``, ``traverse``, ``update``).
-    Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update``.
+    .. include:: env-vars/git_machete_rebase_opts.rst
+    Used by commands such as ``reapply``, ``slide-out``, ``traverse`` and ``update``.
 
 ``GITHUB_TOKEN``
     Used to store GitHub API token. Used by commands such as ``anno --sync-github-prs`` and ``github``.

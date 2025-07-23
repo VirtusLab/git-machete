@@ -381,9 +381,10 @@ long_docs: Dict[str, str] = {
               Name of the editor used by `git machete e[dit]`, example: `vim` or `nano`.
 
            `GIT_MACHETE_REBASE_OPTS`
-              Used to pass extra options to the underlying `git rebase` invocation (called by the executed command,
-              such as: `reapply`, `slide-out`, `traverse`, `update`).
-              Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
+              Extra options to pass to the underlying `git rebase` invocations, space-separated.
+              Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete <command>`.
+
+              Used by commands such as `reapply`, `slide-out`, `traverse` and `update`.
 
            `GITHUB_TOKEN`
               Used to store GitHub API token. Used by commands such as `anno --sync-github-prs` and `github`.
@@ -1151,8 +1152,8 @@ long_docs: Dict[str, str] = {
         <b>Environment variables:</b>
 
            `GIT_MACHETE_REBASE_OPTS`
-              Extra options to pass to the underlying `git rebase` invocation, space-separated.
-              Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete reapply`.
+              Extra options to pass to the underlying `git rebase` invocations, space-separated.
+              Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete <command>`.
    """,
     "show": """
         <b>Usage:</b><b>
@@ -1269,7 +1270,7 @@ long_docs: Dict[str, str] = {
 
            `GIT_MACHETE_REBASE_OPTS`
               Extra options to pass to the underlying `git rebase` invocations, space-separated.
-              Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete slide-out`.
+              Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete <command>`.
    """,
     "squash": """
         <b>Usage:</b><b>
@@ -1596,7 +1597,7 @@ long_docs: Dict[str, str] = {
 
            `GIT_MACHETE_REBASE_OPTS`
               Extra options to pass to the underlying `git rebase` invocations, space-separated.
-              Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse`.
+              Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete <command>`.
    """,
     "update": """
         <b>Usage:</b><b>
@@ -1635,8 +1636,8 @@ long_docs: Dict[str, str] = {
         <b>Environment variables:</b>
 
            `GIT_MACHETE_REBASE_OPTS`
-              Extra options to pass to the underlying `git rebase` invocation, space-separated.
-              Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete update`.
+              Extra options to pass to the underlying `git rebase` invocations, space-separated.
+              Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete <command>`.
    """,
     "version": """
         <b>Usage:</b><b>

@@ -161,5 +161,4 @@ when the current user is NOT the author of the PR/MR associated with that branch
 **Environment variables:**
 
 ``GIT_MACHETE_REBASE_OPTS``
-    Extra options to pass to the underlying ``git rebase`` invocations, space-separated.
-    Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete traverse``.
+    .. include:: env-vars/git_machete_rebase_opts.rst

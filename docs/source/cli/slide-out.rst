@@ -86,5 +86,4 @@ See help for :ref:`traverse` for more details on the qualifiers.
 **Environment variables:**
 
 ``GIT_MACHETE_REBASE_OPTS``
-    Extra options to pass to the underlying ``git rebase`` invocations, space-separated.
-    Example: ``GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete slide-out``.
+    .. include:: env-vars/git_machete_rebase_opts.rst
