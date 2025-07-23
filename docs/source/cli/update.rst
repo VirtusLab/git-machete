@@ -8,7 +8,7 @@ update
 
     git machete update [-f|--fork-point=<fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]
 
-Synchronizes the current branch with its upstream (parent) branch either by rebase (default) or by merge (if ``--merge`` option passed).
+Synchronize the current branch with its upstream (parent) branch either by rebase (default) or by merge (if ``--merge`` option passed).
 
 If updating by rebase, interactively rebases the current branch on the top of its upstream (parent) branch.
 The chunk of the history to be rebased starts at the fork point of the current branch, which by default is inferred automatically,

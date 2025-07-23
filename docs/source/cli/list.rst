@@ -10,7 +10,7 @@ list
 
 where <category> is one of: ``addable``, ``childless``, ``managed``, ``slidable``, ``slidable-after <branch>``, ``unmanaged``, ``with-overridden-fork-point``.
 
-Lists all branches that fall into one of the specified categories:
+List all branches that fall into one of the specified categories:
 
 * ``addable``: all branches (local or remote) than can be added to the branch layout file,
 

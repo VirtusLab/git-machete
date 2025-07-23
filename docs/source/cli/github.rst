@@ -10,7 +10,7 @@ github
 
 where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``, ``retarget-pr``, ``restack-pr`` or ``update-pr-descriptions``.
 
-Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file.
+Create, check out and manage GitHub PRs while keeping them reflected in branch layout file.
 
 .. note::
 
@@ -44,7 +44,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 **Subcommands:**
 
 ``anno-prs [--with-urls]``:
-    Annotates the branches based on their corresponding GitHub PR numbers and authors.
+    Annotate the branches based on their corresponding GitHub PR numbers and authors.
     Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
     Equivalent to ``git machete anno --sync-github-prs``.
 
@@ -78,8 +78,8 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
     ``<PR-number-1> ... <PR-number-N>``    Pull request numbers to checkout.
 
 ``create-pr [--draft] [--title=<title>] [-U|--update-related-descriptions] [--yes]``:
-    Creates a PR for the current branch, using the upstream (parent) branch as the PR base.
-    Once the PR is successfully created, annotates the current branch with the new PR's number.
+    Create a PR for the current branch, using the upstream (parent) branch as the PR base.
+    Once the PR is successfully created, annotate the current branch with the new PR's number.
 
     If ``.git/info/milestone`` file is present, its contents (a single number --- milestone id) are used as milestone.
     If ``.git/info/reviewers`` file is present, its contents (one GitHub login per line) are used to set reviewers.
@@ -121,7 +121,7 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
                                        See help for ``git machete github update-pr-descriptions --related`` for details.
 
 ``retarget-pr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]``:
-    Sets the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
+    Set the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
     If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will include
     a generated section ("intro") listing the entire related chain of PRs.
@@ -140,15 +140,15 @@ Creates, checks out and manages GitHub PRs while keeping them reflected in branc
 ``sync``:
     **Deprecated.** Use ``github checkout-prs --mine``, ``delete-unmanaged`` and ``slide-out --removed-from-remote``.
 
-    Synchronizes with the remote repository:
+    Synchronize with the remote repository:
 
-    #. checks out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards,
+    #. check out open PRs for the current user associated with the GitHub token and also traverses the chain of pull requests upwards,
        adding branches one by one to git-machete and checks them out locally as well,
-    #. deletes unmanaged branches,
-    #. deletes untracked managed branches that have no downstream branch.
+    #. delete unmanaged branches,
+    #. delete untracked managed branches that have no downstream branch.
 
 ``update-pr-descriptions [--all | --by=<github-login> | --mine | --related]``:
-    Updates the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs
+    Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs
     (depending on ``machete.github.prDescriptionIntroStyle`` git config key).
 
     **Options:**

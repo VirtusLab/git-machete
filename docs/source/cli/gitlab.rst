@@ -10,7 +10,7 @@ gitlab
 
 where ``<subcommand>`` is one of: ``anno-mrs``, ``checkout-mrs``, ``create-mr``, ``retarget-mr``, ``restack-mr`` or ``update-mr-descriptions``.
 
-Creates, checks out and manages GitLab MRs while keeping them reflected in branch layout file.
+Create, check out and manage GitLab MRs while keeping them reflected in branch layout file.
 
 .. note::
 
@@ -43,7 +43,7 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
 **Subcommands:**
 
 ``anno-mrs [--with-urls]``:
-    Annotates the branches based on their corresponding GitLab MR numbers and authors.
+    Annotate the branches based on their corresponding GitLab MR numbers and authors.
     Any existing annotations are overwritten for the branches that have an opened MR; annotations for the other branches remain untouched.
     Equivalent to ``git machete anno --sync-gitlab-mrs``.
 
@@ -77,8 +77,8 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
     ``<MR-number-1> ... <MR-number-N>``    Merge request numbers to checkout.
 
 ``create-mr [--draft] [--title=<title>] [-U|--update-related-descriptions] [--yes]``:
-    Creates a MR for the current branch, using the upstream (parent) branch as the MR source branch.
-    Once the MR is successfully created, annotates the current branch with the new MR's number.
+    Create a MR for the current branch, using the upstream (parent) branch as the MR source branch.
+    Once the MR is successfully created, annotate the current branch with the new MR's number.
 
     If ``.git/info/milestone`` file is present, its contents (a single number --- milestone id) are used as milestone.
     Note that you need to use a global (not per-project) milestone id. Look for something like ``Milestone ID: 4489529`` on milestone web page.
@@ -122,7 +122,7 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
                                        See help for ``git machete gitlab update-mr-descriptions --related`` for details.
 
 ``retarget-mr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]``:
-    Sets the target of the current (or specified) branch's MR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
+    Set the target of the current (or specified) branch's MR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
     If after changing the base the MR ends up stacked atop another MR, the MR description posted to GitLab will include
     a generated section ("intro") listing the entire related chain of MRs.
@@ -139,7 +139,7 @@ Creates, checks out and manages GitLab MRs while keeping them reflected in branc
                                        See help for ``git machete gitlab update-mr-descriptions --related`` for details.
 
 ``update-mr-descriptions [--all | --by=<gitlab-login> | --mine | --related]``:
-    Updates the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs
+    Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs
     (depending on ``machete.gitlab.mrDescriptionIntroStyle`` git config key).
 
     **Options:**

@@ -1,4 +1,4 @@
-Controls the algorithm used to detect squash merges. Possible values are:
+Select the algorithm used to detect squash merges. Possible values are:
 
 * ``none``: Fastest mode, with no squash merge/rebase detection. Only *strict* (fast-forward or 2-parent) merges are detected.
 

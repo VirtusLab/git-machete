@@ -10,7 +10,7 @@ go
 
 where <direction> is one of: ``d[own]``, ``f[irst]``, ``l[ast]``, ``n[ext]``, ``p[rev]``, ``r[oot]``, ``u[p]``
 
-Checks out the branch specified by the given direction relative to the current branch:
+Check out the branch specified by the given direction relative to the current branch:
 
 * ``down``:    the direct children/downstream branch of the current branch.
 

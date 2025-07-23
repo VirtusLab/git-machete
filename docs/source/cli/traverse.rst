@@ -24,7 +24,7 @@ traverse
                            [-H|--sync-github-prs|-L|--sync-gitlab-mrs]
                            [-w|--whole] [-W] [-y|--yes]
 
-Traverses the branches in the order as they occur in branch layout file.
+Walk the branches in the order as they occur in branch layout file.
 By default, ``traverse`` starts from the current branch.
 This behavior can, however, be customized using options: ``--start-from=``, ``--whole`` or ``-w``, ``-W``.
 
@@ -125,17 +125,17 @@ when the current user is NOT the author of the PR/MR associated with that branch
 
 --push-untracked               Push untracked branches to remote.
 
---return-to=WHERE              Specifies the branch to return after traversal is successfully completed;
+--return-to=WHERE              Specify the branch to return after traversal is successfully completed;
                                WHERE can be ``here`` (the current branch at the moment when traversal starts), ``nearest-remaining``
                                (nearest remaining branch in case the ``here`` branch has been slid out by the traversal) or
                                ``stay`` (the default --- just stay wherever the traversal stops). Note: when user quits by ``q``/``yq``
                                or when traversal is stopped because one of git actions fails, the behavior is always ``stay``.
 
---squash-merge-detection=MODE  Specifies the mode for detection of rebase/squash merges (grey edges).
+--squash-merge-detection=MODE  Specify the mode for detection of rebase/squash merges (grey edges).
                                ``MODE`` can be ``none`` (fastest, no squash merges are detected), ``simple`` (default) or ``exact`` (slowest).
                                See the below paragraph on ``machete.squashMergeDetection`` git config key for more details.
 
---start-from=WHERE             Specifies the branch to start the traversal from; WHERE can be ``here``
+--start-from=WHERE             Specify the branch to start the traversal from; WHERE can be ``here``
                                (the default --- current branch, must be managed by git machete), ``root`` (root branch of the current branch,
                                as in ``git machete show root``) or ``first-root`` (first listed managed branch).
 

@@ -8,4 +8,4 @@ version
 
     git machete version
 
-Prints the version and exits.
+Print the version and exit.

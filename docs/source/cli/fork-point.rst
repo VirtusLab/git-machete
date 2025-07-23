@@ -62,7 +62,7 @@ Note: this piece of information is also displayed by ``git machete status --list
 With ``--override-to-inferred`` option, overrides fork point of ``<branch>`` to the result of ``git machete fork-point --inferred`` for ``<branch>``.
 Note: similarly to ``--override-to=<revision>``, this option is **deprecated**.
 
-With ``--unset-override``, the fork point override for ``<branch>`` is unset.
+With ``--unset-override``, unsets fork point override for ``<branch>``.
 This is simply done by removing the corresponding ``machete.overrideForkPoint.<branch>.to`` git config entry.
 
 

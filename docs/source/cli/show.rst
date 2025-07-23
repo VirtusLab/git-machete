@@ -11,7 +11,7 @@ show
 where <direction> is one of: ``c[urrent]``, ``d[own]``, ``f[irst]``, ``l[ast]``, ``n[ext]``, ``p[rev]``, ``r[oot]``, ``u[p]``
 displayed relative to given <branch>, or the current checked out branch if <branch> is unspecified.
 
-Outputs name of the branch (or possibly multiple branches, in case of ``down``) that is:
+Print name of the branch (or possibly multiple branches, in case of ``down``) that is:
 
 * ``current``: the current branch; exits with a non-zero status if none (detached HEAD)
 

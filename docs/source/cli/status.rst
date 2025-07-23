@@ -22,7 +22,7 @@ status
                          [-l|--list-commits] [-L|--list-commits-with-hashes]
                          [--squash-merge-detection=MODE]
 
-Displays a tree-shaped status of the branches listed in the branch layout file.
+Display a tree-shaped status of the branches listed in the branch layout file.
 
 Apart from simply ASCII-formatting the branch layout file, this also:
 

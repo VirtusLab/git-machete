@@ -11,7 +11,7 @@ slide-out
                           [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]
                           [<branch> [<branch> [<branch> ...]]]
 
-Removes the given branch (or multiple branches) from the branch layout.
+Remove the given branch (or multiple branches) from the branch layout.
 If no branch has been specified, current branch is slid out.
 If ``--removed-from-remote`` is specified, all branches that have been removed from the remote
 and do **not** have a child branch are slid out instead.
@@ -56,7 +56,7 @@ See help for :ref:`traverse` for more details on the qualifiers.
 
 **Options:**
 
--d, --down-fork-point=<down-fork-point-commit>    If updating by rebase, specifies the alternative fork point for downstream branches for the operation.
+-d, --down-fork-point=<down-fork-point-commit>    If updating by rebase, specify the alternative fork point for downstream branches for the operation.
                                                   ``git machete fork-point`` overrides for downstream branches are recommended over use of this option.
                                                   See also doc for ``--fork-point`` option in ``git machete help reapply`` and ``git machete help update``.
                                                   Not allowed if updating by merge.

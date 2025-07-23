@@ -18,4 +18,4 @@ Note: the branch in question does not need to occur in the branch layout file.
 
 -- <pass-through-arguments>    Arguments to pass directly to the underlying ``git diff``, for example ``git machete diff -- --name-only``.
 
--s, --stat                     Makes ``git machete diff`` pass ``--stat`` option to ``git diff``, so that only summary (diffstat) is printed.
+-s, --stat                     Make ``git machete diff`` pass ``--stat`` option to ``git diff``, so that only summary (diffstat) is printed.
