@@ -513,9 +513,9 @@ class TestGitLabCheckoutMRs(BaseTest):
             ["gitlab", "checkout-mrs", "--mine"],
             """
             Could not determine current user name, please check that the GitLab API token provided by one of the:
-            \t1. GITLAB_TOKEN environment variable
-            \t2. Content of the ~/.gitlab-token file
-            \t3. Current auth token from the glab GitLab CLI
+                1. GITLAB_TOKEN environment variable
+                2. Content of the ~/.gitlab-token file
+                3. Current auth token from the glab GitLab CLI
             is valid."""
         )
 

@@ -1,7 +1,7 @@
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
-                      fixed_author_and_committer_date_in_past, launch_command,
+                      fixed_author_and_committer_date_in_past,
                       overridden_environment, popen)
 from .mockers_git_repository import (check_out, commit, create_repo,
                                      get_current_commit_hash, new_branch)
@@ -50,16 +50,30 @@ class TestSquash(BaseTest):
 
     def test_squash_with_valid_fork_point(self) -> None:
         create_repo()
-        new_branch('branch-0')
-        commit("First commit.")
-        commit("Second commit.")
-        fork_point = get_current_commit_hash()
+        with fixed_author_and_committer_date_in_past():
+            new_branch('branch-0')
+            commit("First commit.")
+            commit("Second commit.")
+            fork_point = get_current_commit_hash()
 
-        with overridden_environment(GIT_AUTHOR_EMAIL="another@test.com"):
-            commit("Third commit.")
-        commit("Fourth commit.")
+            with overridden_environment(GIT_AUTHOR_EMAIL="another@test.com"):
+                commit("Third commit.")
+            commit("Fourth commit.")
 
-        launch_command('squash', '-f', fork_point)
+        with fixed_author_and_committer_date_in_past():
+            assert_success(
+                ['squash', '-f', fork_point],
+                """
+                Squashed 2 commits:
+
+                    f441f1b Third commit.
+                    85fbadf Fourth commit.
+
+                To restore the original pre-squash commit, run:
+
+                    git reset 85fbadfbf81551e6b7686e6fe2f44496847c76bf
+                """
+            )
 
         expected_branch_log = (
             "Third commit.\n"

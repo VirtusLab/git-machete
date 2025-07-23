@@ -440,10 +440,10 @@ GITHUB_CLIENT_SPEC = CodeHostingSpec(
     pr_short_name_article='a',
     repository_name='repository',
     token_providers_message=(
-        f'\n\t1. `{GITHUB_TOKEN_ENV_VAR}` environment variable\n'
-        '\t2. Content of the `~/.github-token` file\n'
-        '\t3. Current auth token from the `gh` GitHub CLI\n'
-        '\t4. Current auth token from the `hub` GitHub CLI\n'
+        f'\n    1. `{GITHUB_TOKEN_ENV_VAR}` environment variable\n'
+        '    2. Content of the `~/.github-token` file\n'
+        '    3. Current auth token from the `gh` GitHub CLI\n'
+        '    4. Current auth token from the `hub` GitHub CLI\n'
     ),
     git_config_keys=CodeHostingGitConfigKeys(
         domain='machete.github.domain',

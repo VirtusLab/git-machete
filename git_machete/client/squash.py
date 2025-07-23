@@ -56,9 +56,9 @@ class SquashMacheteClient(MacheteClient):
         print(f"Squashed {len(commits)} commits:")
         print()
         for commit in commits:
-            print(f"\t{commit.short_hash} {commit.subject}")
+            print(f"    {commit.short_hash} {commit.subject}")
 
         print()
         print("To restore the original pre-squash commit, run:")
         print()
-        print(fmt(f"\t`git reset {commits[-1].hash}`"))
+        print(fmt(f"    `git reset {commits[-1].hash}`"))

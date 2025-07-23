@@ -350,9 +350,9 @@ GITLAB_CLIENT_SPEC = CodeHostingSpec(
     pr_short_name_article='an',
     repository_name='project',
     token_providers_message=(
-        f'\n\t1. `{GITLAB_TOKEN_ENV_VAR}` environment variable\n'
-        '\t2. Content of the `~/.gitlab-token` file\n'
-        '\t3. Current auth token from the `glab` GitLab CLI\n'
+        f'\n    1. `{GITLAB_TOKEN_ENV_VAR}` environment variable\n'
+        '    2. Content of the `~/.gitlab-token` file\n'
+        '    3. Current auth token from the `glab` GitLab CLI\n'
     ),
     git_config_keys=CodeHostingGitConfigKeys(
         domain='machete.gitlab.domain',

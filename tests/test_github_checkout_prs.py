@@ -512,10 +512,10 @@ class TestGitHubCheckoutPRs(BaseTest):
             ["github", "checkout-prs", "--mine"],
             """
             Could not determine current user name, please check that the GitHub API token provided by one of the:
-            \t1. GITHUB_TOKEN environment variable
-            \t2. Content of the ~/.github-token file
-            \t3. Current auth token from the gh GitHub CLI
-            \t4. Current auth token from the hub GitHub CLI
+                1. GITHUB_TOKEN environment variable
+                2. Content of the ~/.github-token file
+                3. Current auth token from the gh GitHub CLI
+                4. Current auth token from the hub GitHub CLI
             is valid."""
         )
 
