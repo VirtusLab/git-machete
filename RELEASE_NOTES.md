@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.36.4
+
 ## New in git-machete 3.36.3
 
 - added: release of git-machete snap to arm64 (requested by @jeff-scifin)

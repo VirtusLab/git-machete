@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Jul 21, 2025" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Jul 23, 2025" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.36.3
+git-machete \- git-machete 3.36.4
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -509,9 +509,10 @@ set \fBgit config machete.worktree.useTopLevelMacheteFile false\fP\&.
 Name of the editor used by \fBgit machete e[dit]\fP, example: \fBvim\fP or \fBnano\fP\&.
 .TP
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
-Used to pass extra options to the underlying \fBgit rebase\fP invocation (called by the executed command,
-such as: \fBreapply\fP, \fBslide\-out\fP, \fBtraverse\fP, \fBupdate\fP).
-Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete update\fP\&.
+Extra options to pass to the underlying \fBgit rebase\fP invocations, space\-separated.
+Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete <command>\fP\&.
+.sp
+Used by commands such as \fBreapply\fP, \fBslide\-out\fP, \fBtraverse\fP and \fBupdate\fP\&.
 .TP
 .B \fBGITHUB_TOKEN\fP
 Used to store GitHub API token. Used by commands such as \fBanno \-\-sync\-github\-prs\fP and \fBgithub\fP\&.
@@ -1688,8 +1689,8 @@ Specifies the alternative fork point commit after which the rebased part of hist
 .INDENT 0.0
 .TP
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
-Extra options to pass to the underlying \fBgit rebase\fP invocation, space\-separated.
-Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete reapply\fP\&.
+Extra options to pass to the underlying \fBgit rebase\fP invocations, space\-separated.
+Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete <command>\fP\&.
 .UNINDENT
 .SH SHOW
 .sp
@@ -1850,7 +1851,7 @@ those that have at least one downstream (child) branch.
 .TP
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
 Extra options to pass to the underlying \fBgit rebase\fP invocations, space\-separated.
-Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete slide\-out\fP\&.
+Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete <command>\fP\&.
 .UNINDENT
 .SH SQUASH
 .sp
@@ -2264,7 +2265,7 @@ Configuration key value can be overridden by the presence of the \fB\-\-push\fP 
 .TP
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
 Extra options to pass to the underlying \fBgit rebase\fP invocations, space\-separated.
-Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete traverse\fP\&.
+Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete <command>\fP\&.
 .UNINDENT
 .SH UPDATE
 .sp
@@ -2314,8 +2315,8 @@ Not allowed if updating by merge.
 .INDENT 0.0
 .TP
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
-Extra options to pass to the underlying \fBgit rebase\fP invocation, space\-separated.
-Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete update\fP\&.
+Extra options to pass to the underlying \fBgit rebase\fP invocations, space\-separated.
+Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete <command>\fP\&.
 .UNINDENT
 .SH VERSION
 .sp
