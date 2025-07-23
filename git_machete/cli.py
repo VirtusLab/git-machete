@@ -164,105 +164,65 @@ def create_cli_parser() -> argparse.ArgumentParser:
             else:
                 super().error(message)
 
-    cli_parser: argparse.ArgumentParser = CustomArgumentParser(prog='git machete',
-                                                               argument_default=argparse.SUPPRESS,
-                                                               add_help=False,
-                                                               parents=[common_args_parser])
+    cli_parser: argparse.ArgumentParser = CustomArgumentParser(
+        prog='git machete',
+        argument_default=argparse.SUPPRESS,
+        add_help=False,
+        parents=[common_args_parser])
 
     subparsers = cli_parser.add_subparsers(dest='command')
 
-    add_parser = subparsers.add_parser(
-        'add',
-        argument_default=argparse.SUPPRESS,
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    def create_subparser(command: str, alias: Optional[str] = None) -> argparse.ArgumentParser:
+        return subparsers.add_parser(
+            command,
+            aliases=[alias] if alias else [],
+            argument_default=argparse.SUPPRESS,
+            usage=argparse.SUPPRESS,
+            add_help=False,
+            parents=[common_args_parser])
+
+    add_parser = create_subparser('add')
     add_parser.add_argument('branch', nargs='?')
     add_parser.add_argument('-f', '--as-first-child', action='store_true')
     add_parser.add_argument('-o', '--onto')
     add_parser.add_argument('-R', '--as-root', action='store_true')
     add_parser.add_argument('-y', '--yes', action='store_true')
 
-    advance_parser = subparsers.add_parser(
-        'advance',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
-    advance_parser.add_argument('-y', '--yes', action='store_true', default=argparse.SUPPRESS)
+    advance_parser = create_subparser('advance')
+    advance_parser.add_argument('-y', '--yes', action='store_true')
 
-    anno_parser = subparsers.add_parser(
-        'anno',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    anno_parser = create_subparser('anno')
     # possible values of 'annotation_text' include: [], [''], ['some_val'], ['text_1', 'text_2']
     anno_parser.add_argument('annotation_text', nargs='*')
-    anno_parser.add_argument('-b', '--branch', default=argparse.SUPPRESS)
-    anno_parser.add_argument('-H', '--sync-github-prs', action='store_true', default=argparse.SUPPRESS)
-    anno_parser.add_argument('-L', '--sync-gitlab-mrs', action='store_true', default=argparse.SUPPRESS)
+    anno_parser.add_argument('-b', '--branch')
+    anno_parser.add_argument('-H', '--sync-github-prs', action='store_true')
+    anno_parser.add_argument('-L', '--sync-gitlab-mrs', action='store_true')
 
-    clean_parser = subparsers.add_parser(
-        'clean',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
-    clean_parser.add_argument('-H', '--checkout-my-github-prs', action='store_true', default=argparse.SUPPRESS)
-    clean_parser.add_argument('-y', '--yes', action='store_true', default=argparse.SUPPRESS)
+    clean_parser = create_subparser('clean')
+    clean_parser.add_argument('-H', '--checkout-my-github-prs', action='store_true')
+    clean_parser.add_argument('-y', '--yes', action='store_true')
 
-    completion_parser = subparsers.add_parser(
-        'completion',
-        argument_default=argparse.SUPPRESS,
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    completion_parser = create_subparser('completion')
     completion_parser.add_argument('shell', choices=['bash', 'fish', 'zsh'])
 
-    delete_unmanaged_parser = subparsers.add_parser(
-        'delete-unmanaged',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
-    delete_unmanaged_parser.add_argument('-y', '--yes', action='store_true', default=argparse.SUPPRESS)
+    delete_unmanaged_parser = create_subparser('delete-unmanaged')
+    delete_unmanaged_parser.add_argument('-y', '--yes', action='store_true')
 
-    diff_full_parser = subparsers.add_parser(
-        'diff',
-        aliases=['d'],
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    diff_full_parser = create_subparser('diff', alias='d')
     diff_full_parser.add_argument('branch', nargs='?')
-    diff_full_parser.add_argument('-s', '--stat', action='store_true', default=argparse.SUPPRESS)
+    diff_full_parser.add_argument('-s', '--stat', action='store_true')
 
-    discover_parser = subparsers.add_parser(
-        'discover',
-        argument_default=argparse.SUPPRESS,
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    discover_parser = create_subparser('discover')
     discover_parser.add_argument('-C', '--checked-out-since')
     discover_parser.add_argument('-l', '--list-commits', action='store_true')
     discover_parser.add_argument('-r', '--roots')
     discover_parser.add_argument('-y', '--yes', action='store_true')
 
-    subparsers.add_parser(
-        'edit',
-        aliases=['e'],
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    create_subparser('edit', alias='e')
 
-    subparsers.add_parser(
-        'file',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    create_subparser('file')
 
-    fork_point_parser = subparsers.add_parser(
-        'fork-point',
-        argument_default=argparse.SUPPRESS,
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    fork_point_parser = create_subparser('fork-point')
     fork_point_parser.add_argument('branch', nargs='?')
     fork_point_exclusive_optional_args = fork_point_parser.add_mutually_exclusive_group()
     fork_point_exclusive_optional_args.add_argument('--inferred', action='store_true')
@@ -272,12 +232,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     fork_point_exclusive_optional_args.add_argument('--unset-override', action='store_true')
 
     def add_code_hosting_parser(command: str, pr_or_mr: str, include_sync: bool) -> Any:
-        parser = subparsers.add_parser(
-            command,
-            argument_default=argparse.SUPPRESS,
-            usage=argparse.SUPPRESS,
-            add_help=False,
-            parents=[common_args_parser])
+        parser = create_subparser(command)
         parser.add_argument('subcommand', metavar=f'{command} subcommand', choices=[
             f'anno-{pr_or_mr}s',
             f'checkout-{pr_or_mr}s',
@@ -302,76 +257,41 @@ def create_cli_parser() -> argparse.ArgumentParser:
     add_code_hosting_parser('github', 'pr', include_sync=True)
     add_code_hosting_parser('gitlab', 'mr', include_sync=False)
 
-    go_parser = subparsers.add_parser(
-        'go',
-        aliases=['g'],
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    go_parser = create_subparser('go', alias='g')
     go_parser.add_argument('direction', metavar='go direction', choices=[
         'd', 'down', 'f', 'first', 'l', 'last', 'n', 'next',
         'p', 'prev', 'r', 'root', 'u', 'up']
     )
 
-    help_parser = subparsers.add_parser(
-        'help',
-        add_help=False,
-        usage=argparse.SUPPRESS,
-        parents=[common_args_parser])
-    help_parser.add_argument('topic_or_cmd', nargs='?', choices=commands_and_aliases)
+    help_parser = create_subparser('help')
+    help_parser.add_argument('topic_or_cmd', nargs='?', choices=commands_and_aliases, default=None)
 
-    is_managed_parser = subparsers.add_parser(
-        'is-managed',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    is_managed_parser = create_subparser('is-managed')
     is_managed_parser.add_argument('branch', nargs='?')
 
-    list_parser = subparsers.add_parser(
-        'list',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    list_parser = create_subparser('list')
     list_parser.add_argument(
         'category',
         choices=[
             'addable', 'childless', 'managed', 'slidable', 'slidable-after', 'unmanaged',
             'with-overridden-fork-point']
     )
-    list_parser.add_argument('branch', nargs='?', default=argparse.SUPPRESS)
+    list_parser.add_argument('branch', nargs='?')
 
-    log_parser = subparsers.add_parser(
-        'log',
-        aliases=['l'],
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
-    log_parser.add_argument('branch', nargs='?', default=argparse.SUPPRESS)
+    log_parser = create_subparser('log', alias='l')
+    log_parser.add_argument('branch', nargs='?')
 
-    reapply_parser = subparsers.add_parser(
-        'reapply',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
-    reapply_parser.add_argument('-f', '--fork-point', default=argparse.SUPPRESS)
+    reapply_parser = create_subparser('reapply')
+    reapply_parser.add_argument('-f', '--fork-point')
 
-    show_parser = subparsers.add_parser(
-        'show',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    show_parser = create_subparser('show')
     show_parser.add_argument('direction', metavar='show direction', choices=[
         'c', 'current', 'd', 'down', 'f', 'first', 'l', 'last',
         'n', 'next', 'p', 'prev', 'r', 'root', 'u', 'up']
     )
-    show_parser.add_argument('branch', nargs='?', default=argparse.SUPPRESS)
+    show_parser.add_argument('branch', nargs='?')
 
-    slide_out_parser = subparsers.add_parser(
-        'slide-out',
-        argument_default=argparse.SUPPRESS,
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    slide_out_parser = create_subparser('slide-out')
     slide_out_parser.add_argument('branches', nargs='*')
     slide_out_parser.add_argument('-d', '--down-fork-point')
     slide_out_parser.add_argument('--delete', action='store_true')
@@ -381,33 +301,17 @@ def create_cli_parser() -> argparse.ArgumentParser:
     slide_out_parser.add_argument('--no-interactive-rebase', action='store_true')
     slide_out_parser.add_argument('--removed-from-remote', action='store_true')
 
-    squash_parser = subparsers.add_parser(
-        'squash',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
-    squash_parser.add_argument('-f', '--fork-point', default=argparse.SUPPRESS)
+    squash_parser = create_subparser('squash')
+    squash_parser.add_argument('-f', '--fork-point')
 
-    status_parser = subparsers.add_parser(
-        'status',
-        aliases=['s'],
-        argument_default=argparse.SUPPRESS,
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    status_parser = create_subparser('status', alias='s')
     status_parser.add_argument('--color', choices=['always', 'auto', 'never'], default='auto')
     status_parser.add_argument('-l', '--list-commits', action='store_true')
     status_parser.add_argument('-L', '--list-commits-with-hashes', action='store_true')
     status_parser.add_argument('--no-detect-squash-merges', action='store_true')
     status_parser.add_argument('--squash-merge-detection')
 
-    traverse_parser = subparsers.add_parser(
-        'traverse',
-        aliases=['t'],
-        argument_default=argparse.SUPPRESS,
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    traverse_parser = create_subparser('traverse', alias='t')
     traverse_parser.add_argument('-F', '--fetch', action='store_true')
     traverse_parser.add_argument('-H', '--sync-github-prs', action='store_true')
     traverse_parser.add_argument('-l', '--list-commits', action='store_true')
@@ -428,23 +332,14 @@ def create_cli_parser() -> argparse.ArgumentParser:
     traverse_parser.add_argument('-w', '--whole', action='store_true')
     traverse_parser.add_argument('-y', '--yes', action='store_true')
 
-    update_parser = subparsers.add_parser(
-        'update',
-        argument_default=argparse.SUPPRESS,
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    update_parser = create_subparser('update')
     update_parser.add_argument('-f', '--fork-point')
     update_parser.add_argument('-M', '--merge', action='store_true')
     update_parser.add_argument('-n', action='store_true')
     update_parser.add_argument('--no-edit-merge', action='store_true')
     update_parser.add_argument('--no-interactive-rebase', action='store_true')
 
-    subparsers.add_parser(
-        'version',
-        usage=argparse.SUPPRESS,
-        add_help=False,
-        parents=[common_args_parser])
+    create_subparser('version')
 
     return cli_parser
 
@@ -696,7 +591,7 @@ def launch(orig_args: List[str]) -> None:
             else:
                 branch = cli_opts.opt_branch or git.get_current_branch()
                 anno_client.expect_in_managed_branches(branch)
-                if parsed_cli.annotation_text:
+                if 'annotation_text' in parsed_cli:
                     anno_client.annotate(branch, parsed_cli.annotation_text)
                 else:
                     anno_client.print_annotation(branch)
