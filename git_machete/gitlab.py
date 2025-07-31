@@ -341,7 +341,7 @@ GITLAB_CLIENT_SPEC = CodeHostingSpec(
     # Actual MR template resolution for GitLab has a complex hierarchy of templates, including
     # project-level, group-level and instance-level templates - and also the ability to "choose" a template.
     # To keep things simple, we'll only support the "Default.md" template for now.
-    pr_description_path=['.gitlab', 'merge_request_templates', 'Default.md'],
+    pr_description_paths=[['.gitlab', 'merge_request_templates', 'Default.md']],
     pr_full_name='merge request',
     pr_intro_br_before_branches=True,
     pr_intro_explicit_title=True,

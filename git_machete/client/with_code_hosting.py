@@ -16,8 +16,9 @@ from git_machete.git_operations import (GitContext, GitFormatPatterns,
                                         GitLogEntry, LocalBranchShortName,
                                         RemoteBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (bold, debug, fmt, get_pretty_choices,
-                               get_right_arrow, warn)
+from git_machete.utils import (bold, debug, find_or_none, fmt,
+                               get_pretty_choices, get_right_arrow, slurp_file,
+                               warn)
 
 
 class PRDescriptionIntroStyle(ParsableEnum):
@@ -296,7 +297,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
         if opt_title:
             title = opt_title
         elif is_pr_title_file:
-            title = utils.slurp_file(pr_title_file_path)
+            title = slurp_file(pr_title_file_path)
         else:
             # git-machete can still see an empty range of unique commits (e.g. in case of yellow edge)
             # even though code hosting may see a non-empty range.
@@ -309,13 +310,15 @@ class MacheteClientWithCodeHosting(MacheteClient):
             description = self._git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
         else:
             machete_description_path = self._git.get_main_git_subpath('info', 'description')
-            pr_description_path = os.path.join(self._git.get_root_dir(), *spec.pr_description_path)
             if os.path.isfile(machete_description_path):
-                description = utils.slurp_file(machete_description_path)
-            elif os.path.isfile(pr_description_path):
-                description = utils.slurp_file(pr_description_path)
+                description = slurp_file(machete_description_path)
             else:
-                description = self._git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
+                code_hosting_description_paths = [os.path.join(self._git.get_root_dir(), *path) for path in spec.pr_description_paths]
+                existing = find_or_none(os.path.isfile, code_hosting_description_paths)
+                if existing:
+                    description = slurp_file(existing)
+                else:
+                    description = self._git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
 
         ok_str = '<green><b>OK</b></green>'
         print(f'Creating a {"draft " if opt_draft else ""}{spec.pr_short_name} from {bold(head)} to {bold(base)}... ', end='', flush=True)
@@ -341,7 +344,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
 
         milestone_path: str = self._git.get_main_git_subpath('info', 'milestone')
         if os.path.isfile(milestone_path):
-            milestone = utils.slurp_file(milestone_path).strip()
+            milestone = slurp_file(milestone_path).strip()
         else:
             milestone = None
         if milestone:
@@ -356,7 +359,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
 
         reviewers_path = self._git.get_main_git_subpath('info', 'reviewers')
         if os.path.isfile(reviewers_path):
-            reviewers = utils.get_non_empty_lines(utils.slurp_file(reviewers_path))
+            reviewers = utils.get_non_empty_lines(slurp_file(reviewers_path))
         else:
             reviewers = []
         if reviewers:

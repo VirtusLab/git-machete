@@ -171,7 +171,7 @@ class CodeHostingSpec(NamedTuple):
     git_machete_command: str
     head_branch_name: str
     organization_name: str
-    pr_description_path: List[str]
+    pr_description_paths: List[List[str]]
     pr_full_name: str
     pr_intro_br_before_branches: bool
     pr_intro_explicit_title: bool

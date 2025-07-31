@@ -12,7 +12,7 @@ from . import utils
 from .constants import MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
 from .exceptions import UnderlyingGitException, UnexpectedMacheteException
 from .utils import (AnsiEscapeCodes, CommandResult, colored, debug, fmt,
-                    hex_repr)
+                    hex_repr, slurp_file)
 
 
 class AnyRevision(str):
@@ -725,9 +725,8 @@ class GitContext:
         bisect_start_file = self.get_worktree_git_subpath("BISECT_START")
         if not os.path.exists(bisect_start_file):
             return None
-        with open(bisect_start_file, "r") as f:
-            raw = f.read().strip()
-            return LocalBranchShortName.of(raw)
+        branch = slurp_file(bisect_start_file).strip()
+        return LocalBranchShortName.of(branch)
 
     # Note: while rebase is ongoing, the repository is always in a detached HEAD state,
     # so we need to extract the name of the currently rebased branch from the rebase-specific internals
@@ -751,9 +750,8 @@ class GitContext:
 
         if not head_name_file:
             return None
-        with open(head_name_file) as f:
-            raw = f.read().strip()
-            return LocalBranchFullName.of(raw).to_short_name()
+        head_name = slurp_file(head_name_file).strip()
+        return LocalBranchFullName.of(head_name).to_short_name()
 
     def get_currently_checked_out_branch_or_none(self) -> Optional[LocalBranchShortName]:
         try:

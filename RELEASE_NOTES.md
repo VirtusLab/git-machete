@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.36.4
 
+- improved: more GitHub PR description template files are recognized (like `.github/PULL_REQUEST_TEMPLATE.md` or `docs/pull_request_template.md`)
+
 ## New in git-machete 3.36.3
 
 - added: release of git-machete snap to arm64 (requested by @jeff-scifin)

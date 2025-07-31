@@ -431,7 +431,14 @@ GITHUB_CLIENT_SPEC = CodeHostingSpec(
     head_branch_name='head',
     organization_name='organization',
     # https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
-    pr_description_path=['.github', 'pull_request_template.md'],
+    pr_description_paths=[
+        ['.github', 'pull_request_template.md'],
+        ['.github', 'PULL_REQUEST_TEMPLATE.md'],
+        ['docs', 'pull_request_template.md'],
+        ['docs', 'PULL_REQUEST_TEMPLATE.md'],
+        ['pull_request_template.md'],
+        ['PULL_REQUEST_TEMPLATE.md'],
+    ],
     pr_full_name='pull request',
     pr_intro_br_before_branches=False,
     pr_intro_explicit_title=False,

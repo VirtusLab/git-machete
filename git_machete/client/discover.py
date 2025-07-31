@@ -1,5 +1,4 @@
 import datetime
-import io
 import itertools
 import os
 from typing import List, Optional, Tuple
@@ -9,7 +8,7 @@ from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import LocalBranchShortName
 from git_machete.utils import (bold, debug, excluding, get_pretty_choices,
-                               tupled, warn)
+                               slurp_file, tupled, warn)
 
 
 class DiscoverMacheteClient(MacheteClient):
@@ -133,7 +132,7 @@ class DiscoverMacheteClient(MacheteClient):
             opt_list_commits_with_hashes=False,
             opt_squash_merge_detection=SquashMergeDetection.NONE)
         print("")
-        do_backup = os.path.isfile(self._branch_layout_file_path) and io.open(self._branch_layout_file_path).read().strip()
+        do_backup = os.path.isfile(self._branch_layout_file_path) and slurp_file(self._branch_layout_file_path).strip()
         backup_msg = (
             f"\nThe existing branch layout file will be backed up as {self._branch_layout_file_path}~"
             if do_backup else "")

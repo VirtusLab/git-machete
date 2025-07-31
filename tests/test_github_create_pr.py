@@ -424,7 +424,7 @@ class TestGitHubCreatePR(BaseTest):
             <!-- end git-machete generated -->
         ''')[1:]
 
-        write_to_file(".github/pull_request_template.md", "# PR title\n## Summary\n## Test plan\n")
+        write_to_file("PULL_REQUEST_TEMPLATE.md", "# PR title\n## Summary\n## Test plan\n")
         check_out("drop-constraint")
         launch_command("github", "create-pr", "--yes")
         pr = github_api_state.get_pull_by_number(4)
