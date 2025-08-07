@@ -684,10 +684,11 @@ class GitContext:
                 raise UnexpectedMacheteException(
                     f"`git reflog` did not return exactly 3 values: `{values}` ({hex_repr(entry)})")
             selector, hash, subject = values
-            branch_and_index = selector.split("@")
+            # Let's split just on the rightmost `@` in case the branch name contains a `@`
+            branch_and_index = selector.rsplit("@", 1)
             if len(branch_and_index) != 2:
                 raise UnexpectedMacheteException(
-                    f"`git reflog` did not return exactly 2 values: `{values}` ({hex_repr(entry)})")
+                    f"`branch@index` from `git reflog` did not rsplit into exactly 2 values: `{branch_and_index}` ({hex_repr(entry)})")
             branch, _ = branch_and_index
             any_branch_name = AnyBranchName.of(branch)
             if any_branch_name not in self.__reflogs_cached:

@@ -187,3 +187,13 @@ class TestGitOperations(BaseTest):
         # If the bug reported in GitHub issue #1286 is not fixed, this method call
         # should raise an UnexpectedMacheteException.
         git.get_reflog(AnyBranchName.of("feature"))
+
+    def test_get_reflog_for_branch_with_at_sign(self) -> None:
+        create_repo()
+        new_branch("feature@foo")
+        commit("feature commit")
+
+        git = GitContext()
+        # If the bug reported in GitHub issue #1481 is not fixed, this method call
+        # should raise an UnexpectedMacheteException.
+        git.get_reflog(AnyBranchName.of("feature@foo"))

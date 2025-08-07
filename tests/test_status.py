@@ -735,17 +735,18 @@ class TestStatus(BaseTest):
         create_repo()
         new_branch("master")
         commit()
-        new_branch("develop")
+        # Let's also see how a branch with `@` in its name is handled in various context (issue #1481).
+        new_branch("develop@foo")
         add_file_and_commit("1.txt", "some-content")
         check_out("master")
         new_branch("feature")
         add_file_and_commit("1.txt", "some-other-content")
-        check_out("develop")
+        check_out("develop@foo")
 
         body: str = \
             """
             master
-                develop
+                develop@foo
             """
         rewrite_branch_layout_file(body)
 
@@ -759,7 +760,7 @@ class TestStatus(BaseTest):
             master
             |
             | Some commit message.
-            o-GIT AM IN PROGRESS develop *
+            o-GIT AM IN PROGRESS develop@foo *
             """
         )
         assert_success(['status', '-l'], expected_status_output)
@@ -775,7 +776,7 @@ class TestStatus(BaseTest):
             master
             |
             | Some commit message.
-            o-CHERRY-PICKING develop *
+            o-CHERRY-PICKING develop@foo *
             """
         )
         assert_success(['status', '-l'], expected_status_output)
@@ -791,7 +792,7 @@ class TestStatus(BaseTest):
             master
             |
             | Some commit message.
-            o-MERGING develop *
+            o-MERGING develop@foo *
             """
         )
         assert_success(['status', '-l'], expected_status_output)
@@ -807,7 +808,7 @@ class TestStatus(BaseTest):
             master
             |
             | Some commit message.
-            o-REVERTING develop *
+            o-REVERTING develop@foo *
             """
         )
         assert_success(['status', '-l'], expected_status_output)
@@ -829,7 +830,7 @@ class TestStatus(BaseTest):
             | Some commit message.
             | Another commit message.
             | Yet another commit message.
-            o-BISECTING develop *
+            o-BISECTING develop@foo *
             """
         )
         assert_success(['status', '-l'], expected_status_output)
