@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.36.5
+
 ## New in git-machete 3.36.4
 
 - fixed: git-machete no longer crashing when branch name contains a `@` (reported by @brandtdaniels)
