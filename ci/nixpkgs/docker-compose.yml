@@ -1,6 +1,6 @@
 services:
-  nixpkgs-build:
-    image: gitmachete/ci-nixpkgs-build:${DIRECTORY_HASH:-unspecified}
+  nixpkgs:
+    image: gitmachete/ci-nixpkgs:${DIRECTORY_HASH:-unspecified}
     platform: linux/amd64
     build:
       context: build-context

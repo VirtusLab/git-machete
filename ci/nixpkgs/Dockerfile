@@ -1,4 +1,4 @@
-FROM nixos/nix:2.5.1
+FROM nixos/nix
 
 RUN nix-env -i bash curl git gnused
 SHELL ["bash", "-e", "-o", "pipefail", "-u", "-x", "-c"]

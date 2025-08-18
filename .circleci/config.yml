@@ -248,13 +248,13 @@ jobs:
       - run:
           name: '[Dry run] Build Arch Linux package'
           # Side effects: potentially pushes a regenerated Docker image
-          command: bash ci/aur/ci-run.sh --dry-run
+          command: bash ci/aur/ci-run.sh
 
       - run:
           name: '[Dry run] Build Nix package'
           # Side effects: potentially pushes a regenerated Docker image
           # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
-          command: bash ci/nixpkgs-build/ci-run.sh
+          command: bash ci/nixpkgs/ci-run.sh
 
       - run:
           name: '[Dry run] Build snap'
