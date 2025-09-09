@@ -3,7 +3,7 @@
 set -e -o pipefail -u
 
 git clone https://aur.archlinux.org/git-machete.git
-cd git-machete/
+cd git-machete
 
 sed -i "s/pkgver=.*/pkgver=$GIT_REVISION/" PKGBUILD
 url=https://github.com/VirtusLab/git-machete/archive/$GIT_REVISION.tar.gz
