@@ -1,16 +1,16 @@
 # git-machete
 
-[![homebrew formula](https://img.shields.io/homebrew/v/git-machete)](https://formulae.brew.sh/formula/git-machete)
-[![homebrew formula monthly downloads](https://img.shields.io/homebrew/installs/dm/git-machete.svg)](https://formulae.brew.sh/formula/git-machete)
 [![PyPI package](https://img.shields.io/pypi/v/git-machete.svg)](https://pypi.org/project/git-machete)
 [![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg)](https://pypistats.org/packages/git-machete)
 [![Conda package](https://img.shields.io/conda/vn/conda-forge/git-machete.svg)](https://anaconda.org/conda-forge/git-machete)
 [![Conda downloads](https://img.shields.io/conda/dn/conda-forge/git-machete.svg)](https://anaconda.org/conda-forge/git-machete)
+[![homebrew formula](https://img.shields.io/homebrew/v/git-machete)](https://formulae.brew.sh/formula/git-machete)
+[![homebrew formula monthly downloads](https://img.shields.io/homebrew/installs/dm/git-machete.svg)](https://formulae.brew.sh/formula/git-machete)
 <br/>
+[![codecov](https://codecov.io/gh/VirtusLab/git-machete/branch/develop/graph/badge.svg)](https://codecov.io/gh/VirtusLab/git-machete)
+[![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=master)
 [![Read the Docs](https://readthedocs.org/projects/git-machete/badge/?version=latest)](https://git-machete.readthedocs.io/en/stable)
 [![License: MIT](https://img.shields.io/github/license/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete/blob/master/LICENSE)
-[![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=master)
-[![codecov](https://codecov.io/gh/VirtusLab/git-machete/branch/develop/graph/badge.svg)](https://codecov.io/gh/VirtusLab/git-machete)
 
 [//]: # (These images are referenced by full URLs to ensure they render correctly on https://pypi.org/project/git-machete/)
 [//]: # (In fact, only the light-mode image is used in PyPI, the other one is cropped out when publishing the package. Still, using the same format for consistency)
