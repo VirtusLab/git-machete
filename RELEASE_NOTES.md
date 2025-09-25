@@ -1,6 +1,8 @@
 # Release notes
 
-## New in git-machete 3.36.5
+## New in git-machete 3.37.0
+
+- added: `--start-from` flag of `traverse` now accepts branch names in addition to special values `here`, `root`, `first-root` (suggested by @chriscz)
 
 - fixed: `fish` completion for long options with an argument
 

@@ -1538,8 +1538,8 @@ long_docs: Dict[str, str] = {
               Specify the branch to return after traversal is successfully completed;
               WHERE can be `here` (the current branch at the moment when traversal starts), `nearest-remaining`
               (nearest remaining branch in case the `here` branch has been slid out by the traversal) or
-              `stay` (the default — just stay wherever the traversal stops). Note: when user quits by `q`/`yq`
-              or when traversal is stopped because one of git actions fails, the behavior is always `stay`.
+              `stay` (the default — just stay wherever the traversal stops). Values are case-insensitive.
+              Note: when user quits by `q`/`yq` or when traversal is stopped because one of git actions fails, the behavior is always `stay`.
 
            <b>--squash-merge-detection=MODE</b>
               Specify the mode for detection of rebase/squash merges (grey edges).
@@ -1549,7 +1549,9 @@ long_docs: Dict[str, str] = {
            <b>--start-from=WHERE</b>
               Specify the branch to start the traversal from; WHERE can be `here`
               (the default — current branch, must be managed by git machete), `root` (root branch of the current branch,
-              as in `git machete show root`) or `first-root` (first listed managed branch).
+              as in `git machete show root`), `first-root` (first listed managed branch), or any branch name.
+              Special values are case-insensitive. If a branch name conflicts with a special value (e.g., a branch named `root`),
+              the actual branch takes priority.
 
            <b>-w</b>, <b>--whole</b>
               Equivalent to `-n --start-from=first-root --return-to=nearest-remaining`;

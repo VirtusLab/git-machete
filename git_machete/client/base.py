@@ -9,7 +9,7 @@ import textwrap
 from collections import OrderedDict
 from enum import Enum, auto
 from typing import (Callable, Dict, Iterator, List, Optional, Tuple, Type,
-                    TypeVar)
+                    TypeVar, Union)
 
 from git_machete import git_config_keys, utils
 from git_machete.annotation import Annotation
@@ -81,11 +81,50 @@ class TraverseReturnTo(ParsableEnum):
     NEAREST_REMAINING = auto()
     STAY = auto()  # noqa: F841
 
+    @classmethod
+    def from_string_or_branch(cls: Type['TraverseReturnTo'], value: str) -> 'TraverseReturnTo':
+        """Parse value as enum, case-insensitive, or raise exception for invalid special values.
+        Branch names are not supported for --return-to."""
+        try:
+            return cls[value.upper().replace("-", "_")]
+        except KeyError:
+            valid_values = ', '.join('`' + e.name.lower().replace("_", "-") + '`' for e in cls)
+            printed_value = value or '<empty>'
+            raise MacheteException(f"Invalid value for `--return-to`: `{printed_value}`. Valid values are {valid_values}")
+
 
 class TraverseStartFrom(ParsableEnum):
     HERE = auto()
     ROOT = auto()
     FIRST_ROOT = auto()
+
+    @classmethod
+    def from_string_or_branch(cls: Type['TraverseStartFrom'], value: str,
+                              git_context: GitContext) -> Union['TraverseStartFrom', LocalBranchShortName]:
+        """Parse value as enum (case-insensitive) or as branch name.
+        If value matches both a special value and an existing branch name, the branch takes priority."""
+        local_branches = git_context.get_local_branches()
+
+        # Check if it's an existing branch name first (gives priority to actual branches)
+        # This handles exact matches (case-sensitive)
+        if value in local_branches:
+            return LocalBranchShortName.of(value)
+
+        # Check if any branch matches case-insensitively with special values
+        special_values = {e.name.lower().replace("_", "-") for e in cls}
+        if value.lower().replace("-", "_") in {sv.replace("-", "_") for sv in special_values}:
+            # Check if there's a branch that matches the special value case-insensitively
+            for branch in local_branches:
+                if branch.lower() == value.lower():
+                    return LocalBranchShortName.of(branch)
+
+        # Try to parse as special value (case-insensitive)
+        try:
+            return cls[value.upper().replace("-", "_")]
+        except KeyError:
+            # If it's not a special value and not an existing branch, it might be a non-existent branch
+            # We'll allow it and let the traverse logic handle the error
+            return LocalBranchShortName.of(value)
 
 
 class MacheteState:

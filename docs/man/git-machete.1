@@ -29,7 +29,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .TH "GIT-MACHETE" "1" "Sep 29, 2025" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.36.5
+git-machete \- git-machete 3.37.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -2197,8 +2197,8 @@ Push untracked branches to remote.
 Specify the branch to return after traversal is successfully completed;
 WHERE can be \fBhere\fP (the current branch at the moment when traversal starts), \fBnearest\-remaining\fP
 (nearest remaining branch in case the \fBhere\fP branch has been slid out by the traversal) or
-\fBstay\fP (the default \-\-\- just stay wherever the traversal stops). Note: when user quits by \fBq\fP/\fByq\fP
-or when traversal is stopped because one of git actions fails, the behavior is always \fBstay\fP\&.
+\fBstay\fP (the default \-\-\- just stay wherever the traversal stops). Values are case\-insensitive.
+Note: when user quits by \fBq\fP/\fByq\fP or when traversal is stopped because one of git actions fails, the behavior is always \fBstay\fP\&.
 .TP
 .BI \-\-squash\-merge\-detection\fB= MODE
 Specify the mode for detection of rebase/squash merges (grey edges).
@@ -2208,7 +2208,9 @@ See the below paragraph on \fBmachete.squashMergeDetection\fP git config key for
 .BI \-\-start\-from\fB= WHERE
 Specify the branch to start the traversal from; WHERE can be \fBhere\fP
 (the default \-\-\- current branch, must be managed by git machete), \fBroot\fP (root branch of the current branch,
-as in \fBgit machete show root\fP) or \fBfirst\-root\fP (first listed managed branch).
+as in \fBgit machete show root\fP), \fBfirst\-root\fP (first listed managed branch), or any branch name.
+Special values are case\-insensitive. If a branch name conflicts with a special value (e.g., a branch named \fBroot\fP),
+the actual branch takes priority.
 .TP
 .B  \-w\fP,\fB  \-\-whole
 Equivalent to \fB\-n \-\-start\-from=first\-root \-\-return\-to=nearest\-remaining\fP;
