@@ -321,7 +321,9 @@ class MacheteClientWithCodeHosting(MacheteClient):
                     description = self._git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
 
         ok_str = '<green><b>OK</b></green>'
-        print(f'Creating a {"draft " if opt_draft else ""}{spec.pr_short_name} from {bold(head)} to {bold(base)}... ', end='', flush=True)
+        article = "a" if opt_draft else spec.pr_short_name_article
+        print(f'Creating {article} {"draft " if opt_draft else ""}{spec.pr_short_name} '
+              f'from {bold(head)} to {bold(base)}... ', end='', flush=True)
 
         pr: PullRequest = self.code_hosting_client.create_pull_request(
             head=head, head_org_repo=head_org_repo, base=base,

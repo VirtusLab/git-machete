@@ -54,7 +54,7 @@ For each branch, the command:
 
 * if ``-H``/``--sync-github-prs`` or ``-L``/``--sync-gitlab-mrs`` option is present:
 
-  - asks the user whether to **create** a PR/MR for the given branch if it's untracked,
+  - asks the user whether to **create** a PR/MR for the given branch if it doesn't exist yet,
 
   - asks the user whether to **retarget** the PR/MR if it exists for the given branch,
     and its base/target branch in GitHub/GitLab is different than the upstream in machete file
@@ -95,9 +95,11 @@ when the current user is NOT the author of the PR/MR associated with that branch
 
 -F, --fetch                    Fetch the remotes of all managed branches at the beginning of traversal (no ``git pull`` involved, only ``git fetch``).
 
--H, --sync-github-prs          Retarget the PR if it exists for the given branch and its base branch in GitHub is different than the upstream in machete file
+-H, --sync-github-prs          Create a PR for each branch if it doesn't exist yet.
+                               Retarget the PR if it exists and its base branch in GitHub is different than the upstream in machete file.
 
--L, --sync-gitlab-mrs          Retarget the MR if it exists for the given branch and its target branch in GitLab is different than the upstream in machete file
+-L, --sync-gitlab-mrs          Create an MR for each branch if it doesn't exist yet.
+                               Retarget the MR if it exists and its target branch in GitLab is different than the upstream in machete file.
 
 -l, --list-commits             When printing the status, additionally list the messages of commits introduced on each branch.
 

@@ -238,7 +238,7 @@ class TestGitLabCreateMR(BaseTest):
                 x-drop-constraint (untracked)
 
             Checking if target branch master exists in origin remote... YES
-            Creating a MR from hotfix/add-trigger to master... OK, see www.gitlab.com
+            Creating an MR from hotfix/add-trigger to master... OK, see www.gitlab.com
             Updating description of MR !6 to include the chain of MRs... OK
             Setting milestone of MR !6 to 42... OK
             Adding gitlab_user as assignee to MR !6... OK
@@ -334,7 +334,7 @@ class TestGitLabCreateMR(BaseTest):
               o-testing/endpoints
 
             Checking if target branch develop exists in origin remote... YES
-            Creating a MR from allow-ownership-link to develop... OK, see www.gitlab.com
+            Creating an MR from allow-ownership-link to develop... OK, see www.gitlab.com
             Setting milestone of MR !7 to 42... OK
             Adding gitlab_user as assignee to MR !7... OK
             Adding invalid-user as reviewer to MR !7... OK
@@ -470,7 +470,7 @@ class TestGitLabCreateMR(BaseTest):
 
         expected_msg = ("Checking if target branch feature/api_handling exists in origin remote... NO\n"
                         "Pushing untracked branch feature/api_handling to origin...\n"
-                        "Creating a MR from feature/api_exception_handling to feature/api_handling... OK, see www.gitlab.com\n")
+                        "Creating an MR from feature/api_exception_handling to feature/api_handling... OK, see www.gitlab.com\n")
 
         set_git_config_key("machete.gitlab.annotateWithUrls", "true")
         assert_success(['gitlab', 'create-mr', '--yes'], expected_msg)
@@ -610,7 +610,7 @@ class TestGitLabCreateMR(BaseTest):
         Generally, MRs need to be created in whatever project the target branch lives.
 
         Checking if target branch branch-1 exists in origin_2 remote... YES
-        Creating a MR from feature to branch-1... OK, see www.gitlab.com
+        Creating an MR from feature to branch-1... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK
         Updating description of MR !16 to include the chain of MRs... OK
         """  # noqa: E501
@@ -671,7 +671,7 @@ class TestGitLabCreateMR(BaseTest):
         Generally, MRs need to be created in whatever project the target branch lives.
 
         Checking if target branch feature exists in origin_1 remote... YES
-        Creating a MR from feature_1 to feature... OK, see www.gitlab.com
+        Creating an MR from feature_1 to feature... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK
         Updating description of MR !17 to include the chain of MRs... OK
         """
@@ -707,7 +707,7 @@ class TestGitLabCreateMR(BaseTest):
               o-feature_2 *
 
         Checking if target branch feature exists in origin_1 remote... YES
-        Creating a MR from feature_2 to feature... OK, see www.gitlab.com
+        Creating an MR from feature_2 to feature... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK
         Updating description of MR !18 to include the chain of MRs... OK
         """
@@ -727,7 +727,7 @@ class TestGitLabCreateMR(BaseTest):
         Add feature_3 onto the inferred upstream (parent) branch feature_2? (y, N)
         Added branch feature_3 onto feature_2
         Checking if target branch feature_2 exists in origin_1 remote... YES
-        Creating a MR from feature_3 to feature_2... OK, see www.gitlab.com
+        Creating an MR from feature_3 to feature_2... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK
         Updating description of MR !19 to include the chain of MRs... OK
         """  # noqa: E501
@@ -756,7 +756,7 @@ class TestGitLabCreateMR(BaseTest):
         Generally, MRs need to be created in whatever project the target branch lives.
 
         Checking if target branch feature_3 exists in origin_1 remote... YES
-        Creating a MR from feature_4 to feature_3... OK, see www.gitlab.com
+        Creating an MR from feature_4 to feature_3... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK
         Updating description of MR !20 to include the chain of MRs... OK
         """
@@ -786,7 +786,7 @@ class TestGitLabCreateMR(BaseTest):
         Generally, MRs need to be created in whatever project the target branch lives.
 
         Checking if target branch feature_3 exists in origin_1 remote... YES
-        Creating a MR from feature_5 to feature_3... OK, see www.gitlab.com
+        Creating an MR from feature_5 to feature_3... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK
         Updating description of MR !21 to include the chain of MRs... OK
         """
@@ -815,7 +815,7 @@ class TestGitLabCreateMR(BaseTest):
             ['gitlab', 'create-mr'],
             """
             Checking if target branch master exists in origin remote... YES
-            Creating a MR from develop to master... OK, see www.gitlab.com
+            Creating an MR from develop to master... OK, see www.gitlab.com
             """
         )
 
@@ -865,7 +865,7 @@ class TestGitLabCreateMR(BaseTest):
             Warn: Branch develop is behind its remote counterpart. Consider using git pull.
             Proceed with creating merge request? (y, Q)
             Checking if target branch master exists in origin remote... YES
-            Creating a MR from develop to master... OK, see www.gitlab.com
+            Creating an MR from develop to master... OK, see www.gitlab.com
             """
         )
 
@@ -937,7 +937,7 @@ class TestGitLabCreateMR(BaseTest):
             Warn: Branch develop is diverged from and older than its remote counterpart. Consider using git reset --keep.
             Proceed with creating merge request? (y, Q)
             Checking if target branch master exists in origin remote... YES
-            Creating a MR from develop to master... OK, see www.gitlab.com
+            Creating an MR from develop to master... OK, see www.gitlab.com
             """
         )
 
@@ -967,7 +967,7 @@ class TestGitLabCreateMR(BaseTest):
             """
             Checking if target branch develop exists in origin remote... NO
             Push untracked branch develop to origin? (y, Q)
-            Creating a MR from feature to develop... OK, see www.gitlab.com
+            Creating an MR from feature to develop... OK, see www.gitlab.com
             """
         )
 
@@ -993,7 +993,7 @@ class TestGitLabCreateMR(BaseTest):
             ['gitlab', 'create-mr'],
             """
             Checking if target branch develop exists in origin remote... YES
-            Creating a MR from feature to develop... OK, see www.gitlab.com
+            Creating an MR from feature to develop... OK, see www.gitlab.com
             """
         )
 

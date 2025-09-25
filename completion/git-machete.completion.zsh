@@ -140,8 +140,8 @@ _git-machete() {
         (t|traverse)
           _arguments \
             '(-F --fetch)'{-F,--fetch}'[Fetch the remotes of all managed branches at the beginning of traversal]' \
-            '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Retarget GitHub PRs when their base branches are different than in machete file]' \
-            '(-L --sync-gitlab-mrs)'{-L,--sync-gitlab-mrs}'[Retarget GitLab MRs when their target branches are different than in machete file]' \
+            '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Create and retarget GitHub PRs while traversing]' \
+            '(-L --sync-gitlab-mrs)'{-L,--sync-gitlab-mrs}'[Create and retarget GitLab MRs while traversing]' \
             '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
             '(-M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
             '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
@@ -329,7 +329,7 @@ __git_machete_gitlab_subcommands() {
       gitlab_subcommands=(
         'anno-mrs:annotate the branches based on their corresponding GitLab MR numbers and authors'
         'checkout-mrs:check out the given merge requests locally'
-        'create-mr:create a MR for the current branch, using the upstream (parent) branch as the MR source branch'
+        'create-mr:create an MR for the current branch, using the upstream (parent) branch as the MR source branch'
         'restack-mr:(force-)push and retarget the MR, without adding code owners as reviewers in the process'
         'retarget-mr:set the source branch of the current branch MR to upstream (parent) branch'
         'update-mr-descriptions:update the generated sections of MR descriptions that list the upstream and/or downstream MRs'

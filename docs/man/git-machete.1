@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Aug 23, 2025" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Sep 25, 2025" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.36.5
 .sp
@@ -1204,7 +1204,7 @@ See \fBGit config keys\fP below in case the target project cannot be detected au
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
-To allow GitLab API access for private projects (and also to perform side\-effecting actions like opening a MR,
+To allow GitLab API access for private projects (and also to perform side\-effecting actions like opening an MR,
 even in case of public projects), a GitLab API token with \fBapi\fP scope is required, see \X'tty: link https://gitlab.com/-/user_settings/personal_access_tokens'\fI\%https://gitlab.com/\-/user_settings/personal_access_tokens\fP\X'tty: link'\&.
 This will be resolved from the first of:
 .INDENT 0.0
@@ -1281,7 +1281,7 @@ Checkout open MRs for the current user associated with the GitLab token.
 \fB<MR\-number\-1> ... <MR\-number\-N>\fP    Merge request numbers to checkout.
 .TP
 .B \fBcreate\-mr [\-\-draft] [\-\-title=<title>] [\-U|\-\-update\-related\-descriptions] [\-\-yes]\fP:
-Create a MR for the current branch, using the upstream (parent) branch as the MR source branch.
+Create an MR for the current branch, using the upstream (parent) branch as the MR source branch.
 Once the MR is successfully created, annotate the current branch with the new MR\(aqs number.
 .sp
 If \fB\&.git/info/milestone\fP file is present, its contents (a single number \-\-\- milestone id) are used as milestone.
@@ -2098,7 +2098,7 @@ asks the user whether to \fBpull\fP the branch;
 if \fB\-H\fP/\fB\-\-sync\-github\-prs\fP or \fB\-L\fP/\fB\-\-sync\-gitlab\-mrs\fP option is present:
 .INDENT 2.0
 .IP \(bu 2
-asks the user whether to \fBcreate\fP a PR/MR for the given branch if it\(aqs untracked,
+asks the user whether to \fBcreate\fP a PR/MR for the given branch if it doesn\(aqt exist yet,
 .IP \(bu 2
 asks the user whether to \fBretarget\fP the PR/MR if it exists for the given branch,
 and its base/target branch in GitHub/GitLab is different than the upstream in machete file
@@ -2150,10 +2150,12 @@ when the current user is NOT the author of the PR/MR associated with that branch
 Fetch the remotes of all managed branches at the beginning of traversal (no \fBgit pull\fP involved, only \fBgit fetch\fP).
 .TP
 .B  \-H\fP,\fB  \-\-sync\-github\-prs
-Retarget the PR if it exists for the given branch and its base branch in GitHub is different than the upstream in machete file
+Create a PR for each branch if it doesn\(aqt exist yet.
+Retarget the PR if it exists and its base branch in GitHub is different than the upstream in machete file.
 .TP
 .B  \-L\fP,\fB  \-\-sync\-gitlab\-mrs
-Retarget the MR if it exists for the given branch and its target branch in GitLab is different than the upstream in machete file
+Create an MR for each branch if it doesn\(aqt exist yet.
+Retarget the MR if it exists and its target branch in GitLab is different than the upstream in machete file.
 .TP
 .B  \-l\fP,\fB  \-\-list\-commits
 When printing the status, additionally list the messages of commits introduced on each branch.

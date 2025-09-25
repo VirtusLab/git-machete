@@ -27,6 +27,7 @@ enforce-release-notes-up-to-date.sh
 enforce-shell-scripts-pass-shellcheck.sh
 enforce-tox-testenvs-all-have-deps.sh
 enforce-yq-check-for-each-y-yes-yq-check.sh
+prohibit-a-mr.sh
 prohibit-bash-usages-from-python.sh
 prohibit-current-date-in-tests.sh
 prohibit-deploy-step-in-circleci.sh

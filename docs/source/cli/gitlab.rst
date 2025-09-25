@@ -18,7 +18,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 
 .. note::
 
-    To allow GitLab API access for private projects (and also to perform side-effecting actions like opening a MR,
+    To allow GitLab API access for private projects (and also to perform side-effecting actions like opening an MR,
     even in case of public projects), a GitLab API token with ``api`` scope is required, see https://gitlab.com/-/user_settings/personal_access_tokens.
     This will be resolved from the first of:
 
@@ -77,7 +77,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
     ``<MR-number-1> ... <MR-number-N>``    Merge request numbers to checkout.
 
 ``create-mr [--draft] [--title=<title>] [-U|--update-related-descriptions] [--yes]``:
-    Create a MR for the current branch, using the upstream (parent) branch as the MR source branch.
+    Create an MR for the current branch, using the upstream (parent) branch as the MR source branch.
     Once the MR is successfully created, annotate the current branch with the new MR's number.
 
     If ``.git/info/milestone`` file is present, its contents (a single number --- milestone id) are used as milestone.

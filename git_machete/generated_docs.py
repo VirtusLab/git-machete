@@ -800,7 +800,7 @@ long_docs: Dict[str, str] = {
 
         <b>Note:</b>
 
-              To allow GitLab API access for private projects (and also to perform side-effecting actions like opening a MR,
+              To allow GitLab API access for private projects (and also to perform side-effecting actions like opening an MR,
               even in case of public projects), a GitLab API token with `api` scope is required, see https://gitlab.com/-/user_settings/personal_access_tokens.
               This will be resolved from the first of:
 
@@ -856,7 +856,7 @@ long_docs: Dict[str, str] = {
               `<MR-number-1> ... <MR-number-N>`    Merge request numbers to checkout.
 
            `create-mr [--draft] [--title=<title>] [-U|--update-related-descriptions] [--yes]`:
-              Create a MR for the current branch, using the upstream (parent) branch as the MR source branch.
+              Create an MR for the current branch, using the upstream (parent) branch as the MR source branch.
               Once the MR is successfully created, annotate the current branch with the new MR's number.
 
               If `.git/info/milestone` file is present, its contents (a single number — milestone id) are used as milestone.
@@ -1450,7 +1450,7 @@ long_docs: Dict[str, str] = {
 
            * if `-H`/`--sync-github-prs` or `-L`/`--sync-gitlab-mrs` option is present:
 
-             - asks the user whether to <b>create</b> a PR/MR for the given branch if it's untracked,
+             - asks the user whether to <b>create</b> a PR/MR for the given branch if it doesn't exist yet,
 
              - asks the user whether to <b>retarget</b> the PR/MR if it exists for the given branch,
               and its base/target branch in GitHub/GitLab is different than the upstream in machete file
@@ -1491,10 +1491,12 @@ long_docs: Dict[str, str] = {
               Fetch the remotes of all managed branches at the beginning of traversal (no `git pull` involved, only `git fetch`).
 
            <b>-H</b>, <b>--sync-github-prs</b>
-              Retarget the PR if it exists for the given branch and its base branch in GitHub is different than the upstream in machete file
+              Create a PR for each branch if it doesn't exist yet.
+              Retarget the PR if it exists and its base branch in GitHub is different than the upstream in machete file.
 
            <b>-L</b>, <b>--sync-gitlab-mrs</b>
-              Retarget the MR if it exists for the given branch and its target branch in GitLab is different than the upstream in machete file
+              Create an MR for each branch if it doesn't exist yet.
+              Retarget the MR if it exists and its target branch in GitLab is different than the upstream in machete file.
 
            <b>-l</b>, <b>--list-commits</b>
               When printing the status, additionally list the messages of commits introduced on each branch.
