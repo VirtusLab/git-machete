@@ -1550,7 +1550,7 @@ long_docs: Dict[str, str] = {
               Specify the branch to start the traversal from; WHERE can be `here`
               (the default — current branch, must be managed by git machete), `root` (root branch of the current branch,
               as in `git machete show root`), `first-root` (first listed managed branch), or any branch name.
-              Special values are case-insensitive. If a branch name conflicts with a special value (e.g., a branch named `root`),
+              Special values are case-insensitive. If a branch name conflicts with a special value (for example, a branch named `root`),
               the actual branch takes priority.
 
            <b>-w</b>, <b>--whole</b>

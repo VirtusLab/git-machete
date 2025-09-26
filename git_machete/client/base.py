@@ -88,9 +88,9 @@ class TraverseReturnTo(ParsableEnum):
         try:
             return cls[value.upper().replace("-", "_")]
         except KeyError:
-            valid_values = ', '.join('`' + e.name.lower().replace("_", "-") + '`' for e in cls)
+            valid_values = ', '.join(e.name.lower().replace("_", "-") for e in cls)
             printed_value = value or '<empty>'
-            raise MacheteException(f"Invalid value for `--return-to`: `{printed_value}`. Valid values are {valid_values}")
+            raise MacheteException(f"Invalid value for `--return-to` flag: {printed_value}. Valid values are {valid_values}")
 
 
 class TraverseStartFrom(ParsableEnum):

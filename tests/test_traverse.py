@@ -990,7 +990,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_invalid_flag_values(self) -> None:
         assert_failure(["traverse", "--return-to=dunno-where"],
-                       "Invalid value for --return-to flag: dunno-where. Valid values are here, nearest-remaining, stay")
+                       "Invalid value for --return-to: dunno-where. Valid values are here, nearest-remaining, stay")
         assert_failure(["traverse", "--squash-merge-detection=lolxd"],
                        "Invalid value for --squash-merge-detection flag: lolxd. Valid values are none, simple, exact")
         # Note: --start-from now accepts branch names, so invalid values would be non-existent branches
@@ -1007,29 +1007,89 @@ class TestTraverse(BaseTest):
             """
             Checking out branch call-ws
 
+            Pushing call-ws to origin...
+
+            Checking out drop-constraint
+
               develop
               |
-              o-allow-ownership-link
+              x-allow-ownership-link (ahead of origin)
               | |
-              | o-build-chain
+              | x-build-chain (untracked)
               |
-              o-call-ws *
-              |
-              o-drop-constraint (untracked)
+              o-call-ws
+                |
+                x-drop-constraint * (untracked)
 
-            master (untracked)
-            |
-            o-hotfix/add-trigger (diverged from origin)
-            |
-            o-ignore-trailing (diverged from origin)
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing drop-constraint onto call-ws...
 
             Pushing untracked branch drop-constraint to origin...
 
+            Checking out hotfix/add-trigger
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger * (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
             Pushing hotfix/add-trigger with force-with-lease to origin...
 
-            Pushing ignore-trailing with force-with-lease to origin...
+            Checking out ignore-trailing
 
-            No successor of ignore-trailing needs to be slid out or synced with upstream branch or remote; nothing left to update
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing * (diverged from & older than origin)
+
+            Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
+            Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing *
+
+            Reached branch ignore-trailing which has no successor; nothing left to update
             """
         )
 
@@ -1044,63 +1104,153 @@ class TestTraverse(BaseTest):
             """
             Checking out the root branch (develop)
 
-              develop *
+            Checking out allow-ownership-link
+
+              develop
+              |
+              x-allow-ownership-link * (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing allow-ownership-link onto develop...
+
+            Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
+            Pushing allow-ownership-link with force-with-lease to origin...
+
+            Checking out build-chain
+
+              develop
               |
               o-allow-ownership-link
               | |
-              | o-build-chain (untracked)
+              | x-build-chain * (untracked)
               |
-              o-call-ws
-              |
-              o-drop-constraint (untracked)
+              o-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
 
-            master (untracked)
-            |
-            o-hotfix/add-trigger (diverged from origin)
-            |
-            o-ignore-trailing (diverged from origin)
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing build-chain onto allow-ownership-link...
 
             Pushing untracked branch build-chain to origin...
 
-            Pushing untracked branch drop-constraint to origin...
+            Checking out call-ws
 
-            Pushing hotfix/add-trigger with force-with-lease to origin...
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws * (ahead of origin)
+                |
+                x-drop-constraint (untracked)
 
-            Pushing ignore-trailing with force-with-lease to origin...
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
 
-            No successor of ignore-trailing needs to be slid out or synced with upstream branch or remote; nothing left to update
-            Returned to the initial branch call-ws
-            """
-        )
+            Pushing call-ws to origin...
 
-        # Test case-insensitive "first-root"
-        check_out("hotfix/add-trigger")
-        assert_success(
-            ["traverse", "--start-from=First-Root", "--return-to=stay", "-y"],
-            """
-            Checking out the first root branch (develop)
+            Checking out drop-constraint
 
-              develop *
+              develop
               |
               o-allow-ownership-link
               | |
               | o-build-chain
               |
               o-call-ws
+                |
+                x-drop-constraint * (untracked)
+
+              master
               |
-              o-drop-constraint
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
 
-            master (untracked)
-            |
-            o-hotfix/add-trigger (diverged from origin)
-            |
-            o-ignore-trailing (diverged from origin)
+            Rebasing drop-constraint onto call-ws...
 
+            Pushing untracked branch drop-constraint to origin...
+
+            Checking out hotfix/add-trigger
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger * (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
             Pushing hotfix/add-trigger with force-with-lease to origin...
 
-            Pushing ignore-trailing with force-with-lease to origin...
+            Checking out ignore-trailing
 
-            No successor of ignore-trailing needs to be slid out or synced with upstream branch or remote; nothing left to update
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing * (diverged from & older than origin)
+
+            Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
+            Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws *
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing
+
+            Reached branch ignore-trailing which has no successor; nothing left to update
+            Returned to the initial branch call-ws
             """
         )
 
@@ -1136,35 +1286,73 @@ class TestTraverse(BaseTest):
             """
             Checking out branch root
 
-              develop
-              |
-              o-allow-ownership-link
-              | |
-              | o-build-chain (untracked)
-              |
-              o-call-ws
-              | |
-              | o-drop-constraint (untracked)
-              |
-              o-root * (untracked)
-
-            master (untracked)
-            |
-            o-hotfix/add-trigger (diverged from origin)
-            |
-            o-ignore-trailing (diverged from origin)
-
             Pushing untracked branch root to origin...
 
-            Pushing untracked branch build-chain to origin...
+            Checking out hotfix/add-trigger
 
-            Pushing untracked branch drop-constraint to origin...
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+              | |
+              | x-drop-constraint (untracked)
+              |
+              o-root
 
+              master
+              |
+              o-hotfix/add-trigger * (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
             Pushing hotfix/add-trigger with force-with-lease to origin...
 
-            Pushing ignore-trailing with force-with-lease to origin...
+            Checking out ignore-trailing
 
-            No successor of ignore-trailing needs to be slid out or synced with upstream branch or remote; nothing left to update
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+              | |
+              | x-drop-constraint (untracked)
+              |
+              o-root
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing * (diverged from & older than origin)
+
+            Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
+            Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+              | |
+              | x-drop-constraint (untracked)
+              |
+              o-root
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing *
+
+            Reached branch ignore-trailing which has no successor; nothing left to update
             """
         )
 
