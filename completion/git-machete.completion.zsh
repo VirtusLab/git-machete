@@ -415,30 +415,6 @@ __git_machete_opt_color_args() {
   _describe 'color argument' opt_color_args
 }
 
-__git_machete_opt_return_to_args() {
-  local opt_return_to
-  opt_return_to=(
-    'here:the current branch at the moment when traversal starts'
-    'nearest-remaining:nearest remaining branch in case the "here" branch has been slid out by the traversal'
-    'stay:the default - just stay wherever the traversal stops'
-  )
-  _describe 'return-to argument' opt_return_to
-}
-
-__git_machete_opt_start_from_args() {
-  local opt_start_from
-  opt_start_from=(
-    'here:the default - current branch, must be managed by git-machete'
-    'root:root branch of the current branch, as in git machete show root'
-    'first-root:first listed managed branch'
-  )
-  _describe 'start-from argument' opt_start_from
-}
-
-__git_machete_opt_start_from_args_or_branches() {
-  __git_machete_opt_start_from_args
-  __git_branch_names
-}
 
 __git_machete_list_addable() {
   local result
@@ -462,6 +438,31 @@ __git_machete_list_with_overridden_fork_point() {
   local result
   IFS=$'\n' result=($(git machete list with-overridden-fork-point 2>/dev/null))
   _describe 'branch with overridden fork point' result
+}
+
+__git_machete_opt_start_from_args() {
+  local opt_start_from
+  opt_start_from=(
+    'HERE:the default - current branch, must be managed by git-machete'
+    'ROOT:root branch of the current branch, as in git machete show root'
+    'FIRST-ROOT:first listed managed branch'
+  )
+  _describe 'start-from argument' opt_start_from
+}
+
+__git_machete_opt_start_from_args_or_branches() {
+  __git_machete_opt_start_from_args
+  __git_branch_names
+}
+
+__git_machete_opt_return_to_args() {
+  local opt_return_to
+  opt_return_to=(
+    'HERE:the current branch at the moment when traversal starts'
+    'NEAREST-REMAINING:nearest remaining branch in case the here branch has been slid out'
+    'STAY:the default - just stay wherever the traversal stops'
+  )
+  _describe 'return-to argument' opt_return_to
 }
 
 __git_machete_completion_shells() {

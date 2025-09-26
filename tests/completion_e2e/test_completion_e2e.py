@@ -140,19 +140,27 @@ test_cases: Dict[str, str] = {
         "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
         "--no-push --no-push-untracked --push --push-untracked --return-to --start-from "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
+    "git machete t --start-from ":
+        "FIRST-ROOT HERE ROOT develop feature master",
+    "git machete t --start-from=":
+        "FIRST-ROOT HERE ROOT develop feature master",
+    "git machete t --return-to ":
+        "HERE NEAREST-REMAINING STAY",
+    "git machete t --return-to=":
+        "HERE NEAREST-REMAINING STAY",
     "git machete traverse -":
         "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
         "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
         "--no-push --no-push-untracked --push --push-untracked --return-to --start-from "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
-    "git machete traverse --start-from ":
-        "first-root here root",
-    "git machete traverse --start-from=":
-        "first-root here root",
     "git machete traverse --return-to ":
-        "here nearest-remaining stay",
+        "HERE NEAREST-REMAINING STAY",
     "git machete traverse --return-to=":
-        "here nearest-remaining stay",
+        "HERE NEAREST-REMAINING STAY",
+    "git machete traverse --start-from ":
+        "FIRST-ROOT HERE ROOT develop feature master",
+    "git machete traverse --start-from=":
+        "FIRST-ROOT HERE ROOT develop feature master",
     "git machete update -":
         "-M --debug -f --fork-point -h --help --merge -n --no-edit-merge --no-interactive-rebase -v --verbose",
     "git machete update -f ":

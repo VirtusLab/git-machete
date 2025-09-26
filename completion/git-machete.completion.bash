@@ -10,8 +10,8 @@ _git_machete() {
   local gitlab_subcommands="anno-mrs checkout-mrs create-mr restack-mr retarget-mr update-mr-descriptions"
   local locations="current $directions"
   local opt_color_args="always auto never"
-  local opt_return_to_args="here nearest-remaining stay"
-  local opt_start_from_args="here root first-root"
+  local opt_return_to_args="HERE NEAREST-REMAINING STAY"
+  local opt_start_from_args="HERE ROOT FIRST-ROOT"
   local shells="bash fish zsh"
 
   local common_opts="--debug -h --help -v --verbose"
