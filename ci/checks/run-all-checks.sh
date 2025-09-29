@@ -33,6 +33,7 @@ prohibit-current-date-in-tests.sh
 prohibit-deploy-step-in-circleci.sh
 prohibit-double-backticks-in-python.sh
 prohibit-exempli-gratia-in-rst.sh
+prohibit-fish-completion-repetition-checks-for-long-options.sh
 prohibit-fork-point-in-git-context.sh
 prohibit-github-in-gitlab-files.sh
 prohibit-github-mr-or-gitlab-pr.sh

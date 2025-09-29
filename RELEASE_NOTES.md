@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.36.5
 
+- fixed: `fish` completion for long options with an argument
+
 ## New in git-machete 3.36.4
 
 - fixed: git-machete no longer crashing when branch name contains a `@` (reported by @brandtdaniels)
