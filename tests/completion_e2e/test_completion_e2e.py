@@ -1,4 +1,5 @@
 import pathlib
+import re
 from typing import Dict
 
 import pytest
@@ -124,10 +125,14 @@ test_cases: Dict[str, str] = {
         "HEAD develop feature master",
     "git machete squash -":
         "--debug -f --fork-point -h --help -v --verbose",
+    "git machete squash --fork-point ":
+        "HEAD develop feature master",
     "git machete squash --fork-point=":
         "HEAD develop feature master",
     "git machete status -":
         "-L --color --debug -h --help -l --list-commits --list-commits-with-hashes --no-detect-squash-merges -v --verbose",
+    "git machete status --color ":
+        "always auto never",
     "git machete status --color=":
         "always auto never",
     "git machete t -":
@@ -140,6 +145,14 @@ test_cases: Dict[str, str] = {
         "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
         "--no-push --no-push-untracked --push --push-untracked --return-to --start-from "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
+    "git machete traverse --start-from ":
+        "first-root here root",
+    "git machete traverse --start-from=":
+        "first-root here root",
+    "git machete traverse --return-to ":
+        "here nearest-remaining stay",
+    "git machete traverse --return-to=":
+        "here nearest-remaining stay",
     "git machete update -":
         "-M --debug -f --fork-point -h --help --merge -n --no-edit-merge --no-interactive-rebase -v --verbose",
     "git machete update -f ":
@@ -166,6 +179,15 @@ class TestCompletionEndToEnd:
         commit()
         check_out("master")
         rewrite_branch_layout_file("master\n\tdevelop")
+
+    def test_fish_version(self) -> None:
+        raw = popen("fish --version")
+        version_match = re.search(r"[0-9]+(\.[0-9]+)*", raw)
+        assert version_match is not None
+        version_raw = version_match.group(0)
+        version = tuple(map(int, version_raw.split('.')))
+
+        assert version >= (4, 0, 2), f"Fish version installed in the system must be at least 4.0.2 (is: {version_raw})"
 
     @pytest.mark.parametrize("input,expected_result", test_cases.items(), ids=lambda x: x if x.startswith('git machete') else '')
     @pytest.mark.parametrize("script_name", ["complete-bash.sh", "complete-fish.fish", "complete-zsh.zsh"])

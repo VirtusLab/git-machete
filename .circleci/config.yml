@@ -73,9 +73,11 @@ jobs:
             pip3 install tox
 
             # `add-apt-repository` was getting stuck on CI for some reason
-            echo 'deb     https://ppa.launchpadcontent.net/fish-shell/release-3/ubuntu jammy main' | sudo tee -a /etc/apt/sources.list
-            echo 'deb-src https://ppa.launchpadcontent.net/fish-shell/release-3/ubuntu jammy main' | sudo tee -a /etc/apt/sources.list
-            sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 59FDA1CE1B84B3FAD89366C027557F056DC33CA5
+            fish_major_version=4
+            url=https://ppa.launchpadcontent.net/fish-shell/release-${fish_major_version}/ubuntu
+            echo "deb     $url jammy main" | sudo tee -a /etc/apt/sources.list
+            echo "deb-src $url jammy main" | sudo tee -a /etc/apt/sources.list
+            sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 73C9FCC9E2BB48DA
             sudo apt-get update
             sudo apt-get install fish
             fish --version
