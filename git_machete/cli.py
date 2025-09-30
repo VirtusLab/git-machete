@@ -886,8 +886,7 @@ def launch(orig_args: List[str]) -> None:
                 opt_list_commits_with_hashes=cli_opts.opt_list_commits_with_hashes,
                 opt_squash_merge_detection=opt_squash_merge_detection)
         elif cmd in {"traverse", alias_by_command["traverse"]}:
-            # Use new parsing methods that support case-insensitive special values and branch names
-            opt_return_to = TraverseReturnTo.from_string_or_branch(cli_opts.opt_return_to)
+            opt_return_to = TraverseReturnTo.from_string(cli_opts.opt_return_to, "`--return-to` flag")
             opt_squash_merge_detection = SquashMergeDetection.from_string(
                 cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
             opt_start_from = TraverseStartFrom.from_string_or_branch(cli_opts.opt_start_from, git)

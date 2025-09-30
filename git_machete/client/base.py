@@ -81,17 +81,6 @@ class TraverseReturnTo(ParsableEnum):
     NEAREST_REMAINING = auto()
     STAY = auto()  # noqa: F841
 
-    @classmethod
-    def from_string_or_branch(cls: Type['TraverseReturnTo'], value: str) -> 'TraverseReturnTo':
-        """Parse value as enum, case-insensitive, or raise exception for invalid special values.
-        Branch names are not supported for --return-to."""
-        try:
-            return cls[value.upper().replace("-", "_")]
-        except KeyError:
-            valid_values = ', '.join(e.name.lower().replace("_", "-") for e in cls)
-            printed_value = value or '<empty>'
-            raise MacheteException(f"Invalid value for `--return-to` flag: {printed_value}. Valid values are {valid_values}")
-
 
 class TraverseStartFrom(ParsableEnum):
     HERE = auto()
@@ -110,21 +99,14 @@ class TraverseStartFrom(ParsableEnum):
         if value in local_branches:
             return LocalBranchShortName.of(value)
 
-        # Check if any branch matches case-insensitively with special values
-        special_values = {e.name.lower().replace("_", "-") for e in cls}
-        if value.lower().replace("-", "_") in {sv.replace("-", "_") for sv in special_values}:
-            # Check if there's a branch that matches the special value case-insensitively
-            for branch in local_branches:
-                if branch.lower() == value.lower():
-                    return LocalBranchShortName.of(branch)
-
         # Try to parse as special value (case-insensitive)
         try:
             return cls[value.upper().replace("-", "_")]
         except KeyError:
             # If it's not a special value and not an existing branch, it might be a non-existent branch
             # We'll allow it and let the traverse logic handle the error
-            return LocalBranchShortName.of(value)
+            all_values = ', '.join(e.name.lower().replace('_', '-') for e in cls)
+            raise MacheteException(f"{bold(value)} is neither a special value ({all_values}), nor a local branch")
 
 
 class MacheteState:

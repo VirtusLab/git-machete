@@ -415,31 +415,6 @@ __git_machete_opt_color_args() {
   _describe 'color argument' opt_color_args
 }
 
-
-__git_machete_list_addable() {
-  local result
-  IFS=$'\n' result=($(git machete list addable 2>/dev/null))
-  _describe 'addable branch' result
-}
-
-__git_machete_list_managed() {
-  local result
-  IFS=$'\n' result=($(git machete list managed 2>/dev/null))
-  _describe 'managed branch' result
-}
-
-__git_machete_list_slidable() {
-  local result
-  IFS=$'\n' result=($(git machete list slidable 2>/dev/null))
-  _describe 'slidable branch' result
-}
-
-__git_machete_list_with_overridden_fork_point() {
-  local result
-  IFS=$'\n' result=($(git machete list with-overridden-fork-point 2>/dev/null))
-  _describe 'branch with overridden fork point' result
-}
-
 __git_machete_opt_start_from_args() {
   local opt_start_from
   opt_start_from=(
@@ -463,6 +438,30 @@ __git_machete_opt_return_to_args() {
     'STAY:the default - just stay wherever the traversal stops'
   )
   _describe 'return-to argument' opt_return_to
+}
+
+__git_machete_list_addable() {
+  local result
+  IFS=$'\n' result=($(git machete list addable 2>/dev/null))
+  _describe 'addable branch' result
+}
+
+__git_machete_list_managed() {
+  local result
+  IFS=$'\n' result=($(git machete list managed 2>/dev/null))
+  _describe 'managed branch' result
+}
+
+__git_machete_list_slidable() {
+  local result
+  IFS=$'\n' result=($(git machete list slidable 2>/dev/null))
+  _describe 'slidable branch' result
+}
+
+__git_machete_list_with_overridden_fork_point() {
+  local result
+  IFS=$'\n' result=($(git machete list with-overridden-fork-point 2>/dev/null))
+  _describe 'branch with overridden fork point' result
 }
 
 __git_machete_completion_shells() {

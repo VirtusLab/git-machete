@@ -990,11 +990,9 @@ class TestTraverse(BaseTest):
 
     def test_traverse_invalid_flag_values(self) -> None:
         assert_failure(["traverse", "--return-to=dunno-where"],
-                       "Invalid value for --return-to: dunno-where. Valid values are here, nearest-remaining, stay")
+                       "Invalid value for --return-to flag: dunno-where. Valid values are here, nearest-remaining, stay")
         assert_failure(["traverse", "--squash-merge-detection=lolxd"],
                        "Invalid value for --squash-merge-detection flag: lolxd. Valid values are none, simple, exact")
-        # Note: --start-from now accepts branch names, so invalid values would be non-existent branches
-        # This test will be handled in test_traverse_start_from_branch_names
 
     def test_traverse_start_from_branch_names(self) -> None:
         """Test the new functionality for --start-from accepting branch names."""
@@ -1363,7 +1361,7 @@ class TestTraverse(BaseTest):
 
         assert_failure(
             ["traverse", "--start-from=nonexistent-branch"],
-            "Branch nonexistent-branch does not exist"
+            "nonexistent-branch is neither a special value (here, root, first-root), nor a local branch"
         )
 
     def test_traverse_removes_current_directory(self) -> None:

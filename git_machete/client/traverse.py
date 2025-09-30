@@ -65,19 +65,18 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             print(f"Checking out the first root branch ({bold(dest)})")
             self._git.checkout(dest)
             current_branch = dest
+        elif opt_start_from == TraverseStartFrom.HERE:
+            current_branch = self._git.get_current_branch()
+            self.expect_in_managed_branches(current_branch)
         elif isinstance(opt_start_from, LocalBranchShortName):
-            # User specified a branch name
             dest = opt_start_from
-            if dest not in self._git.get_local_branches():
-                raise MacheteException(f"Branch {bold(dest)} does not exist")
+            self.expect_in_managed_branches(dest)
             self._print_new_line(False)
             print(f"Checking out branch {bold(dest)}")
             self._git.checkout(dest)
             current_branch = dest
-            self.expect_in_managed_branches(current_branch)
-        else:  # opt_start_from == TraverseStartFrom.HERE
-            current_branch = self._git.get_current_branch()
-            self.expect_in_managed_branches(current_branch)
+        else:
+            raise UnexpectedMacheteException(f"Unexpected value for opt_start_from: {opt_start_from}")
 
         branch: LocalBranchShortName
         for branch in itertools.dropwhile(lambda x: x != current_branch, self.managed_branches.copy()):
