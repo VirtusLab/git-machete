@@ -1,5 +1,6 @@
 import itertools
 import os
+import sys
 from enum import auto
 from typing import Dict, Iterator, List, Optional, Set, Tuple
 
@@ -678,6 +679,24 @@ class MacheteClientWithCodeHosting(MacheteClient):
     def __generate_pr_description_intro(self, pr: PullRequest, style: PRDescriptionIntroStyle) -> str:
         if style == PRDescriptionIntroStyle.NONE:
             return ''
+
+        # Check for the machete-pr-description-intro hook (currently undocumented) first
+        hook_path = self._git.get_hook_path("machete-pr-description-intro")
+        if self._git.check_hook_executable(hook_path):
+            debug(f"running machete-pr-description-intro hook ({hook_path}) for PR {pr.number}")
+            status_code, stdout, stderr = self.__popen_hook(
+                hook_path, str(pr.number), pr.head, pr.base, pr.title,
+                cwd=self._git.get_root_dir(), env=dict(os.environ)
+            )
+
+            if status_code == 0:
+                hook_output = stdout.rstrip('\n')
+                if hook_output:
+                    return f'{self.START_GIT_MACHETE_GENERATED_COMMENT}\n\n{hook_output}\n\n{self.END_GIT_MACHETE_GENERATED_COMMENT}'
+                else:
+                    return ''
+            else:
+                debug(f"machete-pr-description-intro hook failed with exit code {status_code}, falling back to default algorithm")
 
         if self.__all_open_prs is not None:
             prs_for_base_branch = list(filter(lambda _pr: _pr.head == pr.base, self.__all_open_prs))
