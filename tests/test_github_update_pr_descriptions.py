@@ -261,14 +261,14 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             ["github", "update-pr-descriptions", "--all"],
             """
             Checking for open GitHub PRs... OK
-            Warn: Currently there are no pull requests opened in repository example-org/example-repo
+            Warn: currently there are no pull requests opened in repository example-org/example-repo
             """
         )
 
         assert_failure(
             ["github", "update-pr-descriptions", "--mine"],
             """
-            Could not determine current user name, please check that the GitHub API token provided by one of the:
+            could not determine current user name, please check that the GitHub API token provided by one of the:
                 1. GITHUB_TOKEN environment variable
                 2. Content of the ~/.github-token file
                 3. Current auth token from the gh GitHub CLI
@@ -281,6 +281,6 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             ["github", "update-pr-descriptions", "--mine"],
             """
             Checking for open GitHub PRs... OK
-            Warn: User github_user has no open pull request in repository example-org/example-repo
+            Warn: user github_user has no open pull request in repository example-org/example-repo
             """
         )

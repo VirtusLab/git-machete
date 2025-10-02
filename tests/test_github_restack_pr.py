@@ -292,7 +292,7 @@ class TestGitHubRestackPR(BaseTest):
         assert_success(
             ['github', 'restack-pr'],
             """
-            Warn: Branch feature is behind its remote counterpart. Consider using git pull.
+            Warn: branch feature is behind its remote counterpart. Consider using git pull.
 
             Base branch of PR #15 has been switched to master
             Description of PR #15 has been updated
@@ -325,7 +325,7 @@ class TestGitHubRestackPR(BaseTest):
         assert_success(
             ['github', 'restack-pr'],
             """
-            Warn: Branch feature is diverged from and older than its remote counterpart. Consider using git reset --keep.
+            Warn: branch feature is diverged from and older than its remote counterpart. Consider using git reset --keep.
 
             Base branch of PR #15 has been switched to master
             Description of PR #15 has been updated

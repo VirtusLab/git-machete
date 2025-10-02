@@ -260,14 +260,14 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             ["gitlab", "update-mr-descriptions", "--all"],
             """
             Checking for open GitLab MRs... OK
-            Warn: Currently there are no merge requests opened in project example-org/example-repo
+            Warn: currently there are no merge requests opened in project example-org/example-repo
             """
         )
 
         assert_failure(
             ["gitlab", "update-mr-descriptions", "--mine"],
             """
-            Could not determine current user name, please check that the GitLab API token provided by one of the:
+            could not determine current user name, please check that the GitLab API token provided by one of the:
                 1. GITLAB_TOKEN environment variable
                 2. Content of the ~/.gitlab-token file
                 3. Current auth token from the glab GitLab CLI
@@ -279,6 +279,6 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             ["gitlab", "update-mr-descriptions", "--mine"],
             """
             Checking for open GitLab MRs... OK
-            Warn: User gitlab_user has no open merge request in project example-org/example-repo
+            Warn: user gitlab_user has no open merge request in project example-org/example-repo
             """
         )

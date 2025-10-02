@@ -296,7 +296,7 @@ class TestGitLabRestackMR(BaseTest):
         assert_success(
             ['gitlab', 'restack-mr'],
             """
-            Warn: Branch feature is behind its remote counterpart. Consider using git pull.
+            Warn: branch feature is behind its remote counterpart. Consider using git pull.
 
             Target branch of MR !15 has been switched to master
             Description of MR !15 has been updated
@@ -329,7 +329,7 @@ class TestGitLabRestackMR(BaseTest):
         assert_success(
             ['gitlab', 'restack-mr'],
             """
-            Warn: Branch feature is diverged from and older than its remote counterpart. Consider using git reset --keep.
+            Warn: branch feature is diverged from and older than its remote counterpart. Consider using git reset --keep.
 
             Target branch of MR !15 has been switched to master
             Description of MR !15 has been updated

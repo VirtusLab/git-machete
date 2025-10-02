@@ -211,7 +211,7 @@ class GitHubClient(CodeHostingClient):
                     raise MacheteException(error_reason)
                 elif 'Reviews may only be requested from collaborators.' in error_reason:
                     print()
-                    warn(f"There are some invalid reviewers (non-collaborators) in .git{os.path.sep}info{os.path.sep}reviewers file.\n"
+                    warn(f"there are some invalid reviewers (non-collaborators) in .git{os.path.sep}info{os.path.sep}reviewers file.\n"
                          "Skipped adding reviewers to the pull request.")
                 else:
                     raise UnexpectedMacheteException(

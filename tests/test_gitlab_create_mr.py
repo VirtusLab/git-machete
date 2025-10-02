@@ -600,7 +600,7 @@ class TestGitLabCreateMR(BaseTest):
             |
             o-feature *
 
-        Warn: Target branch branch-1 lives in example-org/example-repo-2 project,
+        Warn: target branch branch-1 lives in example-org/example-repo-2 project,
         while source branch feature lives in example-org/example-repo-1 project.
         git-machete will now attempt to create an MR in example-org/example-repo-2.
 
@@ -661,7 +661,7 @@ class TestGitLabCreateMR(BaseTest):
         expected_result = """
         Add feature_1 onto the inferred upstream (parent) branch feature? (y, N)
         Added branch feature_1 onto feature
-        Warn: Target branch feature lives in example-org/example-repo-1 project,
+        Warn: target branch feature lives in example-org/example-repo-1 project,
         while source branch feature_1 lives in example-org/example-repo-2 project.
         git-machete will now attempt to create an MR in example-org/example-repo-1.
 
@@ -746,7 +746,7 @@ class TestGitLabCreateMR(BaseTest):
         expected_result = """
         Add feature_4 onto the inferred upstream (parent) branch feature_3? (y, N)
         Added branch feature_4 onto feature_3
-        Warn: Target branch feature_3 lives in example-org/example-repo-1 project,
+        Warn: target branch feature_3 lives in example-org/example-repo-1 project,
         while source branch feature_4 lives in example-org/example-repo-2 project.
         git-machete will now attempt to create an MR in example-org/example-repo-1.
 
@@ -776,7 +776,7 @@ class TestGitLabCreateMR(BaseTest):
         expected_result = """
         Add feature_5 onto the inferred upstream (parent) branch feature_3? (y, N)
         Added branch feature_5 onto feature_3
-        Warn: Target branch feature_3 lives in example-org/example-repo-1 project,
+        Warn: target branch feature_3 lives in example-org/example-repo-1 project,
         while source branch feature_5 lives in example-org/example-repo-2 project.
         git-machete will now attempt to create an MR in example-org/example-repo-1.
 
@@ -862,7 +862,7 @@ class TestGitLabCreateMR(BaseTest):
         assert_success(
             ['gitlab', 'create-mr'],
             """
-            Warn: Branch develop is behind its remote counterpart. Consider using git pull.
+            Warn: branch develop is behind its remote counterpart. Consider using git pull.
             Proceed with creating merge request? (y, Q)
             Checking if target branch master exists in origin remote... YES
             Creating an MR from develop to master... OK, see www.gitlab.com
@@ -934,7 +934,7 @@ class TestGitLabCreateMR(BaseTest):
         assert_success(
             ['gitlab', 'create-mr'],
             """
-            Warn: Branch develop is diverged from and older than its remote counterpart. Consider using git reset --keep.
+            Warn: branch develop is diverged from and older than its remote counterpart. Consider using git reset --keep.
             Proceed with creating merge request? (y, Q)
             Checking if target branch master exists in origin remote... YES
             Creating an MR from develop to master... OK, see www.gitlab.com

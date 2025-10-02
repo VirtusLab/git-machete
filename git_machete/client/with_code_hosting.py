@@ -199,12 +199,12 @@ class MacheteClientWithCodeHosting(MacheteClient):
 
         else:
             if s == SyncToRemoteStatus.BEHIND_REMOTE:
-                warn(f"Branch {bold(current_branch)} is behind its remote counterpart. Consider using `git pull`.")
+                warn(f"branch {bold(current_branch)} is behind its remote counterpart. Consider using `git pull`.")
                 self._print_new_line(False)
                 ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + get_pretty_choices('y', 'Q'),
                                   f"Proceeding with {spec.pr_full_name} creation...", opt_yes=opt_yes)
             elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                warn(f"Branch {bold(current_branch)} is diverged from and older than its remote counterpart. "
+                warn(f"branch {bold(current_branch)} is diverged from and older than its remote counterpart. "
                      "Consider using `git reset --keep`.")
                 self._print_new_line(False)
                 ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + get_pretty_choices('y', 'Q'),
@@ -239,7 +239,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
         base: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(head))
         spec = self.code_hosting_spec
         if not base:
-            raise UnexpectedMacheteException(f'Could not determine {spec.base_branch_name} branch for {spec.pr_short_name}. '
+            raise UnexpectedMacheteException(f'could not determine {spec.base_branch_name} branch for {spec.pr_short_name}. '
                                              f'Branch {bold(head)} is a root branch.')
 
         domain = self.__derive_code_hosting_domain()
@@ -251,7 +251,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
         head_org_repo = head_org_repo_remote.extract_org_and_repo()
         if base_org_repo != head_org_repo:
             arrow = get_right_arrow()
-            warn(f"{spec.base_branch_name.capitalize()} branch <b>{base}</b> lives in <b>{base_org_repo}</b> {spec.repository_name},\n"
+            warn(f"{spec.base_branch_name} branch <b>{base}</b> lives in <b>{base_org_repo}</b> {spec.repository_name},\n"
                  f"while {spec.head_branch_name} branch <b>{head}</b> lives in <b>{head_org_repo}</b> {spec.repository_name}.\n"
                  f"git-machete will now attempt to create {spec.pr_short_name_article} {spec.pr_short_name} in <b>{base_org_repo}</b>.\n"
                  "\n"
@@ -451,9 +451,9 @@ class MacheteClientWithCodeHosting(MacheteClient):
 
         else:
             if s == SyncToRemoteStatus.BEHIND_REMOTE:
-                warn(f"Branch {bold(current_branch)} is behind its remote counterpart. Consider using `git pull`.\n")
+                warn(f"branch {bold(current_branch)} is behind its remote counterpart. Consider using `git pull`.\n")
             elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                warn(f"Branch {bold(current_branch)} is diverged from and older than its remote counterpart. "
+                warn(f"branch {bold(current_branch)} is diverged from and older than its remote counterpart. "
                      "Consider using `git reset --keep`.\n")
             elif s == SyncToRemoteStatus.IN_SYNC_WITH_REMOTE:
                 pass
@@ -756,7 +756,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         if not current_user and mine:
-            msg = (f"Could not determine current user name, please check that the {spec.display_name} API token provided by one of the: "
+            msg = (f"could not determine current user name, please check that the {spec.display_name} API token provided by one of the: "
                    f"{spec.token_providers_message}is valid.")
             raise MacheteException(msg)
 
@@ -790,7 +790,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         if not current_user and mine:
-            msg = (f"Could not determine current user name, please check that the {spec.display_name} API token provided by one of the: "
+            msg = (f"could not determine current user name, please check that the {spec.display_name} API token provided by one of the: "
                    f"{spec.token_providers_message}is valid.")
             if fail_on_missing_current_user_for_my_open_prs:
                 raise MacheteException(msg)
@@ -930,13 +930,13 @@ class MacheteClientWithCodeHosting(MacheteClient):
             return result
         if all:
             if not all_open_prs:
-                warn(f"Currently there are no {spec.pr_full_name}s opened in {repo_pretty}")
+                warn(f"currently there are no {spec.pr_full_name}s opened in {repo_pretty}")
                 return []
             return all_open_prs
         elif by:
             result = [pr for pr in all_open_prs if pr.user == by]
             if not result:
-                warn(f"User {bold(by)} has no open {spec.pr_full_name} in {repo_pretty}")
+                warn(f"user {bold(by)} has no open {spec.pr_full_name} in {repo_pretty}")
                 return []
             return result
         elif related_to:
