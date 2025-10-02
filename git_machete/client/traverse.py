@@ -1,16 +1,49 @@
 import itertools
-from typing import List, Optional, Union
+from enum import auto
+from typing import List, Optional, Type, Union
 
 from git_machete.annotation import Annotation, Qualifiers
-from git_machete.client.base import (PickRoot, SquashMergeDetection,
-                                     TraverseReturnTo, TraverseStartFrom)
+from git_machete.client.base import (ParsableEnum, PickRoot,
+                                     SquashMergeDetection)
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.code_hosting import PullRequest
 from git_machete.exceptions import (InteractionStopped, MacheteException,
                                     UnexpectedMacheteException)
-from git_machete.git_operations import LocalBranchShortName, SyncToRemoteStatus
+from git_machete.git_operations import (GitContext, LocalBranchShortName,
+                                        SyncToRemoteStatus)
 from git_machete.utils import (bold, flat_map, fmt, get_pretty_choices,
                                get_right_arrow)
+
+
+class TraverseReturnTo(ParsableEnum):
+    HERE = auto()
+    NEAREST_REMAINING = auto()
+    STAY = auto()  # noqa: F841
+
+
+class TraverseStartFrom(ParsableEnum):
+    HERE = auto()
+    ROOT = auto()
+    FIRST_ROOT = auto()
+
+    @classmethod
+    def from_string_or_branch(cls: Type['TraverseStartFrom'], value: str,
+                              git_context: GitContext) -> Union['TraverseStartFrom', LocalBranchShortName]:
+        """Parse value as enum (case-insensitive) or as branch name.
+        If value matches both a special value and an existing branch name, the branch takes priority."""
+        local_branches = git_context.get_local_branches()
+
+        # Check if it's an existing branch name first (gives priority to actual branches)
+        # This handles exact matches (case-sensitive)
+        if value in local_branches:
+            return LocalBranchShortName.of(value)
+
+        # Try to parse as special value (case-insensitive)
+        try:
+            return cls[value.upper().replace("-", "_")]
+        except KeyError:
+            all_values = ', '.join(e.name.lower().replace('_', '-') for e in cls)
+            raise MacheteException(f"{bold(value)} is neither a special value ({all_values}), nor a local branch")
 
 
 class TraverseMacheteClient(MacheteClientWithCodeHosting):

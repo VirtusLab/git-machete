@@ -13,8 +13,7 @@ import git_machete.options
 from git_machete import __version__, git_config_keys, utils
 from git_machete.client.advance import AdvanceMacheteClient
 from git_machete.client.anno import AnnoMacheteClient
-from git_machete.client.base import (MacheteClient, SquashMergeDetection,
-                                     TraverseReturnTo, TraverseStartFrom)
+from git_machete.client.base import MacheteClient, SquashMergeDetection
 from git_machete.client.diff import DiffMacheteClient
 from git_machete.client.discover import DiscoverMacheteClient
 from git_machete.client.fork_point import ForkPointMacheteClient
@@ -22,7 +21,8 @@ from git_machete.client.go_show import GoShowMacheteClient
 from git_machete.client.log import LogMacheteClient
 from git_machete.client.slide_out import SlideOutMacheteClient
 from git_machete.client.squash import SquashMacheteClient
-from git_machete.client.traverse import TraverseMacheteClient
+from git_machete.client.traverse import (TraverseMacheteClient,
+                                         TraverseReturnTo, TraverseStartFrom)
 from git_machete.client.update import UpdateMacheteClient
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.github import GITHUB_CLIENT_SPEC
