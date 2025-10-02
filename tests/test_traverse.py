@@ -993,8 +993,376 @@ class TestTraverse(BaseTest):
                        "Invalid value for --return-to flag: dunno-where. Valid values are here, nearest-remaining, stay")
         assert_failure(["traverse", "--squash-merge-detection=lolxd"],
                        "Invalid value for --squash-merge-detection flag: lolxd. Valid values are none, simple, exact")
-        assert_failure(["traverse", "--start-from=nowhere"],
-                       "Invalid value for --start-from flag: nowhere. Valid values are here, root, first-root")
+
+    def test_traverse_start_from_branch_names(self) -> None:
+        """Test the new functionality for --start-from accepting branch names."""
+        self.setup_standard_tree()
+
+        # Test starting from a specific branch name
+        check_out("develop")
+        assert_success(
+            ["traverse", "--start-from=call-ws", "-y"],
+            """
+            Checking out branch call-ws
+
+            Pushing call-ws to origin...
+
+            Checking out drop-constraint
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws
+                |
+                x-drop-constraint * (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing drop-constraint onto call-ws...
+
+            Pushing untracked branch drop-constraint to origin...
+
+            Checking out hotfix/add-trigger
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger * (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
+            Pushing hotfix/add-trigger with force-with-lease to origin...
+
+            Checking out ignore-trailing
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing * (diverged from & older than origin)
+
+            Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
+            Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing *
+
+            Reached branch ignore-trailing which has no successor; nothing left to update
+            """
+        )
+
+    def test_traverse_start_from_case_insensitive_special_values(self) -> None:
+        """Test case-insensitive special values for --start-from and --return-to."""
+        self.setup_standard_tree()
+        check_out("call-ws")
+
+        # Test case-insensitive "ROOT"
+        assert_success(
+            ["traverse", "--start-from=ROOT", "--return-to=HERE", "-y"],
+            """
+            Checking out the root branch (develop)
+
+            Checking out allow-ownership-link
+
+              develop
+              |
+              x-allow-ownership-link * (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing allow-ownership-link onto develop...
+
+            Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
+            Pushing allow-ownership-link with force-with-lease to origin...
+
+            Checking out build-chain
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | x-build-chain * (untracked)
+              |
+              o-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing build-chain onto allow-ownership-link...
+
+            Pushing untracked branch build-chain to origin...
+
+            Checking out call-ws
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws * (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Pushing call-ws to origin...
+
+            Checking out drop-constraint
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws
+                |
+                x-drop-constraint * (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing drop-constraint onto call-ws...
+
+            Pushing untracked branch drop-constraint to origin...
+
+            Checking out hotfix/add-trigger
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger * (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
+            Pushing hotfix/add-trigger with force-with-lease to origin...
+
+            Checking out ignore-trailing
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing * (diverged from & older than origin)
+
+            Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
+            Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws *
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing
+
+            Reached branch ignore-trailing which has no successor; nothing left to update
+            Returned to the initial branch call-ws
+            """
+        )
+
+    def test_traverse_branch_priority_over_special_values(self) -> None:
+        """Test that actual branch names take priority over special values when ambiguous."""
+        self.setup_standard_tree()
+
+        # Create a branch named "root" to test ambiguity resolution
+        check_out("develop")
+        new_branch("root")
+        commit("root branch commit")
+
+        # Add the "root" branch to the layout
+        body: str = \
+            """
+            develop
+                allow-ownership-link
+                    build-chain
+                call-ws
+                    drop-constraint
+                root
+            master
+                hotfix/add-trigger
+                    ignore-trailing
+            """
+        rewrite_branch_layout_file(body)
+
+        check_out("develop")
+
+        # When we specify --start-from=root, it should use the actual "root" branch, not the special value
+        assert_success(
+            ["traverse", "--start-from=root", "-y"],
+            """
+            Checking out branch root
+
+            Pushing untracked branch root to origin...
+
+            Checking out hotfix/add-trigger
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+              | |
+              | x-drop-constraint (untracked)
+              |
+              o-root
+
+              master
+              |
+              o-hotfix/add-trigger * (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
+            Pushing hotfix/add-trigger with force-with-lease to origin...
+
+            Checking out ignore-trailing
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+              | |
+              | x-drop-constraint (untracked)
+              |
+              o-root
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing * (diverged from & older than origin)
+
+            Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
+            Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+              | |
+              | x-drop-constraint (untracked)
+              |
+              o-root
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing *
+
+            Reached branch ignore-trailing which has no successor; nothing left to update
+            """
+        )
+
+    def test_traverse_start_from_nonexistent_branch(self) -> None:
+        """Test error handling for non-existent branch names."""
+        self.setup_standard_tree()
+        check_out("develop")
+
+        assert_failure(
+            ["traverse", "--start-from=nonexistent-branch"],
+            "nonexistent-branch is neither a special value (here, root, first-root), nor a local branch"
+        )
 
     def test_traverse_removes_current_directory(self) -> None:
         (local_path, _) = create_repo_with_remote()

@@ -130,8 +130,8 @@ when the current user is NOT the author of the PR/MR associated with that branch
 --return-to=WHERE              Specify the branch to return after traversal is successfully completed;
                                WHERE can be ``here`` (the current branch at the moment when traversal starts), ``nearest-remaining``
                                (nearest remaining branch in case the ``here`` branch has been slid out by the traversal) or
-                               ``stay`` (the default --- just stay wherever the traversal stops). Note: when user quits by ``q``/``yq``
-                               or when traversal is stopped because one of git actions fails, the behavior is always ``stay``.
+                               ``stay`` (the default --- just stay wherever the traversal stops). Values are case-insensitive.
+                               Note: when user quits by ``q``/``yq`` or when traversal is stopped because one of git actions fails, the behavior is always ``stay``.
 
 --squash-merge-detection=MODE  Specify the mode for detection of rebase/squash merges (grey edges).
                                ``MODE`` can be ``none`` (fastest, no squash merges are detected), ``simple`` (default) or ``exact`` (slowest).
@@ -139,7 +139,9 @@ when the current user is NOT the author of the PR/MR associated with that branch
 
 --start-from=WHERE             Specify the branch to start the traversal from; WHERE can be ``here``
                                (the default --- current branch, must be managed by git machete), ``root`` (root branch of the current branch,
-                               as in ``git machete show root``) or ``first-root`` (first listed managed branch).
+                               as in ``git machete show root``), ``first-root`` (first listed managed branch), or any branch name.
+                               Special values are case-insensitive. If a branch name conflicts with a special value (for example, a branch named ``root``),
+                               the actual branch takes priority.
 
 -w, --whole                    Equivalent to ``-n --start-from=first-root --return-to=nearest-remaining``;
                                useful for quickly traversing & syncing all branches (rather than doing more fine-grained operations on the

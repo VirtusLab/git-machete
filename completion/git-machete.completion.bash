@@ -10,8 +10,8 @@ _git_machete() {
   local gitlab_subcommands="anno-mrs checkout-mrs create-mr restack-mr retarget-mr update-mr-descriptions"
   local locations="current $directions"
   local opt_color_args="always auto never"
-  local opt_return_to_args="here nearest-remaining stay"
-  local opt_start_from_args="here root first-root"
+  local opt_return_to_args="HERE NEAREST-REMAINING STAY"
+  local opt_start_from_args="HERE ROOT FIRST-ROOT"
   local shells="bash fish zsh"
 
   local common_opts="--debug -h --help -v --verbose"
@@ -43,7 +43,7 @@ _git_machete() {
     --down-fork-point=*|--fork-point=*|--override-to=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
     --return-to=*) __gitcomp "$opt_return_to_args" "" "${cur##--return-to=}" ;;
     --roots=*) __gitcomp "$(__git_heads)" "" "${cur##--roots=}" ;;
-    --start-from=*) __gitcomp "$opt_start_from_args" "" "${cur##--start-from=}" ;;
+    --start-from=*) __gitcomp "$opt_start_from_args $(__git_heads)" "" "${cur##--start-from=}" ;;
     -*)
       case ${COMP_WORDS[2]} in
         add) __gitcomp "$common_opts $add_opts" ;;
@@ -107,7 +107,7 @@ _git_machete() {
           --return-to) __gitcomp "$opt_return_to_args" ;;
           # TODO (#111): complete the comma-separated list of roots
           -r|--roots) __gitcomp "$(__git_heads)" ;;
-          --start-from) __gitcomp "$opt_start_from_args" ;;
+          --start-from) __gitcomp "$opt_start_from_args $(__git_heads)" ;;
           --unset-override) __gitcomp_nl "$(git machete list with-overridden-fork-point 2>/dev/null)" ;;
           *)
             case ${COMP_WORDS[2]} in

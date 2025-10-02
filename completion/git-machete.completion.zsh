@@ -153,7 +153,7 @@ _git-machete() {
             '(--push)'--push'[Push all (both tracked and untracked) branches to remote (default behavior)]' \
             '(--push-untracked)'--push-untracked'[Push untracked branches to remote (default behavior)]' \
             '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :__git_machete_opt_return_to_args' \
-            '(--start-from)'--start-from='[The branch to  to start the traversal from; argument can be "here", "root", or "first-root"]: :__git_machete_opt_start_from_args' \
+            '(--start-from)'--start-from='[The branch to start the traversal from; argument can be "here", "root", "first-root", or any branch name]: :__git_machete_opt_start_from_args_or_branches' \
             '(-w --whole)'{-w,--whole}'[Equivalent to -n --start-from=first-root --return-to=nearest-remaining]' \
             '(-W)'-W'[Equivalent to --fetch --whole]' \
             '(-y --yes)'{-y,--yes}'[Do not ask for any interactive input; implicates -n]' \
@@ -418,9 +418,9 @@ __git_machete_opt_color_args() {
 __git_machete_opt_return_to_args() {
   local opt_return_to
   opt_return_to=(
-    'here:the current branch at the moment when traversal starts'
-    'nearest-remaining:nearest remaining branch in case the "here" branch has been slid out by the traversal'
-    'stay:the default - just stay wherever the traversal stops'
+    'HERE:the current branch at the moment when traversal starts'
+    'NEAREST-REMAINING:nearest remaining branch in case the here branch has been slid out'
+    'STAY:the default - just stay wherever the traversal stops'
   )
   _describe 'return-to argument' opt_return_to
 }
@@ -428,13 +428,17 @@ __git_machete_opt_return_to_args() {
 __git_machete_opt_start_from_args() {
   local opt_start_from
   opt_start_from=(
-    'here:the default - current branch, must be managed by git-machete'
-    'root:root branch of the current branch, as in git machete show root'
-    'first-root:first listed managed branch'
+    'HERE:the default - current branch, must be managed by git-machete'
+    'ROOT:root branch of the current branch, as in git machete show root'
+    'FIRST-ROOT:first listed managed branch'
   )
   _describe 'start-from argument' opt_start_from
 }
 
+__git_machete_opt_start_from_args_or_branches() {
+  __git_machete_opt_start_from_args
+  __git_branch_names
+}
 __git_machete_list_addable() {
   local result
   IFS=$'\n' result=($(git machete list addable 2>/dev/null))

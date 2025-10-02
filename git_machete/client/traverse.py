@@ -1,5 +1,5 @@
 import itertools
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from git_machete.annotation import Annotation, Qualifiers
 from git_machete.client.base import (PickRoot, SquashMergeDetection,
@@ -26,7 +26,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             opt_push_untracked: bool,
             opt_return_to: TraverseReturnTo,
             opt_squash_merge_detection: SquashMergeDetection,
-            opt_start_from: TraverseStartFrom,
+            opt_start_from: Union[TraverseStartFrom, LocalBranchShortName],
             opt_sync_github_prs: bool,
             opt_sync_gitlab_mrs: bool,
             opt_yes: bool
@@ -65,9 +65,18 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             print(f"Checking out the first root branch ({bold(dest)})")
             self._git.checkout(dest)
             current_branch = dest
-        else:  # cli_opts.opt_start_from == TraverseStartFrom.HERE
+        elif opt_start_from == TraverseStartFrom.HERE:
             current_branch = self._git.get_current_branch()
             self.expect_in_managed_branches(current_branch)
+        elif isinstance(opt_start_from, LocalBranchShortName):
+            dest = opt_start_from
+            self.expect_in_managed_branches(dest)
+            self._print_new_line(False)
+            print(f"Checking out branch {bold(dest)}")
+            self._git.checkout(dest)
+            current_branch = dest
+        else:
+            raise UnexpectedMacheteException(f"Unexpected value for opt_start_from: {opt_start_from}")
 
         branch: LocalBranchShortName
         for branch in itertools.dropwhile(lambda x: x != current_branch, self.managed_branches.copy()):
