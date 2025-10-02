@@ -140,14 +140,14 @@ test_cases: Dict[str, str] = {
         "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
         "--no-push --no-push-untracked --push --push-untracked --return-to --start-from "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
-    "git machete t --start-from ":
-        "FIRST-ROOT HERE ROOT develop feature master",
-    "git machete t --start-from=":
-        "FIRST-ROOT HERE ROOT develop feature master",
     "git machete t --return-to ":
         "HERE NEAREST-REMAINING STAY",
     "git machete t --return-to=":
         "HERE NEAREST-REMAINING STAY",
+    "git machete t --start-from ":
+        "FIRST-ROOT HERE ROOT develop feature master",
+    "git machete t --start-from=":
+        "FIRST-ROOT HERE ROOT develop feature master",
     "git machete traverse -":
         "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
         "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "

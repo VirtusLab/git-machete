@@ -103,8 +103,6 @@ class TraverseStartFrom(ParsableEnum):
         try:
             return cls[value.upper().replace("-", "_")]
         except KeyError:
-            # If it's not a special value and not an existing branch, it might be a non-existent branch
-            # We'll allow it and let the traverse logic handle the error
             all_values = ', '.join(e.name.lower().replace('_', '-') for e in cls)
             raise MacheteException(f"{bold(value)} is neither a special value ({all_values}), nor a local branch")
 
