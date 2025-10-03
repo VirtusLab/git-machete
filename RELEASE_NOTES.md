@@ -2,9 +2,10 @@
 
 ## New in git-machete 3.37.0
 
+- fixed: `fish` completion for long options with an argument
 - added: `--start-from` flag of `traverse` now accepts branch names in addition to special values `here`, `root`, `first-root` (suggested by @chriscz)
 - improved: `--start-from` and `--return-to` flags of `traverse` also accept uppercase values like `HERE` or `STAY`
-- fixed: `fish` completion for long options with an argument
+- improved: also recognize `.github/PULL_REQUEST_TEMPLATE` (without `.md`) as a PR description path
 
 ## New in git-machete 3.36.4
 
