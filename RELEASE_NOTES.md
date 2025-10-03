@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.37.0
 
+- fixed: update `glab` CLI output parsing to support latest PAT format and auth status output format (contributed by @max-nicholson)
 - fixed: `fish` completion for long options with an argument
 - added: `--start-from` flag of `traverse` now accepts branch names in addition to special values `here`, `root`, `first-root` (suggested by @chriscz)
 - improved: `--start-from` and `--return-to` flags of `traverse` also accept uppercase values like `HERE` or `STAY`
