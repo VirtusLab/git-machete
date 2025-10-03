@@ -89,7 +89,9 @@ class GitLabToken(NamedTuple):
         # As of glab version 1.36.0, this output goes to stderr.
         # As of glab version 1.66.0, the token line was changed from
         # "Token: glpat..." to "Token found: glpat..."
-        match = re.search(r"Token(?: found)?: ([\w-]+)", glab_token_stderr)
+
+        # Note: Newer GitLab personal access tokens can contain "."s
+        match = re.search(r"Token(?: found)?: ([.\w-]+)", glab_token_stderr)
         if match:
             return cls(value=match.group(1), provider=f'auth token for {domain} from `glab` GitLab CLI')
         return None

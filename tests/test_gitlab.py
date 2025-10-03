@@ -295,7 +295,6 @@ class TestGitLab(BaseTest):
         assert gitlab_token.provider == f'auth token for {domain} from `glab` GitLab CLI'
         assert gitlab_token.value == 'glpat-mytoken_for_gitlab_com_from_glab_cli_pre_1_66_0'
 
-
         fixed_popen_cmd_result = (0, "", """gitlab.com
                                           ✓ Logged in to gitlab.com as Foo Bar (/Users/foo_bar/.config/glab-cli/config.yml)
                                           ✓ Git operations for gitlab.com configured to use https protocol.
@@ -308,6 +307,19 @@ class TestGitLab(BaseTest):
         assert gitlab_token is not None
         assert gitlab_token.provider == f'auth token for {domain} from `glab` GitLab CLI'
         assert gitlab_token.value == 'glpat-mytoken_for_gitlab_com_from_glab_cli_post_1_66_0'
+
+        fixed_popen_cmd_result = (0, "", """gitlab.com
+                                          ✓ Logged in to gitlab.com as Foo Bar (/Users/foo_bar/.config/glab-cli/config.yml)
+                                          ✓ Git operations for gitlab.com configured to use https protocol.
+                                          ✓ API calls for gitlab.com are made over https protocol.
+                                          ✓ REST API Endpoint: https://gitlab.com/api/v4/
+                                          ✓ GraphQL Endpoint: https://gitlab.com/api/graphql/
+                                          ✓ Token found: glpat-mytoken_for_gitlab_com.containing.dots""")
+        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(fixed_popen_cmd_result))
+        gitlab_token = GitLabToken.for_domain(domain=domain)
+        assert gitlab_token is not None
+        assert gitlab_token.provider == f'auth token for {domain} from `glab` GitLab CLI'
+        assert gitlab_token.value == 'glpat-mytoken_for_gitlab_com.containing.dots'
 
     def test_gitlab_invalid_flag_combinations(self) -> None:
         create_repo()
