@@ -28,6 +28,24 @@ executors:
 orbs:
   codecov: codecov/codecov@5.3.0
 
+commands:
+  python_git_tests:
+    parameters:
+      python:
+        type: string
+      git:
+        type: string
+    steps:
+      - checkout
+      - run:
+          name: Run tests against Python <<parameters.python>> and git <<parameters.git>>
+          command: PYTHON_VERSION=<<parameters.python>> GIT_VERSION=<<parameters.git>>  bash ci/tox/ci-run.sh
+      - store_test_results:
+          path: test-results/
+      - persist_to_workspace:
+          root: .
+          paths: [ .coverage.* ]
+
 jobs:
   "general checks":
     executor: ubuntu_executor
@@ -93,107 +111,66 @@ jobs:
   "python 3_6 git 1_8_0":
     executor: ubuntu_executor
     steps:
-      - checkout
-      - run:
-          name: Run tests against Python 3.6 and git 1.8.0
-          command: PYTHON_VERSION=3.6 GIT_VERSION=1.8.0  bash ci/tox/ci-run.sh
-      - store_test_results:
-          path: test-results/
-      - persist_to_workspace:
-          root: .
-          paths: [ .coverage.* ]
+      - python_git_tests:
+          python: "3.6"
+          git: 1.8.0
 
   "python 3_7 git 2_7_6":
     executor: ubuntu_executor
     steps:
-      - checkout
-      - run:
-          name: Run tests against Python 3.7 and git 2.7.6
-          command: PYTHON_VERSION=3.7 GIT_VERSION=2.7.6  bash ci/tox/ci-run.sh
-      - store_test_results:
-          path: test-results/
-      - persist_to_workspace:
-          root: .
-          paths: [ .coverage.* ]
+      - python_git_tests:
+          python: "3.7"
+          git: 2.7.6
 
   "python 3_8 git 2_25_0":
     executor: ubuntu_executor
     steps:
-      - checkout
-      - run:
-          name: Run tests against Python 3.8 and git 2.25.0
-          command: PYTHON_VERSION=3.8 GIT_VERSION=2.25.0  bash ci/tox/ci-run.sh
-      - store_test_results:
-          path: test-results/
-      - persist_to_workspace:
-          root: .
-          paths: [ .coverage.* ]
+      - python_git_tests:
+          python: "3.8"
+          git: 2.25.0
 
   "python 3_9 git 2_30_1":
     executor: ubuntu_executor
     steps:
-      - checkout
-      - run:
-          name: Run tests against Python 3.9 and git 2.30.1
-          command: PYTHON_VERSION=3.9 GIT_VERSION=2.30.1  bash ci/tox/ci-run.sh
-      - store_test_results:
-          path: test-results/
-      - persist_to_workspace:
-          root: .
-          paths: [ .coverage.* ]
+      - python_git_tests:
+          python: "3.9"
+          git: 2.30.1
 
   "python 3_10 git 2_33_1":
     executor: ubuntu_executor
     steps:
-      - checkout
-      - run:
-          name: Run tests against Python 3.10 and git 2.33.1
-          command: PYTHON_VERSION=3.10 GIT_VERSION=2.33.1  bash ci/tox/ci-run.sh
-      - store_test_results:
-          path: test-results/
-      - persist_to_workspace:
-          root: .
-          paths: [ .coverage.* ]
+      - python_git_tests:
+          python: "3.10"
+          git: 2.33.1
 
   "python 3_11 git 2_38_1":
     executor: ubuntu_executor
     steps:
-      - checkout
-      - run:
-          name: Run tests against Python 3.11 and git 2.38.1
-          command: PYTHON_VERSION=3.11 GIT_VERSION=2.38.1  bash ci/tox/ci-run.sh
-      - store_test_results:
-          path: test-results/
-      - persist_to_workspace:
-          root: .
-          paths: [ .coverage.* ]
+      - python_git_tests:
+          python: "3.11"
+          git: 2.38.1
 
   # v2.46.1 needs to be covered as it introduced a bug in `git patch-id` (see issue #1329), already fixed in v2.46.2
   "python 3_12 git 2_46_1":
     executor: ubuntu_executor
     steps:
-      - checkout
-      - run:
-          name: Run tests against Python 3.12 and git 2.46.1
-          command: PYTHON_VERSION=3.12 GIT_VERSION=2.46.1  bash ci/tox/ci-run.sh
-      - store_test_results:
-          path: test-results/
-      - persist_to_workspace:
-          root: .
-          paths: [ .coverage.* ]
+      - python_git_tests:
+          python: "3.12"
+          git: 2.46.1
 
   "python 3_13 git 2_47_0":
     executor: ubuntu_executor
     steps:
-      - checkout
-      - run:
-          name: Run tests against Python 3.13 and git 2.47.0
-          command: PYTHON_VERSION=3.13 GIT_VERSION=2.47.0  bash ci/tox/ci-run.sh
-      - store_test_results:
-          path: test-results/
-      - persist_to_workspace:
-          root: .
-          paths: [ .coverage.* ]
+      - python_git_tests:
+          python: "3.13"
+          git: 2.47.0
+
+  "python 3_14 git 2_51_0":
+    executor: ubuntu_executor
+    steps:
+      - python_git_tests:
+          python: "3.14"
+          git: 2.51.0
 
   # Note the while we use Linux executor to test against specific Python&git version,
   # on macOS and Windows we're just checking compatibility with the OS itself,
@@ -305,6 +282,7 @@ test_jobs: &test_jobs
   - python 3_11 git 2_38_1
   - python 3_12 git 2_46_1
   - python 3_13 git 2_47_0
+  - python 3_14 git 2_51_0
   - macos tests
   - windows tests
 
@@ -335,6 +313,7 @@ workflows:
       - python 3_11 git 2_38_1
       - python 3_12 git 2_46_1
       - python 3_13 git 2_47_0
+      - python 3_14 git 2_51_0
       # MacOS and esp. Windows tests take a relatively long time on critical path,
       # and fail very rarely in isolation (i.e. in cases when tests on Linux don't fail).
       - macos tests:

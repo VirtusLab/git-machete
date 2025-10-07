@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.37.0
 
+- added: support for Python 3.14 (earlier versions of git-machete should also work on Python 3.14)
 - fixed: update `glab` CLI output parsing to support latest PAT format and auth status output format (contributed by @max-nicholson)
 - fixed: `fish` completion for long options with an argument
 - added: `--start-from` flag of `traverse` now accepts branch names in addition to special values `here`, `root`, `first-root` (suggested by @chriscz)
