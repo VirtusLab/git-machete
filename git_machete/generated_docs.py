@@ -1416,7 +1416,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
                                   [-n|--no-edit-merge|--no-interactive-rebase] [--[no-]push] [--[no-]push-untracked]
-                                  [--return-to=WHERE] [--start-from=WHERE] [--squash-merge-detection=MODE]
+                                  [--return-to=WHERE] [--squash-merge-detection=MODE] [--start-from=WHERE] [--stop-after=BRANCH]
                                   [-H|--sync-github-prs|-L|--sync-gitlab-mrs]
                                   [-w|--whole] [-W] [-y|--yes]</b>
 
@@ -1552,6 +1552,11 @@ long_docs: Dict[str, str] = {
               as in `git machete show root`), `first-root` (first listed managed branch), or any branch name.
               Special values are case-insensitive. If a branch name conflicts with a special value (for example, a branch named `root`),
               the actual branch takes priority.
+
+           <b>--stop-after=BRANCH</b>
+              Stop the traversal after processing the specified branch.
+              The traversal will perform all operations (rebase, push, PR/MR creation) for the specified branch
+              and then stop, rather than continue to the subsequent branches.
 
            <b>-w</b>, <b>--whole</b>
               Equivalent to `-n --start-from=first-root --return-to=nearest-remaining`;

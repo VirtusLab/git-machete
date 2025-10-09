@@ -154,6 +154,7 @@ _git-machete() {
             '(--push-untracked)'--push-untracked'[Push untracked branches to remote (default behavior)]' \
             '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :__git_machete_opt_return_to_args' \
             '(--start-from)'--start-from='[The branch to start the traversal from; argument can be "here", "root", "first-root", or any branch name]: :__git_machete_opt_start_from_args_or_branches' \
+            '(--stop-after)'--stop-after='[The branch to stop the traversal after]: :__git_branch_names' \
             '(-w --whole)'{-w,--whole}'[Equivalent to -n --start-from=first-root --return-to=nearest-remaining]' \
             '(-W)'-W'[Equivalent to --fetch --whole]' \
             '(-y --yes)'{-y,--yes}'[Do not ask for any interactive input; implicates -n]' \

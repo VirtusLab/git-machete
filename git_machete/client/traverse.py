@@ -60,12 +60,16 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             opt_return_to: TraverseReturnTo,
             opt_squash_merge_detection: SquashMergeDetection,
             opt_start_from: Union[TraverseStartFrom, LocalBranchShortName],
+            opt_stop_after: Optional[LocalBranchShortName],
             opt_sync_github_prs: bool,
             opt_sync_gitlab_mrs: bool,
             opt_yes: bool
     ) -> None:
         self._git.expect_no_operation_in_progress()
         self.expect_at_least_one_managed_branch()
+
+        if opt_stop_after is not None:
+            self.expect_in_managed_branches(opt_stop_after)
 
         self._set_empty_line_status()
         any_action_suggested: bool = False
@@ -221,6 +225,9 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     if ans == 'yq':
                         return
                     else:
+                        # Check if we should stop after processing this branch (even if it was slid out)
+                        if branch == opt_stop_after:
+                            break
                         # No need to sync branch 'branch' with remote since it just got removed from the tree of dependencies.
                         continue  # pragma: no cover; this line is actually covered, it just doesn't show up due to bug in coverage tooling
                 elif ans in ('q', 'quit'):
@@ -402,6 +409,9 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                         return
                 elif ans in ('q', 'quit'):
                     return
+
+            if branch == opt_stop_after:
+                break
 
         if opt_return_to == TraverseReturnTo.HERE:
             self._git.checkout(initial_branch)
