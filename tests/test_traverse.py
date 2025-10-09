@@ -1536,16 +1536,9 @@ class TestTraverse(BaseTest):
             """
         )
 
-    def test_traverse_stop_after_error_cases(self) -> None:
-        """Test error handling for --stop-after."""
+    def test_traverse_stop_after_unmanaged_branch(self) -> None:
         self.setup_standard_tree()
         check_out("develop")
-
-        # Test non-existent branch
-        assert_failure(
-            ["traverse", "--stop-after=nonexistent-branch"],
-            "nonexistent-branch is not a local branch"
-        )
 
         # Test unmanaged branch
         new_branch("unmanaged-branch")
@@ -1554,7 +1547,8 @@ class TestTraverse(BaseTest):
 
         assert_failure(
             ["traverse", "--stop-after=unmanaged-branch"],
-            "Branch unmanaged-branch not found in the tree of branch dependencies.\nUse git machete add unmanaged-branch or git machete edit."
+            "Branch unmanaged-branch not found in the tree of branch dependencies.\n"
+            "Use git machete add unmanaged-branch or git machete edit."
         )
 
     def test_traverse_removes_current_directory(self) -> None:

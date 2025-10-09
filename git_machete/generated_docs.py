@@ -1554,9 +1554,9 @@ long_docs: Dict[str, str] = {
               the actual branch takes priority.
 
            <b>--stop-after=BRANCH</b>
-              Stop the traversal after processing the specified branch. The branch must be a managed branch.
+              Stop the traversal after processing the specified branch.
               The traversal will perform all operations (rebase, push, PR/MR creation) for the specified branch
-              and then stop, rather than continuing to subsequent branches.
+              and then stop, rather than continue to the subsequent branches.
 
            <b>-w</b>, <b>--whole</b>
               Equivalent to `-n --start-from=first-root --return-to=nearest-remaining`;

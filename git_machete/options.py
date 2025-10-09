@@ -40,8 +40,8 @@ class CommandLineOptions:
         self.opt_squash_merge_detection_origin: Optional[str] = None
         self.opt_squash_merge_detection_string: str = "simple"
         self.opt_start_from: str = "here"
-        self.opt_stop_after: Optional[LocalBranchShortName] = None
         self.opt_stat: bool = False
+        self.opt_stop_after: Optional[LocalBranchShortName] = None
         self.opt_sync_github_prs: bool = False
         self.opt_sync_gitlab_mrs: bool = False
         self.opt_title: Optional[str] = None
