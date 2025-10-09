@@ -393,6 +393,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 if ans in ('y', 'yes', 'yq', 'd', 'draft'):
                     self.create_pull_request(
                         head=current_branch,
+                        opt_base=None,
                         opt_draft=(ans in ('d', 'draft')),
                         opt_title=None,
                         opt_update_related_descriptions=True,

@@ -244,6 +244,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         parser.add_argument('request_id', nargs='*', type=int)
         parser.add_argument('-b', '--branch')
         parser.add_argument('--all', action='store_true')
+        parser.add_argument('--base')
         parser.add_argument('--by')
         parser.add_argument('--draft', action='store_true')
         parser.add_argument('--ignore-if-missing', action='store_true')
@@ -366,6 +367,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_as_first_child = True
         elif opt == "as_root":
             cli_opts.opt_as_root = True
+        elif opt == "base":
+            cli_opts.opt_base = LocalBranchShortName.of(arg) if arg else None
         elif opt == "branch":
             cli_opts.opt_branch = LocalBranchShortName.of(arg.replace('refs/heads/', '')) if arg else None
         elif opt == "by":
@@ -744,6 +747,7 @@ def launch(orig_args: List[str]) -> None:
                     return
                 github_or_gitlab_client.create_pull_request(
                     head=current_branch,
+                    opt_base=cli_opts.opt_base,
                     opt_draft=cli_opts.opt_draft,
                     opt_title=cli_opts.opt_title,
                     opt_update_related_descriptions=cli_opts.opt_update_related_descriptions,

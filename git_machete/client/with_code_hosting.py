@@ -230,13 +230,14 @@ class MacheteClientWithCodeHosting(MacheteClient):
             self,
             *,
             head: LocalBranchShortName,
+            opt_base: Optional[LocalBranchShortName],
             opt_draft: bool,
             opt_title: Optional[str],
             opt_update_related_descriptions: bool,
             opt_yes: bool
     ) -> None:
-        # first make sure that head branch is synced with remote
-        base: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(head))
+        # Use provided base branch if --base flag is specified (undocumented), otherwise use upstream branch from .git/machete
+        base: Optional[LocalBranchShortName] = opt_base or self.up_branch_for(LocalBranchShortName.of(head))
         spec = self.code_hosting_spec
         if not base:
             raise UnexpectedMacheteException(f'could not determine {spec.base_branch_name} branch for {spec.pr_short_name}. '

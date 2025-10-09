@@ -9,6 +9,7 @@ class CommandLineOptions:
         self.opt_all: bool = False
         self.opt_as_first_child: bool = False
         self.opt_as_root: bool = False
+        self.opt_base: Optional[LocalBranchShortName] = None  # undocumented flag for `github create-pr`
         self.opt_branch: Optional[LocalBranchShortName] = None
         self.opt_by: Optional[str] = None
         self.opt_checked_out_since: Optional[str] = None

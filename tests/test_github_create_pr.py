@@ -1048,3 +1048,47 @@ class TestGitHubCreatePR(BaseTest):
             o-feature *  PR #1 (some_other_user)
             """,
         )
+
+    def test_github_create_pr_with_base_flag(self, mocker: MockerFixture) -> None:
+        """Test that --base flag overrides the upstream branch from .git/machete"""
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        github_api_state = MockGitHubAPIState.with_prs()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+
+        create_repo_with_remote()
+
+        new_branch("main")
+        commit("Main commit")
+        push()
+
+        new_branch("develop")
+        commit("Develop commit")
+        push()
+
+        new_branch("feature")
+        commit("Add feature")
+        push()
+
+        # Set up branch layout where feature is downstream of develop
+        rewrite_branch_layout_file("main\ndevelop\n\tfeature")
+
+        # Use --base to override the upstream branch (develop) and create PR against main instead
+        launch_command("github", "create-pr", "--base", "main")
+
+        # Verify that PR was created with main as base, not develop
+        pr = github_api_state.get_pull_by_number(1)
+        assert pr is not None
+        assert pr['base']['ref'] == 'main'  # Should be main due to --base flag
+        assert pr['head']['ref'] == 'feature'
+
+        assert_success(
+            ['status'],
+            """
+            main
+
+            develop
+            |
+            o-feature *  PR #1 (some_other_user)
+            """,
+        )
