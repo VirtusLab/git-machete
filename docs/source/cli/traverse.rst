@@ -20,7 +20,7 @@ traverse
 
     git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
                            [-n|--no-edit-merge|--no-interactive-rebase] [--[no-]push] [--[no-]push-untracked]
-                           [--return-to=WHERE] [--start-from=WHERE] [--squash-merge-detection=MODE]
+                           [--return-to=WHERE] [--start-from=WHERE] [--stop-after=BRANCH] [--squash-merge-detection=MODE]
                            [-H|--sync-github-prs|-L|--sync-gitlab-mrs]
                            [-w|--whole] [-W] [-y|--yes]
 
@@ -142,6 +142,10 @@ when the current user is NOT the author of the PR/MR associated with that branch
                                as in ``git machete show root``), ``first-root`` (first listed managed branch), or any branch name.
                                Special values are case-insensitive. If a branch name conflicts with a special value (for example, a branch named ``root``),
                                the actual branch takes priority.
+
+--stop-after=BRANCH            Stop the traversal after processing the specified branch. The branch must be a managed branch.
+                               The traversal will perform all operations (rebase, push, PR/MR creation) for the specified branch
+                               and then stop, rather than continuing to subsequent branches.
 
 -w, --whole                    Equivalent to ``-n --start-from=first-root --return-to=nearest-remaining``;
                                useful for quickly traversing & syncing all branches (rather than doing more fine-grained operations on the

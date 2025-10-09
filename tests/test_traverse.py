@@ -1364,6 +1364,199 @@ class TestTraverse(BaseTest):
             "nonexistent-branch is neither a special value (here, root, first-root), nor a local branch"
         )
 
+    def test_traverse_stop_after_basic(self) -> None:
+        """Test basic --stop-after functionality."""
+        self.setup_standard_tree()
+        check_out("develop")
+
+        # Stop after call-ws, should not process drop-constraint
+        assert_success(
+            ["traverse", "--stop-after=call-ws", "-y"],
+            """
+            Checking out allow-ownership-link
+
+              develop
+              |
+              x-allow-ownership-link * (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing allow-ownership-link onto develop...
+
+            Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
+            Pushing allow-ownership-link with force-with-lease to origin...
+
+            Checking out build-chain
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | x-build-chain * (untracked)
+              |
+              o-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing build-chain onto allow-ownership-link...
+
+            Pushing untracked branch build-chain to origin...
+
+            Checking out call-ws
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws * (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Pushing call-ws to origin...
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws *
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            No successor of call-ws needs to be slid out or synced with upstream branch or remote; nothing left to update
+            """
+        )
+
+    def test_traverse_stop_after_with_start_from(self) -> None:
+        """Test --stop-after with --start-from."""
+        self.setup_standard_tree()
+        check_out("develop")
+
+        # Start from allow-ownership-link and stop after call-ws
+        assert_success(
+            ["traverse", "--start-from=allow-ownership-link", "--stop-after=call-ws", "-y"],
+            """
+            Checking out branch allow-ownership-link
+
+            Rebasing allow-ownership-link onto develop...
+
+            Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
+            Pushing allow-ownership-link with force-with-lease to origin...
+
+            Checking out build-chain
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | x-build-chain * (untracked)
+              |
+              o-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing build-chain onto allow-ownership-link...
+
+            Pushing untracked branch build-chain to origin...
+
+            Checking out call-ws
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws * (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Pushing call-ws to origin...
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws *
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            No successor of call-ws needs to be slid out or synced with upstream branch or remote; nothing left to update
+            """
+        )
+
+    def test_traverse_stop_after_error_cases(self) -> None:
+        """Test error handling for --stop-after."""
+        self.setup_standard_tree()
+        check_out("develop")
+
+        # Test non-existent branch
+        assert_failure(
+            ["traverse", "--stop-after=nonexistent-branch"],
+            "nonexistent-branch is not a local branch"
+        )
+
+        # Test unmanaged branch
+        new_branch("unmanaged-branch")
+        commit("unmanaged commit")
+        check_out("develop")
+
+        assert_failure(
+            ["traverse", "--stop-after=unmanaged-branch"],
+            "Branch unmanaged-branch not found in the tree of branch dependencies.\nUse git machete add unmanaged-branch or git machete edit."
+        )
+
     def test_traverse_removes_current_directory(self) -> None:
         (local_path, _) = create_repo_with_remote()
         new_branch("master")

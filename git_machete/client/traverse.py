@@ -60,12 +60,18 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             opt_return_to: TraverseReturnTo,
             opt_squash_merge_detection: SquashMergeDetection,
             opt_start_from: Union[TraverseStartFrom, LocalBranchShortName],
+            opt_stop_after: Optional[LocalBranchShortName],
             opt_sync_github_prs: bool,
             opt_sync_gitlab_mrs: bool,
             opt_yes: bool
     ) -> None:
         self._git.expect_no_operation_in_progress()
         self.expect_at_least_one_managed_branch()
+
+        # Validate --stop-after if provided
+        if opt_stop_after is not None:
+            self.expect_in_local_branches(opt_stop_after)
+            self.expect_in_managed_branches(opt_stop_after)
 
         self._set_empty_line_status()
         any_action_suggested: bool = False
@@ -402,6 +408,10 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                         return
                 elif ans in ('q', 'quit'):
                     return
+
+            # Check if we should stop after processing this branch
+            if branch == opt_stop_after:
+                break
 
         if opt_return_to == TraverseReturnTo.HERE:
             self._git.checkout(initial_branch)

@@ -329,6 +329,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     traverse_parser.add_argument('--return-to')
     traverse_parser.add_argument('--squash-merge-detection')
     traverse_parser.add_argument('--start-from')
+    traverse_parser.add_argument('--stop-after')
     traverse_parser.add_argument('-W', action='store_true')
     traverse_parser.add_argument('-w', '--whole', action='store_true')
     traverse_parser.add_argument('-y', '--yes', action='store_true')
@@ -440,6 +441,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_start_from = arg
         elif opt == "stat":
             cli_opts.opt_stat = True
+        elif opt == "stop_after":
+            cli_opts.opt_stop_after = LocalBranchShortName.of(arg) if arg else None
         elif opt == "sync_github_prs":
             cli_opts.opt_sync_github_prs = True
         elif opt == "sync_gitlab_mrs":
@@ -909,6 +912,7 @@ def launch(orig_args: List[str]) -> None:
                 opt_return_to=opt_return_to,
                 opt_squash_merge_detection=opt_squash_merge_detection,
                 opt_start_from=opt_start_from,
+                opt_stop_after=cli_opts.opt_stop_after,
                 opt_sync_github_prs=cli_opts.opt_sync_github_prs,
                 opt_sync_gitlab_mrs=cli_opts.opt_sync_gitlab_mrs,
                 opt_yes=cli_opts.opt_yes)
