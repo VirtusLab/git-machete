@@ -1551,6 +1551,105 @@ class TestTraverse(BaseTest):
             "Use git machete add unmanaged-branch or git machete edit."
         )
 
+    def test_traverse_stop_after_when_branch_is_slid_out(self) -> None:
+        """Test --stop-after when the target branch gets slid out during traversal."""
+        self.setup_standard_tree()
+
+        # Create a scenario where call-ws is merged and will be slid out
+        check_out("call-ws")
+        check_out("develop")
+        # Merge call-ws into develop to make it appear merged
+        merge("call-ws")
+        push()
+
+        # Now traverse with --stop-after=call-ws - it should stop even though call-ws gets slid out
+        # This test demonstrates the bug: traverse continues to drop-constraint instead of stopping after call-ws
+        assert_success(
+            ["traverse", "--stop-after=call-ws", "-y"],
+            """
+            Checking out allow-ownership-link
+
+              develop
+              |
+              x-allow-ownership-link * (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              m-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing allow-ownership-link onto develop...
+
+            Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
+            Pushing allow-ownership-link with force-with-lease to origin...
+
+            Checking out build-chain
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | x-build-chain * (untracked)
+              |
+              m-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing build-chain onto allow-ownership-link...
+
+            Pushing untracked branch build-chain to origin...
+
+            Checking out call-ws
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              m-call-ws * (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Branch call-ws is merged into develop. Sliding call-ws out of the tree of branch dependencies...
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            No successor of call-ws needs to be slid out or synced with upstream branch or remote; nothing left to update
+            """
+        )
+
     def test_traverse_removes_current_directory(self) -> None:
         (local_path, _) = create_repo_with_remote()
         new_branch("master")

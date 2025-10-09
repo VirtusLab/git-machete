@@ -20,7 +20,7 @@ traverse
 
     git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
                            [-n|--no-edit-merge|--no-interactive-rebase] [--[no-]push] [--[no-]push-untracked]
-                           [--return-to=WHERE] [--start-from=WHERE] [--stop-after=BRANCH] [--squash-merge-detection=MODE]
+                           [--return-to=WHERE] [--squash-merge-detection=MODE] [--start-from=WHERE] [--stop-after=BRANCH]
                            [-H|--sync-github-prs|-L|--sync-gitlab-mrs]
                            [-w|--whole] [-W] [-y|--yes]
 

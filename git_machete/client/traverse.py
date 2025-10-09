@@ -225,6 +225,9 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     if ans == 'yq':
                         return
                     else:
+                        # Check if we should stop after processing this branch (even if it was slid out)
+                        if branch == opt_stop_after:
+                            break
                         # No need to sync branch 'branch' with remote since it just got removed from the tree of dependencies.
                         continue  # pragma: no cover; this line is actually covered, it just doesn't show up due to bug in coverage tooling
                 elif ans in ('q', 'quit'):
