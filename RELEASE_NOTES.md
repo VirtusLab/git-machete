@@ -3,9 +3,9 @@
 ## New in git-machete 3.37.0
 
 - added: support for Python 3.14 (earlier versions of git-machete should also work on Python 3.14)
-- fixed: update `glab` CLI output parsing to support latest PAT format and auth status output format (contributed by @max-nicholson)
+- fixed: update `glab` CLI output parsing to support the latest PAT format and auth status output format (contributed by @max-nicholson)
 - fixed: `fish` completion for long options with an argument
-- added: `--stop-after` flag of `traverse` to stop the traversal after processing the specified branch (suggested by @chriscz)
+- added: `--stop-after` flag to `traverse` to stop the traversal after processing the specified branch (suggested by @chriscz)
 - added: `--start-from` flag of `traverse` now accepts branch names in addition to special values `here`, `root`, `first-root` (suggested by @chriscz)
 - improved: `--start-from` and `--return-to` flags of `traverse` also accept uppercase values like `HERE` or `STAY`
 - improved: also recognize `.github/PULL_REQUEST_TEMPLATE` (without `.md`) as a PR description path

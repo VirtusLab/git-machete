@@ -222,11 +222,12 @@ jobs:
       - run:
           name: '[Dry run] Publish to PyPI'
           # Side effects: does an actual release, but to the test PyPI
-          command: bash ci/pypi/ci-deploy.sh --dry-run
+          command: bash ci/pypi/ci-deploy.sh --test-pypi
 
       - run:
           name: '[Dry run] Build Arch Linux package'
           # Side effects: potentially pushes a regenerated Docker image
+          # Other than that, it just builds the package without publishing anything; there's no special dry-run mode
           command: bash ci/aur/ci-run.sh
 
       - run:

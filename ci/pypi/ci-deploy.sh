@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u
 
-if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
+if [[ ${1-} == "--test-pypi" || ${CIRCLE_BRANCH-} != "master" ]]; then
   repository=testpypi
   token=$TEST_PYPI_TOKEN
   set -x
