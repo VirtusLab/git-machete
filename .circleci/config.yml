@@ -36,7 +36,7 @@ commands:
       git:
         type: string
     steps:
-      - checkout
+      - checkout: {method: blobless}
       - run:
           name: Run tests against Python <<parameters.python>> and git <<parameters.git>>
           command: PYTHON_VERSION=<<parameters.python>> GIT_VERSION=<<parameters.git>>  bash ci/tox/ci-run.sh
@@ -50,7 +50,7 @@ jobs:
   "general checks":
     executor: ubuntu_executor
     steps:
-      - checkout
+      - checkout: {method: blobless}
       - run:
           name: Install dependencies
           # language=sh
@@ -81,7 +81,7 @@ jobs:
   "completion tests":
     executor: ubuntu_executor
     steps:
-      - checkout
+      - checkout: {method: blobless}
       - run:
           name: Install dependencies
           # language=sh
@@ -179,7 +179,7 @@ jobs:
   "macos tests":
     executor: macos_executor
     steps:
-      - checkout
+      - checkout: {method: blobless}
       - run: brew install fish zsh
       - run: pip install tox
       # TODO (#1005): make zsh completion tests pass on macOS machine on CI
@@ -194,7 +194,7 @@ jobs:
   "windows tests":
     executor: windows_executor
     steps:
-      - checkout
+      - checkout: {method: blobless}
       - run: pip install tox
       - run: PYTHON_VERSION=3-windows tox -e coverage -- -vv
       - store_test_results:
@@ -206,7 +206,7 @@ jobs:
   "coverage upload":
     executor: ubuntu_executor
     steps:
-      - checkout
+      - checkout: {method: blobless}
       - attach_workspace:
           at: .
       - run: pip3 install tox
@@ -217,7 +217,7 @@ jobs:
   "dry run releases":
     executor: ubuntu_executor
     steps:
-      - checkout
+      - checkout: {method: blobless}
 
       - run:
           name: '[Dry run] Publish to PyPI'
@@ -243,7 +243,7 @@ jobs:
   "publish to pypi":
     executor: ubuntu_executor
     steps:
-      - checkout
+      - checkout: {method: blobless}
       - run:
           name: 'Publish to PyPI'
           command: bash ci/pypi/ci-deploy.sh
@@ -251,7 +251,7 @@ jobs:
   "publish snap to the stable channel":
     executor: ubuntu_executor
     steps:
-      - checkout
+      - checkout: {method: blobless}
       - run:
           name: 'Publish snap to the stable channel'
           command: bash ci/snap/ci-deploy.sh
@@ -259,7 +259,7 @@ jobs:
   "create github release and close milestone":
     executor: ubuntu_executor
     steps:
-      - checkout
+      - checkout: {method: blobless}
       - run:
           name: 'Create GitHub release and close milestone'
           # language=sh
