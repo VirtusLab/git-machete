@@ -114,7 +114,7 @@ class TestUpdate(BaseTest):
                 launch_command("update")
             else:
                 with fixed_author_and_committer_date_in_past():
-                    expected_error_message = "git rebase --interactive --onto refs/heads/level-0-branch " \
+                    expected_error_message = "git -c log.showSignature=false rebase --interactive --onto refs/heads/level-0-branch " \
                                              "5420e4e155024d8c9181df47ecaeb983c667ce9b level-1-branch returned 1"
                     assert_failure(["update"], expected_error_message, expected_type=UnderlyingGitException)
                 execute("git rebase --continue")

@@ -180,7 +180,7 @@ class BranchPair(NamedTuple):
 
 HEAD = AnyRevision.of("HEAD")
 
-# For simplicity, explicitly suppress showing GPG signatures in `git log`
+# Explicitly suppress showing GPG signatures in `git log`
 # operations to simplify log parsing. This option must be passed as a
 # configuration parameter because the `git log` command's `--no-show-signature`
 # flag does not exist prior to `git` version 2.10.0; `git` does not emit an
@@ -261,14 +261,14 @@ class GitContext:
             self.flush_caches()
         if not allow_non_zero and exit_code != 0:
             raise UnderlyingGitException(
-                f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=None)}` returned {exit_code}")
+                f"`{utils.get_cmd_shell_repr(*GIT_EXEC, git_cmd, *args, env=None)}` returned {exit_code}")
         return exit_code
 
     def _popen_git(self, git_cmd: str, *args: str,
                    allow_non_zero: bool = False, env: Optional[Dict[str, str]] = None, input: Optional[str] = None) -> CommandResult:
         exit_code, stdout, stderr = utils.popen_cmd(*GIT_EXEC, git_cmd, *args, env=env, input=input)
         if not allow_non_zero and exit_code != 0:
-            exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr('git', git_cmd, *args, env=env)}` returned {exit_code}\n")
+            exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr(*GIT_EXEC, git_cmd, *args, env=env)}` returned {exit_code}\n")
             stdout_msg: str = f"\n{utils.bold('stdout')}:\n{utils.dim(stdout)}" if stdout else ""
             stderr_msg: str = f"\n{utils.bold('stderr')}:\n{utils.dim(stderr)}" if stderr else ""
             # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.
