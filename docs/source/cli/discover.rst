@@ -21,12 +21,12 @@ If the reply was ``e[dit]``, additionally an editor is opened (as in: ``git mach
                                  ``<date>`` can be, for example, ``2 weeks ago`` or ``2020-06-01``, as in ``git log --since=<date>``.
                                  If not present, the date is selected automatically so that around 10 branches are included.
 
--l, --list-commits               When printing the discovered tree, additionally lists the messages of commits introduced on each branch
-                                 (as for ``git machete status``).
+-l, --list-commits               When printing the discovered tree, additionally list the messages of commits introduced on each branch
+                                 (as in ``git machete status --list-commits``).
 
 -r, --roots=<branch1,...>        Comma-separated list of branches that should be considered roots of trees of branch dependencies.
-                                 If not present, ``master`` is assumed to be a root. Note that in the process of discovery,
-                                 certain other branches can also be additionally deemed to be roots as well.
+                                 If not present, ``master`` is assumed to be a root.
+                                 Note that certain other branches can also be additionally deemed to be roots as well.
 
 -y, --yes                        Don't ask for confirmation before saving the newly-discovered tree.
                                  Mostly useful in scripts; not recommended for manual use.

@@ -1,8 +1,11 @@
 [files]
 extend-exclude = [
+  "ci/checks/*",
   "graphics/*.cast",
   "graphics/generate-asciinema-gif",
 ]
 
 [default.extend-words]
+tatus = "tatus"  # to allow for `s[tatus]`
 ther = "ther"  # to allow for `o[ther]`
+typ = "typ"  # to allow for `typ[e]`

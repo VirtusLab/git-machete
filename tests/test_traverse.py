@@ -1,5 +1,4 @@
 import os
-from tempfile import mkdtemp
 
 from pytest_mock import MockerFixture
 
@@ -9,51 +8,58 @@ from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
                       fixed_author_and_committer_date_in_past, launch_command,
                       mock_input_returning, mock_input_returning_y,
-                      overridden_environment, rewrite_branch_layout_file)
+                      overridden_environment, rewrite_branch_layout_file,
+                      sleep, write_to_file)
+from .mockers_git_repository import (add_file_and_commit, add_remote,
+                                     amend_commit, check_out, commit,
+                                     create_repo, create_repo_with_remote,
+                                     delete_branch, get_current_branch,
+                                     get_git_version, merge, new_branch, push,
+                                     remove_remote, reset_to,
+                                     set_git_config_key)
 
 
 class TestTraverse(BaseTest):
 
     def setup_standard_tree(self) -> None:
-        (
-            self.repo_sandbox.new_branch("root")
-            .commit("root")
-            .new_branch("develop")
-            .commit("develop commit")
-            .new_branch("allow-ownership-link")
-            .commit("Allow ownership links")
-            .push()
-            .new_branch("build-chain")
-            .commit("Build arbitrarily long chains")
-            .check_out("allow-ownership-link")
-            .commit("1st round of fixes")
-            .check_out("develop")
-            .commit("Other develop commit")
-            .push()
-            .new_branch("call-ws")
-            .commit("Call web service")
-            .commit("1st round of fixes")
-            .push()
-            .new_branch("drop-constraint")
-            .commit("Drop unneeded SQL constraints")
-            .check_out("call-ws")
-            .commit("2nd round of fixes")
-            .check_out("root")
-            .new_branch("master")
-            .commit("Master commit")
-            .push()
-            .new_branch("hotfix/add-trigger")
-            .commit("HOTFIX Add the trigger")
-            .push()
-            .amend_commit("HOTFIX Add the trigger (amended)")
-            .new_branch("ignore-trailing")
-            .commit("Ignore trailing data")
-            .sleep(1)
-            .amend_commit("Ignore trailing data (amended)")
-            .push()
-            .reset_to("ignore-trailing@{1}")  # noqa: FS003
-            .delete_branch("root")
-        )
+        create_repo_with_remote()
+        new_branch("root")
+        commit("root")
+        new_branch("develop")
+        commit("develop commit")
+        new_branch("allow-ownership-link")
+        commit("Allow ownership links")
+        push()
+        new_branch("build-chain")
+        commit("Build arbitrarily long chains")
+        check_out("allow-ownership-link")
+        commit("1st round of fixes")
+        check_out("develop")
+        commit("Other develop commit")
+        push()
+        new_branch("call-ws")
+        commit("Call web service")
+        commit("1st round of fixes")
+        push()
+        new_branch("drop-constraint")
+        commit("Drop unneeded SQL constraints")
+        check_out("call-ws")
+        commit("2nd round of fixes")
+        check_out("root")
+        new_branch("master")
+        commit("Master commit")
+        push()
+        new_branch("hotfix/add-trigger")
+        commit("HOTFIX Add the trigger")
+        push()
+        amend_commit("HOTFIX Add the trigger (amended)")
+        new_branch("ignore-trailing")
+        commit("Ignore trailing data")
+        sleep(1)
+        amend_commit("Ignore trailing data (amended)")
+        push()
+        reset_to("ignore-trailing@{1}")  # noqa: FS003
+        delete_branch("root")
 
         body: str = \
             """
@@ -67,41 +73,19 @@ class TestTraverse(BaseTest):
                     ignore-trailing
             """
         rewrite_branch_layout_file(body)
-        assert_success(
-            ["status"],
-            """
-            develop
-            |
-            x-allow-ownership-link (ahead of origin)
-            | |
-            | x-build-chain (untracked)
-            |
-            o-call-ws (ahead of origin)
-              |
-              x-drop-constraint (untracked)
-
-            master
-            |
-            o-hotfix/add-trigger (diverged from origin)
-              |
-              o-ignore-trailing * (diverged from & older than origin)
-            """
-        )
 
     def test_traverse_slide_out(self, mocker: MockerFixture) -> None:
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .commit()
-            .new_branch("feature")
-            .commit()
-            .check_out("master")
-            .merge("develop")
-            .check_out("develop")
-        )
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        new_branch("feature")
+        commit("feature commit")
+        check_out("master")
+        merge("develop")
+        check_out("develop")
+
         body: str = \
             """
             master
@@ -140,13 +124,16 @@ class TestTraverse(BaseTest):
             """
             master
             |
-            | Some commit message.
+            | feature commit
             o-feature
             """
         )
 
-        self.repo_sandbox.check_out("master").merge("feature").check_out("feature")
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("y"))
+        check_out("master")
+        merge("feature")
+        check_out("feature")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("Y "))
         assert_success(
             ["traverse"],
             """
@@ -160,7 +147,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_no_remotes(self) -> None:
         self.setup_standard_tree()
-        self.repo_sandbox.remove_remote()
+        remove_remote()
 
         launch_command("traverse", "-Wy")
         assert_success(
@@ -229,7 +216,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_no_push_override(self) -> None:
         self.setup_standard_tree()
-        self.repo_sandbox.check_out("hotfix/add-trigger")
+        check_out("hotfix/add-trigger")
         launch_command("t", "-Wy", "--no-push", "--push", "--start-from=here")
         assert_success(
             ["status", "-l"],
@@ -260,8 +247,8 @@ class TestTraverse(BaseTest):
               o-ignore-trailing
             """,
         )
-        self.repo_sandbox.check_out("ignore-trailing")
-        self.repo_sandbox.set_git_config_key("machete.traverse.push", "false")
+        check_out("ignore-trailing")
+        set_git_config_key("machete.traverse.push", "false")
         launch_command("t", "-Wy")
         assert_success(
             ["status"],
@@ -306,7 +293,7 @@ class TestTraverse(BaseTest):
             """,
         )
 
-        self.repo_sandbox.set_git_config_key("machete.traverse.push", "true")
+        set_git_config_key("machete.traverse.push", "true")
         launch_command("t", "-Wy", "--no-push-untracked")
         assert_success(
             ["status"],
@@ -330,13 +317,18 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_ahead_of_remote_responses(self, mocker: MockerFixture) -> None:
-        self.repo_sandbox.new_branch("master").commit().push().commit()
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        push()
+        commit()
+
         rewrite_branch_layout_file("master")
 
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("Q  "))
         assert_success(["traverse"], "Push master to origin? (y, N, q, yq)\n")
 
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n"))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning(" n"))
         assert_success(
             ["traverse"],
             """
@@ -348,13 +340,16 @@ class TestTraverse(BaseTest):
             """
         )
 
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("yq"))
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning(" yQ "))
         assert_success(["traverse"], "Push master to origin? (y, N, q, yq)\n")
 
     def test_traverse_behind_remote_responses(self, mocker: MockerFixture) -> None:
-        self.repo_sandbox.new_branch("master")\
-            .commit().commit().push()\
-            .reset_to("HEAD~")
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        commit()
+        push()
+        reset_to("HEAD~")
         rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
@@ -389,7 +384,12 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_diverged_from_and_newer_responses(self, mocker: MockerFixture) -> None:
-        self.repo_sandbox.new_branch("master").commit().push().amend_commit("Different commit message")
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        push()
+        amend_commit("Different commit message")
+
         rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
@@ -424,9 +424,13 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_diverged_from_and_older_responses(self, mocker: MockerFixture) -> None:
-        self.repo_sandbox.new_branch("master").commit().push()
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        push()
+
         with fixed_author_and_committer_date_in_past():
-            self.repo_sandbox.amend_commit()
+            amend_commit()
         rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
@@ -496,7 +500,7 @@ class TestTraverse(BaseTest):
 
     def test_traverse_push_config_key(self) -> None:
         self.setup_standard_tree()
-        self.repo_sandbox.set_git_config_key('machete.traverse.push', 'false')
+        set_git_config_key('machete.traverse.push', 'false')
         launch_command("traverse", "-Wy")
         assert_success(
             ["status", "-l"],
@@ -529,30 +533,29 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_push_no_checkout(self) -> None:
-        (
-            self.repo_sandbox.new_branch("root")
-                .commit("root")
-                .new_branch("develop")
-                .commit("develop commit")
-                .commit("Other develop commit")
-                .push()
-                .new_branch("allow-ownership-link")
-                .commit("Allow ownership links")
-                .push()
-                .check_out("allow-ownership-link")
-                .commit("1st round of fixes")
-                .new_branch("build-chain")
-                .commit("Build arbitrarily long chains")
-                .check_out("root")
-                .new_branch("master")
-                .commit("Master commit")
-                .push()
-                .new_branch("hotfix/add-trigger")
-                .commit("HOTFIX Add the trigger")
-                .push()
-                .amend_commit("HOTFIX Add the trigger (amended)")
-                .delete_branch("root")
-        )
+        create_repo_with_remote()
+        new_branch("root")
+        commit("root")
+        new_branch("develop")
+        commit("develop commit")
+        commit("Other develop commit")
+        push()
+        new_branch("allow-ownership-link")
+        commit("Allow ownership links")
+        push()
+        check_out("allow-ownership-link")
+        commit("1st round of fixes")
+        new_branch("build-chain")
+        commit("Build arbitrarily long chains")
+        check_out("root")
+        new_branch("master")
+        commit("Master commit")
+        push()
+        new_branch("hotfix/add-trigger")
+        commit("HOTFIX Add the trigger")
+        push()
+        amend_commit("HOTFIX Add the trigger (amended)")
+        delete_branch("root")
 
         body: str = \
             """
@@ -604,7 +607,7 @@ class TestTraverse(BaseTest):
     def test_traverse_and_squash(self) -> None:
         self.setup_standard_tree()
 
-        self.repo_sandbox.check_out("hotfix/add-trigger")
+        check_out("hotfix/add-trigger")
         launch_command("traverse", "--fetch", "--start-from=root", "--return-to=here", "-y")
         assert_success(
             ["status", "-l"],
@@ -635,7 +638,7 @@ class TestTraverse(BaseTest):
               o-ignore-trailing
             """,
         )
-        assert self.repo_sandbox.get_current_branch() == "hotfix/add-trigger"
+        assert get_current_branch() == "hotfix/add-trigger"
 
         launch_command("traverse", "-wy")
         assert_success(
@@ -701,20 +704,17 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_with_merge(self, mocker: MockerFixture) -> None:
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch("develop")
-            .commit()
-            .new_branch('mars')
-            .commit()
-            .new_branch('snickers')
-            .commit()
-            .check_out('mars')
-            .commit()
-            .check_out('develop')
-            .commit()
-        )
+        create_repo()
+        new_branch("develop")
+        commit()
+        new_branch('mars')
+        commit()
+        new_branch('snickers')
+        commit()
+        check_out('mars')
+        commit()
+        check_out('develop')
+        commit()
 
         body: str = \
             """
@@ -744,6 +744,83 @@ class TestTraverse(BaseTest):
 
             Merge develop into mars? (y, N, q, yq)
             """
+        )
+
+    def test_traverse_with_merge_annotation(self, mocker: MockerFixture) -> None:
+        create_repo()
+        new_branch("develop")
+        commit()
+        new_branch("mars")
+        commit()
+        new_branch("snickers")
+        commit()
+        check_out("mars")
+        commit()
+        check_out("develop")
+        commit()
+
+        body: str = """
+            develop
+                mars update=merge
+                    snickers
+            """
+        rewrite_branch_layout_file(body)
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("q"))
+        launch_command("traverse")
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("n", "q"))
+        launch_command("traverse")
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning("yq"))
+        assert_success(
+            ["traverse", "--start-from=root", "--no-edit-merge"],
+            """
+            Checking out the root branch (develop)
+
+            Checking out mars
+
+              develop
+              |
+              x-mars *  update=merge
+                |
+                x-snickers
+
+            Merge develop into mars? (y, N, q, yq)
+            """,
+        )
+
+    def test_traverse_with_merge_annotation_and_yes_option(self) -> None:
+        create_repo()
+        new_branch("develop")
+        commit()
+        new_branch("mars")
+        commit()
+        new_branch("snickers")
+        commit()
+        check_out("mars")
+        commit()
+        check_out("develop")
+        commit()
+
+        body: str = """
+            develop
+                mars update=merge
+                    snickers
+            """
+        rewrite_branch_layout_file(body)
+
+        with overridden_environment(GIT_EDITOR='false'):
+            # --yes should imply --no-edit-merge, if it doesn't then the command will fail due to a non-zero exit code from the editor
+            launch_command("traverse", "--start-from=root", "--yes"),
+
+        assert_success(
+            ["status"],
+            """
+            develop
+            |
+            o-mars  update=merge
+              |
+              o-snickers *
+            """,
         )
 
     def test_traverse_qualifiers_no_push(self) -> None:
@@ -875,7 +952,8 @@ class TestTraverse(BaseTest):
             \t\tignore-trailing
             """
         rewrite_branch_layout_file(body)
-        self.repo_sandbox.check_out('develop').merge('call-ws')
+        check_out('develop')
+        merge('call-ws')
 
         launch_command("traverse", "-Wy")
         assert_success(
@@ -900,32 +978,690 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_managed_branches(self) -> None:
+        create_repo()
 
-        expected_error_message = "No branches listed in .git/machete; " \
-                                 "use git machete discover or git machete edit, or edit .git/machete manually."
+        expected_error_message = """
+          No branches listed in .git/machete. Consider one of:
+          * git machete discover
+          * git machete edit or edit .git/machete manually
+          * git machete github checkout-prs --mine
+          * git machete gitlab checkout-mrs --mine"""
         assert_failure(["traverse"], expected_error_message)
 
     def test_traverse_invalid_flag_values(self) -> None:
-        self.setup_standard_tree()
-        assert_failure(["traverse", "--start-from=nowhere"],
-                       "Invalid argument for --start-from. Valid arguments: here|root|first-root.")
         assert_failure(["traverse", "--return-to=dunno-where"],
-                       "Invalid argument for --return-to. Valid arguments: here|nearest-remaining|stay.")
+                       "Invalid value for --return-to flag: dunno-where. Valid values are here, nearest-remaining, stay")
+        assert_failure(["traverse", "--squash-merge-detection=lolxd"],
+                       "Invalid value for --squash-merge-detection flag: lolxd. Valid values are none, simple, exact")
+
+    def test_traverse_start_from_branch_names(self) -> None:
+        """Test the new functionality for --start-from accepting branch names."""
+        self.setup_standard_tree()
+
+        # Test starting from a specific branch name
+        check_out("develop")
+        assert_success(
+            ["traverse", "--start-from=call-ws", "-y"],
+            """
+            Checking out branch call-ws
+
+            Pushing call-ws to origin...
+
+            Checking out drop-constraint
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws
+                |
+                x-drop-constraint * (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing drop-constraint onto call-ws...
+
+            Pushing untracked branch drop-constraint to origin...
+
+            Checking out hotfix/add-trigger
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger * (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
+            Pushing hotfix/add-trigger with force-with-lease to origin...
+
+            Checking out ignore-trailing
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing * (diverged from & older than origin)
+
+            Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
+            Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing *
+
+            Reached branch ignore-trailing which has no successor; nothing left to update
+            """
+        )
+
+    def test_traverse_start_from_case_insensitive_special_values(self) -> None:
+        """Test case-insensitive special values for --start-from and --return-to."""
+        self.setup_standard_tree()
+        check_out("call-ws")
+
+        # Test case-insensitive "ROOT"
+        assert_success(
+            ["traverse", "--start-from=ROOT", "--return-to=HERE", "-y"],
+            """
+            Checking out the root branch (develop)
+
+            Checking out allow-ownership-link
+
+              develop
+              |
+              x-allow-ownership-link * (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing allow-ownership-link onto develop...
+
+            Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
+            Pushing allow-ownership-link with force-with-lease to origin...
+
+            Checking out build-chain
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | x-build-chain * (untracked)
+              |
+              o-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing build-chain onto allow-ownership-link...
+
+            Pushing untracked branch build-chain to origin...
+
+            Checking out call-ws
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws * (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Pushing call-ws to origin...
+
+            Checking out drop-constraint
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws
+                |
+                x-drop-constraint * (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing drop-constraint onto call-ws...
+
+            Pushing untracked branch drop-constraint to origin...
+
+            Checking out hotfix/add-trigger
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger * (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
+            Pushing hotfix/add-trigger with force-with-lease to origin...
+
+            Checking out ignore-trailing
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing * (diverged from & older than origin)
+
+            Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
+            Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws *
+                |
+                o-drop-constraint
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing
+
+            Reached branch ignore-trailing which has no successor; nothing left to update
+            Returned to the initial branch call-ws
+            """
+        )
+
+    def test_traverse_branch_priority_over_special_values(self) -> None:
+        """Test that actual branch names take priority over special values when ambiguous."""
+        self.setup_standard_tree()
+
+        # Create a branch named "root" to test ambiguity resolution
+        check_out("develop")
+        new_branch("root")
+        commit("root branch commit")
+
+        # Add the "root" branch to the layout
+        body: str = \
+            """
+            develop
+                allow-ownership-link
+                    build-chain
+                call-ws
+                    drop-constraint
+                root
+            master
+                hotfix/add-trigger
+                    ignore-trailing
+            """
+        rewrite_branch_layout_file(body)
+
+        check_out("develop")
+
+        # When we specify --start-from=root, it should use the actual "root" branch, not the special value
+        assert_success(
+            ["traverse", "--start-from=root", "-y"],
+            """
+            Checking out branch root
+
+            Pushing untracked branch root to origin...
+
+            Checking out hotfix/add-trigger
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+              | |
+              | x-drop-constraint (untracked)
+              |
+              o-root
+
+              master
+              |
+              o-hotfix/add-trigger * (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
+            Pushing hotfix/add-trigger with force-with-lease to origin...
+
+            Checking out ignore-trailing
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+              | |
+              | x-drop-constraint (untracked)
+              |
+              o-root
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing * (diverged from & older than origin)
+
+            Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
+            Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
+
+              develop
+              |
+              x-allow-ownership-link (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+              | |
+              | x-drop-constraint (untracked)
+              |
+              o-root
+
+              master
+              |
+              o-hotfix/add-trigger
+                |
+                o-ignore-trailing *
+
+            Reached branch ignore-trailing which has no successor; nothing left to update
+            """
+        )
+
+    def test_traverse_start_from_nonexistent_branch(self) -> None:
+        """Test error handling for non-existent branch names."""
+        self.setup_standard_tree()
+        check_out("develop")
+
+        assert_failure(
+            ["traverse", "--start-from=nonexistent-branch"],
+            "nonexistent-branch is neither a special value (here, root, first-root), nor a local branch"
+        )
+
+    def test_traverse_stop_after_basic(self) -> None:
+        """Test basic --stop-after functionality."""
+        self.setup_standard_tree()
+        check_out("develop")
+
+        # Stop after call-ws, should not process drop-constraint
+        assert_success(
+            ["traverse", "--stop-after=call-ws", "-y"],
+            """
+            Checking out allow-ownership-link
+
+              develop
+              |
+              x-allow-ownership-link * (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              o-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing allow-ownership-link onto develop...
+
+            Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
+            Pushing allow-ownership-link with force-with-lease to origin...
+
+            Checking out build-chain
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | x-build-chain * (untracked)
+              |
+              o-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing build-chain onto allow-ownership-link...
+
+            Pushing untracked branch build-chain to origin...
+
+            Checking out call-ws
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws * (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Pushing call-ws to origin...
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws *
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            No successor of call-ws needs to be slid out or synced with upstream branch or remote; nothing left to update
+            """
+        )
+
+    def test_traverse_stop_after_with_start_from(self) -> None:
+        """Test --stop-after with --start-from."""
+        self.setup_standard_tree()
+        check_out("develop")
+
+        # Start from allow-ownership-link and stop after call-ws
+        assert_success(
+            ["traverse", "--start-from=allow-ownership-link", "--stop-after=call-ws", "-y"],
+            """
+            Checking out branch allow-ownership-link
+
+            Rebasing allow-ownership-link onto develop...
+
+            Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
+            Pushing allow-ownership-link with force-with-lease to origin...
+
+            Checking out build-chain
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | x-build-chain * (untracked)
+              |
+              o-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing build-chain onto allow-ownership-link...
+
+            Pushing untracked branch build-chain to origin...
+
+            Checking out call-ws
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws * (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Pushing call-ws to origin...
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              o-call-ws *
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            No successor of call-ws needs to be slid out or synced with upstream branch or remote; nothing left to update
+            """
+        )
+
+    def test_traverse_stop_after_unmanaged_branch(self) -> None:
+        self.setup_standard_tree()
+        check_out("develop")
+
+        # Test unmanaged branch
+        new_branch("unmanaged-branch")
+        commit("unmanaged commit")
+        check_out("develop")
+
+        assert_failure(
+            ["traverse", "--stop-after=unmanaged-branch"],
+            "Branch unmanaged-branch not found in the tree of branch dependencies.\n"
+            "Use git machete add unmanaged-branch or git machete edit."
+        )
+
+    def test_traverse_stop_after_when_branch_is_slid_out(self) -> None:
+        """Test --stop-after when the target branch gets slid out during traversal."""
+        self.setup_standard_tree()
+
+        # Create a scenario where call-ws is merged and will be slid out
+        check_out("call-ws")
+        check_out("develop")
+        # Merge call-ws into develop to make it appear merged
+        merge("call-ws")
+        push()
+
+        # Now traverse with --stop-after=call-ws - it should stop even though call-ws gets slid out
+        # This test demonstrates the bug: traverse continues to drop-constraint instead of stopping after call-ws
+        assert_success(
+            ["traverse", "--stop-after=call-ws", "-y"],
+            """
+            Checking out allow-ownership-link
+
+              develop
+              |
+              x-allow-ownership-link * (ahead of origin)
+              | |
+              | x-build-chain (untracked)
+              |
+              m-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing allow-ownership-link onto develop...
+
+            Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
+            Pushing allow-ownership-link with force-with-lease to origin...
+
+            Checking out build-chain
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | x-build-chain * (untracked)
+              |
+              m-call-ws (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Rebasing build-chain onto allow-ownership-link...
+
+            Pushing untracked branch build-chain to origin...
+
+            Checking out call-ws
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              m-call-ws * (ahead of origin)
+                |
+                x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            Branch call-ws is merged into develop. Sliding call-ws out of the tree of branch dependencies...
+
+              develop
+              |
+              o-allow-ownership-link
+              | |
+              | o-build-chain
+              |
+              x-drop-constraint (untracked)
+
+              master
+              |
+              o-hotfix/add-trigger (diverged from origin)
+                |
+                o-ignore-trailing (diverged from & older than origin)
+
+            No successor of call-ws needs to be slid out or synced with upstream branch or remote; nothing left to update
+            """
+        )
 
     def test_traverse_removes_current_directory(self) -> None:
-        (
-            self.repo_sandbox
-            .new_branch("master")
-            .commit()
-            .new_branch("with-directory")
-            .add_file_and_commit(file_path="directory/file.txt")
-            .check_out("master")
-            .new_branch("without-directory")
-            .commit()
-            .check_out("master")
-            .commit()
-            .check_out("with-directory")
-        )
+        (local_path, _) = create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch("with-directory")
+        add_file_and_commit(file_path="directory/file.txt")
+        check_out("master")
+        new_branch("without-directory")
+        commit()
+        check_out("master")
+        commit()
+        check_out("with-directory")
 
         body: str = \
             """
@@ -962,7 +1698,7 @@ class TestTraverse(BaseTest):
 
             Reached branch without-directory which has no successor; nothing left to update
             """
-        if self.repo_sandbox.get_git_version() >= (2, 35, 0):
+        if get_git_version() >= (2, 35, 0):
             # See https://github.com/git/git/blob/master/Documentation/RelNotes/2.35.0.txt#L81 for the fix
             assert_success(
                 ["traverse", "-y"],
@@ -973,44 +1709,40 @@ class TestTraverse(BaseTest):
             assert_success(
                 ["traverse", "-y"],
                 common_expected_output +
-                f"Warn: current directory {self.repo_sandbox.local_path}/directory no longer exists, " +
-                f"the nearest existing parent directory is {self.repo_sandbox.local_path}\n"
+                f"Warn: current directory {local_path}/directory no longer exists, " +
+                f"the nearest existing parent directory is {local_path}\n"
             )
             assert os.path.split(os.getcwd())[-1] != "directory"
 
     def test_traverse_reset_keep_failing(self) -> None:
-        (
-            self.repo_sandbox
-            .new_branch("master")
-            .add_file_and_commit(file_path="foo.txt", file_content="1")
-            .sleep(1)
-            .write_to_file(file_path="foo.txt", file_content="2")
-            .amend_commit()
-            .push()
-            .reset_to("HEAD@{1}")  # noqa: FS003
-            .write_to_file(file_path="foo.txt", file_content="3")
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        add_file_and_commit(file_path="foo.txt", file_content="1")
+        sleep(1)
+        write_to_file(file_path="foo.txt", file_content="2")
+        amend_commit()
+        push()
+        reset_to("HEAD@{1}")  # noqa: FS003
+        write_to_file(file_path="foo.txt", file_content="3")
 
         rewrite_branch_layout_file("master")
 
         assert_failure(
             ["traverse", "--fetch", "-y", "--debug"],
             "Cannot perform git reset --keep origin/master. This is most likely caused by local uncommitted changes.",
-            expected_exception=UnderlyingGitException
+            expected_type=UnderlyingGitException
         )
 
     def test_traverse_with_stop_for_edit(self, mocker: MockerFixture) -> None:
 
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch("branch-0")
-            .commit()
-            .new_branch("branch-1")
-            .commit()
-            .check_out("branch-0")
-            .commit()
-        )
+        create_repo()
+        new_branch("branch-0")
+        commit()
+        new_branch("branch-1")
+        commit()
+        check_out("branch-0")
+        commit()
+
         rewrite_branch_layout_file("branch-0\n\tbranch-1")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
@@ -1029,17 +1761,16 @@ class TestTraverse(BaseTest):
     def test_reset_to_remote_after_rebase(self) -> None:
         """Very unlikely case; can happen only in case of divergence of clocks between local and remote
         (which is simulated in this test)."""
-        (
-            self.repo_sandbox
-            .new_branch("branch-0")
-            .commit()
-            .push()
-            .new_branch("branch-1")
-            .commit()
-            .push()
-            .check_out("branch-0")
-            .commit()
-        )
+        create_repo_with_remote()
+        new_branch("branch-0")
+        commit()
+        push()
+        new_branch("branch-1")
+        commit()
+        push()
+        check_out("branch-0")
+        commit()
+
         rewrite_branch_layout_file("branch-0\n\tbranch-1")
 
         with fixed_author_and_committer_date_in_past():
@@ -1068,7 +1799,9 @@ class TestTraverse(BaseTest):
             )
 
     def test_traverse_quit_on_pushing_untracked(self, mocker: MockerFixture) -> None:
-        self.repo_sandbox.new_branch("master").commit()
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
         rewrite_branch_layout_file("master")
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         assert_success(
@@ -1077,27 +1810,26 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_multiple_remotes(self, mocker: MockerFixture) -> None:
-        origin_1_remote_path = mkdtemp()
-        origin_2_remote_path = mkdtemp()
-        (
-            self.repo_sandbox
-            .remove_remote("origin")
-            .new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
-            .add_remote("origin_1", origin_1_remote_path)
-            .new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
-            .add_remote("origin_2", origin_2_remote_path)
-        )
+        create_repo()
+        origin_1_remote_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        origin_2_remote_path = create_repo("remote-2", bare=True, switch_dir_to_new_repo=False)
+        add_remote("origin-1", origin_1_remote_path)
+        add_remote("origin-2", origin_2_remote_path)
 
-        self.repo_sandbox.new_branch("master").commit()
+        new_branch("master")
+        commit()
         rewrite_branch_layout_file("master")
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("xd"))
         assert_success(
-            ["traverse"],
+            ["traverse", "--fetch"],
             """
-            Branch master is untracked and there's no origin repository.
-            [1] origin_1
-            [2] origin_2
+            Fetching origin-1...
+            Fetching origin-2...
+
+            Branch master is untracked and there's no origin remote.
+            [1] origin-1
+            [2] origin-2
             Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
 
               master * (untracked)
@@ -1107,35 +1839,36 @@ class TestTraverse(BaseTest):
         )
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("1", "o", "2", "yq"))
+        set_git_config_key("machete.traverse.fetch.origin-2", "false")
         assert_success(
-            ["traverse"],
+            ["traverse", "--fetch"],
             """
-            Branch master is untracked and there's no origin repository.
-            [1] origin_1
-            [2] origin_2
+            Fetching origin-1...
+
+            Branch master is untracked and there's no origin remote.
+            [1] origin-1
+            [2] origin-2
             Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
-            Push untracked branch master to origin_1? (y, N, q, yq, o[ther-remote])
-            [1] origin_1
-            [2] origin_2
+            Push untracked branch master to origin-1? (y, N, q, yq, o[ther-remote])
+            [1] origin-1
+            [2] origin-2
             Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
-            Push untracked branch master to origin_2? (y, N, q, yq, o[ther-remote])
+            Push untracked branch master to origin-2? (y, N, q, yq, o[ther-remote])
             """
         )
 
     def test_traverse_yellow_edges(self, mocker: MockerFixture) -> None:
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .commit()
-            .new_branch("feature-1")
-            .commit()
-            .check_out("develop")
-            .new_branch("feature-2")
-            .commit()
-        )
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        new_branch("feature-1")
+        commit()
+        check_out("develop")
+        new_branch("feature-2")
+        commit()
+
         body: str = \
             """
             master

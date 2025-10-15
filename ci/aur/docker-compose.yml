@@ -1,0 +1,10 @@
+services:
+  aur:
+    image: gitmachete/ci-aur:${DIRECTORY_HASH:-unspecified}
+    platform: linux/amd64
+    build:
+      context: build-context
+      dockerfile: ../Dockerfile # relative to build-context
+    tty: true
+    environment:
+      - GIT_REVISION

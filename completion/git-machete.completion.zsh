@@ -19,8 +19,9 @@ _git-machete() {
         (add)
           _arguments \
             '1:: :__git_machete_list_addable' \
-            '(-o --onto)'{-o,--onto=}'[Specify the target parent branch to add the given branch onto]: :__git_machete_list_managed' \
+            '(-f --as-first-child)'{-f,--as-first-child}'[Add the given branch as the first (instead of last) child of its parent]' \
             '(-R --as-root)'{-R,--as-root}'[Add the given branch as a new root]' \
+            '(-o --onto)'{-o,--onto=}'[Specify the target parent branch to add the given branch onto]: :__git_machete_list_managed' \
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream]' \
             "${common_flags[@]}"
           ;;
@@ -32,7 +33,8 @@ _git-machete() {
         (anno)
           _arguments \
             '(-b --branch)'{-b,--branch=}'[Branch to set the annotation for]: :__git_machete_list_managed' \
-            '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Annotate with GitHub PR numbers and authors where applicable]' \
+            '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Annotate with GitHub PR numbers and author logins where applicable]' \
+            '(-L --sync-gitlab-mrs)'{-L,--sync-gitlab-mrs}'[Annotate with GitLab MR numbers and author logins where applicable]' \
             "${common_flags[@]}"
           ;;
         (completion)
@@ -79,6 +81,9 @@ _git-machete() {
           ;;
         (github)
           __git_machete_github_subcommands
+          ;;
+        (gitlab)
+          __git_machete_gitlab_subcommands
           ;;
         (help)
           _arguments \
@@ -135,6 +140,8 @@ _git-machete() {
         (t|traverse)
           _arguments \
             '(-F --fetch)'{-F,--fetch}'[Fetch the remotes of all managed branches at the beginning of traversal]' \
+            '(-H --sync-github-prs)'{-H,--sync-github-prs}'[Create and retarget GitHub PRs while traversing]' \
+            '(-L --sync-gitlab-mrs)'{-L,--sync-gitlab-mrs}'[Create and retarget GitLab MRs while traversing]' \
             '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
             '(-M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
             '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
@@ -146,7 +153,8 @@ _git-machete() {
             '(--push)'--push'[Push all (both tracked and untracked) branches to remote (default behavior)]' \
             '(--push-untracked)'--push-untracked'[Push untracked branches to remote (default behavior)]' \
             '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :__git_machete_opt_return_to_args' \
-            '(--start-from)'--start-from='[The branch to  to start the traversal from; argument can be "here", "root", or "first-root"]: :__git_machete_opt_start_from_args' \
+            '(--start-from)'--start-from='[The branch to start the traversal from; argument can be "here", "root", "first-root", or any branch name]: :__git_machete_opt_start_from_args_or_branches' \
+            '(--stop-after)'--stop-after='[The branch to stop the traversal after]: :__git_branch_names' \
             '(-w --whole)'{-w,--whole}'[Equivalent to -n --start-from=first-root --return-to=nearest-remaining]' \
             '(-W)'-W'[Equivalent to --fetch --whole]' \
             '(-y --yes)'{-y,--yes}'[Do not ask for any interactive input; implicates -n]' \
@@ -176,7 +184,8 @@ __git_machete_cmds=(
   'edit:Edit the branch layout file'
   'file:Display the location of the branch layout file'
   'fork-point:Display hash of the fork point commit of a branch'
-  'github:Creates, checks out and manages GitHub PRs while keeping them reflected in branch branch layout file'
+  'github:Creates, checks out and manages GitHub PRs while keeping them reflected in branch layout file'
+  'gitlab:Creates, checks out and manages GitLab MRs while keeping them reflected in branch layout file'
   'go:Check out the branch relative to the position of the current branch'
   'help:Display this overview, or detailed help for a specified command'
   'is-managed:Check if the current branch is managed by git-machete (mostly for scripts)'
@@ -248,6 +257,7 @@ __git_machete_github_subcommands() {
         'create-pr:create a PR for the current branch, using the upstream (parent) branch as the PR base'
         'restack-pr:(force-)push and retarget the PR, without adding code owners as reviewers in the process'
         'retarget-pr:set the base of the current branch PR to upstream (parent) branch'
+        'update-pr-descriptions:update the generated sections of PR descriptions that lists the upstream and/or downstream PRs'
       )
       _describe 'subcommand' github_subcommands
       ;;
@@ -265,7 +275,7 @@ __git_machete_github_subcommands() {
           _arguments \
             '(--all)'--all'[Checkout all open PRs]' \
             '(--by)'--by='[Checkout open PRs authored by the given GitHub user]' \
-            '(--mine)'--mine='[Checkout open PRs for the current user associated with the GitHub token]' \
+            '(--mine)'--mine'[Checkout open PRs for the current user associated with the GitHub token]' \
             "${common_flags[@]}"
         ;;
 
@@ -273,7 +283,14 @@ __git_machete_github_subcommands() {
           _arguments \
             '(--draft)'--draft'[Create the new PR as draft]' \
             '(--title)'--title='[Set the title for new PR explicitly]' \
+            '(-U --update-related-descriptions)'{-U,--update-related-descriptions}'[Update the generated sections of PR descriptions that list the upstream and/or downstream PRs]' \
             '(--yes)'--yes'[Do not ask for confirmation whether to push the branch]' \
+            "${common_flags[@]}"
+        ;;
+
+        (restack-pr)
+          _arguments \
+            '(-U --update-related-descriptions)'{-U,--update-related-descriptions}'[Update the generated sections of PR descriptions that list the upstream and/or downstream PRs]' \
             "${common_flags[@]}"
         ;;
 
@@ -281,6 +298,92 @@ __git_machete_github_subcommands() {
           _arguments \
             '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated PR base will be set to its upstream (parent) branch]: :__git_machete_list_managed' \
             '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no PR opened for current (or specified) branch]' \
+            '(-U --update-related-descriptions)'{-U,--update-related-descriptions}'[Update the generated sections of PR descriptions that list the upstream and/or downstream PRs]' \
+            "${common_flags[@]}"
+        ;;
+
+        (update-pr-descriptions)
+          _arguments \
+            '(--all)'--all'[Update PR descriptions for all PRs in the repository]' \
+            '(--by)'--by='[Update PR descriptions for all PRs authored by the given GitHub user]' \
+            '(--mine)'--mine'[Update PR descriptions for all PRs opened by the current user associated with the GitHub token]' \
+            '(--related)'--related'[Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch]' \
+            "${common_flags[@]}"
+        ;;
+      esac
+    ;;
+  esac
+}
+
+__git_machete_gitlab_subcommands() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  _arguments -C \
+    ':command:->command' \
+    '*::options:->options'
+
+  case $state in
+    (command)
+
+      local -a gitlab_subcommands
+      gitlab_subcommands=(
+        'anno-mrs:annotate the branches based on their corresponding GitLab MR numbers and authors'
+        'checkout-mrs:check out the given merge requests locally'
+        'create-mr:create an MR for the current branch, using the upstream (parent) branch as the MR source branch'
+        'restack-mr:(force-)push and retarget the MR, without adding code owners as reviewers in the process'
+        'retarget-mr:set the source branch of the current branch MR to upstream (parent) branch'
+        'update-mr-descriptions:update the generated sections of MR descriptions that list the upstream and/or downstream MRs'
+      )
+      _describe 'subcommand' gitlab_subcommands
+      ;;
+
+    (options)
+      case $line[1] in
+
+        (anno-mrs) \
+          _arguments \
+            '(--with-urls)'--with-urls'[Include MR URLs in the annotations]' \
+            "${common_flags[@]}"
+        ;;
+
+        (checkout-mrs)
+          _arguments \
+            '(--all)'--all'[Checkout all open MRs]' \
+            '(--by)'--by='[Checkout open MRs authored by the given GitLab user]' \
+            '(--mine)'--mine'[Checkout open MRs for the current user associated with the GitLab token]' \
+            "${common_flags[@]}"
+        ;;
+
+        (create-mr)
+          _arguments \
+            '(--draft)'--draft'[Create the new MR as draft]' \
+            '(--title)'--title='[Set the title for new MR explicitly]' \
+            '(-U --update-related-descriptions)'{-U,--update-related-descriptions}'[Update the generated sections of MR descriptions that list the upstream and/or downstream MRs]' \
+            '(--yes)'--yes'[Do not ask for confirmation whether to push the branch]' \
+            "${common_flags[@]}"
+        ;;
+
+        (restack-mr)
+          _arguments \
+            '(-U --update-related-descriptions)'{-U,--update-related-descriptions}'[Update the generated sections of MR descriptions that list the upstream and/or downstream MRs]' \
+            "${common_flags[@]}"
+        ;;
+
+        (retarget-mr)
+          _arguments \
+            '(-b --branch)'{-b,--branch=}'[Specify the branch for which the associated MR source branch will be set to its upstream (parent) branch]: :__git_machete_list_managed' \
+            '(--ignore-if-missing)'--ignore-if-missing'[Ignore errors and quietly terminate execution if there is no MR opened for current (or specified) branch]' \
+            '(-U --update-related-descriptions)'{-U,--update-related-descriptions}'[Update the generated sections of MR descriptions that list the upstream and/or downstream MRs]' \
+            "${common_flags[@]}"
+        ;;
+
+        (update-mr-descriptions)
+          _arguments \
+            '(--all)'--all'[Update MR descriptions for all MRs in the project]' \
+            '(--by)'--by='[Update MR descriptions for all MRs authored by the given GitLab user]' \
+            '(--mine)'--mine'[Update MR descriptions for all MRs opened by the current user associated with the GitLab token]' \
+            '(--related)'--related'[Update MR descriptions for all MRs that are upstream and/or downstream of the MR for the current branch]' \
             "${common_flags[@]}"
         ;;
       esac
@@ -316,9 +419,9 @@ __git_machete_opt_color_args() {
 __git_machete_opt_return_to_args() {
   local opt_return_to
   opt_return_to=(
-    'here:the current branch at the moment when traversal starts'
-    'nearest-remaining:nearest remaining branch in case the "here" branch has been slid out by the traversal'
-    'stay:the default - just stay wherever the traversal stops'
+    'HERE:the current branch at the moment when traversal starts'
+    'NEAREST-REMAINING:nearest remaining branch in case the here branch has been slid out'
+    'STAY:the default - just stay wherever the traversal stops'
   )
   _describe 'return-to argument' opt_return_to
 }
@@ -326,13 +429,17 @@ __git_machete_opt_return_to_args() {
 __git_machete_opt_start_from_args() {
   local opt_start_from
   opt_start_from=(
-    'here:the default - current branch, must be managed by git-machete'
-    'root:root branch of the current branch, as in git machete show root'
-    'first-root:first listed managed branch'
+    'HERE:the default - current branch, must be managed by git-machete'
+    'ROOT:root branch of the current branch, as in git machete show root'
+    'FIRST-ROOT:first listed managed branch'
   )
   _describe 'start-from argument' opt_start_from
 }
 
+__git_machete_opt_start_from_args_or_branches() {
+  __git_machete_opt_start_from_args
+  __git_branch_names
+}
 __git_machete_list_addable() {
   local result
   IFS=$'\n' result=($(git machete list addable 2>/dev/null))

@@ -19,12 +19,12 @@ and subsequently slides out ``D``. All three steps require manual confirmation u
 
 The downstream ``D`` is selected according to the following criteria:
 
-    * if ``C`` has exactly one downstream (child) branch ``d`` connected with a :green:`green edge` (see help for :ref:`status`) to ``C``
-      or is overridden, then ``d`` is selected as ``D``,
-    * if ``C`` has no downstream branches connected with a :green:`green edge` to ``C``, then ``advance`` fails,
-    * if ``C`` has more than one downstream branch connected with a :green:`green edge` to ``C``,
-      then user is asked to pick the branch to fast-forward merge into (similarly to what happens in ``git machete go down``).
-      If ``--yes`` is specified, then ``advance`` fails.
+* if ``C`` has exactly one downstream (child) branch ``d`` connected with a :green:`green edge` (see help for :ref:`status`) to ``C``
+  or is overridden, then ``d`` is selected as ``D``,
+* if ``C`` has no downstream branches connected with a :green:`green edge` to ``C``, then ``advance`` fails,
+* if ``C`` has more than one downstream branch connected with a :green:`green edge` to ``C``,
+  then user is asked to pick the branch to fast-forward merge into (similarly to what happens in ``git machete go down``).
+  If ``--yes`` is specified, then ``advance`` fails.
 
 As an example, if ``git machete status --color=never --list-commits`` is as follows:
 
@@ -55,6 +55,10 @@ After ``advance`` completes, ``status`` will show:
       o-feature/post-slide-out-hook
 
 Note that the current branch after the operation is still ``develop``, just pointing to ``feature/add-from-remote``'s tip now.
+
+If the current branch ``C`` is annotated with ``push=no`` qualifier, the push is not performed.
+If the downstream branch ``D`` is annotated with ``slide-out=no`` qualifier, the slide-out is not performed.
+See help for :ref:`traverse` for more details on the qualifiers.
 
 **Options:**
 

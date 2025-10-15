@@ -14,6 +14,7 @@
 * :ref:`fork-point`       -- Display or override fork point for a branch
 * :ref:`format`           -- Display docs for the format of the branch layout file
 * :ref:`github`           -- Create, check out and manage GitHub PRs while keeping them reflected in git machete
+* :ref:`gitlab`           -- Create, check out and manage GitLab MRs while keeping them reflected in git machete
 * :ref:`go`               -- Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument
 * :ref:`help`             -- Display this overview, or detailed help for a specified command
 * :ref:`hooks`            -- Display docs for the extra hooks added by git machete

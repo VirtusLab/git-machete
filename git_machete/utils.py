@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import sys
+import textwrap
 import time
 from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, Optional,
                     Set, Tuple, TypeVar)
@@ -24,8 +25,13 @@ measure_command_time: bool = os.environ.get('GIT_MACHETE_MEASURE_COMMAND_TIME') 
 verbose_mode: bool = False
 
 # https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
-GITHUB_TOKEN_PREFIXES = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_']
-GITHUB_TOKEN_PREFIX_REGEX = '(' + '|'.join(GITHUB_TOKEN_PREFIXES) + ')'
+# https://docs.gitlab.com/ee/security/token_overview.html#gitlab-tokens
+CODE_HOSTING_TOKEN_PREFIXES = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_', 'glpat-']
+CODE_HOSTING_TOKEN_PREFIX_REGEX = '(' + '|'.join(CODE_HOSTING_TOKEN_PREFIXES) + ')'
+
+
+def is_stdout_a_tty() -> bool:
+    return sys.stdout.isatty()
 
 
 def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
@@ -45,7 +51,7 @@ def map_truthy_only(func: Callable[[T], Optional[U]], iterable: Iterable[T]) -> 
 
 
 def get_non_empty_lines(s: str) -> List[str]:
-    return list(filter(None, s.split("\n")))
+    return list(filter(None, s.splitlines()))
 
 
 # Converts a lambda accepting N arguments to a lambda accepting one argument, an N-element tuple.
@@ -100,20 +106,26 @@ def find_executable(executable: str) -> Optional[str]:
 
 
 def compact_dict(d: Dict[str, Any]) -> Dict[str, str]:
-    return {k: re.sub('\n +', ' ', str(v), re.MULTILINE) for k, v in d.items()}
+    return {k: re.sub('\n +', ' ', str(v)) for k, v in d.items()}
 
 
 def debug(msg: str) -> None:
     if debug_mode:
         function_name = bold(inspect.stack()[1].function)
-        args, _, _, values = inspect.getargvalues(inspect.stack()[1].frame)
+        args, _, _, values_original = inspect.getargvalues(inspect.stack()[1].frame)
+        # Do not write over the original values!
+        # Since Python 3.13, the result of `getargvalues` keeps a map of local variables
+        # that the Python runtime actually keeps on the stack,
+        # so overwriting a key in values_original changes the local variable.
+        values: Dict[str, Any] = dict(values_original)
 
         args_to_be_redacted = {'access_token', 'password', 'secret', 'token'}
         for arg, value in values.items():
-            if arg in args_to_be_redacted or any(value_ in str(value) for value_ in GITHUB_TOKEN_PREFIXES):
+            if arg in args_to_be_redacted or any(value_ in str(value) for value_ in CODE_HOSTING_TOKEN_PREFIXES):
                 values[arg] = '***'
-            if type(values[arg]) is dict:
-                values[arg] = compact_dict(values[arg])
+            elif type(value) is dict:
+                values[arg] = compact_dict(value)
+            values[arg] = textwrap.shorten(str(values[arg]), width=50, placeholder="...")
 
         args_and_values_list = [arg + '=' + str(values[arg]) for arg in excluding(args, {'self'})]
         args_and_values_str = ', '.join(args_and_values_list)
@@ -140,7 +152,7 @@ def run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[
 
     if debug_mode:
         print_command(bold(f">>> {flat_cmd}"))
-    elif verbose_mode:
+    elif verbose_mode or measure_command_time:
         print_command(flat_cmd)
 
     start = time.time()
@@ -186,10 +198,13 @@ class PopenResult(NamedTuple):
 
 
 def _popen_cmd(cmd: str, *args: str,
-               cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> PopenResult:
+               cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None, input: Optional[str] = None) -> PopenResult:
+    stdin = subprocess.PIPE if input is not None else None
+    input_bytes = input.encode('utf-8') if input else None
+
     # capture_output argument is only supported since Python 3.7
-    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, env=env)
-    stdout_bytes, stderr_bytes = process.communicate()
+    process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=stdin, cwd=cwd, env=env)
+    stdout_bytes, stderr_bytes = process.communicate(input_bytes)
     exit_code: int = process.returncode  # must be retrieved after process.communicate()
     stdout: str = stdout_bytes.decode('utf-8')
     stderr: str = stderr_bytes.decode('utf-8')
@@ -197,7 +212,7 @@ def _popen_cmd(cmd: str, *args: str,
 
 
 def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
-              env: Optional[Dict[str, str]] = None, hide_debug_output: bool = False) -> PopenResult:
+              env: Optional[Dict[str, str]] = None, hide_debug_output: bool = False, input: Optional[str] = None) -> PopenResult:
     chdir_upwards_until_current_directory_exists()
 
     flat_cmd = get_cmd_shell_repr(cmd, *args, env=env)
@@ -210,11 +225,11 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
 
     if debug_mode:
         print_command(bold(f">>> {flat_cmd}"))
-    elif verbose_mode:
+    elif verbose_mode or measure_command_time:
         print_command(flat_cmd)
 
     start = time.time()
-    exit_code, stdout, stderr = result = _popen_cmd(cmd, *args, cwd=cwd, env=env)
+    exit_code, stdout, stderr = result = _popen_cmd(cmd, *args, cwd=cwd, env=env, input=input)
     if measure_command_time:  # pragma: no cover
         end = time.time()
         elapsed_ms = int((end - start) * 1e3)
@@ -222,10 +237,10 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
 
     # GitHub tokens are likely to appear e.g. in the output of `git config -l`:
     # `https://<TOKEN>@github.com/org/repo.git` is a supported URL format for git remotes.
-    def redact_github_tokens(input: str) -> str:
-        return re.sub(GITHUB_TOKEN_PREFIX_REGEX + '[a-zA-Z0-9]+', '<REDACTED>', input)
-    stdout = redact_github_tokens(stdout)
-    stderr = redact_github_tokens(stderr)
+    def redact_tokens(input: str) -> str:
+        return re.sub(CODE_HOSTING_TOKEN_PREFIX_REGEX + '[a-zA-Z0-9]+', '<REDACTED>', input)
+    stdout = redact_tokens(stdout)
+    stderr = redact_tokens(stderr)
 
     if debug_mode:
         if exit_code != 0:
@@ -246,19 +261,17 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
 
 def get_cmd_shell_repr(cmd: str, *args: str, env: Optional[Dict[str, str]]) -> str:
     def shell_escape(arg: str) -> str:
-        return arg.replace("(", "\\(") \
-            .replace(")", "\\)") \
-            .replace(" ", "\\ ") \
+        return re.sub("[() <>$]", r"\\\g<0>", arg) \
             .replace("\t", "$'\\t'") \
             .replace("\n", "$'\\n'")
 
     env = env if env is not None else {}
     # We don't want to include the env vars that are inherited from the environment of git-machete process
     env_repr = [k + "=" + shell_escape(v) for k, v in env.items() if k not in os.environ]
-    return " ".join(env_repr + [cmd] + list(map(shell_escape, args)))
+    return " ".join(env_repr + [cmd] + [shell_escape(arg) for arg in args])
 
 
-def warn(msg: str, apply_fmt: bool = True, end: str = '\n') -> None:
+def warn(msg: str, *, apply_fmt: bool = True, end: str = '\n') -> None:
     if msg not in displayed_warnings:
         print(colored("Warn: ", AnsiEscapeCodes.ORANGE) + (fmt(msg) if apply_fmt else msg), file=sys.stderr, end=end)
         displayed_warnings.add(msg)
@@ -272,7 +285,9 @@ def slurp_file(path: str) -> str:
 def is_terminal_fully_fledged() -> bool:
     try:
         stdout = popen_cmd('tput', 'colors')[1]
-        number_of_supported_colors = int(stdout)
+        # In CI, this line is only covered by tests on macOS, which don't run on PRs by default.
+        # Let's skip to keep coverage results consistent between develop/master and PRs.
+        number_of_supported_colors = int(stdout)  # pragma: no cover
     except Exception:
         # If we cannot retrieve the number of supported colors, let's defensively assume it's low.
         number_of_supported_colors = 8
@@ -316,7 +331,7 @@ def dim(s: str) -> str:
     return s if ascii_only or not s else AnsiEscapeCodes.DIM + s + AnsiEscapeCodes.ENDC_BOLD_DIM
 
 
-def underline(s: str, star_if_ascii_only: bool = False) -> str:
+def underline(s: str, *, star_if_ascii_only: bool = False) -> str:
     if s and not ascii_only:
         return AnsiEscapeCodes.UNDERLINE + s + AnsiEscapeCodes.ENDC_UNDERLINE
     elif s and star_if_ascii_only:
@@ -325,7 +340,7 @@ def underline(s: str, star_if_ascii_only: bool = False) -> str:
         return s
 
 
-def colored(s: str, color: str) -> str:
+def colored(s: str, color: str) -> str:  # noqa: KW
     return s if ascii_only or not s else color + s + AnsiEscapeCodes.ENDC
 
 
@@ -334,6 +349,7 @@ fmt_transformations: List[Callable[[str], str]] = [
     lambda x: re.sub('<b>(.*?)</b>', bold(r"\1"), x, flags=re.DOTALL),
     lambda x: re.sub('<u>(.*?)</u>', underline(r"\1"), x, flags=re.DOTALL),
     lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1"), x, flags=re.DOTALL),
+    lambda x: re.sub('<grey>(.*?)</grey>', dim(r"\1"), x, flags=re.DOTALL),
     lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", AnsiEscapeCodes.RED), x, flags=re.DOTALL),
     lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", AnsiEscapeCodes.YELLOW), x, flags=re.DOTALL),
     lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", AnsiEscapeCodes.GREEN), x, flags=re.DOTALL),
@@ -369,7 +385,7 @@ def get_pretty_choices(*choices: str) -> str:
         else:
             return colored(c, AnsiEscapeCodes.ORANGE)
 
-    return f" ({', '.join(map_truthy_only(format_choice, choices))}) "
+    return " (" + (", ".join(map_truthy_only(format_choice, choices))) + ") "
 
 
 def get_current_date() -> str:

@@ -1,5 +1,183 @@
 # Release notes
 
+## New in git-machete 3.37.0
+
+- added: support for Python 3.14 (earlier versions of git-machete should also work on Python 3.14)
+- fixed: update `glab` CLI output parsing to support the latest PAT format and auth status output format (contributed by @max-nicholson)
+- fixed: `fish` completion for long options with an argument
+- added: `--stop-after` flag to `traverse` to stop the traversal after processing the specified branch (suggested by @chriscz)
+- added: `--start-from` flag of `traverse` now accepts branch names in addition to special values `here`, `root`, `first-root` (suggested by @chriscz)
+- improved: `--start-from` and `--return-to` flags of `traverse` also accept uppercase values like `HERE` or `STAY`
+- improved: also recognize `.github/PULL_REQUEST_TEMPLATE` (without `.md`) as a PR description path
+
+## New in git-machete 3.36.4
+
+- fixed: git-machete no longer crashing when branch name contains a `@` (reported by @brandtdaniels)
+- improved: more GitHub PR description template files are recognized (like `.github/PULL_REQUEST_TEMPLATE.md` or `docs/pull_request_template.md`)
+
+## New in git-machete 3.36.3
+
+- added: release of git-machete snap to arm64 (requested by @jeff-scifin)
+
+## New in git-machete 3.36.2
+
+- improved: formatting of the output of `git machete ... --help` and `git machete help ...`
+- fixed: `git machete -v` (no command) crashing
+- fixed: leading and trailing whitespace is now ignored in all interactive input
+
+## New in git-machete 3.36.1
+
+- fixed: incorrect `Could not determine base branch for PR` error messages when creating PRs from `git machete traverse -H`
+- fixed: `git bisect` is recognized as a separate repository state by `git machete status` and side-effecting operations
+- fixed: branches marked as `slide-out=no` are no longer slid out by `git machete slide-out --removed-from-remote`
+- fixed: if current branch hasn't been slid out, then `git machete slide-out` no longer switches the current branch
+
+## New in git-machete 3.36.0
+
+- deprecated: `git machete fork-point --override-to=...` and `--override-to-inferred` options; use `--override-to-parent`, or run `git machete update [--fork-point=...]` instead
+
+## New in git-machete 3.35.1
+
+- fixed: `git machete git{hub,lab} update-{pr,mr}-descriptions --related` could not update the current PR/MR in default intro style
+
+## New in git-machete 3.35.0
+
+- added: `git machete traverse --sync-github-prs`/`--sync-gitlab-mrs` suggests creating PRs/MRs for branches without one (suggested by @bradneuman and @tir38)
+
+## New in git-machete 3.34.1
+
+- fixed: `yq` answer to retargeting a PR/MR in `traverse` was treated just as `y`/`yes` (no quitting)
+
+## New in git-machete 3.34.0
+
+- added: new `full-no-branches` and `up-only-no-branches` values to `machete.github.prDescriptionIntroStyle` and `machete.gitlab.mrDescriptionIntroStyle` git config keys
+- fixed: preserve trailing lines when updating PR/MR descriptions
+- fixed: generated sections of GitLab MRs include MR titles (as in GitHub PRs)
+
+## New in git-machete 3.33.0
+
+- added: `--by=...` flag to `git machete git{hub,lab} update-{pr,mr}-descriptions`
+
+## New in git-machete 3.32.1
+
+- fixed: `git machete github` and `gitlab` recognize SSH URLs with any user before `@`, not just `git`
+
+## New in git-machete 3.32.0
+
+- added: flags `-H`/`--sync-github-prs` and `-L`/`--sync-gitlab-mrs` to `traverse` to suggest retargeting PRs/MRs when traversing (suggested by @chriscz)
+- removed: no longer release new packages to Ubuntu PPA
+
+## New in git-machete 3.31.1
+
+- fixed: AUR package installation (reported by @jan-san)
+
+## New in git-machete 3.31.0
+
+- added: `git machete git{hub,lab} update-{pr,mr}-descriptions` subcommands
+- added: `git machete git{hub,lab} create-{pr,mr} --update-related-descriptions` flags
+- added: `git machete git{hub,lab} restack-{pr,mr} --update-related-descriptions` flags
+- added: `git machete git{hub,lab} retarget-{pr,mr} --update-related-descriptions` flags
+- added: `machete.traverse.fetch.<remote>` git config key to selectively exclude remotes from `git machete traverse --fetch` (contributed by @gjulianm)
+
+## New in git-machete 3.30.0
+
+- added: support for Python 3.13 (earlier versions of git-machete should also work on Python 3.13 outside certain rare cases when in `--debug` mode)
+
+## New in git-machete 3.29.3
+
+- changed: no longer publish RPM files with GitHub releases
+- fixed: work around the parsing bug in `git patch-id` v2.46.1 (reported by @ilai-deutel)
+- fixed: `git machete git{hub,lab} create-{pr,mr}` takes into account `<!-- {start,end} git-machete generated -->` in PR/MR template (suggested by @frank-west-iii)
+
+## New in git-machete 3.29.2
+
+- changed: no longer publish Docker images
+
+## New in git-machete 3.29.1
+
+- improved: `git-machete delete-unmanaged` uses the same algorithm as `status` and `traverse` to recognize merged branches (suggested by @cinnamennen)
+
+## New in git-machete 3.29.0
+
+- added: git config keys `machete.github.prDescriptionIntroStyle` and `machete.gitlab.mrDescriptionIntroStyle`
+- added: ability to turn off PR/MR description intro completely by setting the git config key to `none` (suggested by @tir38)
+- added: ability to include downstream PRs/MRs in PR/MR description intro by setting the git config key to `full` (suggested by @aouaki)
+- changed: layout and ordering of PRs/MRs in PR/MR description intro to better match `git machete status`
+
+## New in git-machete 3.28.0
+
+- added: ability to specify pass-through flags in `diff` and `log`, for example `git machete diff -- file.txt`, `git machete log -- --patch` (partly contributed by @tdyas)
+
+## New in git-machete 3.27.0
+
+- added: git config key `http.sslVerify` is honored when connecting to GitHub and GitLab APIs (suggested by @scamden)
+
+## New in git-machete 3.26.4
+
+- fixed: avoid detecting a cycle when there's a PR/MR from `main` or `master` in a fork to the original repo (reported by @Joibel)
+- fixed: `git machete git{hub,lab} create-{pr,mr}` no longer fails when creating a PR/MR across forks; instead, a forked PR is created (reported by @cspotcode)
+- improved: `git machete git{hub,lab} checkout-{prs,mrs}` only adds annotations to affected branches (and not to every branch)
+
+## New in git-machete 3.26.3
+
+- improved: performance of listing commits for red-edge branches on large repos
+- improved: message in case of missing `.git/machete` file suggests to use `git machete git{hub,lab} checkout-{prs,mrs}`
+- fixed: pass `-c log.showSignature=false` to all `git` invocations to hide GPG signatures in logs; if `log.showSignature` were set to a value equivalent to `true` in a user's `git` configuration, the GPG signatures shown in logs would cause errors in `git log` and `git reflog` parsing internal to `git machete` (reported and contributed by @goxberry)
+
+## New in git-machete 3.26.2
+
+- fixed: parsing of multiline git config keys (reported by @saveman71)
+
+## New in git-machete 3.26.1
+
+- fixed: readability of autogenerated PR/MR descriptions
+- improved: `git machete github restack-pr` and `git machete gitlab restack-mr` fail on branches marked as `push=no`, instead of printing a warning and proceeding with retargeting anyway
+
+## New in git-machete 3.26.0
+
+- added: better detection of squash merges and rebases, controlled by flag `--squash-merge-detection={none,simple,exact}` (`status` and `traverse`) and git config key `machete.squashMergeDetection` (contributed by @gjulianm)
+- deprecated: `--no-detect-squash-merges` flag in `status` and `traverse` &mdash; use `--squash-merge-detection=none` instead (contributed by @gjulianm)
+
+## New in git-machete 3.25.3
+
+- fixed: `-y` option in `git machete traverse` automatically sets `--no-edit-merge` flag, to retain behavior when the `update=merge` qualifier is set (contributed by @gjulianm)
+- fixed: `push=no` and `slide-out=no` qualifiers now work in `git machete advance` now
+- fixed: `rebase=no` qualifier now works in `git machete slide-out`
+- improved: in `git machete github create-pr`/`gitlab create-mr`, check whether base/target branch for PR/MR exists in remote, instead of fetching the entire remote
+
+## New in git-machete 3.25.2
+
+- fixed: Homebrew deploys
+
+## New in git-machete 3.25.1
+
+- fixed: `git machete git{hub,lab} restack-{pr,mr}` now first retargets, then pushes (so that certain CIs see the correct base branch in env vars)
+
+## New in git-machete 3.25.0
+
+- added: GitLab support via `git machete gitlab` (first suggested by @mikeynap, partly contributed by @max-nicholson)
+- added: `git machete anno -L`/`--sync-gitlab-mrs` flag
+- fixed: checking out GitHub PRs where head branch comes from an already deleted fork
+- added: qualifier `update=merge` allows selecting merge strategy per branch (contributed by @gjulianm)
+- added: Scoop package for Windows (suggested by @ppasieka)
+
+## New in git-machete 3.24.2
+
+- fixed: automatic updates of Homebrew formula
+
+## New in git-machete 3.24.1
+
+- fixed: deployment issues
+
+## New in git-machete 3.24.0
+
+- added: `-f`/`--as-first-child` flag to `git machete add` (contributed by @matthalp)
+- fixed: `git machete github retarget-pr` not updating description of PR due to stray `\r` characters
+
+## New in git-machete 3.23.2
+
+- fixed: make fork-point also take into account common ancestors (and not only reflogs) in more cases
+
 ## New in git-machete 3.23.1
 
 - fixed: if a PR has a pre-v3.23.0 `Based on PR #...` header, then it's removed by `git machete github retarget-pr` in favor of the new extended PR chain

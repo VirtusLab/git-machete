@@ -4,9 +4,10 @@ import re
 import subprocess
 import sys
 import textwrap
+import time
 from contextlib import (AbstractContextManager, contextmanager,
                         redirect_stderr, redirect_stdout)
-from typing import Any, Callable, Iterable, Iterator, Tuple, Type
+from typing import Any, Callable, Iterable, Iterator, Optional, Tuple, Type
 
 import pytest
 
@@ -37,40 +38,58 @@ def fixed_author_and_committer_date_in_past() -> AbstractContextManager:  # type
     )
 
 
-def launch_command(*args: str) -> str:
+def launch_command_capturing_output_and_exception(*cmd_and_args: str) -> Tuple[Optional[str], Optional[BaseException]]:
+    with io.StringIO() as out:
+        try:
+            with redirect_stdout(out):
+                with redirect_stderr(out):
+                    utils.displayed_warnings = set()
+                    cli.launch(list(cmd_and_args))
+                output = out.getvalue()
+                if sys.platform == 'win32':
+                    output = output.replace('.git\\machete', '.git/machete')
+                return output, None
+        except BaseException as e:
+            output = out.getvalue()
+            if sys.platform == 'win32':
+                output = output.replace('.git\\machete', '.git/machete')
+            return output, e
+
+
+def launch_command(*cmd_and_args: str) -> str:
     with io.StringIO() as out:
         with redirect_stdout(out):
             with redirect_stderr(out):
                 utils.displayed_warnings = set()
-                cli.launch(list(args))
+                cli.launch(list(cmd_and_args))
         output = out.getvalue()
         if sys.platform == 'win32':
             output = output.replace('.git\\machete', '.git/machete')
         return output
 
 
-def assert_success(cmds: Iterable[str], expected_result: str) -> None:
+def assert_success(cmd_and_args: Iterable[str], expected_result: str) -> None:
     if expected_result.startswith("\n"):
         # removeprefix is only available since Python 3.9
         expected_result = expected_result[1:]
     expected_result = textwrap.dedent(expected_result)
-    actual_result = re.sub(" +$", "", textwrap.dedent(launch_command(*cmds)), flags=re.MULTILINE)
+    actual_result = re.sub(" +$", "", textwrap.dedent(launch_command(*cmd_and_args)), flags=re.MULTILINE)
     assert actual_result == expected_result
 
 
-def assert_failure(cmds: Iterable[str], expected_result: str, expected_exception: Type[Exception] = MacheteException) -> None:
-    if expected_result.startswith("\n"):
+def assert_failure(cmd_and_args: Iterable[str], expected_message: str, expected_type: Type[BaseException] = MacheteException) -> None:
+    if expected_message.startswith("\n"):
         # removeprefix is only available since Python 3.9
-        expected_result = expected_result[1:]
-    expected_result = textwrap.dedent(expected_result)
+        expected_message = expected_message[1:]
+    expected_message = textwrap.dedent(expected_message)
 
-    with pytest.raises(expected_exception) as e:
-        launch_command(*cmds)
-    error_message = e.value.msg  # type: ignore[attr-defined]
+    with pytest.raises(expected_type) as ei:
+        launch_command(*cmd_and_args)
+    error_message = ei.value.msg  # type: ignore[attr-defined]
     error_message = re.sub(" +$", "", error_message, flags=re.MULTILINE)
     if sys.platform == 'win32':
         error_message = error_message.replace('.git\\machete', '.git/machete')
-    assert error_message == expected_result
+    assert error_message == expected_message
 
 
 def read_branch_layout_file() -> str:
@@ -120,3 +139,40 @@ def mock_input_returning(*answers: str) -> Callable[[str], str]:
         print(msg)
         return next(gen)
     return inner
+
+
+def execute_ignoring_exit_code(command: str) -> None:
+    subprocess.call(command, shell=True)
+
+
+def set_file_executable(file_name: str) -> None:
+    os.chmod(file_name, 0o700)
+
+
+def sleep(seconds: int) -> None:
+    time.sleep(seconds)
+
+
+def remove_directory(file_path: str) -> None:
+    execute(f'rm -rf "./{file_path}"')
+
+
+def read_file(file_name: str) -> str:
+    with open(file_name) as f:
+        return f.read()
+
+
+def execute(command: str) -> None:
+    subprocess.check_call(command, shell=True)
+
+
+def write_to_file(file_path: str, file_content: str) -> None:
+    dirname = os.path.dirname(file_path)
+    if dirname:
+        os.makedirs(dirname, exist_ok=True)
+    with open(file_path, 'w') as f:
+        f.write(file_content)
+
+
+def popen(command: str) -> str:
+    return subprocess.check_output(command, shell=True, timeout=5).decode("utf-8").strip()

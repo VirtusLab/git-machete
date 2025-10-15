@@ -4,9 +4,19 @@
 version: 2
 updates:
   - package-ecosystem: "pip"
-    directory: "/requirements/"
+    directories:
+      - /requirements
+      - /ci/tox/build-context
     schedule:
       interval: weekly
     reviewers:
       - PawelLipski
     target-branch: develop
+    groups:
+      deps:
+        patterns:
+          # To lump all updated dependencies together into a single PR (instead of PR-per-dependency)
+          - "*"
+    ignore:
+      # This library needs to be updated in tandem with sphinx-book-theme
+      - dependency-name: pydata-sphinx-theme

@@ -1,21 +1,26 @@
 import pathlib
+import re
 from typing import Dict
 
 import pytest
 
-from tests.base_test import GitRepositorySandbox
-from tests.mockers import rewrite_branch_layout_file
+from tests.mockers import popen, rewrite_branch_layout_file
+from tests.mockers_git_repository import (check_out, commit, create_repo,
+                                          get_current_commit_hash, new_branch,
+                                          set_git_config_key)
 
 test_cases: Dict[str, str] = {
     "git machete ":
-        "add advance anno completion delete-unmanaged diff discover edit file fork-point github go "
-        "help is-managed list log reapply show slide-out squash status traverse update version",
+        "add advance anno completion delete-unmanaged diff discover edit file fork-point github gitlab "
+        "go help is-managed list log reapply show slide-out squash status traverse update version",
     "git machete -":
         "--debug -h --help -v --verbose --version",
     "git machete a":
         "add advance anno",
     "git machete add ":
         "feature",
+    "git machete add -":
+        "-R --as-first-child --as-root --debug -f -h --help -o --onto -v --verbose -y --yes",
     "git machete add -o ":
         "develop master",
     "git machete add --onto ":
@@ -24,6 +29,8 @@ test_cases: Dict[str, str] = {
         "develop master",
     "git machete advance -":
         "--debug -h --help -v --verbose -y --yes",
+    "git machete anno -":
+        "-H -L -b --branch --debug -h --help --sync-github-prs --sync-gitlab-mrs -v --verbose",
     "git machete anno -b ":
         "develop master",
     "git machete anno --branch ":
@@ -55,24 +62,44 @@ test_cases: Dict[str, str] = {
     "git machete fork-point --unset-override ":
         "develop",
     "git machete github ":
-        "anno-prs checkout-prs create-pr restack-pr retarget-pr",
+        "anno-prs checkout-prs create-pr restack-pr retarget-pr update-pr-descriptions",
     "git machete github anno-prs -":
         "--debug -h --help -v --verbose --with-urls",
     "git machete github checkout-prs -":
         "--all --by --debug -h --help --mine -v --verbose",
     "git machete github create-pr -":
-        "--debug --draft -h --help --title -v --verbose --yes",
+        "-U --debug --draft -h --help --title --update-related-descriptions -v --verbose --yes",
+    "git machete github restack-pr -":
+        "-U --debug -h --help --update-related-descriptions -v --verbose",
     "git machete github retarget-pr --":
-        "--branch --debug --help --ignore-if-missing --verbose",
+        "--branch --debug --help --ignore-if-missing --update-related-descriptions --verbose",
     "git machete github retarget-pr -b ":
         "develop master",
+    "git machete github update-pr-descriptions -":
+        "--all --by --debug -h --help --mine --related -v --verbose",
+    "git machete gitlab ":
+        "anno-mrs checkout-mrs create-mr restack-mr retarget-mr update-mr-descriptions",
+    "git machete gitlab anno-mrs -":
+        "--debug -h --help -v --verbose --with-urls",
+    "git machete gitlab checkout-mrs -":
+        "--all --by --debug -h --help --mine -v --verbose",
+    "git machete gitlab create-mr -":
+        "-U --debug --draft -h --help --title --update-related-descriptions -v --verbose --yes",
+    "git machete gitlab restack-mr -":
+        "-U --debug -h --help --update-related-descriptions -v --verbose",
+    "git machete gitlab retarget-mr --":
+        "--branch --debug --help --ignore-if-missing --update-related-descriptions --verbose",
+    "git machete gitlab retarget-mr -b ":
+        "develop master",
+    "git machete gitlab update-mr-descriptions -":
+        "--all --by --debug -h --help --mine --related -v --verbose",
     "git machete g ":
         "down first last next prev root up",
     "git machete go ":
         "down first last next prev root up",
     "git machete help ":
-        "add advance anno completion config delete-unmanaged diff discover edit file fork-point format github go "
-        "help hooks is-managed list log reapply show slide-out squash status traverse update version",
+        "add advance anno completion config delete-unmanaged diff discover edit file fork-point format github gitlab "
+        "go help hooks is-managed list log reapply show slide-out squash status traverse update version",
     "git machete is-managed ":
         "develop feature master",
     "git machete list ":
@@ -98,18 +125,44 @@ test_cases: Dict[str, str] = {
         "HEAD develop feature master",
     "git machete squash -":
         "--debug -f --fork-point -h --help -v --verbose",
+    "git machete squash --fork-point ":
+        "HEAD develop feature master",
     "git machete squash --fork-point=":
         "HEAD develop feature master",
     "git machete status -":
         "-L --color --debug -h --help -l --list-commits --list-commits-with-hashes --no-detect-squash-merges -v --verbose",
+    "git machete status --color ":
+        "always auto never",
     "git machete status --color=":
         "always auto never",
     "git machete t -":
-        "-F -M -W --debug --fetch -h --help -l --list-commits --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
-        "--no-push --no-push-untracked --push --push-untracked --return-to --start-from -v --verbose -w --whole -y --yes",
+        "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
+        "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
+        "--no-push --no-push-untracked --push --push-untracked --return-to --start-from --stop-after "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
+    "git machete t --return-to ":
+        "HERE NEAREST-REMAINING STAY",
+    "git machete t --return-to=":
+        "HERE NEAREST-REMAINING STAY",
+    "git machete t --start-from ":
+        "FIRST-ROOT HERE ROOT develop feature master",
+    "git machete t --start-from=":
+        "FIRST-ROOT HERE ROOT develop feature master",
     "git machete traverse -":
-        "-F -M -W --debug --fetch -h --help -l --list-commits --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
-        "--no-push --no-push-untracked --push --push-untracked --return-to --start-from -v --verbose -w --whole -y --yes",
+        "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
+        "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
+        "--no-push --no-push-untracked --push --push-untracked --return-to --start-from --stop-after "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
+    "git machete traverse --return-to ":
+        "HERE NEAREST-REMAINING STAY",
+    "git machete traverse --return-to=":
+        "HERE NEAREST-REMAINING STAY",
+    "git machete traverse --start-from ":
+        "FIRST-ROOT HERE ROOT develop feature master",
+    "git machete traverse --stop-after ":
+        "develop feature master",
+    "git machete traverse --stop-after=":
+        "develop feature master",
     "git machete update -":
         "-M --debug -f --fork-point -h --help --merge -n --no-edit-merge --no-interactive-rebase -v --verbose",
     "git machete update -f ":
@@ -122,34 +175,34 @@ test_cases: Dict[str, str] = {
 @pytest.mark.completion_e2e
 class TestCompletionEndToEnd:
 
-    repo_sandbox = GitRepositorySandbox()
+    create_repo()
 
     @classmethod
     def setup_class(cls) -> None:
-        (
-            cls.repo_sandbox
-            # Create the remote and sandbox repos, chdir into sandbox repo
-            .new_repo(cls.repo_sandbox.remote_path, bare=True)
-            .new_repo(cls.repo_sandbox.local_path, bare=False)
-            .add_remote("origin", cls.repo_sandbox.remote_path)
-            .set_git_config_key("user.email", "tester@test.com")
-            .set_git_config_key("user.name", "Tester Test")
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .commit()
-            .set_git_config_key("machete.overrideForkPoint.develop.to", cls.repo_sandbox.get_current_commit_hash())
-            .commit()
-            .new_branch("feature")
-            .commit()
-            .check_out("master")
-        )
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        set_git_config_key("machete.overrideForkPoint.develop.to", get_current_commit_hash())
+        commit()
+        new_branch("feature")
+        commit()
+        check_out("master")
         rewrite_branch_layout_file("master\n\tdevelop")
+
+    def test_fish_version(self) -> None:
+        raw = popen("fish --version")
+        version_match = re.search(r"[0-9]+(\.[0-9]+)*", raw)
+        assert version_match is not None
+        version_raw = version_match.group(0)
+        version = tuple(map(int, version_raw.split('.')))
+
+        assert version >= (4, 0, 2), f"Fish version installed in the system must be at least 4.0.2 (is: {version_raw})"
 
     @pytest.mark.parametrize("input,expected_result", test_cases.items(), ids=lambda x: x if x.startswith('git machete') else '')
     @pytest.mark.parametrize("script_name", ["complete-bash.sh", "complete-fish.fish", "complete-zsh.zsh"])
     def test_completion(self, input: str, expected_result: str, script_name: str) -> None:
         script = pathlib.Path(__file__).parent.joinpath(script_name).absolute()
-        output_tokens = self.repo_sandbox.popen(f"'{script}' '{input}'").split()
+        output_tokens = popen(f"'{script}' '{input}'").split()
         result = " ".join(sorted(output_tokens, key=lambda s: ''.join([c for c in s if c.isalpha()])))
         assert result == expected_result, f"for '{input}'"

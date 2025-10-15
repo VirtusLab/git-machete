@@ -15,19 +15,19 @@ Note: ``hooks`` is not a command as such, just a help topic (there is no ``git m
 
     At least two parameters (branch names) are passed to the hook:
 
-        * <new-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out
-          --- the upstream of the highest slid out branch;
-        * <lowest-slid-out-branch> is the branch that has been slid out, or in case of multiple branches being slid out --- the lowest slid out branch;
-        * <new-downstreams> are all the following (possibly zero) parameters, which correspond to all original downstreams
-          of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream>.
+    * <new-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out
+      --- the upstream of the highest slid out branch;
+    * <lowest-slid-out-branch> is the branch that has been slid out, or in case of multiple branches being slid out --- the lowest slid out branch;
+    * <new-downstreams> are all the following (possibly zero) parameters, which correspond to all original downstreams
+      of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream>.
 
     Note that this may be zero, one, or multiple branches.
 
     Note: the hook, if present, is executed:
 
-        * zero or once during a ``advance`` execution (depending on whether the slide-out has been confirmed or not),
-        * exactly once during a ``slide-out`` execution (even if multiple branches are slid out),
-        * zero or more times during ``traverse`` (every time a slide-out operation is confirmed).
+    * zero or once during a ``advance`` execution (depending on whether the slide-out has been confirmed or not),
+    * exactly once during a ``slide-out`` execution (even if multiple branches are slid out),
+    * zero or more times during ``traverse`` (every time a slide-out operation is confirmed).
 
     If the hook returns a non-zero exit code, then an error is raised and the execution of the command is aborted ---
     ``slide-out`` won't attempt rebase of the new downstream branches and ``traverse`` won't continue the traversal.
@@ -43,9 +43,9 @@ Note: ``hooks`` is not a command as such, just a help topic (there is no ``git m
 
     The parameters are exactly the three revisions that are passed to ``git rebase --onto``:
 
-        1. what is going to be the new base for the rebased commits,
-        2. what is the fork point --- the place where the rebased history diverges from the upstream history,
-        3. what branch is rebased.
+    #. what is going to be the new base for the rebased commits,
+    #. what is the fork point --- the place where the rebased history diverges from the upstream history,
+    #. what branch is rebased.
 
     If the hook returns a non-zero exit code, an error is raised and the entire rebase is aborted.
 

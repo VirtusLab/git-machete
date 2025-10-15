@@ -1,23 +1,20 @@
 # git-machete
 
-[![homebrew formula](https://img.shields.io/homebrew/v/git-machete)](https://formulae.brew.sh/formula/git-machete)
-[![homebrew formula monthly downloads](https://img.shields.io/homebrew/installs/dm/git-machete.svg)](https://formulae.brew.sh/formula/git-machete)
 [![PyPI package](https://img.shields.io/pypi/v/git-machete.svg)](https://pypi.org/project/git-machete)
 [![PyPI package monthly downloads](https://img.shields.io/pypi/dm/git-machete.svg)](https://pypistats.org/packages/git-machete)
 [![Conda package](https://img.shields.io/conda/vn/conda-forge/git-machete.svg)](https://anaconda.org/conda-forge/git-machete)
 [![Conda downloads](https://img.shields.io/conda/dn/conda-forge/git-machete.svg)](https://anaconda.org/conda-forge/git-machete)
-[![Snap](https://snapcraft.io/git-machete/badge.svg)](https://snapcraft.io/git-machete)
+[![homebrew formula](https://img.shields.io/homebrew/v/git-machete)](https://formulae.brew.sh/formula/git-machete)
 <br/>
+[![codecov](https://codecov.io/gh/VirtusLab/git-machete/branch/develop/graph/badge.svg)](https://codecov.io/gh/VirtusLab/git-machete)
+[![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=master)
 [![Read the Docs](https://readthedocs.org/projects/git-machete/badge/?version=latest)](https://git-machete.readthedocs.io/en/stable)
 [![License: MIT](https://img.shields.io/github/license/VirtusLab/git-machete)](https://github.com/VirtusLab/git-machete/blob/master/LICENSE)
-[![CircleCI](https://circleci.com/gh/VirtusLab/git-machete/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/VirtusLab/git-machete?branch=master)
-[![codecov](https://codecov.io/gh/VirtusLab/git-machete/branch/develop/graph/badge.svg)](https://codecov.io/gh/VirtusLab/git-machete)
 
-[//]: # (The images are referenced by full URLs to ensure they render correctly on https://pypi.org/project/git-machete/)
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name.svg#gh-light-mode-only"
-     style="width: 100%; display: block; margin-bottom: 10pt;" />
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name-dark.svg#gh-dark-mode-only"
-     style="width: 100%; display: block; margin-bottom: 10pt;" />
+[//]: # (These images are referenced by full URLs to ensure they render correctly on https://pypi.org/project/git-machete/)
+[//]: # (In fact, only the light-mode image is used in PyPI, the other one is cropped out when publishing the package. Still, using the same format for consistency)
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name.svg#gh-light-mode-only"     style="width: 100%; display: block; margin-bottom: 10pt;" />
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name-dark.svg#gh-dark-mode-only" style="width: 100%; display: block; margin-bottom: 10pt;" />
 
 💪 git-machete is a robust tool that **simplifies your git workflows**.<br/>
 
@@ -55,25 +52,20 @@ git-machete requires Python >= 3.6. Python 2.x is no longer supported.
 brew install git-machete
 ```
 
-### Using pip with sudo (system-wide install)
+### Using pip
 
 You need to have Python and `pip` installed from system packages.
 
-```shell script
-sudo -H pip install git-machete
-```
-
-**Tip:** pass an extra `-U` flag to `pip install` to upgrade an already installed version.
-
-### Using pip without sudo (user-wide install)
-
-You need to have Python and `pip` installed from system packages.
-
+**For user-wide install:**
 ```shell script
 pip install --user git-machete
 ```
-
 Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
+
+**For system-wide install:**
+```shell script
+sudo -H pip install git-machete  # system-wide install
+```
 
 **Tip:** pass an extra `-U` flag to `pip install` to upgrade an already installed version.
 
@@ -81,6 +73,12 @@ Please verify that your `PATH` variable has `${HOME}/.local/bin/` included.
 
 ```shell script
 conda install -c conda-forge git-machete
+```
+
+### Using Scoop (Windows)
+
+```shell script
+scoop install git-machete
 ```
 
 ### Using snap (most Linux distributions)
@@ -93,22 +91,7 @@ sudo snap install --classic git-machete
 
 It can also be installed via Ubuntu Software (simply search for `git-machete`).
 
-**Note:** classic confinement is necessary to ensure access to the editor installed in the system (to edit e.g. .git/machete file or rebase TODO list).
-
-### Using apt-get via PPA (Ubuntu)
-
-**Tip:** run `sudo apt-get install -y software-properties-common` first if `add-apt-repository` is not available on your system.
-
-```shell script
-sudo add-apt-repository ppa:virtuslab/git-machete
-sudo apt-get update
-sudo apt-get install -y python3-git-machete
-```
-
-### Using rpm (Fedora/RHEL/CentOS/openSUSE...)
-
-Download the rpm package from the [latest release](https://github.com/VirtusLab/git-machete/releases/latest)
-and install either by opening it in your desktop environment or with `rpm -i git-machete-*.noarch.rpm`.
+**Note:** classic confinement is necessary to ensure access to the editor installed in the system (to edit e.g. `.git/machete` file or rebase TODO list).
 
 ### Using Alpine, Arch, Gentoo & other Linux distro-specific package managers
 
@@ -126,6 +109,18 @@ nix-env -i git-machete
 **Note:** since `nixos-21.05`, `git-machete` is included in the stable channels as well.
 The latest released version, however, is generally available in the unstable channel.
 Stable channels may lag behind; see [repology](https://repology.org/project/git-machete/versions) for the current channel-package mapping.
+
+### Using Pex
+
+The [Pex tool](https://github.com/pex-tool/pex) (short for Python EXecutable) allows you to build "pex" files which are executable Python environments in a single file.
+
+Assuming you have already installed the `pex` utility, you can build git-machete as a pex:
+
+```shell_script
+pex git-machete -m git_machete.bin:main -o git-machete
+```
+
+Then put the produced `git-machete` file somewhere on your `PATH`.
 
 <br/>
 
@@ -164,28 +159,31 @@ git machete advance
 
 Useful for merging the child branch to the current branch in a linear fashion (without creating a merge commit).
 
-### GitHub integration
+### GitHub & GitLab integration
 
 Check out the given PRs into local branches, also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally as well: <br/>
 ```shell script
 git machete github checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]
+git machete gitlab checkout-mrs [--all | --by=<gitlab-login> | --mine | <MR-number-1> ... <MR-number-N>]
 ```
 
-Create the PR, using the upstream (parent) branch from `.git/machete` as the base: <br/>
+Create the PR/MR, using the upstream (parent) branch from `.git/machete` as the base: <br/>
 ```shell script
 git machete github create-pr [--draft]
+git machete gitlab create-mr [--draft]
 ```
 
-The entire chain of PRs will be posted in the PR description: <br/>
+The entire chain of PRs/MRs will be posted in the PR/MR description (example for GitHub): <br/>
 
 [//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
 <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/pr-chain-github-screenshot.png"
      alt="PR chain on GitHub"
      width="75%" />
 
-**Note**: for private repositories (or side-effecting operations like `create-pr` on public repositories),
-a GitHub API token with `repo` access is required.
-See the [docs](https://git-machete.readthedocs.io/#github) for how to provide the token.
+**Note**: for private repositories (or side-effecting operations like `create-pr`/`create-mr` on public repositories),
+a GitHub API token with `repo` access or a GitLab API token with `api` access is required.
+See the docs for [`github`](https://git-machete.readthedocs.io/#github)
+or [`gitlab`](https://git-machete.readthedocs.io/#gitlab) for how to provide the token.
 
 ### Shell completions
 
@@ -235,23 +233,8 @@ Just run [`git machete edit`](https://git-machete.readthedocs.io/en/stable/#edit
 If you're working on JetBrains IDEs, you can use [git-machete IntelliJ plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin)
 to have branch name completion when editing `.git/machete` file.
 
-Also, consider [`git machete github checkout-prs`](#github-integration) instead of `git machete discover` if you already have GitHub PRs opened.
-
-<br/>
-
-#### Can I use `git merge` for dealing with stacked PRs?
-
-There are two commonly used ways to put a branch back in sync with its base (parent) branch:
-1. rebase the branch onto its base branch
-2. merge the base branch into the branch
-
-While git-machete supports merging base branch (like `main`) to update the branch
-([`git machete traverse --merge`](https://git-machete.readthedocs.io/en/stable/#traverse)),
-this approach **works poorly with stacked PRs**.
-You might end up with a very tangled history very quickly, and a non-trivial sequence of `git cherry-pick`s might be needed to restore order.
-
-That is why we recommend using rebase over merge for stacked PRs.
-However, we still recommend using merge for the narrow case of [backporting hotfixes](https://slides.com/plipski/git-machete/#/11).
+Also, consider [`git machete github checkout-prs` or `git machete gitlab checkout-mrs`](#github--gitlab-integration)
+instead of `git machete discover` if you already have GitHub PRs/GitLab MRs opened.
 
 <br/>
 
@@ -273,6 +256,50 @@ to determine fork points for other branches (and thus, the range of commits take
 
 Also, you can always override fork point for a branch explicitly
 with [`git machete fork-point --override-to...`](https://git-machete.readthedocs.io/#fork-point) command.
+
+<br/>
+
+#### Can I use `git merge` for syncing stacked branches?
+
+There are two commonly used ways to put a branch back in sync with its base (parent) branch:
+1. rebase the branch onto its base branch
+2. merge the base branch into the branch
+
+While git-machete supports merging base branch (like `main`) to update the branch
+([`git machete traverse --merge`](https://git-machete.readthedocs.io/en/stable/#traverse)),
+this approach **works poorly with stacked branches**.
+You might end up with a very tangled history very quickly, and a non-trivial sequence of `git cherry-pick`s might be needed to restore order.
+
+That is why we recommend using rebase over merge for stacked branches.
+However, we still recommend using merge for the narrow case of [backporting hotfixes](https://slides.com/plipski/git-machete/#/11).
+
+<br/>
+
+#### In what order should I merge stacked PRs?
+
+We recommend merging PRs from the top-most (closest to the root branch, typically `main` or `master`).
+In other words, PR should only be merged when its base is a root branch.
+
+This way, you don't end up with a big-ball-of-code PR at the end.
+Avoiding such "balls" is one of the main reasons for opening small PRs in the first place.
+
+<br/>
+
+#### Is it possible to create stacked PRs from forks in GitHub?
+
+Due to the limitations of GitHub's PR model, it is not possible to cleanly create stacked PRs from forks.
+Generally, PRs need to be created in whatever repository the base branch lives.
+
+Let's consider a hypothetical chain `qux` ➔ `foo` ➔ `bar` ➔ `master`,
+where `master` lives in the original repo and `qux`, `bar`, `foo` live in a fork.
+In such case, a PR for `bar` ➔ `master` will be opened in the original repo, as expected.
+The subsequent PRs (`foo` ➔ `bar`, `qux` ➔ `foo`), however, will have base branches from the fork
+&mdash; and hence they'll be opened in the fork instead of the original repo.
+This is usually undesirable, as there'll be no way to retarget these PRs to `master` (which lives in the original repo),
+and thus no way to merge them directly to `master` via GitHub.
+
+The alternative is to always open the PRs directly to `master` in the original repo (even from the further branches),
+but this is also inconvenient as the range of commits would need to be narrowed down manually when viewing the PRs.
 
 <br/>
 

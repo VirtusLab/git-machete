@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u
 
-source "$(git rev-parse --show-toplevel)"/ci/local-run-commons.sh tox
+source "$(git rev-parse --show-toplevel)"/ci/local-run-commons.sh
 
 export_directory_hash tox
 cd "$(git rev-parse --show-toplevel)"/ci/tox/

@@ -4,7 +4,7 @@ set -e -o pipefail -u
 
 function retry() {
   attempts=$1
-  interval=10
+  interval=5
   for i in $(seq 1 $attempts); do
     if "${@:2}"; then break; fi
 
@@ -31,7 +31,7 @@ function docker_compose_pull_or_build_and_push() {
   # (since v1.25.1, `docker-compose pull` is NOT failing when it can't fetch the image).
   image_tag=$(docker-compose --ansi=never config | yq eval ".services.$image_name.image" -)
   if ! docker image inspect "$image_tag" &>/dev/null; then
-    docker-compose --ansi=never build --progress=plain "$image_name"
+    docker-compose --progress=plain --ansi=never build "$image_name"
     # In builds coming from forks, secret vars are unavailable for security reasons; hence, we have to skip pushing the newly built image.
     if [[ ${DOCKER_PASSWORD-} && ${DOCKER_USERNAME-} ]]; then
       echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin

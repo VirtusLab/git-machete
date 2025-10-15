@@ -1,17 +1,13 @@
-version: '3'
 services:
   tox:
     image: gitmachete/ci-tox:git${GIT_VERSION}-python${PYTHON_VERSION}-${DIRECTORY_HASH:-unspecified}
+    platform: linux/amd64
     build:
       context: build-context
       dockerfile: ../Dockerfile # relative to build-context
       args:
         - git_version=${GIT_VERSION:-0.0.0}
         - python_version=${PYTHON_VERSION:-0.0.0}
-    environment:
-      - BUILD_SPHINX_HTML=${BUILD_SPHINX_HTML:-false}
-      - CHECK_DOCS_UP_TO_DATE=${CHECK_DOCS_UP_TO_DATE:-false}
-      - CHECK_PEP8=${CHECK_PEP8:-false}
     volumes:
       # Host path is relative to current directory, not build-context
       - ../..:/git-machete

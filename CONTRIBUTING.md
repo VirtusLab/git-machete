@@ -32,9 +32,19 @@ Install `fish` and `shellcheck` for `run-all-checks.sh` to pass successfully.
 
 ## Run tests locally
 
-To run tests in terminal, it is required to have at least one Python interpreter version installed with `tox`, available versions are 3.{6-11}.
-To run all tests, execute `tox` (requires each Python 3.X version previously specified), to run selected test environment execute `tox -e test_env_name` ---
-the name of the `test_env_name` can specify Python version of the environment, e.g. `py37`, if the `tox` can't discover version from the name, the highest version currently installed will be used.
+```shell
+tox -e py
+```
+
+To display rich diff when tests fail, use
+```shell
+tox -e py -- -k github -vv  # also, use -k for tests whose names contain a specific string
+```
+
+To display full operands in failed assertions (rather than just diffs), use
+```shell
+tox -e py -- -k "hub or lab" --full-operands  # logical expressions are also allowed in -k
+```
 
 ## Install locally for development purposes
 
@@ -95,19 +105,19 @@ Run [`graphics/setup-sandbox`](graphics/setup-sandbox) script to set up a test r
 
 Deprecated commands are excluded.
 
-| Property                                                          | Commands                                                                                                                   |
-|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| can accept interactive input on stdin                             | `add`, `advance`, `delete-unmanaged`, `discover`,`github`<sup>[1]</sup>, `go`, `traverse`, `update`                        |
-| can display status (and run `machete-status-branch` hook)         | `discover`, `github`<sup>[1]</sup>, `status`, `traverse`                                                                   |
-| can modify the .git/machete file                                  | `add`, `advance`, `anno`, `discover`, `edit`, `github`, `slide-out`, `traverse`                                            |
-| can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `github`<sup>[1]</sup>, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update` |
-| can run merge                                                     | `advance`<sup>[2]</sup>, `slide-out`, `traverse`, `update`                                                                 |
-| can run rebase (and run `machete-pre-rebase` hook)                | `reapply`<sup>[3]</sup>, `slide-out`, `traverse`, `update`                                                                 |
-| can slide out a branch (and run `machete-post-slide-out` hook)    | `advance`, `slide-out`, `traverse`                                                                                         |
-| expects no ongoing rebase/merge/cherry-pick/revert/am             | `advance`, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update`                                                    |
-| has stable output format across minor versions (plumbing command) | `file`, `fork-point`<sup>[4]</sup>, `is-managed`, `list`, `show`, `version`                                                |
+| Property                                                          | Commands                                                                                                                                           |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| can accept interactive input on stdin                             | `add`, `advance`, `delete-unmanaged`, `discover`, `github`<sup>[1]</sup>, `gitlab`<sup>[1]</sup>, `go`, `traverse`, `update`                       |
+| can display status (and run `machete-status-branch` hook)         | `discover`, `github`<sup>[1]</sup>, `gitlab`<sup>[1]</sup>, `status`, `traverse`                                                                   |
+| can modify the .git/machete file                                  | `add`, `advance`, `anno`, `discover`, `edit`, `github`, `gitlab`, `slide-out`, `traverse`                                                          |
+| can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `github`<sup>[1]</sup>, `gitlab`<sup>[1]</sup>, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update` |
+| can run merge                                                     | `advance`<sup>[2]</sup>, `slide-out`, `traverse`, `update`                                                                                         |
+| can run rebase (and run `machete-pre-rebase` hook)                | `reapply`<sup>[3]</sup>, `slide-out`, `traverse`, `update`                                                                                         |
+| can slide out a branch (and run `machete-post-slide-out` hook)    | `advance`, `slide-out`, `traverse`                                                                                                                 |
+| expects no ongoing rebase/merge/cherry-pick/revert/am             | `advance`, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update`                                                                            |
+| has stable output format across minor versions (plumbing command) | `file`, `fork-point`<sup>[4]</sup>, `is-managed`, `list`, `show`, `version`                                                                        |
 
-[1]: `github` can only display status, accept interactive mode or modify git repository when `create-pr` or `checkout-prs` subcommand is passed.
+[1]: `github`/`gitlab` can only display status, accept interactive mode or modify git repository when `create-{pr,mr}`, `checkout-{pr,mr}s` or `restack-{pr,mr}` subcommand is executed.
 
 [2]: `advance` can only run fast-forward merge (`git merge --ff-only`).
 

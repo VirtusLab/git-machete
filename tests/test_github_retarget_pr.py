@@ -1,12 +1,18 @@
 import textwrap
-from tempfile import mkdtemp
 
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            rewrite_branch_layout_file)
-from tests.mockers_github import (MockGitHubAPIState, mock_from_url,
+from tests.mockers_code_hosting import mock_from_url
+from tests.mockers_git_repository import (add_remote, check_out, commit,
+                                          create_repo, create_repo_with_remote,
+                                          new_branch, push, remove_remote,
+                                          set_git_config_key,
+                                          unset_git_config_key)
+from tests.mockers_github import (MockGitHubAPIState,
+                                  mock_github_token_for_domain_fake,
                                   mock_pr_json, mock_urlopen)
 
 
@@ -14,36 +20,36 @@ class TestGitHubRetargetPR(BaseTest):
 
     @staticmethod
     def github_api_state_for_test_retarget_pr() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='feature', base='master', number=15),
             mock_pr_json(head='feature_1', base='master', number=20, body='# Based on PR #10\n\n# Summary'),
             mock_pr_json(head='feature_2', base='master', number=25, body=None),
             mock_pr_json(head='feature_3', base='master', number=30),
             mock_pr_json(head='feature_4', base='feature', number=35),
-            # Let's include another PR for `feature_2`, but with a different base branch
             mock_pr_json(head='feature_4', base='feature', number=40),
         )
 
     def test_github_retarget_pr(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr()))
 
-        (
-            self.repo_sandbox.new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .commit()
-            .commit()
-            .push()
-            .new_branch('feature')
-            .commit()
-            .push()
-            .check_out('develop')
-            .new_branch('feature_4')
-            .push()
-            .check_out('feature')
-            # Let's force a 307 redirect during the PATCH.
-            .add_remote('new_origin', 'https://github.com/example-org/old-example-repo.git')
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        commit()
+        push()
+        new_branch('feature')
+        commit()
+        push()
+        check_out('develop')
+        new_branch('feature_4')
+        push()
+        check_out('feature')
+        # Let's force a 307 redirect during the PATCH.
+        add_remote('new_origin', 'https://github.com/example-org/old-example-repo.git')
+
         body: str = \
             """
             master
@@ -99,42 +105,43 @@ class TestGitHubRetargetPR(BaseTest):
             'Base branch of PR #15 is already develop\n'
         )
 
-        self.repo_sandbox.check_out("feature_4")
+        check_out("feature_4")
 
         assert_failure(
             ['github', 'retarget-pr'],
-            'Multiple PRs have feature_4 as its head: #35, #40'
+            'Multiple PRs in example-org/old-example-repo have feature_4 as its head branch: #35, #40'
         )
 
     @staticmethod
     def github_api_state_for_test_github_retarget_pr_explicit_branch() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='feature', base='root', number=15)
         )
 
     def test_github_retarget_pr_explicit_branch(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
                           mock_urlopen(self.github_api_state_for_test_github_retarget_pr_explicit_branch()))
 
         branch_first_commit_msg = "First commit on branch."
         branch_second_commit_msg = "Second commit on branch."
-        (
-            self.repo_sandbox.new_branch("root")
-                .commit("First commit on root.")
-                .new_branch("branch-1")
-                .commit(branch_first_commit_msg)
-                .commit(branch_second_commit_msg)
-                .push()
-                .new_branch('feature')
-                .commit('introduce feature')
-                .push()
-                .check_out('root')
-                .new_branch('branch-without-pr')
-                .commit('branch-without-pr')
-                .push()
-                .add_remote('new_origin', 'https://github.com/user/repo.git')
-                .check_out('root')
-        )
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("First commit on root.")
+        new_branch("branch-1")
+        commit(branch_first_commit_msg)
+        commit(branch_second_commit_msg)
+        push()
+        new_branch('feature')
+        commit('introduce feature')
+        push()
+        check_out('root')
+        new_branch('branch-without-pr')
+        commit('branch-without-pr')
+        push()
+        add_remote('new_origin', 'https://github.com/user/repo.git')
+        check_out('root')
 
         body: str = \
             """
@@ -144,7 +151,7 @@ class TestGitHubRetargetPR(BaseTest):
                 branch-without-pr
             """
         rewrite_branch_layout_file(body)
-        launch_command("anno", "-H")
+        launch_command("anno", "--sync-github-prs")
 
         expected_status_output = """
         root * (untracked)
@@ -181,45 +188,42 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_failure(
             ["github", "retarget-pr", "--branch", "branch-without-pr"],
-            "No PRs have branch-without-pr as its head")
+            "No PRs in user/repo have branch-without-pr as its head branch")
 
         assert_success(
             ['github', 'retarget-pr', '--branch', 'branch-without-pr', '--ignore-if-missing'],
-            "Warn: no PRs have branch-without-pr as its head\n")
+            "Warn: no PRs in user/repo have branch-without-pr as its head branch\n")
 
     def test_github_retarget_pr_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
         github_api_state = self.github_api_state_for_test_retarget_pr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
-        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
 
         branch_first_commit_msg = "First commit on branch."
         branch_second_commit_msg = "Second commit on branch."
 
-        origin_1_remote_path = mkdtemp()
-        origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
-        self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
+        create_repo()
+        origin_1_remote_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        origin_2_remote_path = create_repo("remote-2", bare=True, switch_dir_to_new_repo=False)
 
         # branch feature present in each remote, no branch tracking data
-        (
-            self.repo_sandbox.remove_remote()
-                .new_branch("root")
-                .add_remote('origin_1', origin_1_remote_path)
-                .add_remote('origin_2', origin_2_remote_path)
-                .commit("First commit on root.")
-                .push(remote='origin_1')
-                .push(remote='origin_2')
-                .new_branch("branch-1")
-                .commit(branch_first_commit_msg)
-                .commit(branch_second_commit_msg)
-                .push(remote='origin_1')
-                .push(remote='origin_2')
-                .new_branch('feature')
-                .commit('introduce feature')
-                .push(remote='origin_1', set_upstream=False)
-                .push(remote='origin_2', set_upstream=False)
-        )
+        new_branch("root")
+        add_remote('origin_1', origin_1_remote_path)
+        add_remote('origin_2', origin_2_remote_path)
+        commit("First commit on root.")
+        push(remote='origin_1')
+        push(remote='origin_2')
+        new_branch("branch-1")
+        commit(branch_first_commit_msg)
+        commit(branch_second_commit_msg)
+        push(remote='origin_1')
+        push(remote='origin_2')
+        new_branch('feature')
+        commit('introduce feature')
+        push(remote='origin_1', set_upstream=False)
+        push(remote='origin_2', set_upstream=False)
 
         body: str = \
             """
@@ -231,19 +235,17 @@ class TestGitHubRetargetPR(BaseTest):
 
         expected_error_message = (
             "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting.\n"
-            "You can also select the repository by providing some or all of git config keys: "
-            "machete.github.{domain,remote,organization,repository}.\n"  # noqa: FS003
+            "You can select the repository by providing some or all of git config keys:\n"
+            "machete.github.domain, machete.github.organization, machete.github.repository, machete.github.remote\n"
         )
         assert_failure(["github", "retarget-pr"], expected_error_message)
 
         # branch feature_1 present in each remote, tracking data present
-        (
-            self.repo_sandbox.check_out('feature')
-                .new_branch('feature_1')
-                .commit('introduce feature 1')
-                .push(remote='origin_1')
-                .push(remote='origin_2')
-        )
+        check_out('feature')
+        new_branch('feature_1')
+        commit('introduce feature 1')
+        push(remote='origin_1')
+        push(remote='origin_2')
 
         body = \
             """
@@ -257,7 +259,7 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #20 has been switched to feature\n'
-            'Checking for open GitHub PRs (to determine PR chain)... OK\n'
+            'Checking for open GitHub PRs... OK\n'
             'Description of PR #20 has been updated\n'
         )
         pr20 = github_api_state.get_pull_by_number(20)
@@ -268,21 +270,22 @@ class TestGitHubRetargetPR(BaseTest):
 
             # Based on PR #15
 
-            ## Full chain of PRs as of 2023-12-31
+            ## Chain of upstream PRs as of 2023-12-31
 
-            * PR #20: `feature_1` ➔ `feature`
-            * PR #15: `feature` ➔ `master`
+            * PR #15:
+              `master` ← `feature`
+
+              * **PR #20 (THIS ONE)**:
+                `feature` ← `feature_1`
 
             <!-- end git-machete generated -->
 
             # Summary''')[1:]
 
         # branch feature_2 is not present in any of the remotes
-        (
-            self.repo_sandbox.check_out('feature')
-                .new_branch('feature_2')
-                .commit('introduce feature 2')
-        )
+        check_out('feature')
+        new_branch('feature_2')
+        commit('introduce feature 2')
 
         body = \
             """
@@ -297,40 +300,25 @@ class TestGitHubRetargetPR(BaseTest):
         assert_failure(["github", "retarget-pr"], expected_error_message)
 
         # branch feature_2 present in only one remote: origin_1 and there is no tracking data available -> infer the remote
-        (
-            self.repo_sandbox.check_out('feature_2')
-                .push(remote='origin_1', set_upstream=False)
-        )
+        check_out('feature_2')
+        push(remote='origin_1', set_upstream=False)
 
+        set_git_config_key("machete.github.prDescriptionIntroStyle", "none")
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #25 has been switched to feature\n'
-            'Checking for open GitHub PRs (to determine PR chain)... OK\n'
             'Description of PR #25 has been updated\n'
         )
         pr25 = github_api_state.get_pull_by_number(25)
         assert pr25 is not None
         assert pr25['base']['ref'] == 'feature'
-        assert pr25['body'] == textwrap.dedent('''
-            <!-- start git-machete generated -->
-
-            # Based on PR #15
-
-            ## Full chain of PRs as of 2023-12-31
-
-            * PR #25: `feature_2` ➔ `feature`
-            * PR #15: `feature` ➔ `master`
-
-            <!-- end git-machete generated -->
-        ''')[1:]
+        assert pr25['body'] == ''
 
         # branch feature_3 present in only one remote: origin_1 and has tracking data
-        (
-            self.repo_sandbox.check_out('feature_2')
-                .new_branch('feature_3')
-                .commit('introduce feature 3')
-                .push(remote='origin_1')
-        )
+        check_out('feature_2')
+        new_branch('feature_3')
+        commit('introduce feature 3')
+        push(remote='origin_1')
 
         body = \
             """
@@ -343,10 +331,11 @@ class TestGitHubRetargetPR(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
+        unset_git_config_key("machete.github.prDescriptionIntroStyle")
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #30 has been switched to feature_2\n'
-            'Checking for open GitHub PRs (to determine PR chain)... OK\n'
+            'Checking for open GitHub PRs... OK\n'
             'Description of PR #30 has been updated\n'
         )
         pr30 = github_api_state.get_pull_by_number(30)
@@ -357,11 +346,16 @@ class TestGitHubRetargetPR(BaseTest):
 
             # Based on PR #25
 
-            ## Full chain of PRs as of 2023-12-31
+            ## Chain of upstream PRs as of 2023-12-31
 
-            * PR #30: `feature_3` ➔ `feature_2`
-            * PR #25: `feature_2` ➔ `feature`
-            * PR #15: `feature` ➔ `master`
+            * PR #15:
+              `master` ← `feature`
+
+              * PR #25:
+                `feature` ← `feature_2`
+
+                * **PR #30 (THIS ONE)**:
+                  `feature_2` ← `feature_3`
 
             <!-- end git-machete generated -->
 
@@ -381,7 +375,7 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             'Base branch of PR #30 has been switched to feature\n'
-            'Checking for open GitHub PRs (to determine PR chain)... OK\n'
+            'Checking for open GitHub PRs... OK\n'
             'Description of PR #30 has been updated\n'
         )
         pr30 = github_api_state.get_pull_by_number(30)
@@ -392,10 +386,13 @@ class TestGitHubRetargetPR(BaseTest):
 
             # Based on PR #15
 
-            ## Full chain of PRs as of 2023-12-31
+            ## Chain of upstream PRs as of 2023-12-31
 
-            * PR #30: `feature_3` ➔ `feature`
-            * PR #15: `feature` ➔ `master`
+            * PR #15:
+              `master` ← `feature`
+
+              * **PR #30 (THIS ONE)**:
+                `feature` ← `feature_3`
 
             <!-- end git-machete generated -->
 
@@ -422,17 +419,72 @@ class TestGitHubRetargetPR(BaseTest):
         assert pr30['base']['ref'] == 'root'
         assert pr30['body'] == '# Summary'
 
+        check_out('feature')
+        remove_remote('origin_2')
+
+        assert_success(
+            ['github', 'retarget-pr', '-U'],
+            """
+            Base branch of PR #15 has been switched to branch-1
+            Updating descriptions of other PRs...
+            Checking for open GitHub PRs... OK
+            Description of PR #20 (feature_1 -> feature) has been updated
+            Description of PR #25 (feature_2 -> feature) has been updated
+            Description of PR #35 (feature_4 -> feature) has been updated
+            """
+        )
+        pr15 = github_api_state.get_pull_by_number(15)
+        assert pr15 is not None
+        assert pr15['base']['ref'] == 'branch-1'
+        assert pr15['body'] == '# Summary'
+
+        set_git_config_key("machete.github.prDescriptionIntroStyle", "full")
+        assert_success(
+            ['github', 'retarget-pr', '-U'],
+            """
+            Base branch of PR #15 is already branch-1
+            Checking for open GitHub PRs... OK
+            Description of PR #15 has been updated
+            Updating descriptions of other PRs...
+            """
+        )
+        pr15 = github_api_state.get_pull_by_number(15)
+        assert pr15 is not None
+        assert pr15['base']['ref'] == 'branch-1'
+        assert pr15['body'] == textwrap.dedent('''
+            <!-- start git-machete generated -->
+
+            ## Tree of downstream PRs as of 2023-12-31
+
+            * **PR #15 (THIS ONE)**:
+              `branch-1` ← `feature`
+
+                * PR #20:
+                  `feature` ← `feature_1`
+
+                * PR #25:
+                  `feature` ← `feature_2`
+
+                * PR #35:
+                  `feature` ← `feature_4`
+
+            <!-- end git-machete generated -->
+
+            # Summary''')[1:]
+
     @staticmethod
     def github_api_state_for_test_retarget_pr_root_branch() -> MockGitHubAPIState:
-        return MockGitHubAPIState(
+        return MockGitHubAPIState.with_prs(
             mock_pr_json(head='master', base='root', number=15)
         )
 
     def test_github_retarget_pr_root_branch(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.github.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_retarget_pr_root_branch()))
 
-        self.repo_sandbox.new_branch("master").commit()
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
         rewrite_branch_layout_file("master")
 
         assert_failure(

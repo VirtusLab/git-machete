@@ -6,7 +6,8 @@
 AUTHORS
 ChangeLog
 build/
-.coverage*
+.coverage
+.coverage.*
 coverage.xml
 dist/
 docs/html/
@@ -17,6 +18,7 @@ docs/man-compare
 *.egg-info/
 .eggs/
 htmlcov/
+*.log
 *.pyc
 .python-version
 test-results/

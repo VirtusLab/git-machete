@@ -2,9 +2,6 @@
 
 set -e -o pipefail -u
 
-self_dir=$(cd "$(dirname "$0")" &>/dev/null; pwd -P)
-source "$self_dir"/utils.sh
-
 found=0
 for file in $(git grep -I --files-with-matches ''); do
   last_two_characters=$(tail -c2 "$file" | xxd -p)
@@ -18,5 +15,6 @@ for file in $(git grep -I --files-with-matches ''); do
 done
 
 if [[ $found -ne 0 ]]; then
-  die 'The above non-binary file(s) do not end with a single newline character, please tidy up'
+  echo 'The above non-binary file(s) do not end with a single newline character, please tidy up'
+  exit 1
 fi

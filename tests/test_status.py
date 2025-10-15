@@ -1,22 +1,30 @@
 import re
 import sys
 import textwrap
-from tempfile import mkdtemp
 
 import pytest
 from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success,
+from .mockers import (assert_failure, assert_success, execute,
+                      execute_ignoring_exit_code,
                       fixed_author_and_committer_date_in_past, launch_command,
                       mock_input_returning, mock_input_returning_y,
-                      overridden_environment, rewrite_branch_layout_file)
+                      overridden_environment, popen, remove_directory,
+                      rewrite_branch_layout_file, set_file_executable,
+                      write_to_file)
+from .mockers_git_repository import (add_file_and_commit, add_remote,
+                                     check_out, commit, commit_n_times,
+                                     create_repo, create_repo_with_remote,
+                                     delete_branch, delete_remote_branch,
+                                     new_branch, new_orphan_branch, push,
+                                     set_git_config_key, unset_git_config_key)
 
 
 class TestStatus(BaseTest):
 
     def test_branch_reappears_in_branch_layout(self) -> None:
-
+        create_repo()
         body: str = \
             """
             master
@@ -31,6 +39,7 @@ class TestStatus(BaseTest):
         assert_failure(['status'], expected_error_message)
 
     def test_indent_not_multiply_of_base_indent(self) -> None:
+        create_repo()
         body: str = \
             """
             master
@@ -44,6 +53,7 @@ class TestStatus(BaseTest):
         assert_failure(['status'], expected_error_message)
 
     def test_indent_too_deep(self) -> None:
+        create_repo()
         body: str = \
             """
             master
@@ -57,14 +67,12 @@ class TestStatus(BaseTest):
         assert_failure(['status'], expected_error_message)
 
     def test_single_invalid_branch_interactive_slide_out(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, "git_machete.client.MacheteClient.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
 
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch('master')
-            .commit()
-        )
+        create_repo()
+        new_branch('master')
+        commit()
+
         body: str = \
             """
             master
@@ -81,23 +89,21 @@ class TestStatus(BaseTest):
         assert_success(["status"], expected_output)
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("e"))
-        self.repo_sandbox.set_git_config_key("advice.macheteEditorSelection", "false")
+        set_git_config_key("advice.macheteEditorSelection", "false")
         with overridden_environment(GIT_EDITOR="sed -i.bak '/foo/ d'"):
             assert_success(["status"], expected_output)
 
     def test_multiple_invalid_branches_interactive_slide_out(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, "git_machete.client.MacheteClient.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
 
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch('master')
-            .commit()
-            .new_branch('develop')
-            .commit()
-            .new_branch('feature')
-            .commit()
-        )
+        create_repo()
+        new_branch('master')
+        commit()
+        new_branch('develop')
+        commit()
+        new_branch('feature')
+        commit()
+
         body: str = \
             """
             master
@@ -121,16 +127,60 @@ class TestStatus(BaseTest):
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(["status"], expected_output)
 
+    def test_single_invalid_branch_non_interactive_slide_out(self) -> None:
+        create_repo()
+        new_branch('master')
+        commit()
+
+        body: str = \
+            """
+            master
+            \t\tfoo
+            """
+        rewrite_branch_layout_file(body)
+        expected_output = """
+            Warning: sliding invalid branch foo out of the branch layout file
+              master *
+        """
+        assert_success(["status"], expected_output)
+
+    def test_multiple_invalid_branches_non_interactive_slide_out(self) -> None:
+        create_repo()
+        new_branch('master')
+        commit()
+        new_branch('develop')
+        commit()
+        new_branch('feature')
+        commit()
+
+        body: str = \
+            """
+            master
+            \t\tfoo
+            \t\t\t\tbar  PR #1
+            \t\tqux
+            \t\t\t\tdevelop
+            baz
+            \t\tfeature
+            """
+        rewrite_branch_layout_file(body)
+        expected_output = """
+            Warning: sliding invalid branches foo, bar, qux, baz out of the branch layout file
+              master
+              |
+              o-develop
+
+              feature *
+        """
+        assert_success(["status"], expected_output)
+
     @pytest.mark.skipif(sys.platform == "win32", reason="Windows doesn't distinguish between executable and non-executable files")
     def test_status_advice_ignored_non_executable_hook(self) -> None:
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch('master')
-            .commit()
-            .new_branch('develop')
-            .commit()
-        )
+        create_repo()
+        new_branch('master')
+        commit()
+        new_branch('develop')
+        commit()
 
         body: str = \
             """
@@ -139,7 +189,7 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
+        write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
         assert_success(
             ["status"],
             """
@@ -151,7 +201,7 @@ class TestStatus(BaseTest):
             """
         )
 
-        self.repo_sandbox.set_git_config_key("advice.ignoredHook", "false")
+        set_git_config_key("advice.ignoredHook", "false")
         assert_success(
             ["status"],
             """
@@ -162,14 +212,11 @@ class TestStatus(BaseTest):
         )
 
     def test_status_branch_hook_output(self) -> None:
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch('master')
-            .commit()
-            .new_branch('develop')
-            .commit()
-        )
+        create_repo()
+        new_branch('master')
+        commit()
+        new_branch('develop')
+        commit()
 
         body: str = \
             """
@@ -179,8 +226,8 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
-        self.repo_sandbox.set_file_executable(".git/hooks/machete-status-branch")
+        write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
+        set_file_executable(".git/hooks/machete-status-branch")
         assert_success(
             ["status"],
             """
@@ -190,7 +237,7 @@ class TestStatus(BaseTest):
             """
         )
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\necho '    '")
+        write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\necho '    '")
         assert_success(
             ["status"],
             """
@@ -200,7 +247,7 @@ class TestStatus(BaseTest):
             """
         )
 
-        self.repo_sandbox.write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\nexit 1")
+        write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\nexit 1")
         assert_success(
             ["status"],
             """
@@ -211,19 +258,18 @@ class TestStatus(BaseTest):
         )
 
     def test_extra_space_before_branch_name(self) -> None:
-        (
-            self.repo_sandbox
-                .new_branch('master')
-                .commit()
-                .push()
-                .new_branch('bar')
-                .commit()
-                .push()
-                .new_branch('foo')
-                .commit()
-                .push()
-                .set_git_config_key('machete.status.extraSpaceBeforeBranchName', 'true')
-        )
+        create_repo_with_remote()
+        new_branch('master')
+        commit()
+        push()
+        new_branch('bar')
+        commit()
+        push()
+        new_branch('foo')
+        commit()
+        push()
+        set_git_config_key('machete.status.extraSpaceBeforeBranchName', 'true')
+
         body: str = \
             """
             master
@@ -243,7 +289,7 @@ class TestStatus(BaseTest):
         )
         assert_success(['status'], expected_status_output)
 
-        self.repo_sandbox.set_git_config_key('machete.status.extraSpaceBeforeBranchName', 'false')
+        set_git_config_key('machete.status.extraSpaceBeforeBranchName', 'false')
 
         expected_status_output = (
             """
@@ -256,24 +302,23 @@ class TestStatus(BaseTest):
         )
         assert_success(['status'], expected_status_output)
 
-    def test_squashed_branch_recognized_as_merged_with_traverse(self) -> None:
+    def test_status_squashed_branch_recognized_as_merged_with_traverse(self) -> None:
 
-        (
-            self.repo_sandbox.new_branch("root")
-            .commit("root")
-            .push()
-            .new_branch("develop")
-            .commit("develop")
-            .push()
-            .new_branch("feature")
-            .commit("feature_1")
-            .commit("feature_2")
-            .push()
-            .new_branch("child")
-            .commit("child_1")
-            .commit("child_2")
-            .push()
-        )
+        create_repo_with_remote()
+        new_branch("root")
+        commit("root")
+        push()
+        new_branch("develop")
+        commit("develop")
+        push()
+        new_branch("feature")
+        commit("feature_1")
+        commit("feature_2")
+        push()
+        new_branch("child")
+        commit("child_1")
+        commit("child_2")
+        push()
 
         body: str = \
             """
@@ -303,12 +348,10 @@ class TestStatus(BaseTest):
         )
 
         # squash-merge feature onto develop
-        (
-            self.repo_sandbox.check_out("develop")
-            .execute("git merge --squash feature")
-            .execute("git commit -m squash_feature")
-            .check_out("child")
-        )
+        check_out("develop")
+        execute("git merge --squash feature")
+        execute("git commit -m squash_feature")
+        check_out("child")
 
         # in default mode, feature is detected as "m" (merged) into develop
         assert_success(
@@ -328,10 +371,8 @@ class TestStatus(BaseTest):
             """,
         )
 
-        # but under --no-detect-squash-merges, feature is detected as "x" (behind) develop
-        assert_success(
-            ["status", "-l", "--no-detect-squash-merges"],
-            """
+        # under --squash-merge-detection=none, feature is detected as "x" (out of sync) with develop
+        expected_output_detection_none = """
             root
             |
             | develop
@@ -345,8 +386,27 @@ class TestStatus(BaseTest):
                 | child_1
                 | child_2
                 o-child *
-            """,
+            """
+        assert_success(
+            ["status", "-l", "--no-detect-squash-merges"],
+            "          Warn: --no-detect-squash-merges is deprecated, "
+            "use --squash-merge-detection=none instead\n" + expected_output_detection_none
         )
+        assert_success(
+            ["status", "-l", "--squash-merge-detection=none"],
+            expected_output_detection_none
+        )
+        set_git_config_key('machete.squashMergeDetection', 'none')
+        assert_success(
+            ["status", "-l"],
+            expected_output_detection_none
+        )
+        set_git_config_key('machete.squashMergeDetection', 'lolxd')
+        assert_failure(
+            ["status", "-l"],
+            "Invalid value for machete.squashMergeDetection git config key: lolxd. Valid values are none, simple, exact"
+        )
+        unset_git_config_key('machete.squashMergeDetection')
 
         # traverse then slide out the feature branch
         launch_command("traverse", "-w", "-y")
@@ -367,15 +427,13 @@ class TestStatus(BaseTest):
         )
 
         # simulate an upstream squash-merge of the child branch
-        (
-            self.repo_sandbox.check_out("develop")
-            .new_branch("upstream_squash")
-            .execute("git merge --squash child")
-            .execute("git commit -m squash_child")
-            .execute("git push origin upstream_squash:develop")
-            .check_out("child")
-            .delete_branch("upstream_squash")
-        )
+        check_out("develop")
+        new_branch("upstream_squash")
+        execute("git merge --squash child")
+        execute("git commit -m squash_child")
+        execute("git push origin upstream_squash:develop")
+        check_out("child")
+        delete_branch("upstream_squash")
 
         # status before fetch will show develop as out of date
         assert_success(
@@ -408,31 +466,75 @@ class TestStatus(BaseTest):
             """,
         )
 
-    def test_status_inferring_counterpart_for_fetching_of_branch(self) -> None:
-        origin_1_remote_path = mkdtemp()
-        (
-            self.repo_sandbox
-                .new_repo(origin_1_remote_path, bare=True)
-                .chdir(self.repo_sandbox.local_path)
-                .add_remote('origin_1', origin_1_remote_path)
-                .new_branch('master')
-                .commit()
-                .push()
-                .new_branch('bar')
-                .commit()
-                .push()
-                .new_branch('foo')
-                .commit()
-                .push(set_upstream=False)
-                .push(remote='origin_1', set_upstream=False)
-                .new_branch('snickers')
-                .commit()
-                .push(remote='origin_1', set_upstream=False)
-                .new_branch('mars')
-                .commit_n_times(15)
-                .push()
-                .push(remote='origin_1')
+    def test_status_for_squash_merge_and_commits_in_between(self) -> None:
+        create_repo()
+        new_branch("master")
+        commit("master first commit")
+        new_branch("feature")
+        commit("feature commit")
+        check_out("master")
+        commit("extra commit")
+        execute("git merge --squash feature")
+        execute("git commit -m squashed")
+
+        body: str = \
+            """
+            master
+                feature
+            """
+        rewrite_branch_layout_file(body)
+
+        # Here the simple method will not detect the squash merge, as there are commits in master before we merged feature so
+        # there's no tree hash in master that matches the tree hash of feature
+        expected_status_output_simple = (
+            """
+            master *
+            |
+            x-feature
+            """
         )
+        assert_success(['status'], expected_status_output_simple)
+        assert_success(['status', '--squash-merge-detection=simple'], expected_status_output_simple)
+        expected_status_output_exact = (
+            """
+            master *
+            |
+            m-feature
+            """
+        )
+        assert_success(['status', '--squash-merge-detection=exact'], expected_status_output_exact)
+        set_git_config_key('machete.squashMergeDetection', 'exact')
+        assert_success(['status'], expected_status_output_exact)
+
+    def test_status_invalid_squash_merge_detection(self) -> None:
+        create_repo()
+        assert_failure(["status", "--squash-merge-detection=invalid"],
+                       "Invalid value for --squash-merge-detection flag: invalid. Valid values are none, simple, exact")
+        assert_failure(["status", "--squash-merge-detection=none", "--squash-merge-detection=invalid"],
+                       "Invalid value for --squash-merge-detection flag: invalid. Valid values are none, simple, exact")
+
+    def test_status_inferring_counterpart_for_fetching_of_branch(self) -> None:
+        create_repo_with_remote()
+        origin_1_remote_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        add_remote('origin_1', origin_1_remote_path)
+        new_branch('master')
+        commit()
+        push()
+        new_branch('bar')
+        commit()
+        push()
+        new_branch('foo')
+        commit()
+        push(set_upstream=False)
+        push(remote='origin_1', set_upstream=False)
+        new_branch('snickers')
+        commit()
+        push(remote='origin_1', set_upstream=False)
+        new_branch('mars')
+        commit_n_times(15)
+        push()
+        push(remote='origin_1')
+
         body: str = \
             """
             master
@@ -458,16 +560,16 @@ class TestStatus(BaseTest):
         assert_success(['status'], expected_status_output)
 
     def test_status_when_child_branch_is_pushed_immediately_after_creation(self) -> None:
-        (
-            self.repo_sandbox.new_branch("master")
-            .commit("master")
-            .push()
-            .new_branch("foo")
-            .commit("foo")
-            .new_branch("bar")
-            .push()
-            .commit("bar")
-        )
+        create_repo_with_remote()
+        new_branch("master")
+        commit("master")
+        push()
+        new_branch("foo")
+        commit("foo")
+        new_branch("bar")
+        push()
+        commit("bar")
+
         body: str = \
             """
             master
@@ -487,16 +589,14 @@ class TestStatus(BaseTest):
         assert_success(['status'], expected_status_output)
 
     def test_status_fork_point_without_reflogs(self) -> None:
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .commit()
-            .check_out("master")
-            .commit()
-        )
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit("Develop commit.")
+        check_out("master")
+        commit()
+
         body: str = \
             """
             master
@@ -504,13 +604,13 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.remove_directory(".git/logs/")
+        remove_directory(".git/logs/")
 
         expected_status_output = (
             """
             master *
             |
-            | Some commit message.
+            | Develop commit.
             x-develop
             """
         )
@@ -518,19 +618,17 @@ class TestStatus(BaseTest):
 
     def test_status_yellow_edges(self) -> None:
         with fixed_author_and_committer_date_in_past():
-            (
-                self.repo_sandbox
-                .remove_remote()
-                .new_branch("master")
-                .commit()
-                .new_branch("develop")
-                .commit()
-                .new_branch("feature-1")
-                .commit()
-                .check_out("develop")
-                .new_branch("feature-2")
-                .commit()
-            )
+            create_repo()
+            new_branch("master")
+            commit("master commit")
+            new_branch("develop")
+            commit("develop commit")
+            new_branch("feature-1")
+            commit("feature-1 commit")
+            check_out("develop")
+            new_branch("feature-2")
+            commit("feature-2 commit")
+
         body: str = \
             """
             master
@@ -559,12 +657,12 @@ class TestStatus(BaseTest):
             """
               master
               |
-              | Some commit message. -> fork point ??? commit dcd2db5 seems to be a part of the unique history of develop
-              | Some commit message.
+              | develop commit -> fork point ??? commit 9c47c46 seems to be a part of the unique history of develop
+              | feature-1 commit
               ?-feature-1
               |
-              | Some commit message. -> fork point ??? commit dcd2db5 seems to be a part of the unique history of develop
-              | Some commit message.
+              | develop commit -> fork point ??? commit 9c47c46 seems to be a part of the unique history of develop
+              | feature-2 commit
               ?-feature-2 *
 
             Warn: yellow edges indicate that fork points for feature-1, feature-2 are probably incorrectly inferred,
@@ -577,17 +675,14 @@ class TestStatus(BaseTest):
         assert_success(['status', '-l'], expected_status_output)
 
     def test_status_non_ascii_junctions(self) -> None:
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch("develop")
-            .commit()
-            .new_branch("feature-1")
-            .commit()
-            .check_out("develop")
-            .new_branch("feature-2")
-            .commit()
-        )
+        create_repo()
+        new_branch("develop")
+        commit()
+        new_branch("feature-1")
+        commit()
+        check_out("develop")
+        new_branch("feature-2")
+        commit()
 
         body: str = \
             """
@@ -610,14 +705,11 @@ class TestStatus(BaseTest):
         assert textwrap.dedent(re.sub('\x1b\\[[^m]+m', '', raw_output)) == textwrap.dedent(expected_status_output)
 
     def test_status_during_rebase(self) -> None:
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .commit()
-        )
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit("Develop commit.")
 
         body: str = \
             """
@@ -633,108 +725,126 @@ class TestStatus(BaseTest):
             """
             master
             |
-            | Some commit message.
+            | Develop commit.
             o-REBASING develop *
             """
         )
         assert_success(['status', '-l'], expected_status_output)
 
     def test_status_during_side_effecting_operations(self) -> None:
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .add_file_and_commit("1.txt", "some-content")
-            .check_out("master")
-            .new_branch("feature")
-            .add_file_and_commit("1.txt", "some-other-content")
-            .check_out("develop")
-        )
+        create_repo()
+        new_branch("master")
+        commit()
+        # Let's also see how a branch with `@` in its name is handled in various context (issue #1481).
+        new_branch("develop@foo")
+        add_file_and_commit("1.txt", "some-content")
+        check_out("master")
+        new_branch("feature")
+        add_file_and_commit("1.txt", "some-other-content")
+        check_out("develop@foo")
 
         body: str = \
             """
             master
-                develop
+                develop@foo
             """
         rewrite_branch_layout_file(body)
 
         # AM
 
-        patch_path = self.repo_sandbox.popen("git format-patch feature")
-        self.repo_sandbox.execute_ignoring_exit_code(f"git am {patch_path}")
+        patch_path = popen("git format-patch feature")
+        execute_ignoring_exit_code(f"git am {patch_path}")
 
         expected_status_output = (
             """
             master
             |
             | Some commit message.
-            o-GIT AM IN PROGRESS develop *
+            o-GIT AM IN PROGRESS develop@foo *
             """
         )
         assert_success(['status', '-l'], expected_status_output)
 
-        self.repo_sandbox.execute("git am --abort")
+        execute("git am --abort")
 
         # CHERRY-PICK
 
-        self.repo_sandbox.execute_ignoring_exit_code("git cherry-pick feature")
+        execute_ignoring_exit_code("git cherry-pick feature")
 
         expected_status_output = (
             """
             master
             |
             | Some commit message.
-            o-CHERRY-PICKING develop *
+            o-CHERRY-PICKING develop@foo *
             """
         )
         assert_success(['status', '-l'], expected_status_output)
 
-        self.repo_sandbox.execute("git cherry-pick --abort")
+        execute("git cherry-pick --abort")
 
         # MERGE
 
-        self.repo_sandbox.execute_ignoring_exit_code("git merge feature")
+        execute_ignoring_exit_code("git merge feature")
 
         expected_status_output = (
             """
             master
             |
             | Some commit message.
-            o-MERGING develop *
+            o-MERGING develop@foo *
             """
         )
         assert_success(['status', '-l'], expected_status_output)
 
-        self.repo_sandbox.execute("git merge --abort")
+        execute("git merge --abort")
 
         # REVERT
 
-        self.repo_sandbox.execute("git revert --no-commit HEAD")
+        execute("git revert --no-commit HEAD")
 
         expected_status_output = (
             """
             master
             |
             | Some commit message.
-            o-REVERTING develop *
+            o-REVERTING develop@foo *
             """
         )
         assert_success(['status', '-l'], expected_status_output)
 
-        self.repo_sandbox.execute("git revert --abort")
+        execute("git revert --abort")
+
+        # BISECT
+
+        commit("Another commit message.")
+        commit("Yet another commit message.")
+        execute("git bisect start")
+        execute("git bisect bad HEAD")
+        execute("git bisect good HEAD~3")
+
+        expected_status_output = (
+            """
+            master
+            |
+            | Some commit message.
+            | Another commit message.
+            | Yet another commit message.
+            o-BISECTING develop@foo *
+            """
+        )
+        assert_success(['status', '-l'], expected_status_output)
+
+        execute("git bisect reset")
 
     def test_status_no_fork_point_for_child_branch(self) -> None:
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch("master")
-            .commit()
-            # This will cause that develop will not have a fork point.
-            .new_orphan_branch("develop")
-            .commit()
-        )
+        create_repo()
+        new_branch("master")
+        commit()
+        # This will cause that develop will not have a fork point.
+        new_orphan_branch("develop")
+        commit()
+
         body: str = \
             """
             master
@@ -749,4 +859,17 @@ class TestStatus(BaseTest):
             |
             x-develop *
             """
+        )
+
+    def test_status_removed_from_remote(self) -> None:
+        create_repo_with_remote()
+        new_branch('main')
+        commit()
+        push()
+        delete_remote_branch('origin/main')
+
+        rewrite_branch_layout_file("main")
+        assert_success(
+            ["status"],
+            "main * (untracked)\n"
         )

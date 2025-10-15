@@ -1,35 +1,38 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-  local cmds="add advance anno completion delete-unmanaged diff discover edit file fork-point github go help is-managed list log reapply show slide-out squash status traverse update version"
+  local cmds="add advance anno completion delete-unmanaged diff discover edit file fork-point github gitlab go help is-managed list log reapply show slide-out squash status traverse update version"
   local help_topics="$cmds config format hooks"
 
   local categories="addable childless managed slidable slidable-after unmanaged with-overridden-fork-point"
   local directions="down first last next prev root up"
-  local github_subcommands="anno-prs checkout-prs create-pr restack-pr retarget-pr"
+  local github_subcommands="anno-prs checkout-prs create-pr restack-pr retarget-pr update-pr-descriptions"
+  local gitlab_subcommands="anno-mrs checkout-mrs create-mr restack-mr retarget-mr update-mr-descriptions"
   local locations="current $directions"
   local opt_color_args="always auto never"
-  local opt_return_to_args="here nearest-remaining stay"
-  local opt_start_from_args="here root first-root"
+  local opt_return_to_args="HERE NEAREST-REMAINING STAY"
+  local opt_start_from_args="HERE ROOT FIRST-ROOT"
   local shells="bash fish zsh"
 
   local common_opts="--debug -h --help -v --verbose"
-  local add_opts="-o --onto= -R --as-root -y --yes"
+  local add_opts="-f --as-first-child -o --onto= -R --as-root -y --yes"
   local advance_opts="-y --yes"
-  local anno_opts="-b --branch= -H --sync-github-prs"
+  local anno_opts="-b --branch= -H --sync-github-prs -L --sync-gitlab-mrs"
   local delete_unmanaged_opts="-y --yes"
   local diff_opts="-s --stat"
   local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
   local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
-  local github_anno_prs_opts="--with-urls"
-  local github_create_pr_opts="--draft --title= --yes"
-  local github_checkout_prs_opts="--all --by= --mine"
-  local github_retarget_pr_opts="-b --branch= --ignore-if-missing"
+  local githublab_anno_opts="--with-urls"
+  local githublab_create_opts="--draft --title= -U --update-related-descriptions --yes"
+  local githublab_checkout_opts="--all --by= --mine"
+  local githublab_restack_opts="-U --update-related-descriptions"
+  local githublab_retarget_opts="-b --branch= --ignore-if-missing -U --update-related-descriptions"
+  local githublab_update_descriptions_opts="--all --by= --mine --related"
   local reapply_opts="-f --fork-point="
   local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase --removed-from-remote"
   local squash_opts="-f --fork-point="
   local status_opts="--color= -L --list-commits-with-hashes -l --list-commits --no-detect-squash-merges"
-  local traverse_opts="-F --fetch -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --no-push-untracked --push --push-untracked --return-to= --start-from= -w --whole -W -y --yes"
+  local traverse_opts="-F --fetch -H --sync-github-prs -L --sync-gitlab-mrs -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --no-push-untracked --push --push-untracked --return-to= --start-from= --stop-after= -w --whole -W -y --yes"
   local update_opts="-f --fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
 
   cur=${COMP_WORDS[$COMP_CWORD]}
@@ -40,7 +43,8 @@ _git_machete() {
     --down-fork-point=*|--fork-point=*|--override-to=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
     --return-to=*) __gitcomp "$opt_return_to_args" "" "${cur##--return-to=}" ;;
     --roots=*) __gitcomp "$(__git_heads)" "" "${cur##--roots=}" ;;
-    --start-from=*) __gitcomp "$opt_start_from_args" "" "${cur##--start-from=}" ;;
+    --start-from=*) __gitcomp "$opt_start_from_args $(__git_heads)" "" "${cur##--start-from=}" ;;
+    --stop-after=*) __gitcomp "$(__git_heads)" "" "${cur##--stop-after=}" ;;
     -*)
       case ${COMP_WORDS[2]} in
         add) __gitcomp "$common_opts $add_opts" ;;
@@ -51,17 +55,25 @@ _git_machete() {
         discover) __gitcomp "$common_opts $discover_opts" ;;
         fork-point) __gitcomp "$common_opts $fork_point_opts" ;;
         github)
-          if [[ ${COMP_WORDS[3]} == "anno-prs" ]]; then
-            __gitcomp "$common_opts $github_anno_prs_opts"
-          elif [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
-            __gitcomp "$common_opts $github_create_pr_opts"
-          elif [[ ${COMP_WORDS[3]} == "checkout-prs" ]]; then
-            __gitcomp "$common_opts $github_checkout_prs_opts"
-          elif [[ ${COMP_WORDS[3]} == "retarget-pr" ]]; then
-            __gitcomp "$common_opts $github_retarget_pr_opts"
-          else
-            __gitcomp "$common_opts"
-          fi ;;
+          case ${COMP_WORDS[3]} in
+            "anno-prs") __gitcomp "$common_opts $githublab_anno_opts" ;;
+            "create-pr") __gitcomp "$common_opts $githublab_create_opts" ;;
+            "checkout-prs") __gitcomp "$common_opts $githublab_checkout_opts" ;;
+            "restack-pr") __gitcomp "$common_opts $githublab_restack_opts" ;;
+            "retarget-pr") __gitcomp "$common_opts $githublab_retarget_opts" ;;
+            "update-pr-descriptions") __gitcomp "$common_opts $githublab_update_descriptions_opts" ;;
+            *) __gitcomp "$common_opts" ;;
+          esac ;;
+        gitlab)
+          case ${COMP_WORDS[3]} in
+            "anno-mrs") __gitcomp "$common_opts $githublab_anno_opts" ;;
+            "create-mr") __gitcomp "$common_opts $githublab_create_opts" ;;
+            "checkout-mrs") __gitcomp "$common_opts $githublab_checkout_opts" ;;
+            "restack-mr") __gitcomp "$common_opts $githublab_restack_opts" ;;
+            "retarget-mr") __gitcomp "$common_opts $githublab_retarget_opts" ;;
+            "update-mr-descriptions") __gitcomp "$common_opts $githublab_update_descriptions_opts" ;;
+            *) __gitcomp "$common_opts" ;;
+          esac ;;
         reapply) __gitcomp "$common_opts $reapply_opts" ;;
         slide-out) __gitcomp "$common_opts $slide_out_opts" ;;
         squash) __gitcomp "$common_opts $squash_opts" ;;
@@ -96,7 +108,8 @@ _git_machete() {
           --return-to) __gitcomp "$opt_return_to_args" ;;
           # TODO (#111): complete the comma-separated list of roots
           -r|--roots) __gitcomp "$(__git_heads)" ;;
-          --start-from) __gitcomp "$opt_start_from_args" ;;
+          --start-from) __gitcomp "$opt_start_from_args $(__git_heads)" ;;
+          --stop-after) __gitcomp "$(__git_heads)" ;;
           --unset-override) __gitcomp_nl "$(git machete list with-overridden-fork-point 2>/dev/null)" ;;
           *)
             case ${COMP_WORDS[2]} in
@@ -115,16 +128,30 @@ _git_machete() {
               github)
                 if [[ $COMP_CWORD -eq 3 ]]; then
                   __gitcomp "$github_subcommands"
-                elif [[ ${COMP_WORDS[3]} == "anno-prs" ]]; then
-                  __gitcomp "$common_opts $github_anno_prs_opts"
-                elif [[ ${COMP_WORDS[3]} == "create-pr" ]]; then
-                  __gitcomp "$common_opts $github_create_pr_opts"
-                elif [[ ${COMP_WORDS[3]} == "checkout-prs" ]]; then
-                  __gitcomp "$common_opts $github_checkout_prs_opts"
-                elif [[ ${COMP_WORDS[3]} == "retarget-pr" ]]; then
-                  __gitcomp "$common_opts $github_retarget_pr_opts"
                 else
-                  COMPREPLY=('')
+                  case ${COMP_WORDS[3]} in
+                    "anno-prs") __gitcomp "$common_opts $githublab_anno_opts" ;;
+                    "create-pr") __gitcomp "$common_opts $githublab_create_opts" ;;
+                    "checkout-prs") __gitcomp "$common_opts $githublab_checkout_opts" ;;
+                    "restack-pr") __gitcomp "$common_opts $githublab_restack_opts" ;;
+                    "retarget-pr") __gitcomp "$common_opts $githublab_retarget_opts" ;;
+                    "update-pr-descriptions") __gitcomp "$common_opts $githublab_update_descriptions_opts" ;;
+                    *) COMPREPLY=('') ;;
+                  esac
+                fi ;;
+              gitlab)
+                if [[ $COMP_CWORD -eq 3 ]]; then
+                  __gitcomp "$gitlab_subcommands"
+                else
+                  case ${COMP_WORDS[3]} in
+                    "anno-mrs") __gitcomp "$common_opts $githublab_anno_opts" ;;
+                    "create-mr") __gitcomp "$common_opts $githublab_create_opts" ;;
+                    "checkout-mrs") __gitcomp "$common_opts $githublab_checkout_opts" ;;
+                    "restack-mr") __gitcomp "$common_opts $githublab_restack_opts" ;;
+                    "retarget-mr") __gitcomp "$common_opts $githublab_retarget_opts" ;;
+                    "update-mr-descriptions") __gitcomp "$common_opts $githublab_update_descriptions_opts" ;;
+                    *) COMPREPLY=('') ;;
+                  esac
                 fi ;;
               help)
                 if [[ $COMP_CWORD -eq 3 ]]; then

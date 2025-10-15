@@ -1,7 +1,7 @@
 # Dependency of `sphinx-book-theme`.
 # Added explicitly after https://github.com/pydata/pydata-sphinx-theme/pull/1503
 # broke the build despite no explicit update to deps.
-pydata-sphinx-theme==0.15.2
+pydata-sphinx-theme==0.15.4
 
-sphinx==6.2.1
-sphinx-book-theme==1.1.0
+sphinx==8.2.3
+sphinx-book-theme==1.1.4

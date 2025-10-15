@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import re
 from os import path
 
 from setuptools import setup
@@ -8,7 +9,8 @@ from git_machete import __version__
 
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), mode="r", encoding="utf-8") as f:
-    long_description = f.read()
+    # PyPI webpage seems to be always served with white background, let's remove the GitHub-specific dark variants of images.
+    long_description = re.sub("(?m)^.*#gh-dark-mode-only.*\n", "", f.read())
 
 setup(
     name='git-machete',
@@ -23,7 +25,7 @@ setup(
     keywords='git',
     # Non-python directories are only included in `packages` for the sake of bdist_wheel;
     # they have apparently no effect on sdists (only MANIFEST.in matters).
-    packages=['git_machete', 'completion', 'docs/man'],
+    packages=['git_machete', 'git_machete/client', 'completion', 'docs/man'],
     entry_points={
         'console_scripts': [
             'git-machete = git_machete.bin:main'

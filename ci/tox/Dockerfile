@@ -27,8 +27,9 @@ RUN \
 ARG python_version
 ENV PYTHON_VERSION=${python_version}
 ENV PYTHON=python${python_version}
-RUN apk add --no-cache gcc musl-dev  # packages required to install mypy
-RUN $PYTHON -m pip install tox
+RUN apk add --no-cache gcc musl-dev  # packages required to install mypy (done via tox in running container, not here)
+COPY requirements.txt /
+RUN $PYTHON -m pip install -r /requirements.txt
 
 RUN apk add --no-cache bash sudo  # packages required to run the entrypoint script
 ENV PATH=$PATH:/root/.local/bin/

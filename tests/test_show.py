@@ -1,52 +1,58 @@
-from tempfile import mkdtemp
+import os
+
+from git_machete.exceptions import ExitCode
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success, launch_command,
-                      rewrite_branch_layout_file)
+from .mockers import (assert_failure, assert_success, execute, launch_command,
+                      launch_command_capturing_output_and_exception,
+                      remove_directory, rewrite_branch_layout_file, sleep)
+from .mockers_git_repository import (amend_commit, check_out, commit,
+                                     create_repo, create_repo_with_remote,
+                                     delete_branch, new_branch,
+                                     new_orphan_branch, pull, push, reset_to)
 
 
 class TestShow(BaseTest):
 
     def setup_standard_tree(self) -> None:
-        (
-            self.repo_sandbox.new_branch("root")
-            .commit("root")
-            .new_branch("develop")
-            .commit("develop commit")
-            .new_branch("allow-ownership-link")
-            .commit("Allow ownership links")
-            .push()
-            .new_branch("build-chain")
-            .commit("Build arbitrarily long chains")
-            .check_out("allow-ownership-link")
-            .commit("1st round of fixes")
-            .check_out("develop")
-            .commit("Other develop commit")
-            .push()
-            .new_branch("call-ws")
-            .commit("Call web service")
-            .commit("1st round of fixes")
-            .push()
-            .new_branch("drop-constraint")
-            .commit("Drop unneeded SQL constraints")
-            .check_out("call-ws")
-            .commit("2nd round of fixes")
-            .check_out("root")
-            .new_branch("master")
-            .commit("Master commit")
-            .push()
-            .new_branch("hotfix/add-trigger")
-            .commit("HOTFIX Add the trigger")
-            .push()
-            .amend_commit("HOTFIX Add the trigger (amended)")
-            .new_branch("ignore-trailing")
-            .commit("Ignore trailing data")
-            .sleep(1)
-            .amend_commit("Ignore trailing data (amended)")
-            .push()
-            .reset_to("ignore-trailing@{1}")  # noqa: FS003
-            .delete_branch("root")
-        )
+        create_repo_with_remote()
+        new_branch("root")
+        commit("root")
+        new_branch("develop")
+        commit("develop commit")
+        new_branch("allow-ownership-link")
+        commit("Allow ownership links")
+        push()
+        new_branch("build-chain")
+        commit("Build arbitrarily long chains")
+        check_out("allow-ownership-link")
+        commit("1st round of fixes")
+        check_out("develop")
+        commit("Other develop commit")
+        push()
+        new_branch("call-ws")
+        commit("Call web service")
+        commit("1st round of fixes")
+        push()
+        new_branch("drop-constraint")
+        commit("Drop unneeded SQL constraints")
+        check_out("call-ws")
+        commit("2nd round of fixes")
+        check_out("root")
+        new_branch("master")
+        commit("Master commit")
+        push()
+        new_branch("hotfix/add-trigger")
+        commit("HOTFIX Add the trigger")
+        push()
+        amend_commit("HOTFIX Add the trigger (amended)")
+        new_branch("ignore-trailing")
+        commit("Ignore trailing data")
+        sleep(1)
+        amend_commit("Ignore trailing data (amended)")
+        push()
+        reset_to("ignore-trailing@{1}")  # noqa: FS003
+        delete_branch("root")
 
         body: str = \
             """
@@ -100,12 +106,12 @@ class TestShow(BaseTest):
         branch one above current one in the config file from within current
         root tree.
         """
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1-branch")
-            .commit()
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1-branch")
+        commit()
+
         body: str = \
             """
             level-0-branch
@@ -121,20 +127,22 @@ class TestShow(BaseTest):
              "branch one above current one.")
 
     def test_show_up_inference_using_reflog_of_remote_branch(self) -> None:
-        origin_1_remote_path = mkdtemp()
-        origin_2_remote_path = mkdtemp()
-        self.repo_sandbox.new_repo(origin_1_remote_path, bare=True, switch_dir_to_new_repo=False)
-        self.repo_sandbox.new_repo(origin_2_remote_path, bare=True, switch_dir_to_new_repo=False)
+        (local_path, remote_path) = create_repo_with_remote()
+        new_branch("master")
+        commit()
+        push()
 
-        (
-            self.repo_sandbox
-            .new_branch("master").commit().push()
-            .new_branch("develop").commit().push()
-            .chdir(self.repo_sandbox.remote_path)
-            .execute("git update-ref refs/heads/master develop")
-            .chdir(self.repo_sandbox.local_path)
-            .check_out("master").pull().check_out("develop")
-        )
+        new_branch("develop")
+        commit()
+        push()
+
+        os.chdir(remote_path)
+        execute("git update-ref refs/heads/master develop")
+        os.chdir(local_path)
+
+        check_out("master")
+        pull()
+        check_out("develop")
 
         assert_success(
             ["show", "up"],
@@ -142,7 +150,7 @@ class TestShow(BaseTest):
             "master\n"
         )
 
-        self.repo_sandbox.remove_directory(".git/logs/refs/heads/")
+        remove_directory(".git/logs/refs/heads/")
 
         assert_success(
             ["show", "up"],
@@ -155,18 +163,16 @@ class TestShow(BaseTest):
 
         Verify that 'git machete show down' displays name of a
         child/downstream branch one below current one.
-
         """
-        (
-            self.repo_sandbox
-            .new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1a-branch")
-            .new_branch("level-2-branch")
-            .check_out("level-0-branch")
-            .new_branch("level-1b-branch")
-            .check_out("level-0-branch")
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1a-branch")
+        new_branch("level-2-branch")
+        check_out("level-0-branch")
+        new_branch("level-1b-branch")
+        check_out("level-0-branch")
+
         body: str = \
             """
             level-0-branch
@@ -187,29 +193,28 @@ class TestShow(BaseTest):
         Verify that 'git machete show first' displays name of the first downstream
         branch of a root branch of the current branch in the config file if root
         branch has any downstream branches.
-
         """
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1a-branch")
-            .commit()
-            .new_branch("level-2a-branch")
-            .commit()
-            .check_out("level-0-branch")
-            .new_branch("level-1b-branch")
-            .commit()
-            .new_branch("level-2b-branch")
-            .commit()
-            .new_branch("level-3b-branch")
-            .commit()
-            # a added so root will be placed in the config file after the level-0-branch
-            .new_orphan_branch("a-additional-root")
-            .commit()
-            .new_branch("branch-from-a-additional-root")
-            .commit()
-            .check_out("level-3b-branch")
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1a-branch")
+        commit()
+        new_branch("level-2a-branch")
+        commit()
+        check_out("level-0-branch")
+        new_branch("level-1b-branch")
+        commit()
+        new_branch("level-2b-branch")
+        commit()
+        new_branch("level-3b-branch")
+        commit()
+        # a added so root will be placed in the config file after the level-0-branch
+        new_orphan_branch("a-additional-root")
+        commit()
+        new_branch("branch-from-a-additional-root")
+        commit()
+        check_out("level-3b-branch")
+
         body: str = \
             """
             level-0-branch
@@ -240,23 +245,23 @@ class TestShow(BaseTest):
         branch has any downstream branches.
 
         """
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1a-branch")
-            .commit()
-            .new_branch("level-2a-branch")
-            .commit()
-            .check_out("level-0-branch")
-            .new_branch("level-1b-branch")
-            .commit()
-            # x added so root will be placed in the config file after the level-0-branch
-            .new_orphan_branch("x-additional-root")
-            .commit()
-            .new_branch("branch-from-x-additional-root")
-            .commit()
-            .check_out("level-1a-branch")
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1a-branch")
+        commit()
+        new_branch("level-2a-branch")
+        commit()
+        check_out("level-0-branch")
+        new_branch("level-1b-branch")
+        commit()
+        # x added so root will be placed in the config file after the level-0-branch
+        new_orphan_branch("x-additional-root")
+        commit()
+        new_branch("branch-from-x-additional-root")
+        commit()
+        check_out("level-1a-branch")
+
         body: str = \
             """
             level-0-branch
@@ -285,18 +290,18 @@ class TestShow(BaseTest):
         when successor branch exists within the root tree.
 
         """
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1a-branch")
-            .commit()
-            .new_branch("level-2a-branch")
-            .commit()
-            .check_out("level-0-branch")
-            .new_branch("level-1b-branch")
-            .commit()
-            .check_out("level-2a-branch")
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1a-branch")
+        commit()
+        new_branch("level-2a-branch")
+        commit()
+        check_out("level-0-branch")
+        new_branch("level-1b-branch")
+        commit()
+        check_out("level-2a-branch")
+
         body: str = \
             """
             level-0-branch
@@ -318,17 +323,17 @@ class TestShow(BaseTest):
         when predecessor branch exists within the root tree.
 
         """
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1a-branch")
-            .commit()
-            .new_branch("level-2a-branch")
-            .commit()
-            .check_out("level-0-branch")
-            .new_branch("level-1b-branch")
-            .commit()
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1a-branch")
+        commit()
+        new_branch("level-2a-branch")
+        commit()
+        check_out("level-0-branch")
+        new_branch("level-1b-branch")
+        commit()
+
         body: str = \
             """
             level-0-branch
@@ -348,22 +353,22 @@ class TestShow(BaseTest):
         Verify that 'git machete show root' displays name of the root of
         the current branch.
         """
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1a-branch")
-            .commit()
-            .new_branch("level-2a-branch")
-            .commit()
-            .check_out("level-0-branch")
-            .new_branch("level-1b-branch")
-            .commit()
-            .new_orphan_branch("additional-root")
-            .commit()
-            .new_branch("branch-from-additional-root")
-            .commit()
-            .check_out("level-2a-branch")
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1a-branch")
+        commit()
+        new_branch("level-2a-branch")
+        commit()
+        check_out("level-0-branch")
+        new_branch("level-1b-branch")
+        commit()
+        new_orphan_branch("additional-root")
+        commit()
+        new_branch("branch-from-additional-root")
+        commit()
+        check_out("level-2a-branch")
+
         body: str = \
             """
             level-0-branch
@@ -381,3 +386,11 @@ class TestShow(BaseTest):
         assert 'level-0-branch' == launch_command("show", "r").strip(), \
             ("Verify that 'git machete show r' displays name of the root of "
              "the current branch.")
+
+    def test_show_missing_direction(self) -> None:
+        output, e = launch_command_capturing_output_and_exception("show")
+        assert output == \
+            "the following arguments are required: show direction\n" \
+            "Possible values for show direction are: c, current, d, down, f, first, l, last, n, next, p, prev, r, root, u, up\n"
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.ARGUMENT_ERROR

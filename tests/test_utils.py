@@ -1,8 +1,18 @@
+import re
+
 from git_machete import utils
-from git_machete.utils import hex_repr
 
 
 class TestUtils:
+
+    def test_debug_doesnt_overwrite_local_vars(self) -> None:
+        foo = {"foo": 1}
+        try:
+            utils.debug_mode = True
+            utils.debug("")
+        finally:
+            utils.debug_mode = False
+        assert foo["foo"] == 1  # and not string "1"
 
     def test_fmt(self) -> None:
         utils.ascii_only = False
@@ -18,5 +28,8 @@ class TestUtils:
 
         assert ansi_string == expected_ansi_string
 
+    def test_get_current_date(self) -> None:
+        assert re.fullmatch("20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]", utils.get_current_date())
+
     def test_hex_repr(self) -> None:
-        assert hex_repr("Hello, world!") == "48:65:6c:6c:6f:2c:20:77:6f:72:6c:64:21"
+        assert utils.hex_repr("Hello, world!") == "48:65:6c:6c:6f:2c:20:77:6f:72:6c:64:21"

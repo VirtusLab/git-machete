@@ -9,10 +9,14 @@ description: |
   - Automatic discovery of branch relations (`git machete discover`)
 # This software is unlikely to be used outside of desktop machines.
 # Let's limit the number of target architectures to reduce the build times.
-architectures:
-  - amd64
-  - arm64
-base: core22
+platforms:
+  amd64:
+    build-on: [amd64]
+    build-for: [amd64]
+  arm64:
+    build-on: [amd64]
+    build-for: [arm64]
+base: core24
 # See https://forum.snapcraft.io/t/-/15566 for discussion on why classic confinement was necessary.
 confinement: classic
 grade: stable
@@ -24,7 +28,7 @@ parts:
     plugin: python
     source: .
     # See https://github.com/canonical/rockcraft/issues/225#issuecomment-1597025315
-    stage-packages: [python3.10-minimal]
+    stage-packages: [python3.12-minimal]
     # We're setting the version via scriptlet rather than using `version: git`
     # since only pushing commits to master (and not pushing tags) triggers Snapcraft builds.
     # language=sh
@@ -32,7 +36,7 @@ parts:
       PS4='$0.$LINENO:'
       set -x
       craftctl default
-      version=$(python3 setup.py --version)
+      version=$(cut -d\' -f2 git_machete/__init__.py)
       craftctl set version="$version"
 
 apps:
@@ -40,4 +44,4 @@ apps:
     command: bin/git-machete
     # Workaround for https://github.com/VirtusLab/git-machete/issues/1150
     environment:
-      PYTHONPATH: /snap/git-machete/x1/lib/python3.10/site-packages
+      PYTHONPATH: /snap/git-machete/x1/lib/python3.12/site-packages

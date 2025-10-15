@@ -157,14 +157,13 @@ that is `COPY`-ed into the image:
 set -e -u -x
 
 if [[ $CHECK_COVERAGE = true ]]; then
-  TOX_ENV_LIST="pep8-check,coverage"
+  TOX_ENV_LIST="flake8-check,coverage"
 else
-  TOX_ENV_LIST="pep8-check,py${PYTHON_VERSION/./}"
+  TOX_ENV_LIST="flake8-check,py${PYTHON_VERSION/./}"
 fi
 
 tox -e $TOX_ENV_LIST
 
-$PYTHON setup.py install --user
 git machete --version
 ```
 

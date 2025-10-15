@@ -1,34 +1,34 @@
-import pytest
 from pytest_mock import MockerFixture
 
 from git_machete.exceptions import ExitCode
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
+                      launch_command_capturing_output_and_exception,
                       mock_input_returning, rewrite_branch_layout_file)
+from .mockers_git_repository import (check_out, commit, create_repo,
+                                     new_branch, new_orphan_branch)
 
 
 class TestGo(BaseTest):
 
     def test_go_current(self) -> None:
-        (
-            self.repo_sandbox
-            .new_branch("level-0-branch")
-            .commit()
-        )
-        with pytest.raises(SystemExit) as e:
-            launch_command("go", "current")
-        assert ExitCode.ARGUMENT_ERROR == e.value.code
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+
+        output, e = launch_command_capturing_output_and_exception("go", "current")
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.ARGUMENT_ERROR
 
     def test_go_invalid_direction(self) -> None:
-        (
-            self.repo_sandbox
-            .new_branch("level-0-branch")
-            .commit()
-        )
-        with pytest.raises(SystemExit) as e:
-            launch_command("go", "invalid")
-        assert ExitCode.ARGUMENT_ERROR == e.value.code
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+
+        output, e = launch_command_capturing_output_and_exception("go", "invalid")
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.ARGUMENT_ERROR
 
     def test_go_up(self) -> None:
         """Verify behaviour of a 'git machete go up' command.
@@ -37,14 +37,13 @@ class TestGo(BaseTest):
         parent/upstream branch of the current branch.
         """
 
-        (
-            self.repo_sandbox
-            .new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1-branch")
-            .commit()
-            .new_branch("level-2-branch")
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1-branch")
+        commit()
+        new_branch("level-2-branch")
+
         body: str = \
             """
             level-0-branch
@@ -52,22 +51,22 @@ class TestGo(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.check_out("level-0-branch")
+        check_out("level-0-branch")
         assert_failure(["go", "up"], "Branch level-0-branch has no upstream branch")
 
-        self.repo_sandbox.check_out("level-1-branch")
+        check_out("level-1-branch")
         launch_command("go", "up")
         assert 'level-0-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go up' performs 'git checkout' to "
              "the parent/upstream branch of the current branch.")
 
-        self.repo_sandbox.check_out("level-1-branch")
+        check_out("level-1-branch")
         launch_command("g", "u")
         assert 'level-0-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g u' performs 'git checkout' to "
              "the parent/upstream branch of the current branch.")
 
-        self.repo_sandbox.check_out("level-2-branch")
+        check_out("level-2-branch")
         assert_success(
             ["g", "u"],
             "Warn: branch level-2-branch not found in the tree of branch dependencies; "
@@ -82,18 +81,17 @@ class TestGo(BaseTest):
         child/downstream branch of the current branch.
         """
 
-        (
-            self.repo_sandbox
-            .new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1-branch")
-            .commit()
-            .new_branch("level-2a-branch")
-            .commit()
-            .check_out("level-1-branch")
-            .new_branch("level-2b-branch")
-            .commit()
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1-branch")
+        commit()
+        new_branch("level-2a-branch")
+        commit()
+        check_out("level-1-branch")
+        new_branch("level-2b-branch")
+        commit()
+
         body: str = \
             """
             level-0-branch
@@ -103,11 +101,11 @@ class TestGo(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.check_out("level-0-branch")
+        check_out("level-0-branch")
         launch_command("go", "down")
         assert launch_command("show", "current").strip() == "level-1-branch"
 
-        self.repo_sandbox.check_out("level-0-branch")
+        check_out("level-0-branch")
         launch_command("g", "d")
         assert launch_command("show", "current").strip() == "level-1-branch"
 
@@ -123,26 +121,26 @@ class TestGo(BaseTest):
         if root branch has any downstream branches.
         """
 
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1a-branch")
-            .commit()
-            .new_branch("level-2a-branch")
-            .commit()
-            .check_out("level-0-branch")
-            .new_branch("level-1b-branch")
-            .commit()
-            .new_branch("level-2b-branch")
-            .commit()
-            .new_branch("level-3b-branch")
-            .commit()
-            # a added so root will be placed in the config file after the level-0-branch
-            .new_orphan_branch("a-additional-root")
-            .commit()
-            .new_branch("branch-from-a-additional-root")
-            .commit()
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1a-branch")
+        commit()
+        new_branch("level-2a-branch")
+        commit()
+        check_out("level-0-branch")
+        new_branch("level-1b-branch")
+        commit()
+        new_branch("level-2b-branch")
+        commit()
+        new_branch("level-3b-branch")
+        commit()
+        # a added so root will be placed in the config file after the level-0-branch
+        new_orphan_branch("a-additional-root")
+        commit()
+        new_branch("branch-from-a-additional-root")
+        commit()
+
         body: str = \
             """
             level-0-branch
@@ -155,14 +153,14 @@ class TestGo(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.check_out("level-3b-branch")
+        check_out("level-3b-branch")
         launch_command("go", "first")
         assert 'level-1a-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go first' performs 'git checkout' to "
              "the first downstream branch of a root branch if root branch "
              "has any downstream branches.")
 
-        self.repo_sandbox.check_out("level-3b-branch")
+        check_out("level-3b-branch")
         launch_command("g", "f")
         assert 'level-1a-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g d' performs 'git checkout' to "
@@ -174,10 +172,10 @@ class TestGo(BaseTest):
         Verify that 'git machete go first' set current branch to root
         if root branch has no downstream.
         """
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+
         body: str = \
             """
             level-0-branch
@@ -202,24 +200,24 @@ class TestGo(BaseTest):
         the last downstream branch of a root branch if root branch
         has any downstream branches.
         """
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1a-branch")
-            .commit()
-            .new_branch("level-2a-branch")
-            .commit()
-            .check_out("level-0-branch")
-            .new_branch("level-1b-branch")
-            .commit()
-            .new_branch("level-2b-branch")
-            .commit()
-            # x added so root will be placed in the config file after the level-0-branch
-            .new_orphan_branch("x-additional-root")
-            .commit()
-            .new_branch("branch-from-x-additional-root")
-            .commit()
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1a-branch")
+        commit()
+        new_branch("level-2a-branch")
+        commit()
+        check_out("level-0-branch")
+        new_branch("level-1b-branch")
+        commit()
+        new_branch("level-2b-branch")
+        commit()
+        # x added so root will be placed in the config file after the level-0-branch
+        new_orphan_branch("x-additional-root")
+        commit()
+        new_branch("branch-from-x-additional-root")
+        commit()
+
         body: str = \
             """
             level-0-branch
@@ -231,21 +229,21 @@ class TestGo(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.check_out("level-1a-branch")
+        check_out("level-1a-branch")
         launch_command("go", "last", "--debug")
         assert 'level-1b-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go last' performs 'git checkout' to "
              "the last downstream branch of a root branch if root branch "
              "has any downstream branches.")
 
-        self.repo_sandbox.check_out("level-1a-branch")
+        check_out("level-1a-branch")
         launch_command("g", "l", "-v")
         assert 'level-1b-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g l' performs 'git checkout' to "
              "the last downstream branch of a root branch if root branch "
              "has any downstream branches.")
 
-        self.repo_sandbox.check_out("level-2b-branch")
+        check_out("level-2b-branch")
         launch_command("g", "l")
         assert 'branch-from-x-additional-root' == launch_command("show", "current").strip()
 
@@ -258,18 +256,18 @@ class TestGo(BaseTest):
 
         """
 
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1a-branch")
-            .commit()
-            .new_branch("level-2a-branch")
-            .commit()
-            .check_out("level-0-branch")
-            .new_branch("level-1b-branch")
-            .commit()
-            .check_out("level-2a-branch")
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1a-branch")
+        commit()
+        new_branch("level-2a-branch")
+        commit()
+        check_out("level-0-branch")
+        new_branch("level-1b-branch")
+        commit()
+        check_out("level-2a-branch")
+
         body: str = \
             """
             level-0-branch
@@ -285,7 +283,7 @@ class TestGo(BaseTest):
              "the next downstream branch right after the current one in the "
              "config file if successor branch exists.")
 
-        self.repo_sandbox.check_out("level-2a-branch")
+        check_out("level-2a-branch")
         launch_command("g", "n")
 
         assert 'level-1b-branch' == launch_command("show", "current").strip(), \
@@ -300,16 +298,16 @@ class TestGo(BaseTest):
         share root with the current branch.
         """
 
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1-branch")
-            .commit()
-            # x added so root will be placed in the config file after the level-0-branch
-            .new_orphan_branch("x-additional-root")
-            .commit()
-            .check_out("level-1-branch")
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1-branch")
+        commit()
+        # x added so root will be placed in the config file after the level-0-branch
+        new_orphan_branch("x-additional-root")
+        commit()
+        check_out("level-1-branch")
+
         body: str = \
             """
             level-0-branch
@@ -324,7 +322,7 @@ class TestGo(BaseTest):
              "share root with the current branch."
              )
 
-        self.repo_sandbox.check_out("level-1-branch")
+        check_out("level-1-branch")
         launch_command("g", "n")
 
         assert 'x-additional-root' == launch_command("show", "current").strip(), \
@@ -339,17 +337,17 @@ class TestGo(BaseTest):
         when predecessor branch exists within the root tree.
         """
 
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1a-branch")
-            .commit()
-            .new_branch("level-2a-branch")
-            .commit()
-            .check_out("level-0-branch")
-            .new_branch("level-1b-branch")
-            .commit()
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1a-branch")
+        commit()
+        new_branch("level-2a-branch")
+        commit()
+        check_out("level-0-branch")
+        new_branch("level-1b-branch")
+        commit()
+
         body: str = \
             """
             level-0-branch
@@ -366,7 +364,7 @@ class TestGo(BaseTest):
              "when predecessor branch exists within the root tree."
              )
 
-        self.repo_sandbox.check_out("level-1b-branch")
+        check_out("level-1b-branch")
         launch_command("g", "p")
 
         assert 'level-2a-branch' == launch_command("show", "current").strip(), \
@@ -381,14 +379,14 @@ class TestGo(BaseTest):
         branch doesn't exist.
         """
 
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            # a added so root will be placed in the config file before the level-0-branch
-            .new_orphan_branch("a-additional-root")
-            .commit()
-            .check_out("level-0-branch")
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        # a added so root will be placed in the config file before the level-0-branch
+        new_orphan_branch("a-additional-root")
+        commit()
+        check_out("level-0-branch")
+
         body: str = \
             """
             a-additional-root
@@ -401,7 +399,7 @@ class TestGo(BaseTest):
             ("Verify that 'git machete go prev' can checkout to branch that doesn't "
              "share root with the current branch.")
 
-        self.repo_sandbox.check_out("level-0-branch")
+        check_out("level-0-branch")
         launch_command("g", "p")
 
         assert 'a-additional-root' == launch_command("show", "current").strip(), \
@@ -416,22 +414,22 @@ class TestGo(BaseTest):
         the root of the current branch.
         """
 
-        (
-            self.repo_sandbox.new_branch("level-0-branch")
-            .commit()
-            .new_branch("level-1a-branch")
-            .commit()
-            .new_branch("level-2a-branch")
-            .commit()
-            .check_out("level-0-branch")
-            .new_branch("level-1b-branch")
-            .commit()
-            .new_orphan_branch("additional-root")
-            .commit()
-            .new_branch("branch-from-additional-root")
-            .commit()
-            .check_out("level-2a-branch")
-        )
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1a-branch")
+        commit()
+        new_branch("level-2a-branch")
+        commit()
+        check_out("level-0-branch")
+        new_branch("level-1b-branch")
+        commit()
+        new_orphan_branch("additional-root")
+        commit()
+        new_branch("branch-from-additional-root")
+        commit()
+        check_out("level-2a-branch")
+
         body: str = \
             """
             level-0-branch
@@ -448,7 +446,7 @@ class TestGo(BaseTest):
             ("Verify that 'git machete go root' performs 'git checkout' to "
              "the root of the current branch.")
 
-        self.repo_sandbox.check_out("level-2a-branch")
+        check_out("level-2a-branch")
         launch_command("g", "r")
 
         assert 'level-0-branch' == launch_command("show", "current").strip(), \
@@ -456,8 +454,19 @@ class TestGo(BaseTest):
              "the root of the current branch.")
 
     def test_go_root_no_branches(self) -> None:
-        assert_failure(
-            ["g", "root"],
-            "No branches listed in .git/machete; use git machete discover "
-            "or git machete edit, or edit .git/machete manually."
-        )
+        create_repo()
+        expected_error_message = """
+          No branches listed in .git/machete. Consider one of:
+          * git machete discover
+          * git machete edit or edit .git/machete manually
+          * git machete github checkout-prs --mine
+          * git machete gitlab checkout-mrs --mine"""
+        assert_failure(["g", "root"], expected_error_message)
+
+    def test_go_missing_direction(self) -> None:
+        output, e = launch_command_capturing_output_and_exception("go")
+        assert output == \
+            "the following arguments are required: go direction\n" \
+            "Possible values for go direction are: d, down, f, first, l, last, n, next, p, prev, r, root, u, up\n"
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.ARGUMENT_ERROR

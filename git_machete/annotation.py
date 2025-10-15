@@ -1,74 +1,73 @@
 import re
+from typing import Callable, NamedTuple
 
 from git_machete import utils
 
 
-class Qualifiers:
-    def __init__(self, annotation: str):
-        self.__annotation_without_qualifiers: str = annotation
-        self.__push_text: str = ''
-        self.__rebase_text: str = ''
-        self.__slide_out_text: str = ''
-        self.rebase: bool = True
-        self.push: bool = True
-        self.slide_out: bool = True
+class Qualifiers(NamedTuple):
+    rebase: bool = True
+    push: bool = True
+    slide_out: bool = True
+    update_with_merge: bool = False
 
-        def match_pattern(text: str) -> str:
-            return f'.*\\b{text}=no\\b.*'
+    def is_default(self) -> bool:
+        return self.rebase and self.push and self.slide_out and not self.update_with_merge
 
-        def sub_pattern(text: str) -> str:
-            return f'[ ]?{text}=no[ ]?'
+    def is_non_default(self) -> bool:
+        return not self.is_default()
 
-        rebase_match = re.match(match_pattern('rebase'), annotation)
-        if rebase_match:
-            self.rebase = False
-            self.__rebase_text = 'rebase=no'
-            self.__annotation_without_qualifiers = re.sub(sub_pattern('rebase'), ' ', self.__annotation_without_qualifiers)
-
-        push_match = re.match(match_pattern('push'), annotation)
-        if push_match:
-            self.push = False
-            self.__push_text = 'push=no'
-            self.__annotation_without_qualifiers = re.sub(sub_pattern('push'), ' ', self.__annotation_without_qualifiers)
-
-        slide_out_match = re.match(match_pattern('slide-out'), annotation)
-        if slide_out_match:
-            self.slide_out = False
-            self.__slide_out_text = 'slide-out=no'
-            self.__annotation_without_qualifiers = re.sub(sub_pattern('slide-out'), ' ', self.__annotation_without_qualifiers)
-
-    def get_annotation_text_without_qualifiers(self) -> str:
-        return self.__annotation_without_qualifiers.strip()
-
-    def get_qualifiers_text(self) -> str:
-        return f'{self.__rebase_text} {self.__push_text} {self.__slide_out_text}'.replace('  ', ' ').strip()
+    def __str__(self) -> str:
+        segments = ["rebase=no" if not self.rebase else None,
+                    "push=no" if not self.push else None,
+                    "slide-out=no" if not self.slide_out else None,
+                    "update=merge" if self.update_with_merge else None]
+        return ' '.join(filter(None, segments))
 
 
-class Annotation:
-    def __init__(self, text: str):
-        self.text = text.strip()
-        self.qualifiers = Qualifiers(text)
-        self.text_without_qualifiers = self.qualifiers.get_annotation_text_without_qualifiers()
-        self.qualifiers_text = self.qualifiers.get_qualifiers_text()
+class Annotation(NamedTuple):
+    text_without_qualifiers: str
+    qualifiers: Qualifiers
 
-    def get_unformatted_text(self) -> str:
-        if not (self.text_without_qualifiers or self.qualifiers_text):
+    @property
+    def unformatted_full_text(self) -> str:
+        if not (self.text_without_qualifiers or self.qualifiers.is_non_default()):
             return ''
-        annotation_text = ' '
+        result = ''
         if self.text_without_qualifiers:
-            annotation_text += self.text_without_qualifiers
-        if self.qualifiers_text:
-            annotation_text += ' ' if self.text_without_qualifiers else ''
-            annotation_text += self.qualifiers_text
-        return annotation_text
+            result += self.text_without_qualifiers
+        if self.text_without_qualifiers and self.qualifiers.is_non_default():
+            result += ' '
+        if self.qualifiers.is_non_default():
+            result += str(self.qualifiers)
+        return result
 
-    def get_formatted_text(self) -> str:
-        if not (self.text_without_qualifiers or self.qualifiers_text):
+    @property
+    def formatted_full_text(self) -> str:
+        if not (self.text_without_qualifiers or self.qualifiers.is_non_default()):
             return ''
-        annotation_text = "  "
+        result = ''
         if self.text_without_qualifiers:
-            annotation_text += utils.dim(self.text_without_qualifiers)
-        if self.qualifiers_text:
-            annotation_text += ' ' if self.text_without_qualifiers else ''
-            annotation_text += utils.dim(utils.underline(s=self.qualifiers_text))
-        return annotation_text
+            result += utils.dim(self.text_without_qualifiers)
+        if self.text_without_qualifiers and self.qualifiers.is_non_default():
+            result += ' '
+        if self.qualifiers.is_non_default():
+            result += utils.dim(utils.underline(s=str(self.qualifiers)))
+        return result
+
+    @staticmethod
+    def parse(text_with_qualifiers: str) -> "Annotation":
+        text_without_qualifiers = text_with_qualifiers
+        qualifiers = Qualifiers()
+
+        def parse_one(pattern: str, qf: Callable[[Qualifiers], Qualifiers]) -> None:
+            nonlocal qualifiers, text_without_qualifiers
+            match = re.match(f".*\\b{pattern}\\b.*", text_without_qualifiers)
+            if match:
+                qualifiers = qf(qualifiers)
+                text_without_qualifiers = re.sub(f"[ ]?{pattern}[ ]?", ' ', text_without_qualifiers)
+
+        parse_one('rebase=no', lambda q: q._replace(rebase=False))
+        parse_one('push=no', lambda q: q._replace(push=False))
+        parse_one('slide-out=no', lambda q: q._replace(slide_out=False))
+        parse_one('update=merge', lambda q: q._replace(update_with_merge=True))
+        return Annotation(text_without_qualifiers.strip(), qualifiers)

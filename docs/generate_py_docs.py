@@ -1,146 +1,9 @@
 import os
 import re
+from itertools import takewhile
 from os.path import isfile, join
 from textwrap import dedent, indent
-
-from bs4 import BeautifulSoup, Comment
-from docutils import core
-
-
-def rst2html(input_string: str, source_path: str = None, destination_path: str = None,
-             input_encoding: str = 'unicode', doctitle: bool = True,
-             initial_header_level: int = 1):
-    overrides = {'input_encoding': input_encoding,
-                 'doctitle_xform': doctitle,
-                 'initial_header_level': initial_header_level}
-    parts = core.publish_parts(
-        source=input_string, source_path=source_path,
-        destination_path=destination_path,
-        writer_name='html', settings_overrides=overrides)
-    return parts['body']
-
-
-def html2txt(html_: str):
-    html_elements = BeautifulSoup(html_, features="html.parser")
-
-    # remove style tags
-    for tag in html_elements.select('style'):
-        tag.decompose()
-
-    # remove comments
-    for comment in html_elements.findAll(string=lambda string: isinstance(string, Comment)):
-        comment.extract()
-
-    # remove non-breaking spaces
-    for tag in html_elements.select('td'):
-        if tag.text == u'\xa0':
-            tag.decompose()
-
-    # substitute double backticks with a single backtick
-    for tag in html_elements.select('tt'):
-        tag.insert_before('`')
-        tag.insert_after('`')
-
-    # format cite's tag text with single backticks
-    for tag in html_elements.select('cite'):
-        tag.insert_before('`')
-        tag.insert_after('`')
-
-    # format colors
-    for tag in html_elements.select('span'):
-        if 'class' in tag.attrs:
-            color = ' '.join(tag.attrs['class']).replace('gray', 'dim')
-            if color in ['green', 'yellow', 'red', 'dim']:
-                tag.insert_before(f'<{color}>')
-                tag.insert_after(f'</{color}>')
-
-    # make the option's text inside the option list bold
-    for tag in html_elements.select('span'):
-        if 'class' in tag.attrs:
-            if ' '.join(tag.attrs['class']) == 'option':
-                tag.insert_before('<b>')
-                tag.insert_after('</b>')
-
-    # keep bold text bold
-    for tag in html_elements.select('strong'):
-        tag.insert_before('<b>')
-        tag.insert_after('</b>')
-
-    # add new lines after the paragraph tag
-    for tag in html_elements.select('p'):
-        if 'class' in tag.attrs:
-            if ' '.join(tag.attrs['class']) == 'first':
-                tag.insert_before(' ')
-            if 'admonition-title' in ' '.join(tag.attrs['class']):
-                tag.decompose()
-            else:
-                tag.insert_before('\n')
-        else:
-            tag.insert_before('\n\n')
-
-    # add indent and bullet points to the nested bulleted list
-    for tag in html_elements.select('li'):
-        if tag.parent.parent is not None:
-            if tag.parent.parent.name == 'li':
-                lines = tag.text.splitlines()
-                tag.string = f' - {lines[0]}'
-                if len(lines) > 1:
-                    tag.string += indent('\n' + '\n'.join(lines[1:]), INDENT_LEN_3)
-
-    # add indent and bullet points to the bulleted list
-    for tag in html_elements.select('li'):
-        if tag.parent.parent is not None:
-            if tag.parent.parent.name != 'li':
-                lines = tag.text.splitlines()
-                tag.string = f'\n{INDENT_LEN_3}* {lines[0]}'
-                if len(lines) > 1:
-                    tag.string += indent('\n' + '\n'.join(lines[1:]), INDENT_LEN_3 + '  ')
-
-    # format elements in the `Option:` section by adding new line and indent
-    for tag in html_elements.select('kbd'):
-        tag.insert_before(f'\n{INDENT_LEN_3}')
-
-    # add indent to the description list
-    for tag in html_elements.select('dt'):
-        tag.string = '\n' + indent(tag.text.strip(), INDENT_LEN_3)
-
-    # add indent to the nested description list
-    for tag in html_elements.select('dd'):
-        tag.string = '\n' + indent(tag.text, 2 * INDENT_LEN_3) + '\n'
-
-    # add new line and indent for the cells inside a table (e.g. options inside **Options:** section)
-    for tag in html_elements.select('td'):
-        if 'class' not in tag.attrs:
-            tag.string = indent(f'\n{tag.text}', 2 * INDENT_LEN_3)
-
-    # format code examples
-    for tag in html_elements.select('pre'):
-        if 'class' in tag.attrs:
-            if ' '.join(tag.attrs['class']).replace('first', '').replace('last', '').replace('  ', ' ') == 'code literal-block':
-                tag.string = '\n<dim>' + indent(tag.text, '  ') + '</dim>'
-            elif 'literal-block' in ' '.join(tag.attrs['class']):
-                tag.string = '<b>' + indent(tag.text.rstrip('\n'), INDENT_LEN_3) + '</b>'
-
-    # build python docs string out of the previously formatted html tags
-    text: str = ''
-    for html_element in html_elements.descendants:
-        if isinstance(html_element, str):
-            if html_element != '\n':
-                new_text = html_element
-            else:
-                new_text = ''
-
-            # keep exactly one line gap between points in bulleted list
-            if f'{INDENT_LEN_3}- ' in html_element and f'{INDENT_LEN_3}* ' in html_element:
-                new_text = html_element.rstrip()
-
-            text += new_text
-    return text
-
-
-def skip_or_replace_unparsable_directives(rst_: str) -> str:
-    rst_ = rst_.replace(':ref:', '')
-    return rst_
+from typing import List
 
 
 def resolve_includes(rst_: str, docs_source_path_: str) -> str:
@@ -154,77 +17,165 @@ def resolve_includes(rst_: str, docs_source_path_: str) -> str:
     #     .. include:: status_extraSpaceBeforeBranchName_config_key.rst
     #         :start-line: 2
     #         :end-line: 6
-    for indent_, match, option_1_str, option_1, option_1_value, option_2_str, option_2, option_2_value in matches:
-        with open(f'{docs_source_path_}/{match}', 'r') as handle:
+    for indent_, included_file, option_1_str, option_1, option_1_value, option_2_str, option_2, option_2_value in matches:
+        with open(f'{docs_source_path_}/{included_file}', 'r') as handle:
             include_text = handle.readlines()
-        text_to_replace = f'{indent_}.. include:: {match}'
+        replace_from = f'{indent_}.. include:: {included_file}'
+
         start_line, end_line = 0, len(include_text)
         if option_1 == 'start-line':
             start_line = int(option_1_value)
-            text_to_replace += f'\n{option_1_str}'
-        if option_2 == 'end-line':
-            end_line = int(option_2_value)
-            text_to_replace += option_2_str
+            replace_from += f'\n{option_1_str}'
+            if option_2 == 'end-line':
+                end_line = int(option_2_value)
+                replace_from += option_2_str
+        elif option_1 == 'end-line':
+            end_line = int(option_1_value)
+            replace_from += f'\n{option_1_str}'
+
         include_text = include_text[start_line:end_line]
-        rst_ = rst_.replace(text_to_replace, indent(dedent(''.join(include_text)), indent_), 1)
+        include_text = takewhile(lambda line: not line == "..\n", include_text)
+        replace_to = indent(dedent(''.join(include_text)), indent_)
+        rst_ = rst_.replace(replace_from, replace_to, 1)
     return rst_
 
 
-def skip_prefix_new_lines(txt: str) -> str:
-    txt = re.sub(r'\A[\n]+', '', txt)
-    return txt
+HEADER = 0
+USAGE = 1
+NORMAL = 2
+SHELL_BLOCK = 3
+OPTIONS = 4
+SECTION = 5
 
 
-def replace_3_newlines_and_more_with_2_newlines(txt: str) -> str:
-    for i in range(10, 2, -1):
-        txt = txt.replace(i * '\n', '\n\n')
-    return txt
+def rst2txt(rst: str) -> str:
+    state = HEADER
+    result = []
+    indent = " " * 3
+
+    def process_rst_formatting(lne: str) -> str:
+        if '#. ' in lne:
+            lne = indent + lne.replace("#. ", "* ")
+        elif lne.startswith('   '):
+            lne = indent + lne[1:]
+        elif lne.startswith('* ') or lne.startswith('  '):
+            lne = indent + lne
+        lne = re.sub('---', '—', lne)
+        lne = re.sub(':ref:`([^<`]+)(<[^>]+>)?`', r'`\1`', lne)
+        lne = re.sub('`(.*) <.*>`_', r'\1', lne)
+        lne = re.sub('``', '`', lne)
+        lne = re.sub(r'\*\*(.*)\*\*', r'<b>\1</b>', lne)
+        lne = re.sub(r' \*([^ ])', r' \1', lne)
+        lne = re.sub(r'([^ ])\*([ .])', r'\1\2', lne)
+        lne = re.sub(r':([a-z]+):`([^`]+)`', r'<\1>\2</\1>', lne)
+        return lne
+
+    def is_section_header(lne: str) -> bool:
+        return "Environment variables:" in lne or "Git config keys:" in lne or "Hooks:" in lne or "Subcommands:" in lne
+
+    def process_new_option(lne: str) -> List[str]:
+        lne = process_rst_formatting(lne)
+        lne = lne.replace('``', '`')
+        forms = re.sub('  .*$', '', lne)
+        fmt_forms = ", ".join(f"<b>{form}</b>" for form in forms.split(", "))
+        def_first_line = re.sub('^.*   *', '', lne)
+        return ["   " + fmt_forms, "      " + def_first_line]
+
+    for line in rst.splitlines():
+        if line.startswith('=='):
+            if "**Usage:**" in rst:
+                state = USAGE
+            else:
+                state = NORMAL
+        elif state == USAGE:
+            if "**Usage:**" in line:
+                result += ["<b>Usage:</b><b>"]
+            elif line.startswith('    '):
+                result += [line[1:]]
+            elif line and (line[0].isalpha() or line.startswith('**')):
+                result[-1] += "</b>"
+                result += [""]
+                state = NORMAL
+                result += [process_rst_formatting(line)]
+        elif state == NORMAL:
+            if ".. code-block::" in line:
+                result = result[:-1]
+                state = SHELL_BLOCK
+                result += ["<dim>"]
+            elif ".. note::" in line:
+                result += ["<b>Note:</b>"]
+            elif line.startswith('-'):
+                state = OPTIONS
+                result += process_new_option(line)
+            elif is_section_header(line):
+                result += [process_rst_formatting(line)]
+                state = SECTION
+            else:
+                result += [process_rst_formatting(line)]
+        elif state == SHELL_BLOCK:
+            if line.startswith('    '):
+                result += [line[2:]]
+            elif is_section_header(line):
+                result += ["</dim>"]
+                state = SECTION
+                result += [process_rst_formatting(line)]
+            elif line:
+                result += ["</dim>"]
+                state = NORMAL
+                result += [process_rst_formatting(line)]
+        elif state == OPTIONS:
+            if line.startswith('-'):
+                result += process_new_option(line)
+            elif is_section_header(line):
+                result += [process_rst_formatting(line)]
+                state = SECTION
+            elif line:
+                result += [indent * 2 + process_rst_formatting(line.strip())]
+            else:
+                result += [""]
+        elif state == SECTION:
+            if line.startswith('``'):
+                result += [indent + process_rst_formatting(line)]
+            elif ".. code-block::" in line:
+                result = result[:-1]
+            elif line:
+                result += [process_rst_formatting(line)]
+            else:
+                result += [""]
+    if state == SHELL_BLOCK:
+        result += ["</dim>"]
+    return "\n".join(result)
 
 
 if __name__ == '__main__':
-    INDENT_LEN_3 = 3 * ' '
-    INDENT_LEN_4 = 4 * ' '
     docs_source_path = 'docs/source'
-    warning_text = '# ---------------------------------------------------------------------------------------------------------\n' \
-                   '# Warning: This file is NOT supposed to be edited directly, ' \
-                   'but instead regenerated via `tox -e py-docs`\n' \
-                   '# ---------------------------------------------------------------------------------------------------------\n'
-    output_text = 'from typing import Dict\n\n' + warning_text
+    output_text = 'from typing import Dict\n\n' \
+        '# ---------------------------------------------------------------------------------------------------------\n' \
+        '# Warning: This file is NOT supposed to be edited directly, but instead regenerated via `tox -e py-docs`\n' \
+        '# ---------------------------------------------------------------------------------------------------------\n\n'
 
     # build short docs
-    output_text += '\nshort_docs: Dict[str, str] = {\n'
+    output_text += 'short_docs: Dict[str, str] = {\n'
     short_docs_rst_file = docs_source_path + '/short_docs.rst'
     with open(short_docs_rst_file, 'r') as f:
         rst = f.read()
-    rst = skip_or_replace_unparsable_directives(rst)
-    html = rst2html(rst)
-    plain_text = html2txt(html)
-    plain_text = skip_prefix_new_lines(plain_text)
-    command_and_short_docs = re.findall(r'\* `([a-z-]*)`.*-- (.*)', plain_text)
-    for command, short_doc in command_and_short_docs:
-        output_text += f'{INDENT_LEN_4}"{command}": "{short_doc}",\n'
-    output_text += '}'
+    for line in rst.splitlines():
+        if line.startswith('* :ref:'):
+            output_text += re.sub(r'^\* :ref:`(.+)` +-- (.*)$', r'    "\1": "\2",', line) + "\n"
+    output_text += '}\n\n'
 
     # build long docs
-    output_text += '\n\nlong_docs: Dict[str, str] = {\n'
+    output_text += 'long_docs: Dict[str, str] = {\n'
     path = docs_source_path + '/cli'
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(os.listdir(path)) if isfile(join(path, f))}
 
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
             rst = f.read()
-
-        rst = skip_or_replace_unparsable_directives(rst)
         rst = resolve_includes(rst_=rst, docs_source_path_=docs_source_path)
-
-        html = rst2html(rst)
-
-        plain_text = html2txt(html)
-        plain_text = skip_prefix_new_lines(plain_text)
-        plain_text = plain_text.replace('---', '—')
-
-        output_text += f'{INDENT_LEN_4}"{command}": """\n' + indent(plain_text, 2 * INDENT_LEN_4) + '\n   """,\n'
-        output_text = replace_3_newlines_and_more_with_2_newlines(output_text)
+        plain_text = rst2txt(rst).rstrip()
+        output_text += f'    "{command}": """\n' + indent(plain_text, '        ') + '\n   """,\n'
+        output_text = re.sub('\n{2,}', '\n\n', output_text)  # noqa: FS003
 
     output_text += '}'
     print(output_text)

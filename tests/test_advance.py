@@ -1,57 +1,60 @@
-import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.exceptions import UnderlyingGitException
+from git_machete.exceptions import ExitCode, UnderlyingGitException
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
-                      mock_input_returning, rewrite_branch_layout_file)
+                      launch_command_capturing_output_and_exception,
+                      mock_input_returning, mock_input_returning_y,
+                      rewrite_branch_layout_file)
+from .mockers_git_repository import (check_out, commit, create_repo,
+                                     create_repo_with_remote, get_commit_hash,
+                                     get_current_commit_hash, new_branch, push)
 
 
 class TestAdvance(BaseTest):
 
     def test_advance_for_no_downstream_branches(self) -> None:
-        self.repo_sandbox.new_branch("root").commit()
+        create_repo()
+        new_branch("root")
+        commit()
         rewrite_branch_layout_file("root")
 
         assert_failure(["advance"], "root does not have any downstream (child) branches to advance towards")
 
     def test_advance_when_detached_head(self) -> None:
-        (
-            self.repo_sandbox
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .commit()
-        )
-        rewrite_branch_layout_file("master\n  develop")
-        self.repo_sandbox.check_out("HEAD~")
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
 
-        assert_failure(["advance"], "Not currently on any branch", expected_exception=UnderlyingGitException)
+        rewrite_branch_layout_file("master\n  develop")
+        check_out("HEAD~")
+
+        assert_failure(["advance"], "Not currently on any branch", expected_type=UnderlyingGitException)
 
     def test_advance_for_no_applicable_downstream_branches(self) -> None:
-        (
-            self.repo_sandbox
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .commit()
-            .check_out("master")
-            .commit()
-        )
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        check_out("master")
+        commit()
+
         rewrite_branch_layout_file("master\n  develop")
 
         assert_failure(["advance"], "No downstream (child) branch of master is connected to master with a green edge")
 
     def test_advance_with_immediate_cancel(self, mocker: MockerFixture) -> None:
-        (
-            self.repo_sandbox
-            .new_branch("master")
-            .commit()
-            .new_branch("develop")
-            .commit()
-            .check_out("master")
-        )
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        check_out("master")
+
         rewrite_branch_layout_file("master\n  develop")
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("n"))
@@ -64,27 +67,26 @@ class TestAdvance(BaseTest):
         pushes the current branch and slides out child branches of the downstream branch.
         Also, it modifies the branch layout to reflect new dependencies.
         """
+        create_repo_with_remote()
+        new_branch("root")
+        commit()
+        new_branch("level-1-branch")
+        commit()
 
-        (
-            self.repo_sandbox.new_branch("root")
-            .commit()
-            .new_branch("level-1-branch")
-            .commit()
-        )
         body: str = \
             """
             root
                 level-1-branch
             """
         rewrite_branch_layout_file(body)
-        level_1_commit_hash = self.repo_sandbox.get_current_commit_hash()
+        level_1_commit_hash = get_current_commit_hash()
 
-        self.repo_sandbox.check_out("root")
-        self.repo_sandbox.push()
+        check_out("root")
+        push()
         launch_command("advance", "-y")
 
-        root_commit_hash = self.repo_sandbox.get_current_commit_hash()
-        origin_root_commit_hash = self.repo_sandbox.get_commit_hash("origin/root")
+        root_commit_hash = get_current_commit_hash()
+        origin_root_commit_hash = get_commit_hash("origin/root")
 
         assert level_1_commit_hash == root_commit_hash, \
             ("Verify that when there is only one, rebased downstream branch of a "
@@ -100,20 +102,16 @@ class TestAdvance(BaseTest):
              "tree is updated.")
 
     def test_advance_without_push_for_one_downstream_branch(self) -> None:
-
-        (
-            self.repo_sandbox
-            .remove_remote()
-            .new_branch("root")
-            .commit()
-            .new_branch("level-1-branch")
-            .commit()
-            .new_branch("level-2a-branch")
-            .commit()
-            .check_out("level-1-branch")
-            .new_branch("level-2b-branch")
-            .commit()
-        )
+        create_repo()
+        new_branch("root")
+        commit("root")
+        new_branch("level-1-branch")
+        commit("1 commit")
+        new_branch("level-2a-branch")
+        commit("2a commit")
+        check_out("level-1-branch")
+        new_branch("level-2b-branch")
+        commit("2b commit")
 
         body: str = \
             """
@@ -124,20 +122,20 @@ class TestAdvance(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.repo_sandbox.check_out("root")
+        check_out("root")
         launch_command("advance", "-y")
 
-        assert self.repo_sandbox.get_commit_hash("level-1-branch") == self.repo_sandbox.get_commit_hash("root")
+        assert get_commit_hash("level-1-branch") == get_commit_hash("root")
 
         assert_success(
             ["status", "-l"],
             """
             root *
             |
-            | Some commit message.
+            | 2a commit
             o-level-2a-branch
             |
-            | Some commit message.
+            | 2b commit
             o-level-2b-branch
             """
         )
@@ -147,18 +145,16 @@ class TestAdvance(BaseTest):
         Verify that 'git machete advance -y' raises an error when current branch
         has more than one synchronized downstream branch and option '-y' is passed.
         """
-
-        (
-            self.repo_sandbox.new_branch("root")
-            .commit()
-            .push()
-            .new_branch("level-1a-branch")
-            .commit()
-            .check_out("root")
-            .new_branch("level-1b-branch")
-            .commit()
-            .check_out("root")
-        )
+        create_repo_with_remote()
+        new_branch("root")
+        commit()
+        push()
+        new_branch("level-1a-branch")
+        commit()
+        check_out("root")
+        new_branch("level-1b-branch")
+        commit()
+        check_out("root")
 
         body: str = \
             """
@@ -173,14 +169,14 @@ class TestAdvance(BaseTest):
         assert_failure(['advance', '-y'], expected_error_message)
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning(""))
-        with pytest.raises(SystemExit) as e:
-            assert launch_command("advance")
-        assert e.value.code == 0
+        output, e = launch_command_capturing_output_and_exception("advance")
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.SUCCESS
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("not-a-valid-number"))
-        with pytest.raises(SystemExit) as e:
-            assert launch_command("advance")
-        assert e.value.code == 1
+        output, e = launch_command_capturing_output_and_exception("advance")
+        assert type(e) is SystemExit
+        assert e.code == ExitCode.MACHETE_EXCEPTION
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("3"))
         assert_failure(["advance"], "Invalid index: 3")
@@ -207,5 +203,73 @@ class TestAdvance(BaseTest):
             m-level-1a-branch (untracked)
             |
             x-level-1b-branch (untracked)
+            """
+        )
+
+    def test_advance_when_push_no_qualifier_present(self, mocker: MockerFixture) -> None:
+        create_repo_with_remote()
+        new_branch("root")
+        commit()
+        push()
+        new_branch("level-1-branch")
+        commit()
+        check_out("root")
+
+        body: str = \
+            """
+            root  push=no
+                level-1-branch
+            """
+        rewrite_branch_layout_file(body)
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
+        assert_success(
+            ["advance"],
+            """
+            Fast-forward root to match level-1-branch? (y, N)
+
+            Branch root is now fast-forwarded to match level-1-branch. Slide level-1-branch out of the tree of branch dependencies? (y, N)
+            """
+        )
+
+        assert_success(
+            ["status"],
+            """
+            root *  push=no (ahead of origin)
+            """
+        )
+
+    def test_advance_when_slide_out_no_qualifier_present(self, mocker: MockerFixture) -> None:
+        create_repo_with_remote()
+        new_branch("root")
+        commit()
+        push()
+        new_branch("level-1-branch")
+        commit()
+        check_out("root")
+
+        body: str = \
+            """
+            root
+                level-1-branch  slide-out=no
+            """
+        rewrite_branch_layout_file(body)
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
+        assert_success(
+            ["advance"],
+            """
+            Fast-forward root to match level-1-branch? (y, N)
+
+            Branch root is now fast-forwarded to match level-1-branch. Push root to origin? (y, N)
+            """
+        )
+
+        assert_success(
+            ["status"],
+            """
+            root *
+            |
+            m-level-1-branch  slide-out=no (untracked)
             """
         )
