@@ -200,8 +200,9 @@ class GitContext:
         self.__tree_hash_by_commit_hash_cached: Optional[Dict[FullCommitHash, Optional[FullTreeHash]]] = None
 
     def flush_caches(self) -> None:
-        if self.owner:  # pragma: no branch
-            self.owner.flush_caches()
+        # Clear GitContext caches first, BEFORE calling owner.flush_caches().
+        # This ensures that when MacheteClient caches are cleared and potentially rebuilt,
+        # they will use fresh GitContext data (especially reflogs) rather than stale cached data.
         self.__commit_hash_by_revision_cached = None
         self.__committer_unix_timestamp_by_revision_cached = None
         self.__config_cached = None
@@ -212,6 +213,10 @@ class GitContext:
         self.__remote_branches_cached = None
         self.__remotes_cached = None
         self.__short_commit_hash_by_revision_cached = {}
+        # Call owner.flush_caches() AFTER clearing our caches.
+        # This way, if owner cache rebuild is triggered, it will use fresh data.
+        if self.owner:  # pragma: no branch
+            self.owner.flush_caches()
 
     def _run_git(self, git_cmd: str, *args: str, flush_caches: bool, allow_non_zero: bool = False) -> int:
         exit_code = utils.run_cmd("git", git_cmd, *args)
