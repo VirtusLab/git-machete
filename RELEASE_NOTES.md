@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.37.1
 
+- fixed: use `simple` (rather than `none`) mode of squash merge detection in `git machete discover`, to keep parity with the IntelliJ plugin
+
 ## New in git-machete 3.37.0
 
 - added: support for Python 3.14 (earlier versions of git-machete should also work on Python 3.14)

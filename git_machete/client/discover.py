@@ -104,7 +104,7 @@ class DiscoverMacheteClient(MacheteClient):
                 if self.is_merged_to(
                         branch=branch,
                         upstream=upstream,
-                        opt_squash_merge_detection=SquashMergeDetection.NONE
+                        opt_squash_merge_detection=SquashMergeDetection.SIMPLE
                 ):
                     debug(f"inferred upstream of {branch} is {upstream}, but "
                           f"{branch} is merged to {upstream}; skipping {branch} from discovered tree")
@@ -130,7 +130,7 @@ class DiscoverMacheteClient(MacheteClient):
             warn_when_branch_in_sync_but_fork_point_off=False,
             opt_list_commits=opt_list_commits,
             opt_list_commits_with_hashes=False,
-            opt_squash_merge_detection=SquashMergeDetection.NONE)
+            opt_squash_merge_detection=SquashMergeDetection.SIMPLE)
         print("")
         do_backup = os.path.isfile(self._branch_layout_file_path) and slurp_file(self._branch_layout_file_path).strip()
         backup_msg = (
