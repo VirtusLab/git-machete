@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 from pytest_mock import MockerFixture
 
@@ -11,12 +12,12 @@ from .mockers import (assert_failure, assert_success,
                       overridden_environment, rewrite_branch_layout_file,
                       sleep, write_to_file)
 from .mockers_git_repository import (add_file_and_commit, add_remote,
-                                     amend_commit, check_out, commit,
-                                     create_repo, create_repo_with_remote,
-                                     delete_branch, get_current_branch,
-                                     get_git_version, merge, new_branch, push,
-                                     remove_remote, reset_to,
-                                     set_git_config_key)
+                                     add_worktree, amend_commit, check_out,
+                                     commit, create_repo,
+                                     create_repo_with_remote, delete_branch,
+                                     get_current_branch, get_git_version,
+                                     merge, new_branch, push, remove_remote,
+                                     reset_to, set_git_config_key)
 
 
 class TestTraverse(BaseTest):
@@ -1920,3 +1921,284 @@ class TestTraverse(BaseTest):
             Returned to the initial branch feature-2
             """
         )
+
+    def test_traverse_with_worktrees(self) -> None:
+        """Test that traverse can handle branches checked out in separate worktrees."""
+        if get_git_version() < (2, 5):
+            # git worktree command was introduced in git 2.5
+            return
+
+        from .mockers import execute
+
+        create_repo_with_remote()
+        new_branch("develop")
+        commit("develop commit")
+        push()
+        new_branch("feature-1")
+        commit("feature-1 commit")
+        push()
+        new_branch("feature-2")
+        commit("feature-2 commit")
+        push()
+
+        body: str = \
+            """
+            develop
+                feature-1
+                    feature-2
+            """
+        rewrite_branch_layout_file(body)
+
+        # Create worktrees for feature-1 and feature-2 in temp directories
+        check_out("develop")
+        feature_1_worktree = add_worktree("feature-1")
+        feature_2_worktree = add_worktree("feature-2")
+
+        # Modify feature-1 so it needs to be pushed (ahead of remote)
+        initial_dir = os.getcwd()
+        os.chdir(feature_1_worktree)
+        # In worktrees, .git is a file not a directory, so use git command directly
+        execute("touch feature-1-file.txt")
+        execute("git add feature-1-file.txt")
+        execute("git commit -m 'feature-1 additional commit'")
+        os.chdir(initial_dir)
+
+        # Modify develop so feature-2 needs to be rebased
+        check_out("develop")
+        commit("develop additional commit")
+        push()
+
+        # Now run traverse - it should cd into the worktrees automatically
+        # Using -y flag so no need to mock input
+        output = launch_command("traverse", "-y", "--start-from=first-root")
+
+        # Verify key behaviors happened:
+        # 1. It switched to feature-1 worktree
+        assert "worktree where feature-1 is checked out" in output
+        # 2. It switched to feature-2 worktree
+        assert "worktree where feature-2 is checked out" in output
+        # 3. Operations were performed
+        assert "Rebasing feature-1 onto develop" in output
+        assert "Rebasing feature-2 onto feature-1" in output
+
+        # Verify that feature-1 was pushed in its worktree
+        os.chdir(feature_1_worktree)
+        feature_1_local = subprocess.check_output("git rev-parse feature-1", shell=True).decode().strip()
+        feature_1_remote = subprocess.check_output("git rev-parse origin/feature-1", shell=True).decode().strip()
+        assert feature_1_local == feature_1_remote
+
+        # Verify that feature-2 was rebased in its worktree
+        os.chdir(feature_2_worktree)
+        # feature-2 should now be based on the updated feature-1
+        feature_2_log = subprocess.check_output("git log --oneline feature-2", shell=True).decode()
+        assert "feature-1 additional commit" in feature_2_log
+
+    def test_traverse_cd_from_linked_to_main_worktree(self) -> None:
+        """Test traverse cd from linked worktree to main worktree for non-checked-out branch."""
+        if get_git_version() < (2, 5):
+            # git worktree command was introduced in git 2.5
+            return
+
+        (local_path, _) = create_repo_with_remote()
+        new_branch("root")
+        commit()
+        push()
+        new_branch("branch-1")
+        commit()
+        push()
+
+        body: str = \
+            """
+            root
+              branch-1
+            """
+        rewrite_branch_layout_file(body)
+
+        check_out("root")
+        new_branch("branch-2")
+        commit()
+        # Don't push branch-2 so it will be pushed during traverse
+
+        body = """
+        root
+          branch-1
+          branch-2
+        """
+        rewrite_branch_layout_file(body)
+
+        # Setup: Main worktree on branch-2, linked worktree for branch-1
+        check_out("branch-2")  # Main worktree on branch-2
+        branch_1_worktree = add_worktree("branch-1")  # Linked worktree for branch-1
+
+        # cd into branch-1 linked worktree
+        os.chdir(branch_1_worktree)
+
+        # Now run traverse --start-from=first-root
+        # This will:
+        # 1. Checkout root (not in any worktree) in main worktree - triggers cache update (lines 63-66)
+        # 2. Checkout branch-1 (already in linked worktree where we are)
+        # 3. Checkout branch-2 (was in main worktree, now root is there) - triggers cache update again
+        # The cache updates should cover lines 63-66 where we delete the old branch entry
+        output = launch_command("traverse", "-y", "--start-from=first-root")
+
+        # Verify lines 88-89 were executed (cd to main worktree for root)
+        assert "Changing directory to main worktree at" in output, \
+            f"Expected 'Changing directory to main worktree at' in output, but got:\n{output}"
+
+        # Verify branch-2 was pushed (confirms traverse completed successfully)
+        assert "Pushing untracked branch branch-2" in output
+
+    def test_traverse_updates_worktree_cache_on_checkout(self) -> None:
+        """Test that the worktree cache is properly updated when checking out in the same worktree."""
+        if get_git_version() < (2, 5):
+            # git worktree command was introduced in git 2.5
+            return
+
+        (local_path, _) = create_repo_with_remote()
+        new_branch("root")
+        commit()
+        push()
+        new_branch("branch-1")
+        commit()
+        push()
+        new_branch("branch-2")
+        commit()
+        # Don't push branch-2 so it will be pushed during traverse
+
+        body: str = \
+            """
+            root
+              branch-1
+              branch-2
+            """
+        rewrite_branch_layout_file(body)
+
+        # Setup: Main worktree on root, create a linked worktree for branch-1
+        check_out("root")
+        add_worktree("branch-1")
+
+        # Run traverse from root in main worktree
+        # This will:
+        # 1. Initial cache: {root: main_worktree_path, branch-1: linked_worktree_path}
+        # 2. Visit root (already checked out in main worktree) - no operation
+        # 3. Visit branch-1 (in linked worktree) - cd to linked worktree, no checkout
+        # 4. Visit branch-2 (not checked out anywhere) - cd to main worktree, checkout branch-2
+        #    - When checking out branch-2, _update_worktrees_cache_after_checkout is called
+        #    - The cache has {root: main_worktree_path, branch-1: linked_worktree_path}
+        #    - current_worktree_path = main_worktree_path
+        #    - Loop finds root with main_worktree_path, deletes it (covers line 64-65)
+        #    - Adds branch-2: main_worktree_path
+        output = launch_command("traverse", "-y")
+
+        # Verify branch-2 was checked out and pushed
+        assert "Checking out branch-2" in output
+        assert "Pushing untracked branch branch-2" in output
+
+    def test_traverse_warns_when_final_branch_in_different_worktree(self) -> None:
+        if get_git_version() < (2, 5):
+            return
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("root")
+        push()
+        new_branch("branch-1")
+        commit("branch-1")
+        push()
+        new_branch("branch-2")
+        commit("branch-2")
+        push()
+
+        body: str = \
+            """
+            root
+                branch-1
+                    branch-2
+            """
+        rewrite_branch_layout_file(body)
+
+        # Create a worktree for branch-2
+        check_out("root")
+        branch_2_worktree = add_worktree("branch-2")
+
+        # Make root have an additional commit so branch-1 needs rebase
+        check_out("root")
+        commit("root additional commit")
+        push()
+
+        # Start from root (main worktree), traverse should process through branch-2
+        check_out("root")
+        output = launch_command("traverse", "-y")
+
+        # Verify the warning is emitted
+        assert "branch branch-2 is checked out in worktree at" in output
+        assert f"You may want to change directory with:\n  cd {os.path.realpath(branch_2_worktree)}" in output
+
+    def test_traverse_no_warn_when_final_branch_in_same_worktree(self) -> None:
+        if get_git_version() < (2, 5):
+            return
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("root")
+        push()
+        new_branch("branch-1")
+        commit("branch-1")
+        push()
+
+        body: str = \
+            """
+            root
+                branch-1
+            """
+        rewrite_branch_layout_file(body)
+
+        # Create a worktree for branch-1
+        check_out("root")
+        add_worktree("branch-1")
+
+        # Start from root (main worktree), traverse ends on root (same worktree)
+        check_out("root")
+        output = launch_command("traverse", "-y", "--return-to=here")
+
+        # Verify the warning is NOT emitted
+        assert "Note: branch" not in output
+        assert "You may want to change directory with:" not in output
+
+    def test_traverse_warns_when_quitting_on_branch_in_different_worktree(self, mocker: MockerFixture) -> None:
+        if get_git_version() < (2, 5):
+            return
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("root")
+        push()
+        new_branch("branch-1")
+        commit("branch-1")
+        push()
+
+        body: str = \
+            """
+            root
+                branch-1
+            """
+        rewrite_branch_layout_file(body)
+
+        # Create a worktree for branch-1
+        check_out("root")
+        branch_1_worktree = add_worktree("branch-1")
+
+        # Make root have an additional commit so branch-1 needs rebase
+        check_out("root")
+        commit("root additional commit")
+        push()
+
+        # Start from root (main worktree), traverse will ask to rebase branch-1, user quits
+        check_out("root")
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
+        output = launch_command("traverse")
+
+        # Verify traverse stops early and the warning is still emitted
+        assert "Rebase branch-1 onto root?" in output
+        assert "branch branch-1 is checked out in worktree at" in output
+        assert f"You may want to change directory with:\n  cd {os.path.realpath(branch_1_worktree)}" in output

@@ -1485,6 +1485,8 @@ long_docs: Dict[str, str] = {
         and `git machete github checkout-prs` (`git machete gitlab checkout-mrs`) add `rebase=no push=no` branch qualifiers
         when the current user is NOT the author of the PR/MR associated with that branch.
 
+        <b>Note on git worktrees:</b> if a branch is already checked out in another worktree, `traverse` will change directory to that worktree rather than failing.
+
         <b>Options:</b>
 
            <b>-F</b>, <b>--fetch</b>

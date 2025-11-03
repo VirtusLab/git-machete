@@ -2143,6 +2143,8 @@ Operations like \fBgit machete github anno\-prs\fP (\fBgit machete gitlab anno\-
 and \fBgit machete github checkout\-prs\fP (\fBgit machete gitlab checkout\-mrs\fP) add \fBrebase=no push=no\fP branch qualifiers
 when the current user is NOT the author of the PR/MR associated with that branch.
 .sp
+\fBNote on git worktrees:\fP if a branch is already checked out in another worktree, \fBtraverse\fP will change directory to that worktree rather than failing.
+.sp
 \fBOptions:\fP
 .INDENT 0.0
 .TP

@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.37.1
 
+- improved: `traverse` now changes directory to the worktree where a branch is checked out, rather than failing (suggested by @lsierant)
 - fixed: use `simple` (rather than `none`) mode of squash merge detection in `git machete discover`, to keep parity with the IntelliJ plugin
 
 ## New in git-machete 3.37.0
