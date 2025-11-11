@@ -7,8 +7,7 @@ from git_machete.client.base import (ParsableEnum, PickRoot,
                                      SquashMergeDetection)
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.code_hosting import PullRequest
-from git_machete.exceptions import (InteractionStopped, MacheteException,
-                                    UnexpectedMacheteException)
+from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import (GitContext, LocalBranchShortName,
                                         SyncToRemoteStatus)
 from git_machete.utils import (bold, flat_map, fmt, get_pretty_choices,
@@ -350,39 +349,36 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
             if needs_remote_sync:
                 any_action_suggested = True
-                try:
-                    if s == SyncToRemoteStatus.BEHIND_REMOTE:
-                        assert remote is not None
-                        self._handle_behind_state(branch=current_branch, remote=remote, opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
-                        assert remote is not None
-                        self._handle_ahead_state(
-                            current_branch=current_branch,
-                            remote=remote,
-                            is_called_from_traverse=True,
-                            opt_push_tracked=opt_push_tracked,
-                            opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                        self._handle_diverged_and_older_state(current_branch, opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                        assert remote is not None
-                        self._handle_diverged_and_newer_state(
-                            current_branch=current_branch,
-                            remote=remote,
-                            opt_push_tracked=opt_push_tracked,
-                            opt_yes=opt_yes)
-                    elif s == SyncToRemoteStatus.UNTRACKED:
-                        self._handle_untracked_state(
-                            branch=current_branch,
-                            is_called_from_traverse=True,
-                            is_called_from_code_hosting=False,
-                            opt_push_untracked=opt_push_untracked,
-                            opt_push_tracked=opt_push_tracked,
-                            opt_yes=opt_yes)
-                    else:
-                        raise UnexpectedMacheteException(f"Unexpected SyncToRemoteStatus: {s}.")
-                except InteractionStopped:
-                    return
+                if s == SyncToRemoteStatus.BEHIND_REMOTE:
+                    assert remote is not None
+                    self._handle_behind_state(branch=current_branch, remote=remote, opt_yes=opt_yes)
+                elif s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
+                    assert remote is not None
+                    self._handle_ahead_state(
+                        current_branch=current_branch,
+                        remote=remote,
+                        is_called_from_traverse=True,
+                        opt_push_tracked=opt_push_tracked,
+                        opt_yes=opt_yes)
+                elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+                    self._handle_diverged_and_older_state(current_branch, opt_yes=opt_yes)
+                elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                    assert remote is not None
+                    self._handle_diverged_and_newer_state(
+                        current_branch=current_branch,
+                        remote=remote,
+                        opt_push_tracked=opt_push_tracked,
+                        opt_yes=opt_yes)
+                elif s == SyncToRemoteStatus.UNTRACKED:
+                    self._handle_untracked_state(
+                        branch=current_branch,
+                        is_called_from_traverse=True,
+                        is_called_from_code_hosting=False,
+                        opt_push_untracked=opt_push_untracked,
+                        opt_push_tracked=opt_push_tracked,
+                        opt_yes=opt_yes)
+                else:
+                    raise UnexpectedMacheteException(f"Unexpected SyncToRemoteStatus: {s}.")
 
             if needs_create_pr:
                 any_action_suggested = True

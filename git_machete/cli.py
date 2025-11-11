@@ -502,6 +502,13 @@ def set_utils_global_variables(parsed_args: argparse.Namespace) -> None:
 
 
 def launch(orig_args: List[str]) -> None:
+    try:
+        launch_interruptible(orig_args)
+    except InteractionStopped:
+        pass
+
+
+def launch_interruptible(orig_args: List[str]) -> None:
     initial_current_directory: Optional[str] = utils.get_current_directory_or_none()
 
     try:
@@ -744,10 +751,7 @@ def launch(orig_args: List[str]) -> None:
                     fail_on_missing_current_user_for_my_open_prs=True)
             elif subcommand == f"create-{pr_or_mr}":
                 current_branch = git.get_current_branch()
-                try:
-                    github_or_gitlab_client.sync_before_creating_pull_request(opt_yes=cli_opts.opt_yes)
-                except InteractionStopped:
-                    return
+                github_or_gitlab_client.sync_before_creating_pull_request(opt_yes=cli_opts.opt_yes)
                 github_or_gitlab_client.create_pull_request(
                     head=current_branch,
                     opt_base=cli_opts.opt_base,
@@ -952,8 +956,6 @@ def main() -> None:
     except (MacheteException, UnderlyingGitException) as e:
         print(e, file=sys.stderr)
         sys.exit(ExitCode.MACHETE_EXCEPTION)
-    except InteractionStopped:  # pragma: no cover
-        pass
 
 
 if __name__ == "__main__":
