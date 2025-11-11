@@ -7,7 +7,7 @@ executors:
       xcode: 16.4.0
     # https://circleci.com/docs/using-macos/#available-resource-classes
     # https://circleci.com/pricing/#comparison-table
-    resource_class: macos.m1.medium.gen1
+    resource_class: m4pro.medium
   ubuntu_executor:
     machine:
       # https://circleci.com/developer/images?imageType=machine
