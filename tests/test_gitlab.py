@@ -1,7 +1,6 @@
 import itertools
 from contextlib import contextmanager
 from typing import Iterator
-from unittest.mock import mock_open
 
 from pytest_mock import MockerFixture
 
@@ -233,7 +232,7 @@ class TestGitLab(BaseTest):
         gitlab_token_contents = ('glpat-mytoken_for_gitlab_com\n'
                                  'glpat-myothertoken_for_git_example_org git.example.org\n'
                                  'glpat-yetanothertoken_for_git_example_com git.example.com')
-        self.patch_symbol(mocker, 'builtins.open', mock_open(read_data=gitlab_token_contents))
+        self.patch_symbol(mocker, 'git_machete.utils.slurp_file', lambda _: gitlab_token_contents)
         self.patch_symbol(mocker, 'os.path.isfile', lambda _file: True)
 
         domain = GitLabClient.DEFAULT_GITLAB_DOMAIN

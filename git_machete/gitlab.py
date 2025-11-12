@@ -9,6 +9,7 @@ import urllib.parse
 import urllib.request
 from typing import Any, Dict, List, NamedTuple, Optional
 
+from git_machete import utils
 from git_machete.code_hosting import (CodeHostingClient,
                                       CodeHostingGitConfigKeys,
                                       CodeHostingSpec,
@@ -50,19 +51,18 @@ class GitLabToken(NamedTuple):
 
         if os.path.isfile(file_full_path):
             debug(f"  File `{file_full_path}` exists")
-            with open(file_full_path) as file:
-                # ~/.gitlab-token is a file with a structure similar to:
-                #
-                # glpat-mytoken_for_gitlab_com
-                # glpat-myothertoken_for_git_example_org git.example.org
-                # glpat-yetanothertoken_for_git_example_com git.example.com
 
-                for line in file.readlines():
-                    if line.rstrip().endswith(" " + domain):
-                        token = line.split(" ")[0]
-                        return cls(value=token, provider=provider)
-                    elif domain == GitLabClient.DEFAULT_GITLAB_DOMAIN and " " not in line.rstrip():
-                        return cls(value=line.rstrip(), provider=provider)
+            # ~/.gitlab-token is a file with a structure similar to:
+            #
+            # glpat-mytoken_for_gitlab_com
+            # glpat-myothertoken_for_git_example_org git.example.org
+            # glpat-yetanothertoken_for_git_example_com git.example.com
+            for line in utils.slurp_file(file_full_path).splitlines():
+                if line.rstrip().endswith(" " + domain):
+                    token = line.split(" ")[0]
+                    return cls(value=token, provider=provider)
+                elif domain == GitLabClient.DEFAULT_GITLAB_DOMAIN and " " not in line.rstrip():
+                    return cls(value=line.rstrip(), provider=provider)
         return None
 
     @classmethod

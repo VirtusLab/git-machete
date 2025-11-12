@@ -4,9 +4,10 @@ set -e -o pipefail -u
 
 self_name=$(basename "$0")
 
+# Note that builtins.open should NOT be mocked as it can interfere with coverage.py,
+# see https://github.com/coveragepy/coveragepy/issues/2083#issuecomment-3521840036
 whitelisted_methods="\
 builtins.input
-builtins.open
 git_machete.code_hosting.OrganizationAndRepository.from_url
 git_machete.git_operations.GitContext.fetch_remote
 git_machete.github.GitHubClient.MAX_PULLS_PER_PAGE_COUNT
@@ -18,6 +19,7 @@ git_machete.utils._run_cmd
 git_machete.utils.find_executable
 git_machete.utils.get_current_date
 git_machete.utils.is_stdout_a_tty
+git_machete.utils.slurp_file
 os.path.isfile
 shutil.which
 sys.argv

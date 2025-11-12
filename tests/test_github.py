@@ -2,7 +2,6 @@ import itertools
 from contextlib import contextmanager
 from textwrap import dedent
 from typing import Iterator
-from unittest.mock import mock_open
 
 from pytest_mock import MockerFixture
 
@@ -233,7 +232,7 @@ class TestGitHub(BaseTest):
         github_token_contents = ('ghp_mytoken_for_github_com\n'
                                  'ghp_myothertoken_for_git_example_org git.example.org\n'
                                  'ghp_yetanothertoken_for_git_example_com git.example.com')
-        self.patch_symbol(mocker, 'builtins.open', mock_open(read_data=github_token_contents))
+        self.patch_symbol(mocker, 'git_machete.utils.slurp_file', lambda _: github_token_contents)
         self.patch_symbol(mocker, 'os.path.isfile', lambda _file: True)
 
         domain = GitHubClient.DEFAULT_GITHUB_DOMAIN
@@ -320,8 +319,8 @@ class TestGitHub(BaseTest):
 
         # Let's pretend that `gh` is available, but fails for whatever reason.
         self.patch_symbol(mocker, 'shutil.which', mock_shutil_which('/path/to/gh'))
-        self.patch_symbol(mocker, 'os.path.isfile', lambda file: '.github-token' not in file)
-        self.patch_symbol(mocker, 'builtins.open', mock_open(read_data=dedent(config_hub_contents)))
+        self.patch_symbol(mocker, 'os.path.isfile', lambda path: '.github-token' not in path)
+        self.patch_symbol(mocker, 'git_machete.utils.slurp_file', lambda _: dedent(config_hub_contents))
 
         fixed_popen_cmd_results = [(0, "gh version 2.31.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.31.0\n", ""),
                                    (1, "", "unknown error")]

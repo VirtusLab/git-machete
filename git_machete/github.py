@@ -9,12 +9,16 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
-from .code_hosting import (CodeHostingClient, CodeHostingGitConfigKeys,
-                           CodeHostingSpec, OrganizationAndRepository,
-                           OrganizationAndRepositoryAndGitUrl, PullRequest)
-from .exceptions import MacheteException, UnexpectedMacheteException
-from .git_operations import LocalBranchShortName
-from .utils import bold, compact_dict, debug, popen_cmd, warn
+from git_machete import utils
+from git_machete.code_hosting import (CodeHostingClient,
+                                      CodeHostingGitConfigKeys,
+                                      CodeHostingSpec,
+                                      OrganizationAndRepository,
+                                      OrganizationAndRepositoryAndGitUrl,
+                                      PullRequest)
+from git_machete.exceptions import MacheteException, UnexpectedMacheteException
+from git_machete.git_operations import LocalBranchShortName
+from git_machete.utils import bold, compact_dict, debug, popen_cmd, warn
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
@@ -48,19 +52,18 @@ class GitHubToken(NamedTuple):
 
         if os.path.isfile(file_full_path):
             debug(f"  File `{file_full_path}` exists")
-            with open(file_full_path) as file:
-                # ~/.github-token is a file with a structure similar to:
-                #
-                # ghp_mytoken_for_github_com
-                # ghp_myothertoken_for_git_example_org git.example.org
-                # ghp_yetanothertoken_for_git_example_com git.example.com
 
-                for line in file.readlines():
-                    if line.rstrip().endswith(" " + domain):
-                        token = line.split(" ")[0]
-                        return cls(value=token, provider=provider)
-                    elif domain == GitHubClient.DEFAULT_GITHUB_DOMAIN and " " not in line.rstrip():
-                        return cls(value=line.rstrip(), provider=provider)
+            # ~/.github-token is a file with a structure similar to:
+            #
+            # ghp_mytoken_for_github_com
+            # ghp_myothertoken_for_git_example_org git.example.org
+            # ghp_yetanothertoken_for_git_example_com git.example.com
+            for line in utils.slurp_file(file_full_path).splitlines():
+                if line.rstrip().endswith(" " + domain):
+                    token = line.split(" ")[0]
+                    return cls(value=token, provider=provider)
+                elif domain == GitHubClient.DEFAULT_GITHUB_DOMAIN and " " not in line.rstrip():
+                    return cls(value=line.rstrip(), provider=provider)
         return None
 
     @classmethod
@@ -121,26 +124,25 @@ class GitHubToken(NamedTuple):
         home_path: str = str(Path.home())
         config_hub_path: str = os.path.join(home_path, ".config", "hub")
         if os.path.isfile(config_hub_path):
-            with open(config_hub_path) as config_hub:
-                # ~/.config/hub is a yaml file, with a structure similar to:
-                #
-                # {domain1}:
-                # - user: {username1}
-                #   oauth_token: *******************
-                #   protocol: {protocol}
-                #
-                # {domain2}:
-                # - user: {username2}
-                #   oauth_token: *******************
-                #   protocol: {protocol}
-                found_host = False
-                for line in config_hub.readlines():
-                    if line.rstrip() == domain + ":":
-                        found_host = True
-                    elif found_host and line.lstrip().startswith("oauth_token:"):
-                        result = re.sub(' *oauth_token: +', '', line).rstrip().replace('"', '')
-                        return cls(value=result,
-                                   provider=f'auth token for {domain} from `hub` GitHub CLI')
+            # ~/.config/hub is a yaml file, with a structure similar to:
+            #
+            # {domain1}:
+            # - user: {username1}
+            #   oauth_token: *******************
+            #   protocol: {protocol}
+            #
+            # {domain2}:
+            # - user: {username2}
+            #   oauth_token: *******************
+            #   protocol: {protocol}
+            found_host = False
+            for line in utils.slurp_file(config_hub_path).splitlines():
+                if line.rstrip() == domain + ":":
+                    found_host = True
+                elif found_host and line.lstrip().startswith("oauth_token:"):
+                    result = re.sub(' *oauth_token: +', '', line).rstrip().replace('"', '')
+                    return cls(value=result,
+                               provider=f'auth token for {domain} from `hub` GitHub CLI')
         return None
 
 
