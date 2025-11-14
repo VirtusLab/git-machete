@@ -1,3 +1,5 @@
+import os
+
 from pytest_mock import MockerFixture
 
 from git_machete.exceptions import ExitCode
@@ -6,8 +8,9 @@ from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
                       launch_command_capturing_output_and_exception,
                       mock_input_returning, rewrite_branch_layout_file)
-from .mockers_git_repository import (check_out, commit, create_repo,
-                                     new_branch, new_orphan_branch)
+from .mockers_git_repository import (add_worktree, check_out, commit,
+                                     create_repo, get_git_version, new_branch,
+                                     new_orphan_branch)
 
 
 class TestGo(BaseTest):
@@ -470,3 +473,46 @@ class TestGo(BaseTest):
             "Possible values for go direction are: d, down, f, first, l, last, n, next, p, prev, r, root, u, up\n"
         assert type(e) is SystemExit
         assert e.code == ExitCode.ARGUMENT_ERROR
+
+    def test_go_with_worktree(self) -> None:
+        """Test that go fails gracefully when target branch is checked out in a worktree."""
+        if get_git_version() < (2, 5):
+            # git worktree command was introduced in git 2.5
+            return
+
+        create_repo()
+        new_branch("develop")
+        commit()
+        new_branch("feature-1")
+        commit()
+        new_branch("feature-2")
+        commit()
+
+        body: str = \
+            """
+            develop
+                feature-1
+                    feature-2
+            """
+        rewrite_branch_layout_file(body)
+
+        # Create a worktree for feature-1
+        check_out("develop")
+        add_worktree("feature-1")
+
+        # Now try to `go down` from develop to feature-1
+        # feature-1 is already checked out in a worktree
+        check_out("develop")
+        initial_dir = os.getcwd()
+        output, exception = launch_command_capturing_output_and_exception("go", "down")
+
+        # Verify that `go` command fails when trying to checkout a branch in a worktree
+        # Git checkout fails with exit code 128 and stderr: "fatal: 'feature-1' is already used by worktree..."
+        assert exception is not None, "Expected go command to fail when target branch is in a worktree"
+        from git_machete.exceptions import UnderlyingGitException
+        assert isinstance(exception, UnderlyingGitException)
+        assert "returned 128" in str(exception)  # Git checkout failure
+        assert "checkout" in str(exception).lower()
+
+        # Also verify the directory hasn't changed (unlike traverse which cd's into worktrees)
+        assert os.getcwd() == initial_dir, "go should not change directory"

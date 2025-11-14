@@ -153,3 +153,13 @@ def set_git_config_key(key: str, value: str) -> None:
 
 def unset_git_config_key(key: str) -> None:
     execute(f'git config --unset {key}')
+
+
+def add_worktree(branch: str) -> str:
+    """
+    Create a new worktree for the specified branch in a temporary directory.
+    Returns the path to the created worktree.
+    """
+    worktree_path = mkdtemp()
+    execute(f"git worktree add -f {worktree_path} {branch}")
+    return worktree_path

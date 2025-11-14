@@ -219,9 +219,9 @@ class GitContext:
         self.owner: Optional[Any] = None
 
         self.__git_version: Optional[Tuple[int, int, int]] = None
-        self.__root_dir: Optional[str] = None
-        self.__main_git_dir: Optional[str] = None
-        self.__worktree_git_dir: Optional[str] = None
+        self.__main_worktree_git_dir: Optional[str] = None
+        self.__current_worktree_root_dir: Optional[str] = None
+        self.__current_worktree_git_dir: Optional[str] = None
 
         self.__commit_hash_by_revision_cached: Optional[Dict[AnyRevision, Optional[FullCommitHash]]] = None
         self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[AnyRevision, int]] = None
@@ -254,6 +254,10 @@ class GitContext:
         self.__remotes_cached = None
         self.__removed_from_remote = None
         self.__short_commit_hash_by_revision_cached = {}
+        self.__flush_current_worktree_caches()
+
+    def __flush_current_worktree_caches(self) -> None:
+        self.__current_worktree_root_dir = None
 
     def _run_git(self, git_cmd: str, *args: str, flush_caches: bool, allow_non_zero: bool = False) -> int:
         exit_code = utils.run_cmd(*GIT_EXEC, git_cmd, *args)
@@ -287,42 +291,42 @@ class GitContext:
             self.__git_version = (int(raw.group(1)), int(raw.group(2)), int(raw.group(3)))
         return self.__git_version
 
-    def get_root_dir(self) -> str:
-        if not self.__root_dir:
+    def get_current_worktree_root_dir(self) -> str:
+        if not self.__current_worktree_root_dir:
             try:
-                self.__root_dir = self._popen_git("rev-parse", "--show-toplevel").stdout.strip()
+                self.__current_worktree_root_dir = self._popen_git("rev-parse", "--show-toplevel").stdout.strip()
             except UnderlyingGitException:
                 raise UnderlyingGitException("Not a git repository")
-        return self.__root_dir
+        return self.__current_worktree_root_dir
 
-    def get_worktree_git_dir(self) -> str:
-        if not self.__worktree_git_dir:
+    def get_current_worktree_git_dir(self) -> str:
+        if not self.__current_worktree_git_dir:
             try:
-                self.__worktree_git_dir = self._popen_git("rev-parse", "--git-dir").stdout.strip()
+                self.__current_worktree_git_dir = self._popen_git("rev-parse", "--git-dir").stdout.strip()
             except UnderlyingGitException:
                 raise UnderlyingGitException("Not a git repository")
-        return self.__worktree_git_dir
+        return self.__current_worktree_git_dir
 
-    def get_main_git_dir(self) -> str:
-        if not self.__main_git_dir:
+    def get_main_worktree_git_dir(self) -> str:
+        if not self.__main_worktree_git_dir:
             try:
                 git_dir: str = self._popen_git("rev-parse", "--git-dir").stdout.strip()
                 git_dir_parts = Path(git_dir).parts
                 if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees':
-                    self.__main_git_dir = os.path.join(*git_dir_parts[:-2])
+                    self.__main_worktree_git_dir = os.path.join(*git_dir_parts[:-2])
                     debug(f'git dir pointing to {git_dir} - we are in a worktree; '
-                          f'using {self.__main_git_dir} as the effective git dir instead')
+                          f'using {self.__main_worktree_git_dir} as the effective git dir instead')
                 else:
-                    self.__main_git_dir = git_dir
+                    self.__main_worktree_git_dir = git_dir
             except UnderlyingGitException:
                 raise UnderlyingGitException("Not a git repository")
-        return self.__main_git_dir
+        return self.__main_worktree_git_dir
 
-    def get_worktree_git_subpath(self, *fragments: str) -> str:
-        return os.path.join(self.get_worktree_git_dir(), *fragments)
+    def get_current_worktree_git_subpath(self, *fragments: str) -> str:
+        return os.path.join(self.get_current_worktree_git_dir(), *fragments)
 
-    def get_main_git_subpath(self, *fragments: str) -> str:
-        return os.path.join(self.get_main_git_dir(), *fragments)
+    def get_main_worktree_git_subpath(self, *fragments: str) -> str:
+        return os.path.join(self.get_main_worktree_git_dir(), *fragments)
 
     def get_git_timespec_parsed_to_unix_timestamp(self, date: str) -> int:
         try:
@@ -555,19 +559,19 @@ class GitContext:
 
     def is_am_in_progress(self) -> bool:
         # As of git 2.24.1, this is how 'cmd_rebase()' in builtin/rebase.c checks whether am is in progress.
-        return os.path.isfile(self.get_worktree_git_subpath("rebase-apply", "applying"))
+        return os.path.isfile(self.get_current_worktree_git_subpath("rebase-apply", "applying"))
 
     def is_bisect_in_progress(self) -> bool:
-        return os.path.isfile(self.get_worktree_git_subpath("BISECT_START"))
+        return os.path.isfile(self.get_current_worktree_git_subpath("BISECT_START"))
 
     def is_cherry_pick_in_progress(self) -> bool:
-        return os.path.isfile(self.get_worktree_git_subpath("CHERRY_PICK_HEAD"))
+        return os.path.isfile(self.get_current_worktree_git_subpath("CHERRY_PICK_HEAD"))
 
     def is_merge_in_progress(self) -> bool:
-        return os.path.isfile(self.get_worktree_git_subpath("MERGE_HEAD"))
+        return os.path.isfile(self.get_current_worktree_git_subpath("MERGE_HEAD"))
 
     def is_revert_in_progress(self) -> bool:
-        return os.path.isfile(self.get_worktree_git_subpath("REVERT_HEAD"))
+        return os.path.isfile(self.get_current_worktree_git_subpath("REVERT_HEAD"))
 
     def checkout(self, branch: LocalBranchShortName) -> None:
         self._run_git("checkout", "--quiet", branch, "--", flush_caches=True)
@@ -723,7 +727,7 @@ class GitContext:
             self._run_git("checkout", branch, flush_caches=True)
 
     def get_currently_bisected_branch_or_none(self) -> Optional[LocalBranchShortName]:
-        bisect_start_file = self.get_worktree_git_subpath("BISECT_START")
+        bisect_start_file = self.get_current_worktree_git_subpath("BISECT_START")
         if not os.path.exists(bisect_start_file):
             return None
         branch = slurp_file(bisect_start_file).strip()
@@ -739,12 +743,12 @@ class GitContext:
 
         # .git/rebase-merge directory exists during cherry-pick-powered rebases,
         # e.g. all interactive ones and the ones where '--strategy=' or '--keep-empty' option has been passed
-        rebase_merge_head_name_file = self.get_worktree_git_subpath("rebase-merge", "head-name")
+        rebase_merge_head_name_file = self.get_current_worktree_git_subpath("rebase-merge", "head-name")
         if os.path.isfile(rebase_merge_head_name_file):
             head_name_file = rebase_merge_head_name_file
 
         # .git/rebase-apply directory exists during the remaining, i.e. am-powered rebases, but also during am sessions.
-        rebase_apply_head_name_file = self.get_worktree_git_subpath("rebase-apply", "head-name")
+        rebase_apply_head_name_file = self.get_current_worktree_git_subpath("rebase-apply", "head-name")
         # Most likely .git/rebase-apply/head-name can't exist during am sessions, but it's better to be safe.
         if not self.is_am_in_progress() and os.path.isfile(rebase_apply_head_name_file):
             head_name_file = rebase_apply_head_name_file  # pragma: no cover
@@ -963,7 +967,7 @@ class GitContext:
         return RemoteBranchShortName(matching_remotes[0] + "/" + branch) if len(matching_remotes) == 1 else None
 
     def get_hook_path(self, hook_name: str) -> str:
-        hook_dir: str = self.get_config_attr_or_none("core.hooksPath") or self.get_main_git_subpath("hooks")
+        hook_dir: str = self.get_config_attr_or_none("core.hooksPath") or self.get_main_worktree_git_subpath("hooks")
         return os.path.join(hook_dir, hook_name)
 
     def check_hook_executable(self, hook_path: str) -> bool:
@@ -1018,7 +1022,7 @@ class GitContext:
 
             # No need to fix <git-dir>/rebase-apply/author-script,
             # only <git-dir>/rebase-merge/author-script (i.e. interactive rebases, for the most part) is affected.
-            author_script = self.get_worktree_git_subpath("rebase-merge", "author-script")
+            author_script = self.get_current_worktree_git_subpath("rebase-merge", "author-script")
             if os.path.isfile(author_script):
                 faulty_line_regex = re.compile("[A-Z0-9_]+='[^']*")
 

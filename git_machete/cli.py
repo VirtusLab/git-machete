@@ -503,12 +503,12 @@ def set_utils_global_variables(parsed_args: argparse.Namespace) -> None:
 
 def launch(orig_args: List[str]) -> None:
     try:
-        launch_interruptible(orig_args)
+        launch_internal(orig_args)
     except InteractionStopped:
         pass
 
 
-def launch_interruptible(orig_args: List[str]) -> None:
+def launch_internal(orig_args: List[str]) -> None:
     initial_current_directory: Optional[str] = utils.get_current_directory_or_none()
 
     try:

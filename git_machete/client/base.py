@@ -112,7 +112,10 @@ class MacheteClient:
     def __get_git_machete_branch_layout_file_path(self) -> str:
         use_top_level_machete_file = self._git.get_boolean_config_attr(key=git_config_keys.WORKTREE_USE_TOP_LEVEL_MACHETE_FILE,
                                                                        default_value=True)
-        machete_file_directory = self._git.get_main_git_dir() if use_top_level_machete_file else self._git.get_worktree_git_dir()
+        if use_top_level_machete_file:
+            machete_file_directory = self._git.get_main_worktree_git_dir()
+        else:
+            machete_file_directory = self._git.get_current_worktree_git_dir()
         return os.path.join(machete_file_directory, 'machete')
 
     def __init_state(self) -> None:
@@ -606,7 +609,8 @@ class MacheteClient:
             if hook_executable:
                 debug(f"running machete-status-branch hook ({hook_path}) for branch {branch}")
                 hook_env = dict(os.environ, ASCII_ONLY=str(utils.ascii_only).lower())
-                status_code, stdout, stderr = self.__popen_hook(hook_path, branch, cwd=self._git.get_root_dir(), env=hook_env)
+                status_code, stdout, stderr = self.__popen_hook(
+                    hook_path, branch, cwd=self._git.get_current_worktree_root_dir(), env=hook_env)
 
                 if status_code == 0:
                     if not stdout.isspace():
@@ -683,7 +687,7 @@ class MacheteClient:
         hook_path = self._git.get_hook_path("machete-pre-rebase")
         if self._git.check_hook_executable(hook_path):
             debug(f"running machete-pre-rebase hook ({hook_path})")
-            exit_code = self.__run_hook(hook_path, onto, from_exclusive, branch, cwd=self._git.get_root_dir())
+            exit_code = self.__run_hook(hook_path, onto, from_exclusive, branch, cwd=self._git.get_current_worktree_root_dir())
             if exit_code == 0:
                 self._git.rebase(
                     onto, from_exclusive, branch,
@@ -1032,7 +1036,7 @@ class MacheteClient:
             debug(f"running machete-post-slide-out hook ({hook_path})")
             new_downstreams_strings: List[str] = [str(db) for db in new_downstreams]
             exit_code = self.__run_hook(hook_path, new_upstream, slid_out_branch, *new_downstreams_strings,
-                                        cwd=self._git.get_root_dir())
+                                        cwd=self._git.get_current_worktree_root_dir())
             if exit_code != 0:
                 raise MacheteException(f"The machete-post-slide-out hook exited with {exit_code}, aborting.")
 

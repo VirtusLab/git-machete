@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+set -e -o pipefail -u
+
+root_dir=$(realpath "${1-$HOME}")
+
+# First, set up the regular sandbox
+script_dir=$(cd "$(dirname "$0")" && pwd)
+"$script_dir/setup-sandbox" "$root_dir"
+
+# Now create worktrees
+cd "$root_dir/machete-sandbox"
+
+echo
+echo "Creating worktrees..."
+echo
+
+# Create worktrees for some branches
+git worktree add "$root_dir/machete-sandbox-worktrees/allow-ownership-link" allow-ownership-link
+echo "Created worktree for allow-ownership-link at $root_dir/machete-sandbox-worktrees/allow-ownership-link"
+
+git worktree add "$root_dir/machete-sandbox-worktrees/build-chain" build-chain
+echo "Created worktree for build-chain at $root_dir/machete-sandbox-worktrees/build-chain"
+
+git worktree add "$root_dir/machete-sandbox-worktrees/master" master
+echo "Created worktree for master at $root_dir/machete-sandbox-worktrees/master"
+
+# Create a worktree with detached HEAD at the tip of call-ws
+call_ws_sha=$(git rev-parse call-ws)
+git worktree add --detach "$root_dir/machete-sandbox-worktrees/detached-call-ws" "$call_ws_sha"
+echo "Created worktree with detached HEAD at $root_dir/machete-sandbox-worktrees/detached-call-ws (commit $call_ws_sha from call-ws)"
+
+# Create another worktree with detached HEAD at the tip of hotfix/add-trigger
+hotfix_sha=$(git rev-parse hotfix/add-trigger)
+git worktree add --detach "$root_dir/machete-sandbox-worktrees/detached-hotfix" "$hotfix_sha"
+echo "Created worktree with detached HEAD at $root_dir/machete-sandbox-worktrees/detached-hotfix (commit $hotfix_sha from hotfix/add-trigger)"
+
+echo
+echo "Worktree list:"
+git worktree list
+echo
+echo
+git machete status
+echo
+echo

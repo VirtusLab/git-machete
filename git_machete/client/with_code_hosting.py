@@ -293,7 +293,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
         fork_point = self.fork_point(head, use_overrides=True)
         commits: List[GitLogEntry] = self._git.get_commits_between(fork_point, head)
 
-        pr_title_file_path = self._git.get_main_git_subpath('info', 'title')
+        pr_title_file_path = self._git.get_main_worktree_git_subpath('info', 'title')
         is_pr_title_file = os.path.isfile(pr_title_file_path)
         if opt_title:
             title = opt_title
@@ -310,11 +310,12 @@ class MacheteClientWithCodeHosting(MacheteClient):
         if force_description_from_commit_message:
             description = self._git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
         else:
-            machete_description_path = self._git.get_main_git_subpath('info', 'description')
+            machete_description_path = self._git.get_main_worktree_git_subpath('info', 'description')
             if os.path.isfile(machete_description_path):
                 description = slurp_file(machete_description_path)
             else:
-                code_hosting_description_paths = [os.path.join(self._git.get_root_dir(), *path) for path in spec.pr_description_paths]
+                code_hosting_description_paths = [os.path.join(self._git.get_current_worktree_root_dir(), *path)
+                                                  for path in spec.pr_description_paths]
                 existing = find_or_none(os.path.isfile, code_hosting_description_paths)
                 if existing:
                     description = slurp_file(existing)
@@ -345,7 +346,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
                 self.code_hosting_client.set_description_of_pull_request(pr.number, new_description)
                 print(fmt(ok_str))
 
-        milestone_path: str = self._git.get_main_git_subpath('info', 'milestone')
+        milestone_path: str = self._git.get_main_worktree_git_subpath('info', 'milestone')
         if os.path.isfile(milestone_path):
             milestone = slurp_file(milestone_path).strip()
         else:
@@ -360,7 +361,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
             self.code_hosting_client.add_assignees_to_pull_request(pr.number, [current_user])
             print(fmt(ok_str))
 
-        reviewers_path = self._git.get_main_git_subpath('info', 'reviewers')
+        reviewers_path = self._git.get_main_worktree_git_subpath('info', 'reviewers')
         if os.path.isfile(reviewers_path):
             reviewers = utils.get_non_empty_lines(slurp_file(reviewers_path))
         else:

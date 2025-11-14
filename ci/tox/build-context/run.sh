@@ -11,7 +11,8 @@ env | sort | head -4
 
 set -x
 
-tox -e mypy,coverage
+tox -e mypy
+tox -e coverage -- -vv
 
 $PYTHON -m build
 
