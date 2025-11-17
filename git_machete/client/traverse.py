@@ -498,6 +498,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             final_worktree_path = self.__worktree_root_dir_for_branch.get(final_branch)
             if final_worktree_path and initial_worktree_root != final_worktree_path:
                 # Final branch is checked out in a worktree different from where we started
+                # TODO (#1531): on Windows, format the paths accordingly in each shell
                 warn(
                     f"branch {bold(final_branch)} is checked out in worktree at {bold(final_worktree_path)}\n"
                     f"You may want to change directory with:\n"
