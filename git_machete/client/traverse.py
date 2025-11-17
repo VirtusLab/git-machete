@@ -1,5 +1,4 @@
 import itertools
-import os
 from enum import auto
 from typing import Dict, List, Optional, Type, Union
 
@@ -12,7 +11,8 @@ from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import (GitContext, LocalBranchShortName,
                                         SyncToRemoteStatus)
 from git_machete.utils import (bold, flat_map, fmt, get_pretty_choices,
-                               get_right_arrow, warn)
+                               get_right_arrow, normalize_path_for_display,
+                               warn)
 
 
 class TraverseReturnTo(ParsableEnum):
@@ -499,10 +499,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             final_worktree_path = self.__worktree_root_dir_for_branch.get(final_branch)
             if final_worktree_path and initial_worktree_root != final_worktree_path:
                 # Final branch is checked out in a worktree different from where we started
-                # Normalize path to forward slashes for cross-platform compatibility
-                # (forward slashes work in Git Bash, PowerShell, and CMD on Windows)
-                # Use realpath to handle symlinks and macOS /private prefix
-                normalized_path = os.path.realpath(final_worktree_path).replace('\\', '/')
+                normalized_path = normalize_path_for_display(final_worktree_path)
                 warn(
                     f"branch {bold(final_branch)} is checked out in worktree at {bold(normalized_path)}\n"
                     f"You may want to change directory with:\n"

@@ -4,6 +4,7 @@ import subprocess
 from pytest_mock import MockerFixture
 
 from git_machete.exceptions import UnderlyingGitException
+from git_machete.utils import normalize_path_for_display
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
@@ -1960,7 +1961,7 @@ class TestTraverse(BaseTest):
         # In worktrees, .git is a file not a directory, so use git command directly
         execute("touch feature-1-file.txt")
         execute("git add feature-1-file.txt")
-        execute("git commit -m 'feature-1 additional commit'")
+        execute('git commit -m "feature-1 additional commit"')
         os.chdir(initial_dir)
 
         # Modify develop so feature-2 needs to be rebased
@@ -1974,10 +1975,10 @@ class TestTraverse(BaseTest):
 
         # Verify key behaviors happened:
         # 1. It switched to feature-1 worktree
-        normalized_feature_1_worktree = os.path.realpath(feature_1_worktree).replace('\\', '/')
+        normalized_feature_1_worktree = normalize_path_for_display(feature_1_worktree)
         assert f"Changing directory to {normalized_feature_1_worktree} worktree where feature-1 is checked out" in output
         # 2. It switched to feature-2 worktree
-        normalized_feature_2_worktree = os.path.realpath(feature_2_worktree).replace('\\', '/')
+        normalized_feature_2_worktree = normalize_path_for_display(feature_2_worktree)
         assert f"Changing directory to {normalized_feature_2_worktree} worktree where feature-2 is checked out" in output
         # 3. Operations were performed
         assert "Rebasing feature-1 onto develop" in output
@@ -2044,7 +2045,7 @@ class TestTraverse(BaseTest):
         output = launch_command("traverse", "-y", "--start-from=first-root")
 
         # Verify lines 88-89 were executed (cd to main worktree for root)
-        normalized_local_path = os.path.realpath(local_path).replace('\\', '/')
+        normalized_local_path = normalize_path_for_display(local_path)
         assert f"Changing directory to main worktree at {normalized_local_path}" in output, \
             f"Expected 'Changing directory to main worktree at {normalized_local_path}' in output, but got:\n{output}"
 
@@ -2135,9 +2136,7 @@ class TestTraverse(BaseTest):
 
         # Verify the warning is emitted
         assert "branch branch-2 is checked out in worktree at" in output
-        # Normalize to forward slashes for cross-platform compatibility
-        # Use realpath to handle macOS /private prefix
-        normalized_branch_2_worktree = os.path.realpath(branch_2_worktree).replace('\\', '/')
+        normalized_branch_2_worktree = normalize_path_for_display(branch_2_worktree)
         assert f"You may want to change directory with:\n  cd {normalized_branch_2_worktree}" in output
 
     def test_traverse_no_warn_when_final_branch_in_same_worktree(self) -> None:
@@ -2204,9 +2203,7 @@ class TestTraverse(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         output = launch_command("traverse")
 
-        # Normalize to forward slashes for cross-platform compatibility
-        # Use realpath to handle macOS /private prefix
-        normalized_branch_1_worktree = os.path.realpath(branch_1_worktree).replace('\\', '/')
+        normalized_branch_1_worktree = normalize_path_for_display(branch_1_worktree)
 
         # Verify traverse changed directory to the worktree during traversal
         assert f"Changing directory to {normalized_branch_1_worktree} worktree where branch-1 is checked out" in output

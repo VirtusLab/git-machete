@@ -34,6 +34,33 @@ def is_stdout_a_tty() -> bool:
     return sys.stdout.isatty()
 
 
+def normalize_path_for_display(path: str) -> str:
+    """
+    Normalize a filesystem path for cross-platform display in user messages.
+
+    This function performs two normalizations:
+    1. Resolves symlinks and relative paths to absolute canonical paths via os.path.realpath()
+    2. Converts backslashes to forward slashes for consistency
+
+    Why os.path.realpath() is needed:
+    - On macOS, common directories like /tmp and /var are symlinks to /private/tmp and /private/var
+    - Git operations (like `git worktree list`) resolve these symlinks and return /private/... paths
+    - Python's tempfile module may return paths with or without /private depending on how they're obtained
+    - Without realpath(), path comparisons fail: /var/folders/... != /private/var/folders/...
+    - realpath() canonicalizes both to /private/var/folders/... ensuring consistent comparisons
+
+    Why forward slashes:
+    - Forward slashes work in all Windows environments (Git Bash, PowerShell, CMD)
+    - Git itself uses forward slashes on Windows
+    - Provides consistent output across all platforms
+    - While Git Bash technically prefers /c/foo/bar, c:/foo/bar also works and is more universal
+
+    Returns:
+        Normalized path with forward slashes that works across all platforms
+    """
+    return os.path.realpath(path).replace('\\', '/')
+
+
 def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
     return list(filter(lambda x: x not in s, iterable))
 
