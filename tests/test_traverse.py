@@ -1974,9 +1974,11 @@ class TestTraverse(BaseTest):
 
         # Verify key behaviors happened:
         # 1. It switched to feature-1 worktree
-        assert "worktree where feature-1 is checked out" in output
+        normalized_feature_1_worktree = os.path.realpath(feature_1_worktree).replace('\\', '/')
+        assert f"Changing directory to {normalized_feature_1_worktree} worktree where feature-1 is checked out" in output
         # 2. It switched to feature-2 worktree
-        assert "worktree where feature-2 is checked out" in output
+        normalized_feature_2_worktree = os.path.realpath(feature_2_worktree).replace('\\', '/')
+        assert f"Changing directory to {normalized_feature_2_worktree} worktree where feature-2 is checked out" in output
         # 3. Operations were performed
         assert "Rebasing feature-1 onto develop" in output
         assert "Rebasing feature-2 onto feature-1" in output
@@ -2042,8 +2044,9 @@ class TestTraverse(BaseTest):
         output = launch_command("traverse", "-y", "--start-from=first-root")
 
         # Verify lines 88-89 were executed (cd to main worktree for root)
-        assert "Changing directory to main worktree at" in output, \
-            f"Expected 'Changing directory to main worktree at' in output, but got:\n{output}"
+        normalized_local_path = os.path.realpath(local_path).replace('\\', '/')
+        assert f"Changing directory to main worktree at {normalized_local_path}" in output, \
+            f"Expected 'Changing directory to main worktree at {normalized_local_path}' in output, but got:\n{output}"
 
         # Verify branch-2 was pushed (confirms traverse completed successfully)
         assert "Pushing untracked branch branch-2" in output
@@ -2201,10 +2204,16 @@ class TestTraverse(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
         output = launch_command("traverse")
 
-        # Verify traverse stops early and the warning is still emitted
-        assert "Rebase branch-1 onto root?" in output
-        assert "branch branch-1 is checked out in worktree at" in output
         # Normalize to forward slashes for cross-platform compatibility
         # Use realpath to handle macOS /private prefix
         normalized_branch_1_worktree = os.path.realpath(branch_1_worktree).replace('\\', '/')
+
+        # Verify traverse changed directory to the worktree during traversal
+        assert f"Changing directory to {normalized_branch_1_worktree} worktree where branch-1 is checked out" in output
+
+        # Verify traverse stops early when user quits
+        assert "Rebase branch-1 onto root?" in output
+
+        # Verify the final warning is still emitted
+        assert "branch branch-1 is checked out in worktree at" in output
         assert f"You may want to change directory with:\n  cd {normalized_branch_1_worktree}" in output
