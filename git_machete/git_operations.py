@@ -313,6 +313,34 @@ class GitContext:
                 raise UnderlyingGitException("Not a git repository")
         return self.__current_worktree_git_dir
 
+    def get_current_worktree_git_subpath(self, *fragments: str) -> str:
+        return os.path.join(self.get_current_worktree_git_dir(), *fragments)
+
+    def get_main_worktree_root_dir(self) -> str:
+        """
+        Returns the path to the main worktree (not a linked worktree).
+        """
+        if not self.__main_worktree_root_dir:
+            if self.get_git_version() < (2, 5):
+                # git worktree command was introduced in git 2.5
+                # If worktrees aren't supported, just return the current root dir
+                self.__main_worktree_root_dir = self.get_current_worktree_root_dir()
+            else:
+                # We can't rely on `git rev-parse --git-common-dir`
+                # since in some earlier supported versions of git
+                # this path is apparently printed in a faulty way when dealing with worktrees.
+                # Let's parse the output of of `git worktree list` instead.
+                result = self._popen_git("worktree", "list", "--porcelain")
+
+                # The first worktree in the list is always the main worktree
+                first_entry = result.stdout.splitlines()[0]
+                if first_entry.startswith('worktree '):
+                    self.__main_worktree_root_dir = first_entry[len('worktree '):]
+                else:
+                    raise UnexpectedMacheteException("Could not obtain the main worktree path from "
+                                                     f"`git worktree list --porcelain` output (first line: `{first_entry}`)")
+        return self.__main_worktree_root_dir
+
     def get_main_worktree_git_dir(self) -> str:
         if not self.__main_worktree_git_dir:
             try:
@@ -328,11 +356,52 @@ class GitContext:
                 raise UnderlyingGitException("Not a git repository")
         return self.__main_worktree_git_dir
 
-    def get_current_worktree_git_subpath(self, *fragments: str) -> str:
-        return os.path.join(self.get_current_worktree_git_dir(), *fragments)
-
     def get_main_worktree_git_subpath(self, *fragments: str) -> str:
         return os.path.join(self.get_main_worktree_git_dir(), *fragments)
+
+    def get_worktree_root_dirs_by_branch(self) -> Dict[LocalBranchShortName, str]:
+        """
+        Returns a dict mapping branch names to their worktree paths.
+        The main worktree's current branch is included if it's on a branch.
+        Branches not checked out in any worktree are not in the dict.
+        Worktrees in detached HEAD state are not included (since they can't be looked up by branch name).
+        """
+        if self.get_git_version() < (2, 5):
+            # git worktree command was introduced in git 2.5
+            return {}
+
+        result = self._popen_git("worktree", "list", "--porcelain")
+        worktrees: Dict[LocalBranchShortName, str] = {}
+
+        current_worktree_path: Optional[str] = None
+        current_branch: Optional[LocalBranchShortName] = None
+        is_detached: bool = False
+
+        for line in result.stdout.strip().splitlines():
+            if line.startswith('worktree '):
+                current_worktree_path = line[len('worktree '):]
+            elif line.startswith('branch '):
+                # Format: "branch refs/heads/<branch-name>"
+                branch_ref = line[len('branch '):]
+                current_branch = LocalBranchFullName.of(branch_ref).to_short_name()
+                is_detached = False
+            elif line.startswith('detached'):
+                is_detached = True
+                current_branch = None
+            elif line == '':
+                # Empty line marks end of worktree entry
+                # Only add worktrees that have a branch (not in detached HEAD state)
+                if current_worktree_path and current_branch is not None and not is_detached:
+                    worktrees[current_branch] = current_worktree_path
+                current_worktree_path = None
+                current_branch = None
+                is_detached = False
+
+        # Handle last entry if no trailing newline
+        if current_worktree_path and current_branch is not None and not is_detached:
+            worktrees[current_branch] = current_worktree_path
+
+        return worktrees
 
     def get_git_timespec_parsed_to_unix_timestamp(self, date: str) -> int:
         try:
@@ -578,75 +647,6 @@ class GitContext:
 
     def is_revert_in_progress(self) -> bool:
         return os.path.isfile(self.get_current_worktree_git_subpath("REVERT_HEAD"))
-
-    def get_worktree_root_dirs_by_branch(self) -> Dict[LocalBranchShortName, str]:
-        """
-        Returns a dict mapping branch names to their worktree paths.
-        The main worktree's current branch is included if it's on a branch.
-        Branches not checked out in any worktree are not in the dict.
-        Worktrees in detached HEAD state are not included (since they can't be looked up by branch name).
-        """
-        if self.get_git_version() < (2, 5):
-            # git worktree command was introduced in git 2.5
-            return {}
-
-        result = self._popen_git("worktree", "list", "--porcelain")
-        worktrees: Dict[LocalBranchShortName, str] = {}
-
-        current_worktree_path: Optional[str] = None
-        current_branch: Optional[LocalBranchShortName] = None
-        is_detached: bool = False
-
-        for line in result.stdout.strip().splitlines():
-            if line.startswith('worktree '):
-                current_worktree_path = line[len('worktree '):]
-            elif line.startswith('branch '):
-                # Format: "branch refs/heads/<branch-name>"
-                branch_ref = line[len('branch '):]
-                current_branch = LocalBranchFullName.of(branch_ref).to_short_name()
-                is_detached = False
-            elif line.startswith('detached'):
-                is_detached = True
-                current_branch = None
-            elif line == '':
-                # Empty line marks end of worktree entry
-                # Only add worktrees that have a branch (not in detached HEAD state)
-                if current_worktree_path and current_branch is not None and not is_detached:
-                    worktrees[current_branch] = current_worktree_path
-                current_worktree_path = None
-                current_branch = None
-                is_detached = False
-
-        # Handle last entry if no trailing newline
-        if current_worktree_path and current_branch is not None and not is_detached:
-            worktrees[current_branch] = current_worktree_path
-
-        return worktrees
-
-    def get_main_worktree_root_dir(self) -> str:
-        """
-        Returns the path to the main worktree (not a linked worktree).
-        """
-        if not self.__main_worktree_root_dir:
-            if self.get_git_version() < (2, 5):
-                # git worktree command was introduced in git 2.5
-                # If worktrees aren't supported, just return the current root dir
-                self.__main_worktree_root_dir = self.get_current_worktree_root_dir()
-            else:
-                # We can't rely on `git rev-parse --git-common-dir`
-                # since in some earlier supported versions of git
-                # this path is apparently printed in a faulty way when dealing with worktrees.
-                # Let's parse the output of of `git worktree list` instead.
-                result = self._popen_git("worktree", "list", "--porcelain")
-
-                # The first worktree in the list is always the main worktree
-                first_entry = result.stdout.splitlines()[0]
-                if first_entry.startswith('worktree '):
-                    self.__main_worktree_root_dir = first_entry[len('worktree '):]
-                else:
-                    raise UnexpectedMacheteException("Could not obtain the main worktree path from "
-                                                     f"`git worktree list --porcelain` output (first line: `{first_entry}`)")
-        return self.__main_worktree_root_dir
 
     def checkout(self, branch: LocalBranchShortName) -> None:
         self._run_git("checkout", "--quiet", branch, "--", flush_caches=True)
