@@ -2132,7 +2132,10 @@ class TestTraverse(BaseTest):
 
         # Verify the warning is emitted
         assert "branch branch-2 is checked out in worktree at" in output
-        assert f"You may want to change directory with:\n  cd {branch_2_worktree}" in output
+        # Normalize to forward slashes for cross-platform compatibility
+        # Use realpath to handle macOS /private prefix
+        normalized_branch_2_worktree = os.path.realpath(branch_2_worktree).replace('\\', '/')
+        assert f"You may want to change directory with:\n  cd {normalized_branch_2_worktree}" in output
 
     def test_traverse_no_warn_when_final_branch_in_same_worktree(self) -> None:
         if get_git_version() < (2, 5):
@@ -2201,4 +2204,7 @@ class TestTraverse(BaseTest):
         # Verify traverse stops early and the warning is still emitted
         assert "Rebase branch-1 onto root?" in output
         assert "branch branch-1 is checked out in worktree at" in output
-        assert f"You may want to change directory with:\n  cd {os.path.realpath(branch_1_worktree)}" in output
+        # Normalize to forward slashes for cross-platform compatibility
+        # Use realpath to handle macOS /private prefix
+        normalized_branch_1_worktree = os.path.realpath(branch_1_worktree).replace('\\', '/')
+        assert f"You may want to change directory with:\n  cd {normalized_branch_1_worktree}" in output
