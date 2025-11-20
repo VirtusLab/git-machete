@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.37.2
+
+- fixed: `-y` short option now works for `github create-pr` and `gitlab create-mr` commands (previously only `--yes` was accepted)
+
 ## New in git-machete 3.37.1
 
 - improved: `traverse` now changes directory to the worktree where a branch is checked out, rather than failing (suggested by @lsierant)

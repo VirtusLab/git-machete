@@ -657,7 +657,7 @@ long_docs: Dict[str, str] = {
 
               `<PR-number-1> ... <PR-number-N>`    Pull request numbers to checkout.
 
-           `create-pr [--draft] [--title=<title>] [-U|--update-related-descriptions] [--yes]`:
+           `create-pr [--draft] [--title=<title>] [-U|--update-related-descriptions] [-y|--yes]`:
               Create a PR for the current branch, using the upstream (parent) branch as the PR base.
               Once the PR is successfully created, annotate the current branch with the new PR's number.
 
@@ -682,7 +682,7 @@ long_docs: Dict[str, str] = {
               -U, --update-related-descriptions  Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs.
                                                  See help for `git machete github update-pr-descriptions --related` for details.
 
-              --yes                              Do not ask for confirmation whether to push the branch.
+              -y, --yes                          Do not ask for confirmation whether to push the branch.
 
            `restack-pr [-U|--update-related-descriptions]`:
               Perform the following sequence of actions:
@@ -855,7 +855,7 @@ long_docs: Dict[str, str] = {
 
               `<MR-number-1> ... <MR-number-N>`    Merge request numbers to checkout.
 
-           `create-mr [--draft] [--title=<title>] [-U|--update-related-descriptions] [--yes]`:
+           `create-mr [--draft] [--title=<title>] [-U|--update-related-descriptions] [-y|--yes]`:
               Create an MR for the current branch, using the upstream (parent) branch as the MR source branch.
               Once the MR is successfully created, annotate the current branch with the new MR's number.
 
@@ -882,7 +882,7 @@ long_docs: Dict[str, str] = {
               -U, --update-related-descriptions  Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs.
                                                  See help for `git machete gitlab update-mr-descriptions --related` for details.
 
-              --yes                              Do not ask for confirmation whether to push the branch.
+              -y, --yes                          Do not ask for confirmation whether to push the branch.
 
            `restack-mr [-U|--update-related-descriptions]`:
               Perform the following sequence of actions:

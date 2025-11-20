@@ -77,7 +77,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
 
     ``<PR-number-1> ... <PR-number-N>``    Pull request numbers to checkout.
 
-``create-pr [--draft] [--title=<title>] [-U|--update-related-descriptions] [--yes]``:
+``create-pr [--draft] [--title=<title>] [-U|--update-related-descriptions] [-y|--yes]``:
     Create a PR for the current branch, using the upstream (parent) branch as the PR base.
     Once the PR is successfully created, annotate the current branch with the new PR's number.
 
@@ -102,7 +102,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
     -U, --update-related-descriptions  Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs.
                                        See help for ``git machete github update-pr-descriptions --related`` for details.
 
-    --yes                              Do not ask for confirmation whether to push the branch.
+    -y, --yes                          Do not ask for confirmation whether to push the branch.
 
 ``restack-pr [-U|--update-related-descriptions]``:
     Perform the following sequence of actions:

@@ -76,7 +76,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 
     ``<MR-number-1> ... <MR-number-N>``    Merge request numbers to checkout.
 
-``create-mr [--draft] [--title=<title>] [-U|--update-related-descriptions] [--yes]``:
+``create-mr [--draft] [--title=<title>] [-U|--update-related-descriptions] [-y|--yes]``:
     Create an MR for the current branch, using the upstream (parent) branch as the MR source branch.
     Once the MR is successfully created, annotate the current branch with the new MR's number.
 
@@ -103,7 +103,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
     -U, --update-related-descriptions  Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs.
                                        See help for ``git machete gitlab update-mr-descriptions --related`` for details.
 
-    --yes                              Do not ask for confirmation whether to push the branch.
+    -y, --yes                          Do not ask for confirmation whether to push the branch.
 
 ``restack-mr [-U|--update-related-descriptions]``:
     Perform the following sequence of actions:

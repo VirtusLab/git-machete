@@ -253,7 +253,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
         parser.add_argument('--title')
         parser.add_argument('-U', '--update-related-descriptions', action='store_true')
         parser.add_argument('--with-urls', action='store_true')
-        parser.add_argument('--yes', action='store_true')
+        parser.add_argument('-y', '--yes', action='store_true')
 
     add_code_hosting_parser('github', 'pr', include_sync=True)
     add_code_hosting_parser('gitlab', 'mr', include_sync=False)

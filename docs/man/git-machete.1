@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Nov 12, 2025" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Nov 20, 2025" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.37.1
+git-machete \- git-machete 3.37.2
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -1000,7 +1000,7 @@ Checkout open PRs for the current user associated with the GitHub token.
 .sp
 \fB<PR\-number\-1> ... <PR\-number\-N>\fP    Pull request numbers to checkout.
 .TP
-.B \fBcreate\-pr [\-\-draft] [\-\-title=<title>] [\-U|\-\-update\-related\-descriptions] [\-\-yes]\fP:
+.B \fBcreate\-pr [\-\-draft] [\-\-title=<title>] [\-U|\-\-update\-related\-descriptions] [\-y|\-\-yes]\fP:
 Create a PR for the current branch, using the upstream (parent) branch as the PR base.
 Once the PR is successfully created, annotate the current branch with the new PR\(aqs number.
 .sp
@@ -1029,7 +1029,7 @@ Set the PR title explicitly (the default is to use the first included commit\(aq
 Update the generated sections (\(dqintros\(dq) of PR descriptions that list the upstream and/or downstream PRs.
 See help for \fBgit machete github update\-pr\-descriptions \-\-related\fP for details.
 .TP
-.B  \-\-yes
+.B  \-y\fP,\fB  \-\-yes
 Do not ask for confirmation whether to push the branch.
 .UNINDENT
 .TP
@@ -1280,7 +1280,7 @@ Checkout open MRs for the current user associated with the GitLab token.
 .sp
 \fB<MR\-number\-1> ... <MR\-number\-N>\fP    Merge request numbers to checkout.
 .TP
-.B \fBcreate\-mr [\-\-draft] [\-\-title=<title>] [\-U|\-\-update\-related\-descriptions] [\-\-yes]\fP:
+.B \fBcreate\-mr [\-\-draft] [\-\-title=<title>] [\-U|\-\-update\-related\-descriptions] [\-y|\-\-yes]\fP:
 Create an MR for the current branch, using the upstream (parent) branch as the MR source branch.
 Once the MR is successfully created, annotate the current branch with the new MR\(aqs number.
 .sp
@@ -1311,7 +1311,7 @@ Set the MR title explicitly (the default is to use the first included commit\(aq
 Update the generated sections (\(dqintros\(dq) of MR descriptions that list the upstream and/or downstream MRs.
 See help for \fBgit machete gitlab update\-mr\-descriptions \-\-related\fP for details.
 .TP
-.B  \-\-yes
+.B  \-y\fP,\fB  \-\-yes
 Do not ask for confirmation whether to push the branch.
 .UNINDENT
 .TP
