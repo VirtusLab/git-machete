@@ -5,6 +5,30 @@ from typing import Dict, List, Optional, Tuple
 
 from git_machete.client.base import MacheteClient
 from git_machete.git_operations import LocalBranchShortName
+from git_machete.utils import bold
+
+# ANSI escape sequences for terminal control
+ANSI_ESCAPE = '\x1b'
+ANSI_CSI = '\x1b['  # Control Sequence Introducer
+
+# Cursor control
+ANSI_HIDE_CURSOR = '\x1b[?25l'
+ANSI_SHOW_CURSOR = '\x1b[?25h'
+ANSI_CLEAR_TO_END = '\x1b[J'  # Clear from cursor to end of screen
+
+# Text styling
+ANSI_REVERSE_VIDEO = '\x1b[7m'
+ANSI_RESET = '\x1b[0m'
+
+# Arrow key codes
+KEY_UP = '\x1b[A'
+KEY_DOWN = '\x1b[B'
+KEY_RIGHT = '\x1b[C'
+KEY_LEFT = '\x1b[D'
+
+# Other keys
+KEY_ENTER = ('\r', '\n')
+KEY_CTRL_C = '\x03'
 
 
 class BranchNode:
@@ -121,15 +145,15 @@ class GoInteractiveMacheteClient(MacheteClient):
         """Draw the branch selection screen using ANSI escape codes."""
         # Move cursor up to the start of our display area (if we've drawn before)
         if not is_first_draw and num_lines_drawn > 0:
-            sys.stdout.write(f'\033[{num_lines_drawn}A')
+            sys.stdout.write(f'{ANSI_CSI}{num_lines_drawn}A')
 
         # Clear from cursor to end of screen (only if not first draw)
         if not is_first_draw:
-            sys.stdout.write('\033[J')
+            sys.stdout.write(ANSI_CLEAR_TO_END)
 
         # Header
-        header = "\033[1mSelect branch (↑/↓: prev/next, ←: parent, →: child, Enter: checkout, q or Ctrl+C: quit)\033[0m"
-        sys.stdout.write(header + '\n')
+        header_text = "Select branch (↑/↓: prev/next, ←: parent, →: child, Enter: checkout, q or Ctrl+C: quit)"
+        sys.stdout.write(bold(header_text) + '\n')
 
         # Adjust scroll offset if needed
         visible_lines = min(max_visible, len(flat_nodes))
@@ -149,7 +173,7 @@ class GoInteractiveMacheteClient(MacheteClient):
 
             if node_idx == selected_idx:
                 # Highlight selected line (inverse video)
-                sys.stdout.write(f'\033[7m{line}\033[0m\n')
+                sys.stdout.write(f'{ANSI_REVERSE_VIDEO}{line}{ANSI_RESET}\n')
             else:
                 sys.stdout.write(f'{line}\n')
 
@@ -164,12 +188,12 @@ class GoInteractiveMacheteClient(MacheteClient):
             tty.setraw(fd)
             ch = sys.stdin.read(1)
             # Handle escape sequences for arrow keys
-            if ch == '\x1b':  # Escape character
+            if ch == ANSI_ESCAPE:
                 # Read the next two characters
                 ch2 = sys.stdin.read(1)
                 if ch2 == '[':
                     ch3 = sys.stdin.read(1)
-                    return '\x1b[' + ch3
+                    return ANSI_CSI + ch3
                 return ch + ch2
             return ch
         finally:
@@ -191,7 +215,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         is_first_draw = True
 
         # Hide cursor
-        sys.stdout.write('\033[?25l')
+        sys.stdout.write(ANSI_HIDE_CURSOR)
         sys.stdout.flush()
 
         try:
@@ -208,18 +232,20 @@ class GoInteractiveMacheteClient(MacheteClient):
                 # Read key
                 key = self._getch()
 
-                if key == '\x1b[A' and selected_idx > 0:  # Up arrow
+                if key == KEY_UP and selected_idx > 0:
                     selected_idx -= 1
-                elif key == '\x1b[B' and selected_idx < len(flat_nodes) - 1:  # Down arrow
+                elif key == KEY_DOWN and selected_idx < len(flat_nodes) - 1:
                     selected_idx += 1
-                elif key == '\x1b[D':  # Left arrow - go to parent
+                elif key == KEY_LEFT:
+                    # Go to parent
                     current_node = flat_nodes[selected_idx]
                     if current_node.parent:
                         for i, node in enumerate(flat_nodes):
                             if node.name == current_node.parent.name:
                                 selected_idx = i
                                 break
-                elif key == '\x1b[C':  # Right arrow - go to first child
+                elif key == KEY_RIGHT:
+                    # Go to first child
                     current_node = flat_nodes[selected_idx]
                     if current_node.children:
                         # Find first child in flat list
@@ -228,15 +254,15 @@ class GoInteractiveMacheteClient(MacheteClient):
                             if node.name == first_child.name:
                                 selected_idx = i
                                 break
-                elif key in ('\r', '\n'):  # Enter
+                elif key in KEY_ENTER:
                     return flat_nodes[selected_idx].name
-                elif key in ('q', 'Q'):  # q or Q to quit
+                elif key in ('q', 'Q'):
                     return None
-                elif key == '\x03':  # Ctrl+C
+                elif key == KEY_CTRL_C:
                     return None
         finally:
             # Show cursor again and move past our interface
-            sys.stdout.write('\033[?25h')
+            sys.stdout.write(ANSI_SHOW_CURSOR)
             sys.stdout.flush()
 
     def go_interactive(self) -> Optional[LocalBranchShortName]:
@@ -267,11 +293,11 @@ class GoInteractiveMacheteClient(MacheteClient):
             return None
         except KeyboardInterrupt:
             # Make sure cursor is visible
-            sys.stdout.write('\033[?25h')
+            sys.stdout.write(ANSI_SHOW_CURSOR)
             sys.stdout.flush()
             return None
         except Exception:
             # Make sure cursor is visible
-            sys.stdout.write('\033[?25h')
+            sys.stdout.write(ANSI_SHOW_CURSOR)
             sys.stdout.flush()
             return None
