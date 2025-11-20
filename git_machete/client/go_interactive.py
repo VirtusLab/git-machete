@@ -1,5 +1,6 @@
-import curses
-import os
+import sys
+import termios
+import tty
 from typing import Dict, List, Optional, Tuple
 
 from git_machete.client.base import MacheteClient
@@ -114,24 +115,24 @@ class GoInteractiveMacheteClient(MacheteClient):
 
         return line
 
-    def _draw_screen(self, stdscr: 'curses.window', flat_nodes: List[BranchNode],
-                    selected_idx: int, current_branch: str, scroll_offset: int) -> None:
-        """Draw the branch selection screen."""
-        stdscr.clear()
-        height, width = stdscr.getmaxyx()
+    def _draw_screen(self, flat_nodes: List[BranchNode],
+                    selected_idx: int, current_branch: str, scroll_offset: int,
+                    max_visible: int, num_lines_drawn: int, is_first_draw: bool) -> int:
+        """Draw the branch selection screen using ANSI escape codes."""
+        # Move cursor up to the start of our display area (if we've drawn before)
+        if not is_first_draw and num_lines_drawn > 0:
+            sys.stdout.write(f'\033[{num_lines_drawn}A')
+
+        # Clear from cursor to end of screen (only if not first draw)
+        if not is_first_draw:
+            sys.stdout.write('\033[J')
 
         # Header
-        header = "git machete go - Interactive Branch Selection"
-        stdscr.addstr(0, 0, header[:width-1], curses.A_BOLD)
-        stdscr.addstr(1, 0, "=" * min(len(header), width-1))
-
-        # Help text
-        help_text = "↑/↓: navigate  ←: parent  Enter: checkout  q/Esc: quit"
-        if len(help_text) < width:
-            stdscr.addstr(2, 0, help_text, curses.A_DIM)
+        header = "\033[1mSelect branch (↑/↓: navigate, ←: parent, Enter: checkout, q: quit)\033[0m"
+        sys.stdout.write(header + '\n')
 
         # Adjust scroll offset if needed
-        visible_lines = height - 5  # Reserve space for header and footer
+        visible_lines = min(max_visible, len(flat_nodes))
         if selected_idx < scroll_offset:
             scroll_offset = selected_idx
         elif selected_idx >= scroll_offset + visible_lines:
@@ -145,26 +146,38 @@ class GoInteractiveMacheteClient(MacheteClient):
 
             node = flat_nodes[node_idx]
             line = self._render_branch_line(node, current_branch)
-            y_pos = 4 + i
 
             if node_idx == selected_idx:
-                # Highlight selected line
-                stdscr.addstr(y_pos, 0, line[:width-1], curses.A_REVERSE)
+                # Highlight selected line (inverse video)
+                sys.stdout.write(f'\033[7m{line}\033[0m\n')
             else:
-                stdscr.addstr(y_pos, 0, line[:width-1])
+                sys.stdout.write(f'{line}\n')
 
-        # Footer with status
-        selected_node = flat_nodes[selected_idx]
-        footer = f"Selected: {selected_node.name}"
-        if height > 4:
-            stdscr.addstr(height - 1, 0, footer[:width-1], curses.A_BOLD)
-
-        stdscr.refresh()
+        sys.stdout.flush()
         return scroll_offset
 
-    def _run_curses_interface(self, stdscr: 'curses.window', flat_nodes: List[BranchNode],
-                              current_branch: str, node_by_name: Dict[str, BranchNode]) -> Optional[str]:
-        """Run the curses interface and return the selected branch or None."""
+    def _getch(self) -> str:
+        """Read a single character from stdin without echo."""
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            ch = sys.stdin.read(1)
+            # Handle escape sequences for arrow keys
+            if ch == '\x1b':  # Escape character
+                # Read the next two characters
+                ch2 = sys.stdin.read(1)
+                if ch2 == '[':
+                    ch3 = sys.stdin.read(1)
+                    return '\x1b[' + ch3
+                return ch + ch2
+            return ch
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+
+    def _run_interactive_interface(self, flat_nodes: List[BranchNode],
+                                   current_branch: str, node_by_name: Dict[str, BranchNode]) -> Optional[str]:
+        """Run the interactive interface and return the selected branch or None."""
         # Find initial selection (current branch)
         selected_idx = 0
         for i, node in enumerate(flat_nodes):
@@ -172,39 +185,50 @@ class GoInteractiveMacheteClient(MacheteClient):
                 selected_idx = i
                 break
 
+        max_visible_branches = 15  # Maximum number of branches to show at once
         scroll_offset = 0
-        curses.curs_set(0)  # Hide cursor
+        num_lines_drawn = 0
+        is_first_draw = True
 
-        # Initialize colors if available
-        if curses.has_colors():
-            curses.start_color()
-            curses.use_default_colors()
+        # Hide cursor
+        sys.stdout.write('\033[?25l')
+        sys.stdout.flush()
 
-        while True:
-            scroll_offset = self._draw_screen(stdscr, flat_nodes, selected_idx, current_branch, scroll_offset)
+        try:
+            while True:
+                # Calculate how many lines we'll draw (header + visible branches)
+                visible_lines = min(max_visible_branches, len(flat_nodes))
+                num_lines_drawn = visible_lines + 1  # +1 for header
 
-            key = stdscr.getch()
+                scroll_offset = self._draw_screen(flat_nodes, selected_idx, current_branch,
+                                                  scroll_offset, max_visible_branches,
+                                                  num_lines_drawn, is_first_draw)
+                is_first_draw = False
 
-            if key == curses.KEY_UP and selected_idx > 0:
-                selected_idx -= 1
-            elif key == curses.KEY_DOWN and selected_idx < len(flat_nodes) - 1:
-                selected_idx += 1
-            elif key == curses.KEY_LEFT:
-                # Go to parent
-                current_node = flat_nodes[selected_idx]
-                if current_node.parent:
-                    # Find parent in flat list
-                    for i, node in enumerate(flat_nodes):
-                        if node.name == current_node.parent.name:
-                            selected_idx = i
-                            break
-            elif key in (ord('\n'), ord('\r'), curses.KEY_ENTER):
-                # Select branch
-                return flat_nodes[selected_idx].name
-            elif key in (ord('q'), ord('Q'), 27):  # q, Q, or Escape
-                return None
-            elif key == 3:  # Ctrl+C
-                return None
+                # Read key
+                key = self._getch()
+
+                if key == '\x1b[A' and selected_idx > 0:  # Up arrow
+                    selected_idx -= 1
+                elif key == '\x1b[B' and selected_idx < len(flat_nodes) - 1:  # Down arrow
+                    selected_idx += 1
+                elif key == '\x1b[D':  # Left arrow - go to parent
+                    current_node = flat_nodes[selected_idx]
+                    if current_node.parent:
+                        for i, node in enumerate(flat_nodes):
+                            if node.name == current_node.parent.name:
+                                selected_idx = i
+                                break
+                elif key in ('\r', '\n'):  # Enter
+                    return flat_nodes[selected_idx].name
+                elif key in ('q', 'Q'):  # q or Q to quit
+                    return None
+                elif key == '\x03':  # Ctrl+C
+                    return None
+        finally:
+            # Show cursor again and move past our interface
+            sys.stdout.write('\033[?25h')
+            sys.stdout.flush()
 
     def go_interactive(self) -> Optional[LocalBranchShortName]:
         """
@@ -227,12 +251,18 @@ class GoInteractiveMacheteClient(MacheteClient):
             return None
 
         try:
-            selected_branch = curses.wrapper(
-                lambda stdscr: self._run_curses_interface(stdscr, flat_nodes, current_branch, node_by_name)
-            )
+            selected_branch = self._run_interactive_interface(flat_nodes, current_branch, node_by_name)
 
             if selected_branch:
                 return LocalBranchShortName.of(selected_branch)
             return None
         except KeyboardInterrupt:
+            # Make sure cursor is visible
+            sys.stdout.write('\033[?25h')
+            sys.stdout.flush()
+            return None
+        except Exception:
+            # Make sure cursor is visible
+            sys.stdout.write('\033[?25h')
+            sys.stdout.flush()
             return None
