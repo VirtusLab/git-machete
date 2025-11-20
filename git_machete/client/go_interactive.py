@@ -33,6 +33,7 @@ KEY_CTRL_C = '\x03'
 
 class BranchNode:
     """Represents a branch node in the tree structure."""
+
     def __init__(self, name: str, depth: int, parent: Optional['BranchNode'] = None):
         self.name = name
         self.depth = depth
@@ -139,9 +140,9 @@ class GoInteractiveMacheteClient(MacheteClient):
 
         return line
 
-    def _draw_screen(self, flat_nodes: List[BranchNode],
-                    selected_idx: int, current_branch: str, scroll_offset: int,
-                    max_visible: int, num_lines_drawn: int, is_first_draw: bool) -> int:
+    def _draw_screen(self, flat_nodes: List[BranchNode], *,
+                     selected_idx: int, current_branch: str, scroll_offset: int,
+                     max_visible_branches: int, num_lines_drawn: int, is_first_draw: bool) -> int:
         """Draw the branch selection screen using ANSI escape codes."""
         # Move cursor up to the start of our display area (if we've drawn before)
         if not is_first_draw and num_lines_drawn > 0:
@@ -156,7 +157,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         sys.stdout.write(bold(header_text) + '\n')
 
         # Adjust scroll offset if needed
-        visible_lines = min(max_visible, len(flat_nodes))
+        visible_lines = min(max_visible_branches, len(flat_nodes))
         if selected_idx < scroll_offset:
             scroll_offset = selected_idx
         elif selected_idx >= scroll_offset + visible_lines:
@@ -199,8 +200,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
-    def _run_interactive_interface(self, flat_nodes: List[BranchNode],
-                                   current_branch: str, node_by_name: Dict[str, BranchNode]) -> Optional[str]:
+    def _run_interactive_interface(self, flat_nodes: List[BranchNode], current_branch: str) -> Optional[str]:
         """Run the interactive interface and return the selected branch or None."""
         # Find initial selection (current branch)
         selected_idx = 0
@@ -224,9 +224,15 @@ class GoInteractiveMacheteClient(MacheteClient):
                 visible_lines = min(max_visible_branches, len(flat_nodes))
                 num_lines_drawn = visible_lines + 1  # +1 for header
 
-                scroll_offset = self._draw_screen(flat_nodes, selected_idx, current_branch,
-                                                  scroll_offset, max_visible_branches,
-                                                  num_lines_drawn, is_first_draw)
+                scroll_offset = self._draw_screen(
+                    flat_nodes,
+                    selected_idx=selected_idx,
+                    current_branch=current_branch,
+                    scroll_offset=scroll_offset,
+                    max_visible_branches=max_visible_branches,
+                    num_lines_drawn=num_lines_drawn,
+                    is_first_draw=is_first_draw
+                )
                 is_first_draw = False
 
                 # Read key
@@ -279,14 +285,14 @@ class GoInteractiveMacheteClient(MacheteClient):
         current_branch = self._git.get_current_branch()
 
         # Parse the machete file
-        root_nodes, node_by_name = self._parse_machete_file()
+        root_nodes, _ = self._parse_machete_file()
         flat_nodes = self._flatten_tree(root_nodes)
 
         if not flat_nodes:
             return None
 
         try:
-            selected_branch = self._run_interactive_interface(flat_nodes, current_branch, node_by_name)
+            selected_branch = self._run_interactive_interface(flat_nodes, current_branch)
 
             if selected_branch:
                 return LocalBranchShortName.of(selected_branch)
