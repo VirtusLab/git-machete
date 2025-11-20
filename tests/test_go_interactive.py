@@ -1,8 +1,6 @@
 import os
-import tempfile
 
 import pexpect
-import pytest
 
 from .mockers import rewrite_branch_layout_file
 from .mockers_git_repository import commit, create_repo, new_branch
