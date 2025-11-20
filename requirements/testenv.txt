@@ -1,3 +1,5 @@
+pexpect==4.9.0
+
 pytest==7.0.1; python_version <= '3.6'
 pytest==7.4.4; python_version >= '3.7' and python_version < '3.8'
 pytest==8.3.5; python_version >= '3.8' and python_version < '3.9'
