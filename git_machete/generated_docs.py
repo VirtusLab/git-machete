@@ -20,7 +20,7 @@ short_docs: Dict[str, str] = {
     "format": "Display docs for the format of the branch layout file",
     "github": "Create, check out and manage GitHub PRs while keeping them reflected in git machete",
     "gitlab": "Create, check out and manage GitLab MRs while keeping them reflected in git machete",
-    "go": "Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument",
+    "go": "Check out the branch relative to the position of the current branch (accepts down/first/last/next/root/prev/up argument) or interactively select a branch when run without arguments",
     "help": "Display this overview, or detailed help for a specified command",
     "hooks": "Display docs for the extra hooks added by git machete",
     "is-managed": "Check if the current branch is managed by git machete (mostly for scripts)",
@@ -978,9 +978,18 @@ long_docs: Dict[str, str] = {
    """,
     "go": """
         <b>Usage:</b><b>
-           git machete g[o] <direction></b>
+           git machete g[o] [<direction>]</b>
 
         where <direction> is one of: `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
+
+        If `<direction>` is not provided, an interactive mode is launched where you can navigate the branch tree using arrow keys and select a branch to check out.
+
+        <b>Interactive mode controls:</b>
+
+           * <b>↑/↓</b>: Navigate up/down through branches
+           * <b>←</b>: Jump to the parent branch of the currently selected branch
+           * <b>Enter</b>: Check out the selected branch
+           * <b>q/Esc</b>: Quit without checking out
 
         Check out the branch specified by the given direction relative to the current branch:
 

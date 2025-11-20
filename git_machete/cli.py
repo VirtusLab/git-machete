@@ -17,6 +17,7 @@ from git_machete.client.base import MacheteClient, SquashMergeDetection
 from git_machete.client.diff import DiffMacheteClient
 from git_machete.client.discover import DiscoverMacheteClient
 from git_machete.client.fork_point import ForkPointMacheteClient
+from git_machete.client.go_interactive import GoInteractiveMacheteClient
 from git_machete.client.go_show import GoShowMacheteClient
 from git_machete.client.log import LogMacheteClient
 from git_machete.client.slide_out import SlideOutMacheteClient
@@ -154,8 +155,11 @@ def create_cli_parser() -> argparse.ArgumentParser:
                       "anno-mrs, checkout-mrs, create-mr, restack-mr, retarget-mr, update-mr-descriptions", file=sys.stderr)
                 self.exit(2)
             elif "the following arguments are required: go direction" in message:
+                # Direction is now optional, so this shouldn't happen
+                # But if it does, provide helpful message
                 print(f"{message}\nPossible values for go direction are: "
-                      f"d, down, f, first, l, last, n, next, p, prev, r, root, u, up", file=sys.stderr)
+                      f"d, down, f, first, l, last, n, next, p, prev, r, root, u, up\n"
+                      f"Or run `git machete go` without arguments for interactive mode", file=sys.stderr)
                 self.exit(2)
             elif "the following arguments are required: show direction" in message:
                 print(f"{message}\nPossible values for show direction are: "
@@ -259,7 +263,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     add_code_hosting_parser('gitlab', 'mr', include_sync=False)
 
     go_parser = create_subparser('go', alias='g')
-    go_parser.add_argument('direction', metavar='go direction', choices=[
+    go_parser.add_argument('direction', nargs='?', metavar='go direction', choices=[
         'd', 'down', 'f', 'first', 'l', 'last', 'n', 'next',
         'p', 'prev', 'r', 'root', 'u', 'up']
     )
@@ -692,14 +696,22 @@ def launch_internal(orig_args: List[str]) -> None:
             else:
                 print(fork_point_client.fork_point(branch=branch, use_overrides=True))
         elif cmd in {"go", alias_by_command["go"]}:
-            go_client = GoShowMacheteClient(git)
-            go_client.read_branch_layout_file()
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
-            # with pick_if_multiple=True, there returned list will have exactly one element
-            dest = go_client.parse_direction(parsed_cli.direction, branch=current_branch, allow_current=False, pick_if_multiple=True)[0]
-            if dest != current_branch:
-                git.checkout(dest)
+
+            # If no direction is provided, launch interactive mode
+            if not hasattr(parsed_cli, 'direction') or parsed_cli.direction is None:
+                interactive_client = GoInteractiveMacheteClient(git)
+                dest = interactive_client.go_interactive()
+                if dest is not None and dest != current_branch:
+                    git.checkout(dest)
+            else:
+                go_client = GoShowMacheteClient(git)
+                go_client.read_branch_layout_file()
+                # with pick_if_multiple=True, there returned list will have exactly one element
+                dest = go_client.parse_direction(parsed_cli.direction, branch=current_branch, allow_current=False, pick_if_multiple=True)[0]
+                if dest != current_branch:
+                    git.checkout(dest)
         elif cmd in ("github", "gitlab"):
             subcommand = parsed_cli.subcommand
             spec = GITHUB_CLIENT_SPEC if cmd == "github" else GITLAB_CLIENT_SPEC

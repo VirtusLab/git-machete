@@ -6,9 +6,18 @@ go
 
 .. code-block:: shell
 
-    git machete g[o] <direction>
+    git machete g[o] [<direction>]
 
 where <direction> is one of: ``d[own]``, ``f[irst]``, ``l[ast]``, ``n[ext]``, ``p[rev]``, ``r[oot]``, ``u[p]``
+
+If ``<direction>`` is not provided, an interactive mode is launched where you can navigate the branch tree using arrow keys and select a branch to check out.
+
+**Interactive mode controls:**
+
+* **↑/↓**: Navigate up/down through branches
+* **←**: Jump to the parent branch of the currently selected branch
+* **Enter**: Check out the selected branch
+* **q/Esc**: Quit without checking out
 
 Check out the branch specified by the given direction relative to the current branch:
 
