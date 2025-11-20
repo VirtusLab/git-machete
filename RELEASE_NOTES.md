@@ -1,5 +1,9 @@
 # Release notes
 
+## New in git-machete 3.38.0
+
+- added: interactive terminal interface for checking out branch for `git machete go` (without a direction)
+
 ## New in git-machete 3.37.1
 
 - improved: `traverse` now changes directory to the worktree where a branch is checked out, rather than failing (suggested by @lsierant)

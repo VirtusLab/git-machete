@@ -466,13 +466,37 @@ class TestGo(BaseTest):
           * git machete gitlab checkout-mrs --mine"""
         assert_failure(["g", "root"], expected_error_message)
 
-    def test_go_missing_direction(self) -> None:
-        output, e = launch_command_capturing_output_and_exception("go")
-        assert output == \
-            "the following arguments are required: go direction\n" \
-            "Possible values for go direction are: d, down, f, first, l, last, n, next, p, prev, r, root, u, up\n"
-        assert type(e) is SystemExit
-        assert e.code == ExitCode.ARGUMENT_ERROR
+    def test_go_interactive(self, mocker: MockerFixture) -> None:
+        """Test that 'git machete go' without direction launches interactive mode.
+
+        Since testing curses interfaces is complex and requires mocking terminal I/O,
+        we just verify that the interactive function is called when no direction is provided.
+        """
+        create_repo()
+        new_branch("level-0-branch")
+        commit()
+        new_branch("level-1-branch")
+        commit()
+
+        body: str = \
+            """
+            level-0-branch
+                level-1-branch
+            """
+        rewrite_branch_layout_file(body)
+        check_out("level-0-branch")
+
+        # Mock the interactive method to return None (user cancelled)
+        from git_machete.client.go_interactive import GoInteractiveMacheteClient
+        mock_go_interactive = self.patch_symbol(mocker,
+            "git_machete.client.go_interactive.GoInteractiveMacheteClient.go_interactive",
+            lambda self: None)
+
+        # This should call go_interactive instead of failing
+        launch_command("go")
+
+        # Verify that go_interactive was called
+        mock_go_interactive.assert_called_once()
 
     def test_go_with_worktree(self) -> None:
         """Test that go fails gracefully when target branch is checked out in a worktree."""

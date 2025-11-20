@@ -15,7 +15,7 @@
 * :ref:`format`           -- Display docs for the format of the branch layout file
 * :ref:`github`           -- Create, check out and manage GitHub PRs while keeping them reflected in git machete
 * :ref:`gitlab`           -- Create, check out and manage GitLab MRs while keeping them reflected in git machete
-* :ref:`go`               -- Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument
+* :ref:`go`               -- Check out the branch relative to the position of the current branch (accepts down/first/last/next/root/prev/up argument) or interactively select a branch when run without arguments
 * :ref:`help`             -- Display this overview, or detailed help for a specified command
 * :ref:`hooks`            -- Display docs for the extra hooks added by git machete
 * :ref:`is-managed`       -- Check if the current branch is managed by git machete (mostly for scripts)
