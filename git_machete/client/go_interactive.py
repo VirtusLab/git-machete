@@ -128,7 +128,7 @@ class GoInteractiveMacheteClient(MacheteClient):
             sys.stdout.write('\033[J')
 
         # Header
-        header = "\033[1mSelect branch (↑/↓: navigate, ←: parent, Enter: checkout, q: quit)\033[0m"
+        header = "\033[1mSelect branch (↑/↓: prev/next, ←: parent, →: child, Enter: checkout, q or Ctrl+C: quit)\033[0m"
         sys.stdout.write(header + '\n')
 
         # Adjust scroll offset if needed
@@ -217,6 +217,15 @@ class GoInteractiveMacheteClient(MacheteClient):
                     if current_node.parent:
                         for i, node in enumerate(flat_nodes):
                             if node.name == current_node.parent.name:
+                                selected_idx = i
+                                break
+                elif key == '\x1b[C':  # Right arrow - go to first child
+                    current_node = flat_nodes[selected_idx]
+                    if current_node.children:
+                        # Find first child in flat list
+                        first_child = current_node.children[0]
+                        for i, node in enumerate(flat_nodes):
+                            if node.name == first_child.name:
                                 selected_idx = i
                                 break
                 elif key in ('\r', '\n'):  # Enter
