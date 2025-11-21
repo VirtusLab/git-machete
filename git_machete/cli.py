@@ -705,6 +705,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 dest = interactive_client.go_interactive()
                 if dest is not None and dest != current_branch:
                     git.checkout(dest)
+                    print(fmt(f"Checked out <b>{dest}</b>"))
             else:
                 go_client = GoShowMacheteClient(git)
                 go_client.read_branch_layout_file()
