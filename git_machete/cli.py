@@ -263,7 +263,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     add_code_hosting_parser('gitlab', 'mr', include_sync=False)
 
     go_parser = create_subparser('go', alias='g')
-    go_parser.add_argument('direction', nargs='?', metavar='go direction', choices=[
+    go_parser.add_argument('direction', nargs='?', default=None, metavar='go direction', choices=[
         'd', 'down', 'f', 'first', 'l', 'last', 'n', 'next',
         'p', 'prev', 'r', 'root', 'u', 'up']
     )
