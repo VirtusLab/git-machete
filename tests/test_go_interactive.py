@@ -7,8 +7,9 @@ import pytest
 from .mockers import rewrite_branch_layout_file
 from .mockers_git_repository import commit, create_repo, new_branch
 
-# Use git-machete executable - it will be available in PATH when installed via pip
-GIT_MACHETE_CMD = "git machete"
+# Use git-machete from tox environment if available, otherwise fall back to PATH
+# GIT_MACHETE_EXEC is set by tox.ini to point to the installed executable
+GIT_MACHETE_CMD = os.environ.get('GIT_MACHETE_EXEC', 'git machete')
 
 
 class TestGoInteractive:
