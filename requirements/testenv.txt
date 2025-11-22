@@ -1,5 +1,8 @@
 pexpect==4.9.0
-types-pexpect==4.9.0.20250916
+
+types-pexpect==4.8.0.1; python_version <= '3.7'
+types-pexpect==4.9.0.20240806; python_version >= '3.8' and python_version < '3.9'
+types-pexpect==4.9.0.20250916; python_version >= '3.9'
 
 pytest==7.0.1; python_version <= '3.6'
 pytest==7.4.4; python_version >= '3.7' and python_version < '3.8'
