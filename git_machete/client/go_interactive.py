@@ -1,7 +1,7 @@
 import sys
 import termios
 import tty
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from git_machete.client.base import MacheteClient
 from git_machete.git_operations import LocalBranchShortName
@@ -31,116 +31,36 @@ KEY_ENTER = ('\r', '\n')
 KEY_CTRL_C = '\x03'
 
 
-class BranchNode:
-    """Represents a branch node in the tree structure."""
-
-    def __init__(self, name: str, depth: int, parent: Optional['BranchNode'] = None):
-        self.name = name
-        self.depth = depth
-        self.parent = parent
-        self.children: List['BranchNode'] = []
-        self.annotation: Optional[str] = None
-
-    def add_child(self, child: 'BranchNode') -> None:
-        self.children.append(child)
-
-
 class GoInteractiveMacheteClient(MacheteClient):
     """Client for interactive branch selection using curses."""
 
-    def _parse_machete_file(self) -> Tuple[List[BranchNode], Dict[str, BranchNode]]:
-        """Parse the .git/machete file and build a tree structure."""
-        nodes: List[BranchNode] = []
-        node_by_name: Dict[str, BranchNode] = {}
-        stack: List[BranchNode] = []  # Stack to track parent nodes at each depth
+    def _get_branch_list_with_depths(self) -> List[Tuple[LocalBranchShortName, int]]:
+        """Get a flat list of branches with their depths using DFS traversal."""
+        result: List[Tuple[LocalBranchShortName, int]] = []
 
-        with open(self._branch_layout_file_path) as file:
-            lines = [line.rstrip() for line in file.readlines()]
+        def add_branch_and_children(branch: LocalBranchShortName, depth: int) -> None:
+            result.append((branch, depth))
+            for child_branch in self.down_branches_for(branch) or []:
+                add_branch_and_children(child_branch, depth + 1)
 
-        indent_str: Optional[str] = None
-
-        for line in lines:
-            if not line.strip():
-                continue
-
-            # Determine indentation
-            prefix = ""
-            for char in line:
-                if char.isspace():
-                    prefix += char
-                else:
-                    break
-
-            # Set indent string from first indented line
-            if prefix and indent_str is None:
-                indent_str = prefix
-
-            # Calculate depth
-            if indent_str:
-                depth = len(prefix) // len(indent_str)
-            else:
-                depth = 0
-
-            # Parse branch name and annotation
-            parts = line.strip().split(" ", 1)
-            branch_name = parts[0]
-            annotation = parts[1] if len(parts) > 1 else None
-
-            # Find parent node
-            parent = None
-            if depth > 0 and stack:
-                # Pop stack until we find the parent at depth-1
-                while len(stack) > depth:
-                    stack.pop()
-                if stack:
-                    parent = stack[-1]
-
-            # Create node
-            node = BranchNode(branch_name, depth, parent)
-            node.annotation = annotation
-            node_by_name[branch_name] = node
-
-            # Add to parent's children
-            if parent:
-                parent.add_child(node)
-
-            # Update stack
-            if depth == 0:
-                stack = [node]
-                nodes.append(node)  # Root nodes
-            else:
-                while len(stack) > depth:
-                    stack.pop()
-                stack.append(node)
-
-        return nodes, node_by_name
-
-    def _flatten_tree(self, nodes: List[BranchNode]) -> List[BranchNode]:
-        """Flatten the tree structure into a displayable list."""
-        result: List[BranchNode] = []
-
-        def add_node_and_children(node: BranchNode) -> None:
-            result.append(node)
-            for child in node.children:
-                add_node_and_children(child)
-
-        for root in nodes:
-            add_node_and_children(root)
+        for root in self._state.roots:
+            add_branch_and_children(root, depth=0)
 
         return result
 
-    def _render_branch_line(self, node: BranchNode, current_branch: str) -> str:
+    def _render_branch_line(self, branch: LocalBranchShortName, depth: int, current_branch: str) -> str:
         """Render a single branch line with indentation."""
-        indent = "  " * node.depth
-        marker = " " if node.name != current_branch else "*"
+        indent = "  " * depth
+        marker = " " if str(branch) != current_branch else "*"
 
-        line = f"{indent}{marker} {node.name}"
-        if node.annotation:
-            line += f" {node.annotation}"
+        line = f"{indent}{marker} {branch}"
+        annotation = self.annotations.get(branch)
+        if annotation:
+            line += f" {annotation.unformatted_full_text}"
 
         return line
 
-    def _draw_screen(self, flat_nodes: List[BranchNode], *,
+    def _draw_screen(self, branches_with_depths: List[Tuple[LocalBranchShortName, int]], *,
                      selected_idx: int, current_branch: str, scroll_offset: int,
                      max_visible_branches: int, num_lines_drawn: int, is_first_draw: bool) -> int:
         """Draw the branch selection screen using ANSI escape codes."""
@@ -157,7 +77,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         sys.stdout.write(bold(header_text) + '\n')
 
         # Adjust scroll offset if needed
-        visible_lines = min(max_visible_branches, len(flat_nodes))
+        visible_lines = min(max_visible_branches, len(branches_with_depths))
         if selected_idx < scroll_offset:
             scroll_offset = selected_idx
         elif selected_idx >= scroll_offset + visible_lines:
@@ -165,14 +85,14 @@ class GoInteractiveMacheteClient(MacheteClient):
 
         # Draw branches
         for i in range(visible_lines):
-            node_idx = scroll_offset + i
-            if node_idx >= len(flat_nodes):
+            branch_idx = scroll_offset + i
+            if branch_idx >= len(branches_with_depths):
                 break
 
-            node = flat_nodes[node_idx]
-            line = self._render_branch_line(node, current_branch)
+            branch, depth = branches_with_depths[branch_idx]
+            line = self._render_branch_line(branch, depth, current_branch)
 
-            if node_idx == selected_idx:
+            if branch_idx == selected_idx:
                 # Highlight selected line (inverse video)
                 sys.stdout.write(f'{ANSI_REVERSE_VIDEO}{line}{ANSI_RESET}\n')
             else:
@@ -200,12 +120,13 @@ class GoInteractiveMacheteClient(MacheteClient):
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
-    def _run_interactive_interface(self, flat_nodes: List[BranchNode], current_branch: str) -> Optional[str]:
+    def _run_interactive_interface(self, branches_with_depths: List[Tuple[LocalBranchShortName, int]],
+                                    current_branch: str) -> Optional[str]:
         """Run the interactive interface and return the selected branch or None."""
         # Find initial selection (current branch)
         selected_idx = 0
-        for i, node in enumerate(flat_nodes):
-            if node.name == current_branch:
+        for i, (branch, _) in enumerate(branches_with_depths):
+            if str(branch) == current_branch:
                 selected_idx = i
                 break
 
@@ -221,11 +142,11 @@ class GoInteractiveMacheteClient(MacheteClient):
         try:
             while True:
                 # Calculate how many lines we'll draw (header + visible branches)
-                visible_lines = min(max_visible_branches, len(flat_nodes))
+                visible_lines = min(max_visible_branches, len(branches_with_depths))
                 num_lines_drawn = visible_lines + 1  # +1 for header
 
                 scroll_offset = self._draw_screen(
-                    flat_nodes,
+                    branches_with_depths,
                     selected_idx=selected_idx,
                     current_branch=current_branch,
                     scroll_offset=scroll_offset,
@@ -240,28 +161,30 @@ class GoInteractiveMacheteClient(MacheteClient):
 
                 if key == KEY_UP and selected_idx > 0:
                     selected_idx -= 1
-                elif key == KEY_DOWN and selected_idx < len(flat_nodes) - 1:
+                elif key == KEY_DOWN and selected_idx < len(branches_with_depths) - 1:
                     selected_idx += 1
                 elif key == KEY_LEFT:
                     # Go to parent
-                    current_node = flat_nodes[selected_idx]
-                    if current_node.parent:
-                        for i, node in enumerate(flat_nodes):
-                            if node.name == current_node.parent.name:
+                    selected_branch, _ = branches_with_depths[selected_idx]
+                    parent_branch = self.up_branch_for(selected_branch)
+                    if parent_branch:
+                        for i, (branch, _) in enumerate(branches_with_depths):
+                            if branch == parent_branch:
                                 selected_idx = i
                                 break
                 elif key == KEY_RIGHT:
                     # Go to first child
-                    current_node = flat_nodes[selected_idx]
-                    if current_node.children:
-                        # Find first child in flat list
-                        first_child = current_node.children[0]
-                        for i, node in enumerate(flat_nodes):
-                            if node.name == first_child.name:
+                    selected_branch, _ = branches_with_depths[selected_idx]
+                    child_branches = self.down_branches_for(selected_branch)
+                    if child_branches:
+                        first_child = child_branches[0]
+                        for i, (branch, _) in enumerate(branches_with_depths):
+                            if branch == first_child:
                                 selected_idx = i
                                 break
                 elif key in KEY_ENTER:
-                    return flat_nodes[selected_idx].name
+                    selected_branch, _ = branches_with_depths[selected_idx]
+                    return str(selected_branch)
                 elif key in ('q', 'Q'):
                     return None
                 elif key == KEY_CTRL_C:
@@ -284,15 +207,14 @@ class GoInteractiveMacheteClient(MacheteClient):
 
         current_branch = self._git.get_current_branch()
 
-        # Parse the machete file
-        root_nodes, _ = self._parse_machete_file()
-        flat_nodes = self._flatten_tree(root_nodes)
+        # Get flat list of branches with depths from already-parsed state
+        branches_with_depths = self._get_branch_list_with_depths()
 
-        if not flat_nodes:
+        if not branches_with_depths:
             return None
 
         try:
-            selected_branch = self._run_interactive_interface(flat_nodes, current_branch)
+            selected_branch = self._run_interactive_interface(branches_with_depths, current_branch)
 
             if selected_branch:
                 return LocalBranchShortName.of(selected_branch)
