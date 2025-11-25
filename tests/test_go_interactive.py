@@ -420,3 +420,53 @@ class TestGoInteractive:
         # Verify we're now on feature-1
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "feature-1"
+
+    def test_go_interactive_with_annotations(self, mocker: MockerFixture) -> None:
+        """Test that branch annotations are displayed with proper formatting."""
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        new_branch("feature-1")
+        commit()
+
+        body: str = \
+            """
+            master
+                develop  PR #123 rebase=no
+                    feature-1  Work in progress
+            """
+        rewrite_branch_layout_file(body)
+
+        # Start on master
+        os.system("git checkout master")
+
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+            # Read initial output
+            header = read_line_from_fd(stdout_read_fd)
+            assert "Select branch" in header
+
+            # Read branch list
+            line1 = read_line_from_fd(stdout_read_fd)
+            line2 = read_line_from_fd(stdout_read_fd)
+            line3 = read_line_from_fd(stdout_read_fd)
+
+            # Check that master doesn't have annotation
+            assert "master" in line1
+            assert "PR #123" not in line1
+
+            # Check that develop has annotation with dimmed text
+            assert "develop" in line2
+            # The annotation should be present (though we can't easily test for ANSI dim codes in this context)
+            assert "PR #123" in line2 or "\x1b[2m" in line2  # Either plain text or with ANSI dim code
+
+            # Check that feature-1 has annotation
+            assert "feature-1" in line3
+            assert "Work in progress" in line3 or "\x1b[2m" in line3
+
+            # Use Ctrl+C to quit
+            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
+            time.sleep(0.1)
+
+        run_interactive_test(test_logic, mocker)

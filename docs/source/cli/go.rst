@@ -17,10 +17,10 @@ If ``<direction>`` is not provided, an interactive mode is launched where you ca
 * **↑/↓**: Navigate up/down through branches
 * **←**: Jump to the parent branch of the currently selected branch
 * **→**: Jump to the first child branch of the currently selected branch
-* **Enter/Space**: Check out the selected branch
-* **q/Esc/Ctrl+C**: Quit without checking out
+* **Enter or Space**: Check out the selected branch
+* **q or Esc or Ctrl+C**: Quit without checking out
 
-Check out the branch specified by the given direction relative to the current branch:
+If ``<direction>`` is provided, checks out the branch specified by the given direction relative to the current branch:
 
 * ``down``:    the direct children/downstream branch of the current branch.
 
@@ -40,4 +40,4 @@ Check out the branch specified by the given direction relative to the current br
 
 * ``up``:      the direct parent/upstream branch of the current branch.
 
-Roughly equivalent to ``git checkout $(git machete show <direction>)``.
+This is roughly equivalent to ``git checkout $(git machete show <direction>)``.

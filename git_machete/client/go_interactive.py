@@ -56,8 +56,8 @@ class GoInteractiveMacheteClient(MacheteClient):
 
         line = f"{indent}{marker} {branch}"
         annotation = self.annotations.get(branch)
-        if annotation:
-            line += f" {annotation.unformatted_full_text}"
+        if annotation and annotation.formatted_full_text:
+            line += f"  {annotation.formatted_full_text}"
 
         return line
 
@@ -74,7 +74,7 @@ class GoInteractiveMacheteClient(MacheteClient):
             sys.stdout.write(ANSI_CLEAR_TO_END)
 
         # Header
-        header_text = "Select branch (↑/↓: prev/next, ←: parent, →: child, Enter/Space: checkout, q or Ctrl+C: quit)"
+        header_text = "Select branch (↑/↓: prev/next, ←: parent, →: child, Enter or Space: checkout, q or Ctrl+C: quit)"
         sys.stdout.write(bold(header_text) + '\n')
 
         # Adjust scroll offset if needed

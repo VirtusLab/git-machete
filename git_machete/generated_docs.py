@@ -20,14 +20,14 @@ short_docs: Dict[str, str] = {
     "format": "Display docs for the format of the branch layout file",
     "github": "Create, check out and manage GitHub PRs while keeping them reflected in git machete",
     "gitlab": "Create, check out and manage GitLab MRs while keeping them reflected in git machete",
-    "go": "Check out the branch relative to the position of the current branch (accepts down/first/last/next/root/prev/up argument) or interactively select a branch when run without arguments",
+    "go": "Check out the branch relative to the position of the current branch, or interactively select a branch",
     "help": "Display this overview, or detailed help for a specified command",
     "hooks": "Display docs for the extra hooks added by git machete",
     "is-managed": "Check if the current branch is managed by git machete (mostly for scripts)",
     "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
     "log": "Log the part of history specific to the given branch",
     "reapply": "Rebase the current branch onto its computed fork point",
-    "show": "Show name(s) of the branch(es) relative to the position of a branch, accepts down/first/last/next/root/prev/up argument",
+    "show": "Show name(s) of the branch(es) relative to the position of a branch",
     "slide-out": "Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge",
     "squash": "Squash the unique history of the current branch into a single commit",
     "status": "Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote",
@@ -989,10 +989,10 @@ long_docs: Dict[str, str] = {
            * <b>↑/↓</b>: Navigate up/down through branches
            * <b>←</b>: Jump to the parent branch of the currently selected branch
            * <b>→</b>: Jump to the first child branch of the currently selected branch
-           * <b>Enter/Space</b>: Check out the selected branch
-           * <b>q/Esc/Ctrl+C</b>: Quit without checking out
+           * <b>Enter or Space</b>: Check out the selected branch
+           * <b>q or Esc or Ctrl+C</b>: Quit without checking out
 
-        Check out the branch specified by the given direction relative to the current branch:
+        If `<direction>` is provided, checks out the branch specified by the given direction relative to the current branch:
 
            * `down`:    the direct children/downstream branch of the current branch.
 
@@ -1012,7 +1012,7 @@ long_docs: Dict[str, str] = {
 
            * `up`:      the direct parent/upstream branch of the current branch.
 
-        Roughly equivalent to `git checkout $(git machete show <direction>)`.
+        This is roughly equivalent to `git checkout $(git machete show <direction>)`.
    """,
     "help": """
         <b>Usage:</b><b>

@@ -692,20 +692,19 @@ def launch_internal(orig_args: List[str]) -> None:
             git.expect_no_operation_in_progress()
             current_branch = git.get_current_branch()
 
-            # If no direction is provided, launch interactive mode
-            if not hasattr(parsed_cli, 'direction') or parsed_cli.direction is None:
-                interactive_client = GoInteractiveMacheteClient(git)
-                dest = interactive_client.go_interactive()
-                if dest is not None and dest != current_branch:
-                    git.checkout(dest)
-                    print(fmt(f"Checked out <b>{dest}</b>"))
-            else:
+            if parsed_cli.direction is not None:
                 go_client = GoShowMacheteClient(git)
                 go_client.read_branch_layout_file()
                 # with pick_if_multiple=True, there returned list will have exactly one element
                 dest = go_client.parse_direction(parsed_cli.direction, branch=current_branch, allow_current=False, pick_if_multiple=True)[0]
                 if dest != current_branch:
                     git.checkout(dest)
+            else:
+                interactive_client = GoInteractiveMacheteClient(git)
+                dest_ = interactive_client.go_interactive()
+                if dest_ is not None and dest_ != current_branch:
+                    git.checkout(dest_)
+                    print(fmt(f"Checked out <b>{dest_}</b>"))
         elif cmd in ("github", "gitlab"):
             subcommand = parsed_cli.subcommand
             spec = GITHUB_CLIENT_SPEC if cmd == "github" else GITLAB_CLIENT_SPEC

@@ -15,14 +15,14 @@
 * :ref:`format`           -- Display docs for the format of the branch layout file
 * :ref:`github`           -- Create, check out and manage GitHub PRs while keeping them reflected in git machete
 * :ref:`gitlab`           -- Create, check out and manage GitLab MRs while keeping them reflected in git machete
-* :ref:`go`               -- Check out the branch relative to the position of the current branch (accepts down/first/last/next/root/prev/up argument) or interactively select a branch when run without arguments
+* :ref:`go`               -- Check out the branch relative to the position of the current branch, or interactively select a branch
 * :ref:`help`             -- Display this overview, or detailed help for a specified command
 * :ref:`hooks`            -- Display docs for the extra hooks added by git machete
 * :ref:`is-managed`       -- Check if the current branch is managed by git machete (mostly for scripts)
 * :ref:`list`             -- List all branches that fall into one of pre-defined categories (mostly for internal use)
 * :ref:`log`              -- Log the part of history specific to the given branch
 * :ref:`reapply`          -- Rebase the current branch onto its computed fork point
-* :ref:`show`             -- Show name(s) of the branch(es) relative to the position of a branch, accepts down/first/last/next/root/prev/up argument
+* :ref:`show`             -- Show name(s) of the branch(es) relative to the position of a branch
 * :ref:`slide-out`        -- Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge
 * :ref:`squash`           -- Squash the unique history of the current branch into a single commit
 * :ref:`status`           -- Display formatted tree of branch dependencies, including info on their sync with upstream branch and with remote
