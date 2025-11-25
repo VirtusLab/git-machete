@@ -1,6 +1,10 @@
 # Editors
 .idea/
 *.swp
+.vscode/
+
+# MacOS
+.DS_Store
 
 # Python
 AUTHORS
@@ -31,6 +35,3 @@ parts/
 prime/
 *.snap
 stage/
-
-# MacOS
-.DS_Store

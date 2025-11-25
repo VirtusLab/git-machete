@@ -988,8 +988,9 @@ long_docs: Dict[str, str] = {
 
            * <b>↑/↓</b>: Navigate up/down through branches
            * <b>←</b>: Jump to the parent branch of the currently selected branch
-           * <b>Enter</b>: Check out the selected branch
-           * <b>q/Esc</b>: Quit without checking out
+           * <b>→</b>: Jump to the first child branch of the currently selected branch
+           * <b>Enter/Space</b>: Check out the selected branch
+           * <b>q/Esc/Ctrl+C</b>: Quit without checking out
 
         Check out the branch specified by the given direction relative to the current branch:
 

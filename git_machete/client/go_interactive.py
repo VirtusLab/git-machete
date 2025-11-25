@@ -28,6 +28,7 @@ KEY_LEFT = '\x1b[D'
 
 # Other keys
 KEY_ENTER = ('\r', '\n')
+KEY_SPACE = ' '
 KEY_CTRL_C = '\x03'
 
 
@@ -73,7 +74,7 @@ class GoInteractiveMacheteClient(MacheteClient):
             sys.stdout.write(ANSI_CLEAR_TO_END)
 
         # Header
-        header_text = "Select branch (↑/↓: prev/next, ←: parent, →: child, Enter: checkout, q or Ctrl+C: quit)"
+        header_text = "Select branch (↑/↓: prev/next, ←: parent, →: child, Enter/Space: checkout, q or Ctrl+C: quit)"
         sys.stdout.write(bold(header_text) + '\n')
 
         # Adjust scroll offset if needed
@@ -121,7 +122,7 @@ class GoInteractiveMacheteClient(MacheteClient):
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
     def _run_interactive_interface(self, branches_with_depths: List[Tuple[LocalBranchShortName, int]],
-                                    current_branch: str) -> Optional[str]:
+                                   current_branch: str) -> Optional[str]:
         """Run the interactive interface and return the selected branch or None."""
         # Find initial selection (current branch)
         selected_idx = 0
@@ -182,7 +183,7 @@ class GoInteractiveMacheteClient(MacheteClient):
                             if branch == first_child:
                                 selected_idx = i
                                 break
-                elif key in KEY_ENTER:
+                elif key in KEY_ENTER or key == KEY_SPACE:
                     selected_branch, _ = branches_with_depths[selected_idx]
                     return str(selected_branch)
                 elif key in ('q', 'Q'):

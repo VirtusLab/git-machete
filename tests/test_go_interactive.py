@@ -1,17 +1,181 @@
+import fcntl
 import os
+import sys
+import threading
+import time
+from typing import Any, Callable, Dict
 
-import pexpect
+from pytest_mock import MockerFixture
+
+from git_machete import cli
 
 from .mockers import rewrite_branch_layout_file
 from .mockers_git_repository import commit, create_repo, new_branch
 
-# Use git-machete from tox environment if available, otherwise fall back to PATH
-# GIT_MACHETE_EXEC is set by tox.ini to point to the installed executable
-GIT_MACHETE_CMD = os.environ.get('GIT_MACHETE_EXEC', 'git machete')
+# Key codes matching those in go_interactive.py
+KEY_UP = '\x1b[A'
+KEY_DOWN = '\x1b[B'
+KEY_RIGHT = '\x1b[C'
+KEY_LEFT = '\x1b[D'
+KEY_ENTER = '\r'
+KEY_SPACE = ' '
+KEY_CTRL_C = '\x03'
+
+# Global buffer to store leftover data from previous reads
+_read_buffer = {}
+
+
+def make_non_blocking(fd: int) -> None:
+    """Make a file descriptor non-blocking."""
+    flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+    fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+
+def read_line_from_fd(fd: int, timeout: float = 2.0) -> str:
+    """Read a line from a file descriptor with timeout."""
+    if fd not in _read_buffer:
+        _read_buffer[fd] = bytearray()
+
+    buffer = _read_buffer[fd]
+    start_time = time.time()
+
+    while True:
+        # First, check if we already have a complete line in the buffer
+        try:
+            decoded = buffer.decode('utf-8')
+            if '\n' in decoded:
+                line_end = decoded.index('\n') + 1
+                line = decoded[:line_end]
+                # Keep the rest in the buffer
+                _read_buffer[fd] = bytearray(decoded[line_end:].encode('utf-8'))
+                return line
+        except UnicodeDecodeError:
+            # Incomplete UTF-8 sequence, need to read more
+            pass
+
+        if time.time() - start_time > timeout:
+            break
+
+        try:
+            data = os.read(fd, 1024)  # Read larger chunks to handle UTF-8 properly
+            if not data:
+                break
+            buffer.extend(data)
+        except BlockingIOError:
+            time.sleep(0.01)
+            continue
+
+    # Timeout - return whatever we have, decoded
+    if buffer:
+        try:
+            result = buffer.decode('utf-8')
+            _read_buffer[fd] = bytearray()
+            return result
+        except UnicodeDecodeError:
+            result = buffer.decode('utf-8', errors='replace')
+            _read_buffer[fd] = bytearray()
+            return result
+    return ''
+
+
+def run_interactive_test(
+    test_func: Callable[[int, int], None],
+    mocker: MockerFixture,
+    timeout: float = 5.0
+) -> None:
+    """
+    Run an interactive test by executing git machete go in a thread with mocked stdin/stdout.
+
+    Args:
+        test_func: A function that takes (stdin_write_fd, stdout_read_fd) and performs the test
+        mocker: pytest-mock fixture for mocking
+        timeout: Maximum time to wait for the test to complete
+    """
+    # Create pipes for stdin and stdout
+    stdin_read_fd, stdin_write_fd = os.pipe()
+    stdout_read_fd, stdout_write_fd = os.pipe()
+
+    # Open file objects for all ends
+    stdin_read = os.fdopen(stdin_read_fd, 'r')
+    stdin_write_fd_obj = os.fdopen(stdin_write_fd, 'w')
+    stdout_read_fd_obj = os.fdopen(stdout_read_fd, 'r')
+    stdout_write = os.fdopen(stdout_write_fd, 'w', buffering=1)  # Line buffered
+
+    # Make stdout read end non-blocking
+    make_non_blocking(stdout_read_fd_obj.fileno())
+
+    # Mock termios operations since pipes don't support them
+    fake_termios_settings = ['fake_settings']
+
+    def mock_tcgetattr(fd: int) -> Any:
+        return fake_termios_settings
+
+    def mock_tcsetattr(fd: int, when: int, attributes: Any) -> None:
+        pass
+
+    def mock_setraw(fd: int) -> None:
+        pass
+
+    mocker.patch('termios.tcgetattr', side_effect=mock_tcgetattr)
+    mocker.patch('termios.tcsetattr', side_effect=mock_tcsetattr)
+    mocker.patch('tty.setraw', side_effect=mock_setraw)
+
+    # Result and exception containers
+    exception_container: Dict[str, Any] = {}
+
+    def run_git_machete_go() -> None:
+        """Run git machete go in a thread with replaced stdin/stdout."""
+        original_stdin = sys.stdin
+        original_stdout = sys.stdout
+        try:
+            sys.stdin = stdin_read
+            sys.stdout = stdout_write
+            # Run the CLI command
+            cli.launch(['go'])
+        except SystemExit as e:
+            # CLI may exit with sys.exit(), that's normal
+            if e.code != 0:
+                exception_container['error'] = e
+        except Exception as e:
+            exception_container['error'] = e
+            import traceback
+            traceback.print_exc()
+        finally:
+            sys.stdin = original_stdin
+            sys.stdout = original_stdout
+
+    # Start git machete go in a separate thread
+    thread = threading.Thread(target=run_git_machete_go, daemon=True)
+    thread.start()
+
+    # Give the thread a moment to start and write initial output
+    time.sleep(0.3)
+
+    try:
+        # Run the actual test
+        test_func(stdin_write_fd_obj.fileno(), stdout_read_fd_obj.fileno())
+
+        # Wait for thread to finish
+        thread.join(timeout=timeout)
+
+        # Check if thread is still running (timeout)
+        if thread.is_alive():
+            raise TimeoutError(f"Interactive test timed out after {timeout} seconds")
+
+        # Check for exceptions
+        if 'error' in exception_container:
+            raise exception_container['error']
+
+    finally:
+        # Clean up
+        stdin_read.close()
+        stdin_write_fd_obj.close()
+        stdout_read_fd_obj.close()
+        stdout_write.close()
 
 
 class TestGoInteractive:
-    def test_go_interactive_navigation_up_down(self) -> None:
+    def test_go_interactive_navigation_up_down(self, mocker: MockerFixture) -> None:
         """Test that up/down arrow keys navigate through branches."""
         create_repo()
         new_branch("master")
@@ -32,32 +196,37 @@ class TestGoInteractive:
         # Start on develop
         os.system("git checkout develop")
 
-        # Run git machete go interactively
-        child = pexpect.spawn(f"{GIT_MACHETE_CMD} go", timeout=5)
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+            # Read initial interface output
+            header = read_line_from_fd(stdout_read_fd)
+            assert "Select branch" in header
 
-        try:
-            # Wait for the interface to appear
-            child.expect("Select branch")
+            # Read the branch list
+            line1 = read_line_from_fd(stdout_read_fd)
+            line2 = read_line_from_fd(stdout_read_fd)
+            line3 = read_line_from_fd(stdout_read_fd)
 
-            # develop should be initially selected (marked with *)
-            child.expect("develop")
+            # develop should be marked with * (current branch)
+            assert "master" in line1
+            assert "develop" in line2
+            assert "*" in line2  # Current branch marker
+            assert "feature-1" in line3
 
-            # Press down arrow to select feature-1 (it becomes highlighted but * stays on develop)
-            child.send("\x1b[B")  # Down arrow
-            # Just check that feature-1 appears (it will be highlighted with reverse video)
-            child.expect("feature-1")
+            # Press down arrow to select feature-1
+            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
+            time.sleep(0.1)
 
-            # Press up arrow to go back to develop
-            child.send("\x1b[A")  # Up arrow
-            child.expect("develop")
+            # Press up arrow to go back
+            os.write(stdin_write_fd, KEY_UP.encode('utf-8'))
+            time.sleep(0.1)
 
             # Use Ctrl+C to quit
-            child.send("\x03")  # Ctrl+C
-            child.expect(pexpect.EOF)
-        finally:
-            child.close()
+            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
+            time.sleep(0.1)
 
-    def test_go_interactive_left_arrow_parent(self) -> None:
+        run_interactive_test(test_logic, mocker)
+
+    def test_go_interactive_left_arrow_parent(self, mocker: MockerFixture) -> None:
         """Test that left arrow navigates to parent branch."""
         create_repo()
         new_branch("master")
@@ -78,24 +247,31 @@ class TestGoInteractive:
         # Start on feature-1
         os.system("git checkout feature-1")
 
-        child = pexpect.spawn(f"{GIT_MACHETE_CMD} go", timeout=5)
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+            # Read initial output
+            header = read_line_from_fd(stdout_read_fd)
+            assert "Select branch" in header
 
-        try:
-            child.expect("Select branch")
-            child.expect("feature-1")
+            # Read branch list
+            line1 = read_line_from_fd(stdout_read_fd)
+            line2 = read_line_from_fd(stdout_read_fd)
+            line3 = read_line_from_fd(stdout_read_fd)
+
+            # feature-1 should be current
+            assert "feature-1" in line3
+            assert "*" in line3
 
             # Press left arrow to go to parent (develop)
-            child.send("\x1b[D")  # Left arrow
-            # develop should now be highlighted
-            child.expect("develop")
+            os.write(stdin_write_fd, KEY_LEFT.encode('utf-8'))
+            time.sleep(0.1)
 
             # Use Ctrl+C to quit
-            child.send("\x03")  # Ctrl+C
-            child.expect(pexpect.EOF)
-        finally:
-            child.close()
+            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
+            time.sleep(0.1)
 
-    def test_go_interactive_right_arrow_child(self) -> None:
+        run_interactive_test(test_logic, mocker)
+
+    def test_go_interactive_right_arrow_child(self, mocker: MockerFixture) -> None:
         """Test that right arrow navigates to first child branch."""
         create_repo()
         new_branch("master")
@@ -116,23 +292,31 @@ class TestGoInteractive:
         # Start on develop
         os.system("git checkout develop")
 
-        child = pexpect.spawn(f"{GIT_MACHETE_CMD} go", timeout=5)
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+            # Read initial output
+            header = read_line_from_fd(stdout_read_fd)
+            assert "Select branch" in header
 
-        try:
-            child.expect("Select branch")
-            child.expect("develop")
+            # Read branch list
+            line1 = read_line_from_fd(stdout_read_fd)
+            line2 = read_line_from_fd(stdout_read_fd)
+            line3 = read_line_from_fd(stdout_read_fd)
+
+            # develop should be current
+            assert "develop" in line2
+            assert "*" in line2
 
             # Press right arrow to go to first child (feature-1)
-            child.send("\x1b[C")  # Right arrow
-            child.expect("feature-1")
+            os.write(stdin_write_fd, KEY_RIGHT.encode('utf-8'))
+            time.sleep(0.1)
 
-            # Use Ctrl+C to quit (more reliable than 'q' in pexpect)
-            child.send("\x03")  # Ctrl+C
-            child.expect(pexpect.EOF)
-        finally:
-            child.close()
+            # Use Ctrl+C to quit
+            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
+            time.sleep(0.1)
 
-    def test_go_interactive_quit_without_checkout(self) -> None:
+        run_interactive_test(test_logic, mocker)
+
+    def test_go_interactive_quit_without_checkout(self, mocker: MockerFixture) -> None:
         """Test that pressing Ctrl+C quits without checking out."""
         create_repo()
         new_branch("master")
@@ -151,20 +335,88 @@ class TestGoInteractive:
         os.system("git checkout master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
 
-        child = pexpect.spawn(f"{GIT_MACHETE_CMD} go", timeout=5)
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+            # Read initial output
+            header = read_line_from_fd(stdout_read_fd)
+            assert "Select branch" in header
 
-        try:
-            child.expect("Select branch")
+            # Read branch list
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
 
             # Press down to select develop
-            child.send("\x1b[B")  # Down arrow
+            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
+            time.sleep(0.1)
 
             # Press Ctrl+C to quit without checking out
-            child.send("\x03")  # Ctrl+C
-            child.expect(pexpect.EOF)
+            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
+            time.sleep(0.1)
 
-            # Verify we're still on the initial branch
-            current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
-            assert current_branch == initial_branch
-        finally:
-            child.close()
+        run_interactive_test(test_logic, mocker)
+
+        # Verify we're still on the initial branch
+        current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert current_branch == initial_branch
+
+    def test_go_interactive_space_checkout(self, mocker: MockerFixture) -> None:
+        """Test that pressing Space checks out the selected branch."""
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        new_branch("feature-1")
+        commit()
+
+        body: str = \
+            """
+            master
+                develop
+                    feature-1
+            """
+        rewrite_branch_layout_file(body)
+
+        # Start on master
+        os.system("git checkout master")
+        initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert initial_branch == "master"
+
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+            # Read initial output
+            header = read_line_from_fd(stdout_read_fd)
+            assert "Select branch" in header
+
+            # Read branch list
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+
+            # Press down twice to select feature-1
+            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
+            time.sleep(0.1)
+            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
+            time.sleep(0.1)
+
+            # Press Space to checkout feature-1
+            os.write(stdin_write_fd, KEY_SPACE.encode('utf-8'))
+            time.sleep(0.5)
+
+            # Read until we get the checkout confirmation message
+            # (may need to skip screen redraws with ANSI escape codes)
+            checkout_msg = ""
+            for _ in range(20):  # Try up to 20 lines
+                line = read_line_from_fd(stdout_read_fd, timeout=0.3)
+                if not line:
+                    continue
+                if "Checked out" in line:
+                    checkout_msg = line
+                    break
+
+            assert "Checked out" in checkout_msg, f"Expected 'Checked out' message but got: {repr(checkout_msg)}"
+            assert "feature-1" in checkout_msg
+
+        run_interactive_test(test_logic, mocker, timeout=3.0)
+
+        # Verify we're now on feature-1
+        current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert current_branch == "feature-1"

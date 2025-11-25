@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Nov 22, 2025" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Nov 25, 2025" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.38.0
 .sp
@@ -1469,9 +1469,11 @@ If \fB<direction>\fP is not provided, an interactive mode is launched where you 
 .IP \(bu 2
 \fB←\fP: Jump to the parent branch of the currently selected branch
 .IP \(bu 2
-\fBEnter\fP: Check out the selected branch
+\fB→\fP: Jump to the first child branch of the currently selected branch
 .IP \(bu 2
-\fBq/Esc\fP: Quit without checking out
+\fBEnter/Space\fP: Check out the selected branch
+.IP \(bu 2
+\fBq/Esc/Ctrl+C\fP: Quit without checking out
 .UNINDENT
 .sp
 Check out the branch specified by the given direction relative to the current branch:
