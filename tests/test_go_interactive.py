@@ -470,3 +470,67 @@ class TestGoInteractive:
             time.sleep(0.1)
 
         run_interactive_test(test_logic, mocker)
+
+    def test_go_interactive_wrapping_navigation(self, mocker: MockerFixture) -> None:
+        """Test that up/down arrow keys wrap around at the edges."""
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        new_branch("feature-1")
+        commit()
+
+        body: str = \
+            """
+            master
+                develop
+                    feature-1
+            """
+        rewrite_branch_layout_file(body)
+
+        # Start on master (first item)
+        os.system("git checkout master")
+
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+            # Read initial output
+            header = read_line_from_fd(stdout_read_fd)
+            assert "Select branch" in header
+
+            # Read branch list
+            line1 = read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+
+            # master should be initially selected (marked with *)
+            assert "master" in line1
+            assert "*" in line1
+
+            # Press UP to wrap to last item (feature-1)
+            os.write(stdin_write_fd, KEY_UP.encode('utf-8'))
+            time.sleep(0.1)
+
+            # Press DOWN twice to verify we can navigate forward from last item to first
+            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
+            time.sleep(0.1)
+            # Now at master (wrapped from feature-1)
+
+            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
+            time.sleep(0.1)
+            # Now at develop
+
+            # Press UP to go back to master
+            os.write(stdin_write_fd, KEY_UP.encode('utf-8'))
+            time.sleep(0.1)
+            # Now at master
+
+            # Press UP again to wrap to feature-1
+            os.write(stdin_write_fd, KEY_UP.encode('utf-8'))
+            time.sleep(0.1)
+            # Now at feature-1 (wrapped)
+
+            # Use Ctrl+C to quit
+            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
+            time.sleep(0.1)
+
+        run_interactive_test(test_logic, mocker)

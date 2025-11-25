@@ -160,10 +160,12 @@ class GoInteractiveMacheteClient(MacheteClient):
                 # Read key
                 key = self._getch()
 
-                if key == KEY_UP and selected_idx > 0:
-                    selected_idx -= 1
-                elif key == KEY_DOWN and selected_idx < len(branches_with_depths) - 1:
-                    selected_idx += 1
+                if key == KEY_UP:
+                    # Wrap around from first to last
+                    selected_idx = (selected_idx - 1) % len(branches_with_depths)
+                elif key == KEY_DOWN:
+                    # Wrap around from last to first
+                    selected_idx = (selected_idx + 1) % len(branches_with_depths)
                 elif key == KEY_LEFT:
                     # Go to parent
                     selected_branch, _ = branches_with_depths[selected_idx]

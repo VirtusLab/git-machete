@@ -18,7 +18,7 @@ If ``<direction>`` is not provided, an interactive mode is launched where you ca
 * **←**: Jump to the parent branch of the currently selected branch
 * **→**: Jump to the first child branch of the currently selected branch
 * **Enter or Space**: Check out the selected branch
-* **q or Esc or Ctrl+C**: Quit without checking out
+* **q or Ctrl+C**: Quit without checking out
 
 If ``<direction>`` is provided, checks out the branch specified by the given direction relative to the current branch:
 

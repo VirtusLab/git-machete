@@ -2,7 +2,7 @@
 
 ## New in git-machete 3.38.0
 
-- added: interactive terminal interface for checking out branch, via `git machete go` (without a direction)
+- added: interactive terminal interface for checking out a branch, via `git machete go` (without a direction)
 - fixed: `-y` short option now works for `github create-pr` and `gitlab create-mr` commands (previously only `--yes` was accepted)
 
 ## New in git-machete 3.37.1
