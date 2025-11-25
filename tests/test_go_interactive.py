@@ -107,13 +107,13 @@ def run_interactive_test(
     # Mock termios operations since pipes don't support them
     fake_termios_settings = ['fake_settings']
 
-    def mock_tcgetattr(fd: int) -> Any:
+    def mock_tcgetattr(fd: int) -> Any:  # noqa: U100
         return fake_termios_settings
 
-    def mock_tcsetattr(fd: int, when: int, attributes: Any) -> None:
+    def mock_tcsetattr(fd: int, _when: int, _attributes: Any) -> None:  # noqa: U100
         pass
 
-    def mock_setraw(fd: int) -> None:
+    def mock_setraw(fd: int) -> None:  # noqa: U100
         pass
 
     mocker.patch('termios.tcgetattr', side_effect=mock_tcgetattr)
@@ -253,8 +253,8 @@ class TestGoInteractive:
             assert "Select branch" in header
 
             # Read branch list
-            line1 = read_line_from_fd(stdout_read_fd)
-            line2 = read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
             line3 = read_line_from_fd(stdout_read_fd)
 
             # feature-1 should be current
@@ -298,9 +298,9 @@ class TestGoInteractive:
             assert "Select branch" in header
 
             # Read branch list
-            line1 = read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
             line2 = read_line_from_fd(stdout_read_fd)
-            line3 = read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
 
             # develop should be current
             assert "develop" in line2

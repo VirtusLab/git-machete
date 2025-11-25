@@ -49,7 +49,7 @@ class GoInteractiveMacheteClient(MacheteClient):
 
         return result
 
-    def _render_branch_line(self, branch: LocalBranchShortName, depth: int, current_branch: str) -> str:
+    def _render_branch_line(self, branch: LocalBranchShortName, depth: int, *, current_branch: str) -> str:
         """Render a single branch line with indentation."""
         indent = "  " * depth
         marker = " " if str(branch) != current_branch else "*"
@@ -91,7 +91,7 @@ class GoInteractiveMacheteClient(MacheteClient):
                 break
 
             branch, depth = branches_with_depths[branch_idx]
-            line = self._render_branch_line(branch, depth, current_branch)
+            line = self._render_branch_line(branch, depth, current_branch=current_branch)
 
             if branch_idx == selected_idx:
                 # Highlight selected line (inverse video)
