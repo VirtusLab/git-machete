@@ -956,7 +956,7 @@ def main() -> None:
         launch(sys.argv[1:])
     except EOFError:  # pragma: no cover
         sys.exit(ExitCode.END_OF_FILE_SIGNAL)
-    except KeyboardInterrupt:  # pragma: no cover
+    except KeyboardInterrupt:
         sys.exit(ExitCode.KEYBOARD_INTERRUPT)
     except (MacheteException, UnderlyingGitException) as e:
         print(e, file=sys.stderr)

@@ -227,8 +227,3 @@ class GoInteractiveMacheteClient(MacheteClient):
             sys.stdout.write(ANSI_SHOW_CURSOR)
             sys.stdout.flush()
             return None
-        except Exception:
-            # Make sure cursor is visible
-            sys.stdout.write(ANSI_SHOW_CURSOR)
-            sys.stdout.flush()
-            return None

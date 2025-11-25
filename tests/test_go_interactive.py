@@ -534,3 +534,90 @@ class TestGoInteractive:
             time.sleep(0.1)
 
         run_interactive_test(test_logic, mocker)
+
+    def test_go_interactive_q_key_quit(self, mocker: MockerFixture) -> None:
+        """Test that pressing 'q' or 'Q' quits without checking out."""
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+
+        body: str = \
+            """
+            master
+                develop
+            """
+        rewrite_branch_layout_file(body)
+
+        # Start on master
+        os.system("git checkout master")
+        initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+            # Read initial output
+            header = read_line_from_fd(stdout_read_fd)
+            assert "Select branch" in header
+
+            # Read branch list
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+
+            # Press down to select develop
+            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
+            time.sleep(0.1)
+
+            # Press 'q' to quit without checking out
+            os.write(stdin_write_fd, 'q'.encode('utf-8'))
+            time.sleep(0.1)
+
+        run_interactive_test(test_logic, mocker)
+
+        # Verify we're still on the initial branch
+        current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert current_branch == initial_branch
+
+    def test_go_interactive_unknown_key_ignored(self, mocker: MockerFixture) -> None:
+        """Test that unknown keys are ignored and don't break the interface."""
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+
+        body: str = \
+            """
+            master
+                develop
+            """
+        rewrite_branch_layout_file(body)
+
+        # Start on master
+        os.system("git checkout master")
+
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+            # Read initial output
+            header = read_line_from_fd(stdout_read_fd)
+            assert "Select branch" in header
+
+            # Read branch list
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+
+            # Press some unknown keys - they should be ignored
+            os.write(stdin_write_fd, 'x'.encode('utf-8'))
+            time.sleep(0.05)
+            os.write(stdin_write_fd, 'z'.encode('utf-8'))
+            time.sleep(0.05)
+            os.write(stdin_write_fd, '1'.encode('utf-8'))
+            time.sleep(0.05)
+
+            # Now press a valid key to verify the interface still works
+            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
+            time.sleep(0.1)
+
+            # Quit with Ctrl+C to verify we can still exit
+            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
+            time.sleep(0.1)
+
+        run_interactive_test(test_logic, mocker)
