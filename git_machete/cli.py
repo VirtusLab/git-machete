@@ -154,13 +154,6 @@ def create_cli_parser() -> argparse.ArgumentParser:
                 print(f"{message.replace(', request_id', '')}\nPossible values for subcommand are: "
                       "anno-mrs, checkout-mrs, create-mr, restack-mr, retarget-mr, update-mr-descriptions", file=sys.stderr)
                 self.exit(2)
-            elif "the following arguments are required: go direction" in message:
-                # Direction is now optional, so this shouldn't happen
-                # But if it does, provide helpful message
-                print(f"{message}\nPossible values for go direction are: "
-                      f"d, down, f, first, l, last, n, next, p, prev, r, root, u, up\n"
-                      f"Or run `git machete go` without arguments for interactive mode", file=sys.stderr)
-                self.exit(2)
             elif "the following arguments are required: show direction" in message:
                 print(f"{message}\nPossible values for show direction are: "
                       f"c, current, d, down, f, first, l, last, n, next, p, prev, r, root, u, up", file=sys.stderr)
