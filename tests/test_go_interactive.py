@@ -94,6 +94,7 @@ def read_line_from_fd(fd: int, timeout: float = 2.0) -> str:
 
 
 @pytest.mark.skipif(sys.platform == 'win32', reason="Interactive mode is not supported on Windows")
+@pytest.mark.xdist_group("interactive")  # Run all tests in this class sequentially in a dedicated worker
 class TestGoInteractive(BaseTest):
     def setup_method(self) -> None:
         """Set up a standard 4-branch repository for each test."""
