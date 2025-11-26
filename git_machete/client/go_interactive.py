@@ -27,17 +27,18 @@ KEY_RIGHT = '\x1b[C'
 KEY_LEFT = '\x1b[D'
 
 # Other keys
-KEY_ENTER = ('\r', '\n')
+KEYS_ENTER = ('\r', '\n')
 KEY_SPACE = ' '
 KEY_CTRL_C = '\x03'
 
 
 class GoInteractiveMacheteClient(MacheteClient):
-    """Client for interactive branch selection using curses."""
+    """Client for interactive branch selection using curses-style interface (implemented without curses, just using ANSI sequences)."""
 
     # Maximum number of branches to show at once (can be overridden in tests)
     _max_visible_branches: int = 20
     _managed_branches_with_depths: List[Tuple[LocalBranchShortName, int]]
+    _current_branch: LocalBranchShortName
 
     def _get_branch_list_with_depths(self) -> List[Tuple[LocalBranchShortName, int]]:
         """Get a flat list of branches with their depths using DFS traversal."""
@@ -53,10 +54,10 @@ class GoInteractiveMacheteClient(MacheteClient):
 
         return result
 
-    def _render_branch_line(self, branch: LocalBranchShortName, depth: int, *, current_branch: LocalBranchShortName) -> str:
+    def _render_branch_line(self, branch: LocalBranchShortName, depth: int) -> str:
         """Render a single branch line with indentation."""
         indent = "  " * depth
-        marker = " " if branch != current_branch else "*"
+        marker = " " if branch != self._current_branch else "*"
 
         line = f"{indent}{marker} {branch}"
         annotation = self.annotations.get(branch)
@@ -65,7 +66,7 @@ class GoInteractiveMacheteClient(MacheteClient):
 
         return line
 
-    def _draw_screen(self, *, selected_idx: int, current_branch: LocalBranchShortName, scroll_offset: int,
+    def _draw_screen(self, *, selected_idx: int, scroll_offset: int,
                      num_lines_drawn: int, is_first_draw: bool) -> int:
         """Draw the branch selection screen using ANSI escape codes."""
         # Move cursor up to the start of our display area (if we've drawn before)
@@ -91,7 +92,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         for i in range(visible_lines):
             branch_idx = scroll_offset + i
             branch, depth = self._managed_branches_with_depths[branch_idx]
-            line = self._render_branch_line(branch, depth, current_branch=current_branch)
+            line = self._render_branch_line(branch, depth)
 
             if branch_idx == selected_idx:
                 # Highlight selected line (inverse video)
@@ -129,13 +130,13 @@ class GoInteractiveMacheteClient(MacheteClient):
         # Get flat list of branches with depths from already-parsed state
         self._managed_branches_with_depths = self._get_branch_list_with_depths()
 
-        current_branch = self._git.get_current_branch()
+        self._current_branch = self._git.get_current_branch()
 
         # Find initial selection (current branch)
-        selected_idx = index_or_none(self.managed_branches, current_branch)
+        selected_idx = index_or_none(self.managed_branches, self._current_branch)
         if selected_idx is None:
             selected_idx = 0
-            warn(f"current branch {current_branch} is unmanaged")
+            warn(f"current branch {self._current_branch} is unmanaged")
 
         scroll_offset = 0
         num_lines_drawn = 0
@@ -153,7 +154,6 @@ class GoInteractiveMacheteClient(MacheteClient):
 
                 scroll_offset = self._draw_screen(
                     selected_idx=selected_idx,
-                    current_branch=current_branch,
                     scroll_offset=scroll_offset,
                     num_lines_drawn=num_lines_drawn,
                     is_first_draw=is_first_draw
@@ -181,7 +181,7 @@ class GoInteractiveMacheteClient(MacheteClient):
                     child_branches = self.down_branches_for(selected_branch)
                     if child_branches:
                         selected_idx = self.managed_branches.index(child_branches[0])
-                elif key in KEY_ENTER or key == KEY_SPACE:
+                elif key in KEYS_ENTER or key == KEY_SPACE:
                     selected_branch, _ = self._managed_branches_with_depths[selected_idx]
                     return selected_branch
                 elif key in ('q', 'Q'):
