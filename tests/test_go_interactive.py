@@ -555,7 +555,8 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_scrolling(self, mocker: MockerFixture) -> None:
         """Test that scrolling works when there are more branches than fit on screen."""
-        from git_machete.client.go_interactive import GoInteractiveMacheteClient
+        from git_machete.client.go_interactive import \
+            GoInteractiveMacheteClient
 
         # Temporarily set max_visible_branches to 2 to test scrolling with our 4 branches
         original_max = GoInteractiveMacheteClient._max_visible_branches
@@ -563,6 +564,8 @@ class TestGoInteractive(BaseTest):
 
         try:
             check_out("master")
+            initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+            assert initial_branch == "master"
 
             def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
                 # Read initial output
@@ -572,27 +575,41 @@ class TestGoInteractive(BaseTest):
                 # Only 2 branches should be visible initially (master, develop)
                 line1 = read_line_from_fd(stdout_read_fd)
                 line2 = read_line_from_fd(stdout_read_fd)
-                assert "master" in line1
-                assert "develop" in line2
+                initial_view = line1 + line2
+                assert "master" in initial_view
+                assert "develop" in initial_view
+                # feature-1 and feature-2 should NOT be visible initially
+                assert "feature-1" not in initial_view
+                assert "feature-2" not in initial_view
 
-                # Navigate down twice to feature-1 (index 2)
-                # This should trigger scrolling down
-                send_key(stdin_write_fd, KEY_DOWN)
-                send_key(stdin_write_fd, KEY_DOWN)
+                # Navigate down three times to feature-2 (index 3)
+                # This exercises both scrolling conditions as we go beyond the visible window
+                send_key(stdin_write_fd, KEY_DOWN)  # develop (index 1)
+                send_key(stdin_write_fd, KEY_DOWN)  # feature-1 (index 2) - triggers scroll down
+                send_key(stdin_write_fd, KEY_DOWN)  # feature-2 (index 3) - triggers scroll down again
 
-                # Navigate down once more to feature-2 (index 3)
-                send_key(stdin_write_fd, KEY_DOWN)
+                # Checkout feature-2 to verify scrolling worked (we reached the last branch)
+                send_key(stdin_write_fd, KEY_SPACE, sleep_time=0.5)
 
-                # Navigate back up to master (index 0)
-                # This should trigger scrolling up
-                send_key(stdin_write_fd, KEY_UP)
-                send_key(stdin_write_fd, KEY_UP)
-                send_key(stdin_write_fd, KEY_UP)
+                # Read checkout confirmation
+                checkout_msg = ""
+                for _ in range(10):
+                    try:
+                        line = read_line_from_fd(stdout_read_fd, timeout=0.5)
+                        checkout_msg += line
+                        if "Checked out" in line:
+                            break
+                    except TimeoutError:
+                        break
 
-                # Quit with Ctrl+C
-                send_key(stdin_write_fd, KEY_CTRL_C)
+                assert "Checked out" in checkout_msg
+                assert "feature-2" in checkout_msg
 
-            self.run_interactive_test(test_logic, mocker)
+            self.run_interactive_test(test_logic, mocker, timeout=3.0)
+
+            # Verify we checked out feature-2 (confirms scrolling worked)
+            current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+            assert current_branch == "feature-2"
         finally:
             # Restore original value
             GoInteractiveMacheteClient._max_visible_branches = original_max

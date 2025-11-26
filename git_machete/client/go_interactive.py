@@ -36,7 +36,7 @@ class GoInteractiveMacheteClient(MacheteClient):
     """Client for interactive branch selection using curses."""
 
     # Maximum number of branches to show at once (can be overridden in tests)
-    _max_visible_branches: int = 15
+    _max_visible_branches: int = 20
 
     def _get_branch_list_with_depths(self) -> List[Tuple[LocalBranchShortName, int]]:
         """Get a flat list of branches with their depths using DFS traversal."""
