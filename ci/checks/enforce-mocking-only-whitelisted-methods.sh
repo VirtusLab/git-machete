@@ -23,6 +23,9 @@ git_machete.utils.slurp_file
 os.path.isfile
 shutil.which
 sys.argv
+termios.tcgetattr
+termios.tcsetattr
+tty.setraw
 urllib.request.urlopen"
 actual_methods=$(git grep -Pho "(?<=self\.patch_symbol\(mocker, ['\"]).*?(?=['\"])" | LC_COLLATE=C sort -u)
 

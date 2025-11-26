@@ -9,6 +9,7 @@ from pytest_mock import MockerFixture
 
 from git_machete import cli
 
+from .base_test import BaseTest
 from .mockers import rewrite_branch_layout_file
 from .mockers_git_repository import check_out, commit, create_repo, new_branch
 
@@ -84,105 +85,10 @@ def read_line_from_fd(fd: int, timeout: float = 2.0) -> str:
     return ''
 
 
-def run_interactive_test(
-    test_func: Callable[[int, int], None],
-    mocker: MockerFixture,
-    timeout: float = 5.0
-) -> None:
-    """
-    Run an interactive test by executing git machete go in a thread with mocked stdin/stdout.
-
-    Args:
-        test_func: A function that takes (stdin_write_fd, stdout_read_fd) and performs the test
-        mocker: pytest-mock fixture for mocking
-        timeout: Maximum time to wait for the test to complete
-    """
-    # Create pipes for stdin and stdout
-    stdin_read_fd, stdin_write_fd = os.pipe()
-    stdout_read_fd, stdout_write_fd = os.pipe()
-
-    # Open file objects for all ends
-    stdin_read = os.fdopen(stdin_read_fd, 'r')
-    stdin_write_fd_obj = os.fdopen(stdin_write_fd, 'w')
-    stdout_read_fd_obj = os.fdopen(stdout_read_fd, 'r')
-    stdout_write = os.fdopen(stdout_write_fd, 'w', buffering=1)  # Line buffered
-
-    # Make stdout read end non-blocking
-    make_non_blocking(stdout_read_fd_obj.fileno())
-
-    # Mock termios operations since pipes don't support them
-    fake_termios_settings = ['fake_settings']
-
-    def mock_tcgetattr(fd: int) -> Any:  # noqa: U100
-        return fake_termios_settings
-
-    def mock_tcsetattr(fd: int, _when: int, _attributes: Any) -> None:  # noqa: U100
-        pass
-
-    def mock_setraw(fd: int) -> None:  # noqa: U100
-        pass
-
-    mocker.patch('termios.tcgetattr', side_effect=mock_tcgetattr)
-    mocker.patch('termios.tcsetattr', side_effect=mock_tcsetattr)
-    mocker.patch('tty.setraw', side_effect=mock_setraw)
-
-    # Result and exception containers
-    exception_container: Dict[str, Any] = {}
-
-    def run_git_machete_go() -> None:
-        """Run git machete go in a thread with replaced stdin/stdout."""
-        original_stdin = sys.stdin
-        original_stdout = sys.stdout
-        try:
-            sys.stdin = stdin_read
-            sys.stdout = stdout_write
-            # Run the CLI command
-            cli.launch(['go'])
-        except SystemExit as e:
-            # CLI may exit with sys.exit(), that's normal
-            if e.code != 0:
-                exception_container['error'] = e
-        except Exception as e:
-            exception_container['error'] = e
-            import traceback
-            traceback.print_exc()
-        finally:
-            sys.stdin = original_stdin
-            sys.stdout = original_stdout
-
-    # Start git machete go in a separate thread
-    thread = threading.Thread(target=run_git_machete_go, daemon=True)
-    thread.start()
-
-    # Give the thread a moment to start and write initial output
-    time.sleep(0.3)
-
-    try:
-        # Run the actual test
-        test_func(stdin_write_fd_obj.fileno(), stdout_read_fd_obj.fileno())
-
-        # Wait for thread to finish
-        thread.join(timeout=timeout)
-
-        # Check if thread is still running (timeout)
-        if thread.is_alive():
-            raise TimeoutError(f"Interactive test timed out after {timeout} seconds")
-
-        # Check for exceptions
-        if 'error' in exception_container:
-            raise exception_container['error']
-
-    finally:
-        # Clean up
-        stdin_read.close()
-        stdin_write_fd_obj.close()
-        stdout_read_fd_obj.close()
-        stdout_write.close()
-
-
-class TestGoInteractive:
+class TestGoInteractive(BaseTest):
     def setup_method(self) -> None:
         """Set up a standard 3-branch repository for each test."""
+        super().setup_method()
         create_repo()
         new_branch("master")
         commit()
@@ -198,6 +104,102 @@ class TestGoInteractive:
                     feature-1
             """
         rewrite_branch_layout_file(body)
+
+    def run_interactive_test(
+        self,
+        test_func: Callable[[int, int], None],
+        mocker: MockerFixture,
+        timeout: float = 5.0
+    ) -> None:
+        """
+        Run an interactive test by executing git machete go in a thread with mocked stdin/stdout.
+
+        Args:
+            test_func: A function that takes (stdin_write_fd, stdout_read_fd) and performs the test
+            mocker: pytest-mock fixture for mocking
+            timeout: Maximum time to wait for the test to complete
+        """
+        # Create pipes for stdin and stdout
+        stdin_read_fd, stdin_write_fd = os.pipe()
+        stdout_read_fd, stdout_write_fd = os.pipe()
+
+        # Open file objects for all ends
+        stdin_read = os.fdopen(stdin_read_fd, 'r')
+        stdin_write_fd_obj = os.fdopen(stdin_write_fd, 'w')
+        stdout_read_fd_obj = os.fdopen(stdout_read_fd, 'r')
+        stdout_write = os.fdopen(stdout_write_fd, 'w', buffering=1)  # Line buffered
+
+        # Make stdout read end non-blocking
+        make_non_blocking(stdout_read_fd_obj.fileno())
+
+        # Mock termios operations since pipes don't support them
+        fake_termios_settings = ['fake_settings']
+
+        def mock_tcgetattr(fd: int) -> Any:  # noqa: U100
+            return fake_termios_settings
+
+        def mock_tcsetattr(fd: int, _when: int, _attributes: Any) -> None:  # noqa: U100
+            pass
+
+        def mock_setraw(fd: int) -> None:  # noqa: U100
+            pass
+
+        self.patch_symbol(mocker, 'termios.tcgetattr', mock_tcgetattr)
+        self.patch_symbol(mocker, 'termios.tcsetattr', mock_tcsetattr)
+        self.patch_symbol(mocker, 'tty.setraw', mock_setraw)
+
+        # Result and exception containers
+        exception_container: Dict[str, Any] = {}
+
+        def run_git_machete_go() -> None:
+            """Run git machete go in a thread with replaced stdin/stdout."""
+            original_stdin = sys.stdin
+            original_stdout = sys.stdout
+            try:
+                sys.stdin = stdin_read
+                sys.stdout = stdout_write
+                # Run the CLI command
+                cli.launch(['go'])
+            except SystemExit as e:
+                # CLI may exit with sys.exit(), that's normal
+                if e.code != 0:
+                    exception_container['error'] = e
+            except Exception as e:
+                exception_container['error'] = e
+                import traceback
+                traceback.print_exc()
+            finally:
+                sys.stdin = original_stdin
+                sys.stdout = original_stdout
+
+        # Start git machete go in a separate thread
+        thread = threading.Thread(target=run_git_machete_go, daemon=True)
+        thread.start()
+
+        # Give the thread a moment to start and write initial output
+        time.sleep(0.3)
+
+        try:
+            # Run the actual test
+            test_func(stdin_write_fd_obj.fileno(), stdout_read_fd_obj.fileno())
+
+            # Wait for thread to finish
+            thread.join(timeout=timeout)
+
+            # Check if thread is still running (timeout)
+            if thread.is_alive():
+                raise TimeoutError(f"Interactive test timed out after {timeout} seconds")
+
+            # Check for exceptions
+            if 'error' in exception_container:
+                raise exception_container['error']
+
+        finally:
+            # Clean up
+            stdin_read.close()
+            stdin_write_fd_obj.close()
+            stdout_read_fd_obj.close()
+            stdout_write.close()
 
     def test_go_interactive_navigation_up_down(self, mocker: MockerFixture) -> None:
         """Test that up/down arrow keys navigate through branches."""
@@ -228,7 +230,7 @@ class TestGoInteractive:
             # Use Ctrl+C to quit
             send_key(stdin_write_fd, KEY_CTRL_C)
 
-        run_interactive_test(test_logic, mocker)
+        self.run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_left_arrow_parent(self, mocker: MockerFixture) -> None:
         """Test that left arrow navigates to parent branch."""
@@ -254,7 +256,7 @@ class TestGoInteractive:
             # Use Ctrl+C to quit
             send_key(stdin_write_fd, KEY_CTRL_C)
 
-        run_interactive_test(test_logic, mocker)
+        self.run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_right_arrow_child(self, mocker: MockerFixture) -> None:
         """Test that right arrow navigates to first child branch."""
@@ -280,7 +282,7 @@ class TestGoInteractive:
             # Use Ctrl+C to quit
             send_key(stdin_write_fd, KEY_CTRL_C)
 
-        run_interactive_test(test_logic, mocker)
+        self.run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_quit_without_checkout(self, mocker: MockerFixture) -> None:
         """Test that pressing Ctrl+C quits without checking out."""
@@ -303,7 +305,7 @@ class TestGoInteractive:
             # Press Ctrl+C to quit without checking out
             send_key(stdin_write_fd, KEY_CTRL_C)
 
-        run_interactive_test(test_logic, mocker)
+        self.run_interactive_test(test_logic, mocker)
 
         # Verify we're still on the initial branch
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
@@ -346,7 +348,7 @@ class TestGoInteractive:
             assert "Checked out" in checkout_msg, f"Expected 'Checked out' message but got: {repr(checkout_msg)}"
             assert "feature-1" in checkout_msg
 
-        run_interactive_test(test_logic, mocker, timeout=3.0)
+        self.run_interactive_test(test_logic, mocker, timeout=3.0)
 
         # Verify we're now on feature-1
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
@@ -391,7 +393,7 @@ class TestGoInteractive:
             # Use Ctrl+C to quit
             send_key(stdin_write_fd, KEY_CTRL_C)
 
-        run_interactive_test(test_logic, mocker)
+        self.run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_wrapping_navigation(self, mocker: MockerFixture) -> None:
         """Test that up/down arrow keys wrap around at the edges."""
@@ -432,7 +434,7 @@ class TestGoInteractive:
             # Use Ctrl+C to quit
             send_key(stdin_write_fd, KEY_CTRL_C)
 
-        run_interactive_test(test_logic, mocker)
+        self.run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_q_key_quit(self, mocker: MockerFixture) -> None:
         """Test that pressing 'q' or 'Q' quits without checking out."""
@@ -455,7 +457,7 @@ class TestGoInteractive:
             # Press 'q' to quit without checking out
             send_key(stdin_write_fd, 'q')
 
-        run_interactive_test(test_logic, mocker)
+        self.run_interactive_test(test_logic, mocker)
 
         # Verify we're still on the initial branch
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
@@ -486,4 +488,4 @@ class TestGoInteractive:
             # Quit with Ctrl+C to verify we can still exit
             send_key(stdin_write_fd, KEY_CTRL_C)
 
-        run_interactive_test(test_logic, mocker)
+        self.run_interactive_test(test_logic, mocker)
