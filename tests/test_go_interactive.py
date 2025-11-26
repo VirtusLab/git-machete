@@ -181,9 +181,8 @@ def run_interactive_test(
 
 
 class TestGoInteractive:
-    @staticmethod
-    def setup_standard_repo() -> None:
-        """Set up a standard 3-branch repository for testing."""
+    def setup_method(self) -> None:
+        """Set up a standard 3-branch repository for each test."""
         create_repo()
         new_branch("master")
         commit()
@@ -200,44 +199,8 @@ class TestGoInteractive:
             """
         rewrite_branch_layout_file(body)
 
-    @staticmethod
-    def setup_two_branch_repo() -> None:
-        """Set up a 2-branch repository for testing."""
-        create_repo()
-        new_branch("master")
-        commit()
-        new_branch("develop")
-        commit()
-
-        body: str = \
-            """
-            master
-                develop
-            """
-        rewrite_branch_layout_file(body)
-
-    @staticmethod
-    def setup_repo_with_annotations() -> None:
-        """Set up a 3-branch repository with annotations for testing."""
-        create_repo()
-        new_branch("master")
-        commit()
-        new_branch("develop")
-        commit()
-        new_branch("feature-1")
-        commit()
-
-        body: str = \
-            """
-            master
-                develop  PR #123 rebase=no
-                    feature-1  Work in progress
-            """
-        rewrite_branch_layout_file(body)
-
     def test_go_interactive_navigation_up_down(self, mocker: MockerFixture) -> None:
         """Test that up/down arrow keys navigate through branches."""
-        self.setup_standard_repo()
         check_out("develop")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
@@ -269,7 +232,6 @@ class TestGoInteractive:
 
     def test_go_interactive_left_arrow_parent(self, mocker: MockerFixture) -> None:
         """Test that left arrow navigates to parent branch."""
-        self.setup_standard_repo()
         check_out("feature-1")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
@@ -296,7 +258,6 @@ class TestGoInteractive:
 
     def test_go_interactive_right_arrow_child(self, mocker: MockerFixture) -> None:
         """Test that right arrow navigates to first child branch."""
-        self.setup_standard_repo()
         check_out("develop")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
@@ -323,7 +284,6 @@ class TestGoInteractive:
 
     def test_go_interactive_quit_without_checkout(self, mocker: MockerFixture) -> None:
         """Test that pressing Ctrl+C quits without checking out."""
-        self.setup_two_branch_repo()
         check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
 
@@ -333,6 +293,7 @@ class TestGoInteractive:
             assert "Select branch" in header
 
             # Read branch list
+            read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
 
@@ -350,7 +311,6 @@ class TestGoInteractive:
 
     def test_go_interactive_space_checkout(self, mocker: MockerFixture) -> None:
         """Test that pressing Space checks out the selected branch."""
-        self.setup_standard_repo()
         check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert initial_branch == "master"
@@ -394,7 +354,15 @@ class TestGoInteractive:
 
     def test_go_interactive_with_annotations(self, mocker: MockerFixture) -> None:
         """Test that branch annotations are displayed with proper formatting."""
-        self.setup_repo_with_annotations()
+        # Overwrite .git/machete with annotations
+        body: str = \
+            """
+            master
+                develop  PR #123 rebase=no
+                    feature-1  Work in progress
+            """
+        rewrite_branch_layout_file(body)
+
         check_out("master")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
@@ -427,7 +395,6 @@ class TestGoInteractive:
 
     def test_go_interactive_wrapping_navigation(self, mocker: MockerFixture) -> None:
         """Test that up/down arrow keys wrap around at the edges."""
-        self.setup_standard_repo()
         check_out("master")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
@@ -469,7 +436,6 @@ class TestGoInteractive:
 
     def test_go_interactive_q_key_quit(self, mocker: MockerFixture) -> None:
         """Test that pressing 'q' or 'Q' quits without checking out."""
-        self.setup_two_branch_repo()
         check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
 
@@ -479,6 +445,7 @@ class TestGoInteractive:
             assert "Select branch" in header
 
             # Read branch list
+            read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
 
@@ -496,7 +463,6 @@ class TestGoInteractive:
 
     def test_go_interactive_unknown_key_ignored(self, mocker: MockerFixture) -> None:
         """Test that unknown keys are ignored and don't break the interface."""
-        self.setup_two_branch_repo()
         check_out("master")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
@@ -505,6 +471,7 @@ class TestGoInteractive:
             assert "Select branch" in header
 
             # Read branch list
+            read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
 
