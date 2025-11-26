@@ -552,3 +552,47 @@ class TestGoInteractive(BaseTest):
             send_key(stdin_write_fd, KEY_CTRL_C)
 
         self.run_interactive_test(test_logic, mocker)
+
+    def test_go_interactive_scrolling(self, mocker: MockerFixture) -> None:
+        """Test that scrolling works when there are more branches than fit on screen."""
+        from git_machete.client.go_interactive import GoInteractiveMacheteClient
+
+        # Temporarily set max_visible_branches to 2 to test scrolling with our 4 branches
+        original_max = GoInteractiveMacheteClient._max_visible_branches
+        GoInteractiveMacheteClient._max_visible_branches = 2
+
+        try:
+            check_out("master")
+
+            def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
+                # Read initial output
+                header = read_line_from_fd(stdout_read_fd)
+                assert "Select branch" in header
+
+                # Only 2 branches should be visible initially (master, develop)
+                line1 = read_line_from_fd(stdout_read_fd)
+                line2 = read_line_from_fd(stdout_read_fd)
+                assert "master" in line1
+                assert "develop" in line2
+
+                # Navigate down twice to feature-1 (index 2)
+                # This should trigger scrolling down
+                send_key(stdin_write_fd, KEY_DOWN)
+                send_key(stdin_write_fd, KEY_DOWN)
+
+                # Navigate down once more to feature-2 (index 3)
+                send_key(stdin_write_fd, KEY_DOWN)
+
+                # Navigate back up to master (index 0)
+                # This should trigger scrolling up
+                send_key(stdin_write_fd, KEY_UP)
+                send_key(stdin_write_fd, KEY_UP)
+                send_key(stdin_write_fd, KEY_UP)
+
+                # Quit with Ctrl+C
+                send_key(stdin_write_fd, KEY_CTRL_C)
+
+            self.run_interactive_test(test_logic, mocker)
+        finally:
+            # Restore original value
+            GoInteractiveMacheteClient._max_visible_branches = original_max

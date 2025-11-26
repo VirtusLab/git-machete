@@ -35,6 +35,9 @@ KEY_CTRL_C = '\x03'
 class GoInteractiveMacheteClient(MacheteClient):
     """Client for interactive branch selection using curses."""
 
+    # Maximum number of branches to show at once (can be overridden in tests)
+    _max_visible_branches: int = 15
+
     def _get_branch_list_with_depths(self) -> List[Tuple[LocalBranchShortName, int]]:
         """Get a flat list of branches with their depths using DFS traversal."""
         result: List[Tuple[LocalBranchShortName, int]] = []
@@ -63,7 +66,7 @@ class GoInteractiveMacheteClient(MacheteClient):
 
     def _draw_screen(self, managed_branches_with_depths: List[Tuple[LocalBranchShortName, int]], *,
                      selected_idx: int, current_branch: LocalBranchShortName, scroll_offset: int,
-                     max_visible_branches: int, num_lines_drawn: int, is_first_draw: bool) -> int:
+                     num_lines_drawn: int, is_first_draw: bool) -> int:
         """Draw the branch selection screen using ANSI escape codes."""
         # Move cursor up to the start of our display area (if we've drawn before)
         if not is_first_draw and num_lines_drawn > 0:
@@ -78,7 +81,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         sys.stdout.write(bold(header_text) + '\n')
 
         # Adjust scroll offset if needed
-        visible_lines = min(max_visible_branches, len(managed_branches_with_depths))
+        visible_lines = min(self._max_visible_branches, len(managed_branches_with_depths))
         if selected_idx < scroll_offset:
             scroll_offset = selected_idx
         elif selected_idx >= scroll_offset + visible_lines:
@@ -130,7 +133,6 @@ class GoInteractiveMacheteClient(MacheteClient):
             selected_idx = 0
             warn(f"current branch {current_branch} is unmanaged")
 
-        max_visible_branches = 15  # Maximum number of branches to show at once
         scroll_offset = 0
         num_lines_drawn = 0
         is_first_draw = True
@@ -142,7 +144,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         try:
             while True:
                 # Calculate how many lines we'll draw (header + visible branches)
-                visible_lines = min(max_visible_branches, len(managed_branches_with_depths))
+                visible_lines = min(self._max_visible_branches, len(managed_branches_with_depths))
                 num_lines_drawn = visible_lines + 1  # +1 for header
 
                 scroll_offset = self._draw_screen(
@@ -150,7 +152,6 @@ class GoInteractiveMacheteClient(MacheteClient):
                     selected_idx=selected_idx,
                     current_branch=current_branch,
                     scroll_offset=scroll_offset,
-                    max_visible_branches=max_visible_branches,
                     num_lines_drawn=num_lines_drawn,
                     is_first_draw=is_first_draw
                 )
