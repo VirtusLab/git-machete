@@ -17,6 +17,7 @@ from git_machete.client.base import MacheteClient, SquashMergeDetection
 from git_machete.client.diff import DiffMacheteClient
 from git_machete.client.discover import DiscoverMacheteClient
 from git_machete.client.fork_point import ForkPointMacheteClient
+from git_machete.client.go_interactive import GoInteractiveMacheteClient
 from git_machete.client.go_show import GoShowMacheteClient
 from git_machete.client.log import LogMacheteClient
 from git_machete.client.slide_out import SlideOutMacheteClient
@@ -153,10 +154,6 @@ def create_cli_parser() -> argparse.ArgumentParser:
                 print(f"{message.replace(', request_id', '')}\nPossible values for subcommand are: "
                       "anno-mrs, checkout-mrs, create-mr, restack-mr, retarget-mr, update-mr-descriptions", file=sys.stderr)
                 self.exit(2)
-            elif "the following arguments are required: go direction" in message:
-                print(f"{message}\nPossible values for go direction are: "
-                      f"d, down, f, first, l, last, n, next, p, prev, r, root, u, up", file=sys.stderr)
-                self.exit(2)
             elif "the following arguments are required: show direction" in message:
                 print(f"{message}\nPossible values for show direction are: "
                       f"c, current, d, down, f, first, l, last, n, next, p, prev, r, root, u, up", file=sys.stderr)
@@ -259,7 +256,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     add_code_hosting_parser('gitlab', 'mr', include_sync=False)
 
     go_parser = create_subparser('go', alias='g')
-    go_parser.add_argument('direction', metavar='go direction', choices=[
+    go_parser.add_argument('direction', nargs='?', default=None, metavar='go direction', choices=[
         'd', 'down', 'f', 'first', 'l', 'last', 'n', 'next',
         'p', 'prev', 'r', 'root', 'u', 'up']
     )
@@ -691,16 +688,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 fork_point_client.unset_fork_point_override(branch)
             else:
                 print(fork_point_client.fork_point(branch=branch, use_overrides=True))
-        elif cmd in {"go", alias_by_command["go"]}:
-            go_client = GoShowMacheteClient(git)
-            go_client.read_branch_layout_file()
-            git.expect_no_operation_in_progress()
-            current_branch = git.get_current_branch()
-            # with pick_if_multiple=True, there returned list will have exactly one element
-            dest = go_client.parse_direction(parsed_cli.direction, branch=current_branch, allow_current=False, pick_if_multiple=True)[0]
-            if dest != current_branch:
-                git.checkout(dest)
-        elif cmd in ("github", "gitlab"):
+        elif cmd in {"github", "gitlab"}:
             subcommand = parsed_cli.subcommand
             spec = GITHUB_CLIENT_SPEC if cmd == "github" else GITLAB_CLIENT_SPEC
             pr_or_mr = spec.pr_short_name.lower()
@@ -782,6 +770,26 @@ def launch_internal(orig_args: List[str]) -> None:
                     all=cli_opts.opt_all, by=cli_opts.opt_by, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
             else:  # an unknown subcommand is handled by argparse
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")
+        elif cmd in {"go", alias_by_command["go"]}:
+            git.expect_no_operation_in_progress()
+            current_branch = git.get_current_branch()
+
+            if parsed_cli.direction is not None:
+                go_client = GoShowMacheteClient(git)
+                go_client.read_branch_layout_file()
+                # with pick_if_multiple=True, there returned list will have exactly one element
+                dest = go_client.parse_direction(parsed_cli.direction, branch=current_branch, allow_current=False, pick_if_multiple=True)[0]
+                if dest != current_branch:
+                    git.checkout(dest)
+            else:
+                interactive_client = GoInteractiveMacheteClient(git)
+                interactive_client.read_branch_layout_file()
+                interactive_client.expect_at_least_one_managed_branch()
+                dest_ = interactive_client.go_interactive()
+                if dest_ is not None and dest_ != current_branch:
+                    print(f"Checking out {bold(dest_)}... ", end='', flush=True)
+                    git.checkout(dest_)
+                    print(fmt('<green><b>OK</b></green>'))
         elif cmd == "is-managed":
             is_managed_client = MacheteClient(git)
             is_managed_client.read_branch_layout_file()
@@ -951,7 +959,7 @@ def main() -> None:
         launch(sys.argv[1:])
     except EOFError:  # pragma: no cover
         sys.exit(ExitCode.END_OF_FILE_SIGNAL)
-    except KeyboardInterrupt:  # pragma: no cover
+    except KeyboardInterrupt:
         sys.exit(ExitCode.KEYBOARD_INTERRUPT)
     except (MacheteException, UnderlyingGitException) as e:
         print(e, file=sys.stderr)

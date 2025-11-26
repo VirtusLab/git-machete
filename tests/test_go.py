@@ -466,14 +466,6 @@ class TestGo(BaseTest):
           * git machete gitlab checkout-mrs --mine"""
         assert_failure(["g", "root"], expected_error_message)
 
-    def test_go_missing_direction(self) -> None:
-        output, e = launch_command_capturing_output_and_exception("go")
-        assert output == \
-            "the following arguments are required: go direction\n" \
-            "Possible values for go direction are: d, down, f, first, l, last, n, next, p, prev, r, root, u, up\n"
-        assert type(e) is SystemExit
-        assert e.code == ExitCode.ARGUMENT_ERROR
-
     def test_go_with_worktree(self) -> None:
         """Test that go fails gracefully when target branch is checked out in a worktree."""
         if get_git_version() < (2, 5):

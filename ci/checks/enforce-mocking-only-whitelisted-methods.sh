@@ -18,11 +18,15 @@ git_machete.utils._popen_cmd
 git_machete.utils._run_cmd
 git_machete.utils.find_executable
 git_machete.utils.get_current_date
+git_machete.utils.get_terminal_height
 git_machete.utils.is_stdout_a_tty
 git_machete.utils.slurp_file
 os.path.isfile
 shutil.which
 sys.argv
+termios.tcgetattr
+termios.tcsetattr
+tty.setraw
 urllib.request.urlopen"
 actual_methods=$(git grep -Pho "(?<=self\.patch_symbol\(mocker, ['\"]).*?(?=['\"])" | LC_COLLATE=C sort -u)
 

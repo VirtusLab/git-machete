@@ -27,9 +27,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Nov 20, 2025" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Nov 26, 2025" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.37.2
+git-machete \- git-machete 3.38.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -85,7 +85,7 @@ git machete commands and help topics:
 .IP \(bu 2
 \fI\%gitlab\fP           \-\- Create, check out and manage GitLab MRs while keeping them reflected in git machete
 .IP \(bu 2
-\fI\%go\fP               \-\- Check out the branch relative to the position of the current branch, accepts down/first/last/next/root/prev/up argument
+\fI\%go\fP               \-\- Check out the branch relative to the position of the current branch, or interactively select a branch
 .IP \(bu 2
 \fI\%help\fP             \-\- Display this overview, or detailed help for a specified command
 .IP \(bu 2
@@ -99,7 +99,7 @@ git machete commands and help topics:
 .IP \(bu 2
 \fI\%reapply\fP          \-\- Rebase the current branch onto its computed fork point
 .IP \(bu 2
-\fI\%show\fP             \-\- Show name(s) of the branch(es) relative to the position of a branch, accepts down/first/last/next/root/prev/up argument
+\fI\%show\fP             \-\- Show name(s) of the branch(es) relative to the position of a branch
 .IP \(bu 2
 \fI\%slide\-out\fP        \-\- Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge
 .IP \(bu 2
@@ -1453,14 +1453,34 @@ GitLab API token.
 .INDENT 3.5
 .sp
 .EX
-git machete g[o] <direction>
+git machete g[o] [<direction>]
 .EE
 .UNINDENT
 .UNINDENT
 .sp
 where <direction> is one of: \fBd[own]\fP, \fBf[irst]\fP, \fBl[ast]\fP, \fBn[ext]\fP, \fBp[rev]\fP, \fBr[oot]\fP, \fBu[p]\fP
 .sp
-Check out the branch specified by the given direction relative to the current branch:
+If \fB<direction>\fP is not provided, an interactive mode is launched where you can navigate the branch tree using arrow keys and select a branch to check out.
+.sp
+\fBInteractive mode controls:\fP
+.INDENT 0.0
+.IP \(bu 2
+\fB↑/↓\fP: Navigate up/down through branches
+.IP \(bu 2
+\fBShift+↑\fP: Jump to the first branch
+.IP \(bu 2
+\fBShift+↓\fP: Jump to the last branch
+.IP \(bu 2
+\fB←\fP: Jump to the parent branch of the currently selected branch
+.IP \(bu 2
+\fB→\fP: Jump to the first child branch of the currently selected branch
+.IP \(bu 2
+\fBEnter or Space\fP: Check out the selected branch
+.IP \(bu 2
+\fBq or Ctrl+C\fP: Quit without checking out
+.UNINDENT
+.sp
+If \fB<direction>\fP is provided, checks out the branch specified by the given direction relative to the current branch:
 .INDENT 0.0
 .IP \(bu 2
 \fBdown\fP:    the direct children/downstream branch of the current branch.
@@ -1482,7 +1502,7 @@ since all branches are usually meant to be ultimately merged to one of those.
 \fBup\fP:      the direct parent/upstream branch of the current branch.
 .UNINDENT
 .sp
-Roughly equivalent to \fBgit checkout $(git machete show <direction>)\fP\&.
+This is roughly equivalent to \fBgit checkout $(git machete show <direction>)\fP\&.
 .SH HELP
 .sp
 \fBUsage:\fP
