@@ -297,14 +297,13 @@ class MacheteClientWithCodeHosting(MacheteClient):
             print(fmt(colored_yes_no(base_branch_found_on_remote)))
 
         # Check head branch first - fail fast if it was removed from remote
-        if not head_branch_found_on_remote:
-            # Branch was pushed before but has been removed from remote
-            # (sync_before_creating_pull_request ensures the branch is pushed, so if it's missing here, it must have been removed)
-            if remote_head_branch_exists_locally:
-                raise MacheteException(
-                    f"{spec.head_branch_name.capitalize()} branch {bold(head)} "
-                    f"has been removed from {bold(head_org_repo_remote.remote)} remote since the last fetch/push.\n"
-                    f"Do you really want to create {spec.pr_short_name_article} {spec.pr_short_name} for this branch?")
+        # Branch was pushed before but has been removed from remote
+        # (sync_before_creating_pull_request ensures the branch is pushed, so if it's missing here, it must have been removed)
+        if not head_branch_found_on_remote and remote_head_branch_exists_locally:
+            raise MacheteException(
+                f"{spec.head_branch_name.capitalize()} branch {bold(head)} "
+                f"has been removed from {bold(head_org_repo_remote.remote)} remote since the last fetch/push.\n"
+                f"Do you really want to create {spec.pr_short_name_article} {spec.pr_short_name} for this branch?")
 
         # Check base branch - fail fast if it was removed from remote
         if not base_branch_found_on_remote and remote_base_branch_exists_locally:
