@@ -171,18 +171,13 @@ class GoInteractiveMacheteClient(MacheteClient):
                     selected_branch, _ = managed_branches_with_depths[selected_idx]
                     parent_branch = self.up_branch_for(selected_branch)
                     if parent_branch:
-                        parent_idx = index_or_none(self.managed_branches, parent_branch)
-                        if parent_idx is not None:
-                            selected_idx = parent_idx
+                        selected_idx = self.managed_branches.index(parent_branch)
                 elif key == KEY_RIGHT:
                     # Go to first child
                     selected_branch, _ = managed_branches_with_depths[selected_idx]
                     child_branches = self.down_branches_for(selected_branch)
                     if child_branches:
-                        first_child = child_branches[0]
-                        child_idx = index_or_none(self.managed_branches, first_child)
-                        if child_idx is not None:
-                            selected_idx = child_idx
+                        selected_idx = self.managed_branches.index(child_branches[0])
                 elif key in KEY_ENTER or key == KEY_SPACE:
                     selected_branch, _ = managed_branches_with_depths[selected_idx]
                     return selected_branch
