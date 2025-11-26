@@ -111,30 +111,34 @@ class TestGoInteractive(BaseTest):
 
     def run_interactive_test(
         self,
-        test_func: Callable[[int, int], None],
+        test_func: Callable[[int, int, int], None],
         mocker: MockerFixture,
         timeout: float = 5.0
     ) -> None:
         """
-        Run an interactive test by executing git machete go in a thread with mocked stdin/stdout.
+        Run an interactive test by executing git machete go in a thread with mocked stdin/stdout/stderr.
 
         Args:
-            test_func: A function that takes (stdin_write_fd, stdout_read_fd) and performs the test
+            test_func: A function that takes (stdin_write_fd, stdout_read_fd, stderr_read_fd) and performs the test
             mocker: pytest-mock fixture for mocking
             timeout: Maximum time to wait for the test to complete
         """
-        # Create pipes for stdin and stdout
+        # Create pipes for stdin, stdout, and stderr
         stdin_read_fd, stdin_write_fd = os.pipe()
         stdout_read_fd, stdout_write_fd = os.pipe()
+        stderr_read_fd, stderr_write_fd = os.pipe()
 
         # Open file objects for all ends
         stdin_read = os.fdopen(stdin_read_fd, 'r')
         stdin_write_fd_obj = os.fdopen(stdin_write_fd, 'w')
         stdout_read_fd_obj = os.fdopen(stdout_read_fd, 'r')
         stdout_write = os.fdopen(stdout_write_fd, 'w', buffering=1)  # Line buffered
+        stderr_read_fd_obj = os.fdopen(stderr_read_fd, 'r')
+        stderr_write = os.fdopen(stderr_write_fd, 'w', buffering=1)  # Line buffered
 
-        # Make stdout read end non-blocking
+        # Make stdout and stderr read ends non-blocking
         make_non_blocking(stdout_read_fd_obj.fileno())
+        make_non_blocking(stderr_read_fd_obj.fileno())
 
         # Mock termios operations since pipes don't support them
         fake_termios_settings = ['fake_settings']
@@ -156,12 +160,14 @@ class TestGoInteractive(BaseTest):
         exception_container: Dict[str, Any] = {}
 
         def run_git_machete_go() -> None:
-            """Run git machete go in a thread with replaced stdin/stdout."""
+            """Run git machete go in a thread with replaced stdin/stdout/stderr."""
             original_stdin = sys.stdin
             original_stdout = sys.stdout
+            original_stderr = sys.stderr
             try:
                 sys.stdin = stdin_read
                 sys.stdout = stdout_write
+                sys.stderr = stderr_write
                 # Run the CLI command
                 cli.launch(['go'])
             except SystemExit as e:
@@ -175,6 +181,7 @@ class TestGoInteractive(BaseTest):
             finally:
                 sys.stdin = original_stdin
                 sys.stdout = original_stdout
+                sys.stderr = original_stderr
 
         # Start git machete go in a separate thread
         thread = threading.Thread(target=run_git_machete_go, daemon=True)
@@ -185,7 +192,7 @@ class TestGoInteractive(BaseTest):
 
         try:
             # Run the actual test
-            test_func(stdin_write_fd_obj.fileno(), stdout_read_fd_obj.fileno())
+            test_func(stdin_write_fd_obj.fileno(), stdout_read_fd_obj.fileno(), stderr_read_fd_obj.fileno())
 
             # Wait for thread to finish
             thread.join(timeout=timeout)
@@ -204,12 +211,14 @@ class TestGoInteractive(BaseTest):
             stdin_write_fd_obj.close()
             stdout_read_fd_obj.close()
             stdout_write.close()
+            stderr_read_fd_obj.close()
+            stderr_write.close()
 
     def test_go_interactive_navigation_up_down(self, mocker: MockerFixture) -> None:
         """Test that up/down arrow keys navigate through branches."""
         check_out("develop")
 
-        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
             # Read initial interface output
             header = read_line_from_fd(stdout_read_fd)
             assert "Select branch" in header
@@ -242,7 +251,7 @@ class TestGoInteractive(BaseTest):
         """Test that left arrow navigates to parent branch (not just up), and does nothing on root."""
         check_out("feature-2")
 
-        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
             # Read initial output
             header = read_line_from_fd(stdout_read_fd)
             assert "Select branch" in header
@@ -276,7 +285,7 @@ class TestGoInteractive(BaseTest):
         """Test that right arrow navigates to first child branch (not just down)."""
         check_out("develop")
 
-        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
             # Read initial output
             header = read_line_from_fd(stdout_read_fd)
             assert "Select branch" in header
@@ -311,7 +320,7 @@ class TestGoInteractive(BaseTest):
         check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
 
-        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
             # Read initial output
             header = read_line_from_fd(stdout_read_fd)
             assert "Select branch" in header
@@ -340,7 +349,7 @@ class TestGoInteractive(BaseTest):
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert initial_branch == "master"
 
-        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
             # Read initial output
             header = read_line_from_fd(stdout_read_fd)
             assert "Select branch" in header
@@ -391,7 +400,7 @@ class TestGoInteractive(BaseTest):
 
         check_out("master")
 
-        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
             # Read initial output
             header = read_line_from_fd(stdout_read_fd)
             assert "Select branch" in header
@@ -423,7 +432,7 @@ class TestGoInteractive(BaseTest):
         """Test that up/down arrow keys wrap around at the edges."""
         check_out("master")
 
-        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
             # Read initial output
             header = read_line_from_fd(stdout_read_fd)
             assert "Select branch" in header
@@ -466,7 +475,7 @@ class TestGoInteractive(BaseTest):
         check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
 
-        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
             # Read initial output
             header = read_line_from_fd(stdout_read_fd)
             assert "Select branch" in header
@@ -493,7 +502,7 @@ class TestGoInteractive(BaseTest):
         """Test that unknown keys are ignored and don't break the interface."""
         check_out("master")
 
-        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
             # Read initial output
             header = read_line_from_fd(stdout_read_fd)
             assert "Select branch" in header
@@ -514,6 +523,32 @@ class TestGoInteractive(BaseTest):
             send_key(stdin_write_fd, KEY_DOWN)
 
             # Quit with Ctrl+C to verify we can still exit
+            send_key(stdin_write_fd, KEY_CTRL_C)
+
+        self.run_interactive_test(test_logic, mocker)
+
+    def test_go_interactive_unmanaged_current_branch(self, mocker: MockerFixture) -> None:
+        """Test that when current branch is unmanaged, a warning is shown and selection starts at first branch."""
+        # Create an unmanaged branch (not in .git/machete)
+        new_branch("unmanaged")
+        commit()
+        check_out("unmanaged")
+
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:
+            # Read the warning from stderr
+            warning = read_line_from_fd(stderr_read_fd)
+            assert "current branch unmanaged is unmanaged" in warning
+
+            # Read initial output
+            header = read_line_from_fd(stdout_read_fd)
+            assert "Select branch" in header
+
+            # Read branch list - first branch should be selected (no * marker since unmanaged is current)
+            line1 = read_line_from_fd(stdout_read_fd)
+            # The first branch (master) should be highlighted
+            assert "master" in line1
+
+            # Quit with Ctrl+C
             send_key(stdin_write_fd, KEY_CTRL_C)
 
         self.run_interactive_test(test_logic, mocker)

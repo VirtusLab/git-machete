@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple
 
 from git_machete.client.base import MacheteClient
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import bold
+from git_machete.utils import bold, warn
 
 # ANSI escape sequences for terminal control
 ANSI_ESCAPE = '\x1b'
@@ -126,10 +126,15 @@ class GoInteractiveMacheteClient(MacheteClient):
         """Run the interactive interface and return the selected branch or None."""
         # Find initial selection (current branch)
         selected_idx = 0
+        current_branch_found = False
         for i, (branch, _) in enumerate(branches_with_depths):
             if branch == current_branch:
                 selected_idx = i
+                current_branch_found = True
                 break
+
+        if not current_branch_found:
+            warn(f"current branch {current_branch} is unmanaged")
 
         max_visible_branches = 15  # Maximum number of branches to show at once
         scroll_offset = 0
