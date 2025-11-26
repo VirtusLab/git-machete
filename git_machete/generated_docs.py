@@ -987,6 +987,8 @@ long_docs: Dict[str, str] = {
         <b>Interactive mode controls:</b>
 
            * <b>↑/↓</b>: Navigate up/down through branches
+           * <b>Shift+↑</b>: Jump to the first branch
+           * <b>Shift+↓</b>: Jump to the last branch
            * <b>←</b>: Jump to the parent branch of the currently selected branch
            * <b>→</b>: Jump to the first child branch of the currently selected branch
            * <b>Enter or Space</b>: Check out the selected branch

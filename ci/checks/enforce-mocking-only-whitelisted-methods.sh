@@ -8,6 +8,7 @@ self_name=$(basename "$0")
 # see https://github.com/coveragepy/coveragepy/issues/2083#issuecomment-3521840036
 whitelisted_methods="\
 builtins.input
+git_machete.client.go_interactive.GoInteractiveMacheteClient.MAX_VISIBLE_BRANCHES
 git_machete.code_hosting.OrganizationAndRepository.from_url
 git_machete.git_operations.GitContext.fetch_remote
 git_machete.github.GitHubClient.MAX_PULLS_PER_PAGE_COUNT

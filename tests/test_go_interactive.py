@@ -250,6 +250,81 @@ class TestGoInteractive(BaseTest):
 
         self.run_interactive_test(test_logic, mocker)
 
+    def test_go_interactive_shift_arrows_jump(self, mocker: MockerFixture) -> None:
+        """Test that Shift+Up/Down jumps to first/last branch."""
+        check_out("develop")
+
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
+            # Read initial output (should start on develop)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+
+            # Press Shift+Down to jump to last branch (feature-2)
+            send_key(stdin_write_fd, KEY_SHIFT_DOWN)
+
+            # Press Space to checkout feature-2
+            send_key(stdin_write_fd, KEY_SPACE, sleep_time=0.5)
+
+            # Read checkout confirmation
+            checkout_msg = ""
+            for _ in range(10):
+                try:
+                    line = read_line_from_fd(stdout_read_fd, timeout=0.5)
+                    checkout_msg += line
+                    if "OK" in line:
+                        break
+                except TimeoutError:
+                    break
+
+            assert "Checking out" in checkout_msg
+            assert "feature-2" in checkout_msg
+            assert "OK" in checkout_msg
+
+        self.run_interactive_test(test_logic, mocker, timeout=3.0)
+
+        # Verify we checked out feature-2 (the last branch)
+        current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert current_branch == "feature-2"
+
+        # Now test Shift+Up to jump to first branch (master)
+        def test_logic_shift_up(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
+            # Read initial output (should start on feature-2)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+
+            # Press Shift+Up to jump to first branch (master)
+            send_key(stdin_write_fd, KEY_SHIFT_UP)
+
+            # Press Space to checkout master
+            send_key(stdin_write_fd, KEY_SPACE, sleep_time=0.5)
+
+            # Read checkout confirmation
+            checkout_msg = ""
+            for _ in range(10):
+                try:
+                    line = read_line_from_fd(stdout_read_fd, timeout=0.5)
+                    checkout_msg += line
+                    if "OK" in line:
+                        break
+                except TimeoutError:
+                    break
+
+            assert "Checking out" in checkout_msg
+            assert "master" in checkout_msg
+            assert "OK" in checkout_msg
+
+        self.run_interactive_test(test_logic_shift_up, mocker, timeout=3.0)
+
+        # Verify we checked out master (the first branch)
+        current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert current_branch == "master"
+
     def test_go_interactive_left_arrow_parent(self, mocker: MockerFixture) -> None:
         """Test that left arrow navigates to parent branch (not just up), and does nothing on root."""
         check_out("feature-2")
@@ -562,150 +637,35 @@ class TestGoInteractive(BaseTest):
     @pytest.mark.skipif(sys.version_info < (3, 10), reason="Test times out in CI on Python < 3.10")
     def test_go_interactive_scrolling_down(self, mocker: MockerFixture) -> None:
         """Test that scrolling works when there are more branches than fit on screen."""
-        from git_machete.client.go_interactive import \
-            GoInteractiveMacheteClient
+        # Set max_visible_branches to 2 to test scrolling with our 4 branches
+        self.patch_symbol(mocker, 'git_machete.client.go_interactive.GoInteractiveMacheteClient.MAX_VISIBLE_BRANCHES', 2)
 
-        # Temporarily set max_visible_branches to 2 to test scrolling with our 4 branches
-        original_max = GoInteractiveMacheteClient._max_visible_branches
-        GoInteractiveMacheteClient._max_visible_branches = 2
-
-        try:
-            check_out("master")
-            initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
-            assert initial_branch == "master"
-
-            def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
-                # Read initial output
-                header = read_line_from_fd(stdout_read_fd)
-                assert "Select branch" in header
-
-                # Only 2 branches should be visible initially (master, develop)
-                line1 = read_line_from_fd(stdout_read_fd)
-                line2 = read_line_from_fd(stdout_read_fd)
-                initial_view = line1 + line2
-                assert "master" in initial_view
-                assert "develop" in initial_view
-                # feature-1 and feature-2 should NOT be visible initially
-                assert "feature-1" not in initial_view
-                assert "feature-2" not in initial_view
-
-                # Navigate down three times to feature-2 (index 3)
-                # This exercises both scrolling conditions as we go beyond the visible window
-                send_key(stdin_write_fd, KEY_DOWN)  # develop (index 1)
-                send_key(stdin_write_fd, KEY_DOWN)  # feature-1 (index 2) - triggers scroll down
-                send_key(stdin_write_fd, KEY_DOWN)  # feature-2 (index 3) - triggers scroll down again
-
-                # Checkout feature-2 to verify scrolling worked (we reached the last branch)
-                send_key(stdin_write_fd, KEY_SPACE, sleep_time=0.5)
-
-                # Read checkout confirmation
-                checkout_msg = ""
-                for _ in range(10):
-                    try:
-                        line = read_line_from_fd(stdout_read_fd, timeout=0.5)
-                        checkout_msg += line
-                        if "OK" in line:
-                            break
-                    except TimeoutError:
-                        break
-
-                assert "Checking out" in checkout_msg
-                assert "feature-2" in checkout_msg
-                assert "OK" in checkout_msg
-
-            self.run_interactive_test(test_logic, mocker, timeout=3.0)
-
-            # Verify we checked out feature-2 (confirms scrolling worked)
-            current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
-            assert current_branch == "feature-2"
-        finally:
-            # Restore original value
-            GoInteractiveMacheteClient._max_visible_branches = original_max
-
-    # This test times out in CI on Python < 3.10, but it's hard to reproduce locally.
-    # Skipping on older Python versions to avoid CI failures.
-    @pytest.mark.skipif(sys.version_info < (3, 10), reason="Test times out in CI on Python < 3.10")
-    def test_go_interactive_scrolling_up(self, mocker: MockerFixture) -> None:
-        """Test that scrolling up works when starting from a branch that requires initial scroll offset."""
-        from git_machete.client.go_interactive import \
-            GoInteractiveMacheteClient
-
-        # Temporarily set max_visible_branches to 2 to test scrolling with our 4 branches
-        original_max = GoInteractiveMacheteClient._max_visible_branches
-        GoInteractiveMacheteClient._max_visible_branches = 2
-
-        try:
-            # Start from feature-2 (index 3) - this should start with scroll_offset = 2
-            # so that feature-1 and feature-2 are visible
-            check_out("feature-2")
-            initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
-            assert initial_branch == "feature-2"
-
-            def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
-                # Read initial output
-                header = read_line_from_fd(stdout_read_fd)
-                assert "Select branch" in header
-
-                # With max_visible_branches=2 and starting on feature-2 (index 3),
-                # the initial view should show feature-1 and feature-2 (scroll_offset=2)
-                line1 = read_line_from_fd(stdout_read_fd)
-                line2 = read_line_from_fd(stdout_read_fd)
-                initial_view = line1 + line2
-                assert "feature-1" in initial_view
-                assert "feature-2" in initial_view
-                # master and develop should NOT be visible initially
-                assert "master" not in initial_view
-                assert "develop" not in initial_view
-
-                # Navigate up multiple times - this should trigger scrolling up
-                # (the `if selected_idx < scroll_offset` condition)
-                send_key(stdin_write_fd, KEY_UP)  # feature-1 (index 2) - still visible
-                send_key(stdin_write_fd, KEY_UP)  # develop (index 1) - triggers scroll up!
-                send_key(stdin_write_fd, KEY_UP)  # master (index 0) - triggers scroll up again!
-
-                # Checkout master to verify we scrolled up correctly and reached the top
-                send_key(stdin_write_fd, KEY_SPACE, sleep_time=0.5)
-
-                # Read checkout confirmation
-                checkout_msg = ""
-                for _ in range(10):
-                    try:
-                        line = read_line_from_fd(stdout_read_fd, timeout=0.5)
-                        checkout_msg += line
-                        if "OK" in line:
-                            break
-                    except TimeoutError:
-                        break
-
-                assert "Checking out" in checkout_msg
-                assert "master" in checkout_msg
-                assert "OK" in checkout_msg
-
-            self.run_interactive_test(test_logic, mocker, timeout=3.0)
-
-            # Verify we checked out master (confirms scrolling up worked)
-            current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
-            assert current_branch == "master"
-        finally:
-            # Restore original value
-            GoInteractiveMacheteClient._max_visible_branches = original_max
-
-    def test_go_interactive_shift_arrows_jump(self, mocker: MockerFixture) -> None:
-        """Test that Shift+Up/Down jumps to first/last branch."""
-        check_out("develop")
+        check_out("master")
+        initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert initial_branch == "master"
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
-            # Read initial output (should start on develop)
-            read_line_from_fd(stdout_read_fd)
-            read_line_from_fd(stdout_read_fd)
-            read_line_from_fd(stdout_read_fd)
-            read_line_from_fd(stdout_read_fd)
-            read_line_from_fd(stdout_read_fd)
+            # Read initial output
+            header = read_line_from_fd(stdout_read_fd)
+            assert "Select branch" in header
 
-            # Press Shift+Down to jump to last branch (feature-2)
-            send_key(stdin_write_fd, KEY_SHIFT_DOWN)
+            # Only 2 branches should be visible initially (master, develop)
+            line1 = read_line_from_fd(stdout_read_fd)
+            line2 = read_line_from_fd(stdout_read_fd)
+            initial_view = line1 + line2
+            assert "master" in initial_view
+            assert "develop" in initial_view
+            # feature-1 and feature-2 should NOT be visible initially
+            assert "feature-1" not in initial_view
+            assert "feature-2" not in initial_view
 
-            # Press Space to checkout feature-2
+            # Navigate down three times to feature-2 (index 3)
+            # This exercises both scrolling conditions as we go beyond the visible window
+            send_key(stdin_write_fd, KEY_DOWN)  # develop (index 1)
+            send_key(stdin_write_fd, KEY_DOWN)  # feature-1 (index 2) - triggers scroll down
+            send_key(stdin_write_fd, KEY_DOWN)  # feature-2 (index 3) - triggers scroll down again
+
+            # Checkout feature-2 to verify scrolling worked (we reached the last branch)
             send_key(stdin_write_fd, KEY_SPACE, sleep_time=0.5)
 
             # Read checkout confirmation
@@ -725,23 +685,47 @@ class TestGoInteractive(BaseTest):
 
         self.run_interactive_test(test_logic, mocker, timeout=3.0)
 
-        # Verify we checked out feature-2 (the last branch)
+        # Verify we checked out feature-2 (confirms scrolling worked)
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "feature-2"
 
-        # Now test Shift+Up to jump to first branch (master)
-        def test_logic_shift_up(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
-            # Read initial output (should start on feature-2)
-            read_line_from_fd(stdout_read_fd)
-            read_line_from_fd(stdout_read_fd)
-            read_line_from_fd(stdout_read_fd)
-            read_line_from_fd(stdout_read_fd)
-            read_line_from_fd(stdout_read_fd)
+    # This test times out in CI on Python < 3.10, but it's hard to reproduce locally.
+    # Skipping on older Python versions to avoid CI failures.
+    @pytest.mark.skipif(sys.version_info < (3, 10), reason="Test times out in CI on Python < 3.10")
+    def test_go_interactive_scrolling_up(self, mocker: MockerFixture) -> None:
+        """Test that scrolling up works when starting from a branch that requires initial scroll offset."""
+        # Set max_visible_branches to 2 to test scrolling with our 4 branches
+        self.patch_symbol(mocker, 'git_machete.client.go_interactive.GoInteractiveMacheteClient.MAX_VISIBLE_BRANCHES', 2)
 
-            # Press Shift+Up to jump to first branch (master)
-            send_key(stdin_write_fd, KEY_SHIFT_UP)
+        # Start from feature-2 (index 3) - this should start with scroll_offset = 2
+        # so that feature-1 and feature-2 are visible
+        check_out("feature-2")
+        initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert initial_branch == "feature-2"
 
-            # Press Space to checkout master
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
+            # Read initial output
+            header = read_line_from_fd(stdout_read_fd)
+            assert "Select branch" in header
+
+            # With max_visible_branches=2 and starting on feature-2 (index 3),
+            # the initial view should show feature-1 and feature-2 (scroll_offset=2)
+            line1 = read_line_from_fd(stdout_read_fd)
+            line2 = read_line_from_fd(stdout_read_fd)
+            initial_view = line1 + line2
+            assert "feature-1" in initial_view
+            assert "feature-2" in initial_view
+            # master and develop should NOT be visible initially
+            assert "master" not in initial_view
+            assert "develop" not in initial_view
+
+            # Navigate up multiple times - this should trigger scrolling up
+            # (the `if selected_idx < scroll_offset` condition)
+            send_key(stdin_write_fd, KEY_UP)  # feature-1 (index 2) - still visible
+            send_key(stdin_write_fd, KEY_UP)  # develop (index 1) - triggers scroll up!
+            send_key(stdin_write_fd, KEY_UP)  # master (index 0) - triggers scroll up again!
+
+            # Checkout master to verify we scrolled up correctly and reached the top
             send_key(stdin_write_fd, KEY_SPACE, sleep_time=0.5)
 
             # Read checkout confirmation
@@ -759,8 +743,8 @@ class TestGoInteractive(BaseTest):
             assert "master" in checkout_msg
             assert "OK" in checkout_msg
 
-        self.run_interactive_test(test_logic_shift_up, mocker, timeout=3.0)
+        self.run_interactive_test(test_logic, mocker, timeout=3.0)
 
-        # Verify we checked out master (the first branch)
+        # Verify we checked out master (confirms scrolling up worked)
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "master"

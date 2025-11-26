@@ -12,7 +12,7 @@ class GoInteractiveMacheteClient(MacheteClient):
     """Client for interactive branch selection using curses-style interface (implemented without curses, just using ANSI sequences)."""
 
     # Maximum number of branches to show at once (can be overridden in tests)
-    _max_visible_branches: int = 20
+    MAX_VISIBLE_BRANCHES: int = 20
     _managed_branches_with_depths: List[Tuple[LocalBranchShortName, int]]
     _current_branch: LocalBranchShortName
 
@@ -59,7 +59,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         sys.stdout.write(bold(header_text) + '\n')
 
         # Adjust scroll offset if needed
-        visible_lines = min(self._max_visible_branches, len(self._managed_branches_with_depths))
+        visible_lines = min(self.MAX_VISIBLE_BRANCHES, len(self._managed_branches_with_depths))
         if selected_idx < scroll_offset:
             scroll_offset = selected_idx
         elif selected_idx >= scroll_offset + visible_lines:
@@ -132,7 +132,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         try:
             while True:
                 # Calculate how many lines we'll draw (header + visible branches)
-                visible_lines = min(self._max_visible_branches, len(self._managed_branches_with_depths))
+                visible_lines = min(self.MAX_VISIBLE_BRANCHES, len(self._managed_branches_with_depths))
                 num_lines_drawn = visible_lines + 1  # +1 for header
 
                 scroll_offset = self._draw_screen(
