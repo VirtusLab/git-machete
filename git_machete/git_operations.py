@@ -498,10 +498,12 @@ class GitContext:
         # Output format: <hash>\trefs/heads/<branch-name>
         existing_branches: Set[str] = set()
         for line in result.stdout.splitlines():
-            if '\t' in line:
-                ref = line.split('\t')[1]
-                if ref.startswith('refs/heads/'):
-                    existing_branches.add(ref[len('refs/heads/'):])
+            if '\t' not in line:
+                raise UnexpectedMacheteException(f"Malformed line in git ls-remote output: {repr(line)}")
+            ref = line.split('\t')[1]
+            if not ref.startswith('refs/heads/'):
+                raise UnexpectedMacheteException(f"Unexpected ref format in git ls-remote output: {repr(line)}")
+            existing_branches.add(ref[len('refs/heads/'):])
 
         return {branch: branch in existing_branches for branch in branches}
 
