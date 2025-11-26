@@ -34,6 +34,17 @@ def is_stdout_a_tty() -> bool:
     return sys.stdout.isatty()
 
 
+def get_terminal_height() -> Optional[int]:
+    """
+    Get the height (number of lines) of the terminal.
+    Returns None if terminal size cannot be determined (e.g., not a TTY).
+    """
+    try:
+        return os.get_terminal_size().lines
+    except (OSError, AttributeError):
+        return None
+
+
 def normalize_path_for_display(path: str) -> str:
     """
     Normalize a filesystem path for cross-platform display in user messages.

@@ -1,9 +1,9 @@
-import os
 import sys
 import termios
 import tty
 from typing import List, Optional, Tuple
 
+from git_machete import utils
 from git_machete.client.base import MacheteClient
 from git_machete.git_operations import LocalBranchShortName
 from git_machete.utils import AnsiEscapeCodes, bold, index_or_none, warn
@@ -12,23 +12,23 @@ from git_machete.utils import AnsiEscapeCodes, bold, index_or_none, warn
 class GoInteractiveMacheteClient(MacheteClient):
     """Client for interactive branch selection using curses-style interface (implemented without curses, just using ANSI sequences)."""
 
-    # Fallback value if terminal size cannot be determined (can be overridden in tests)
-    MAX_VISIBLE_BRANCHES: int = 20
+    MAX_VISIBLE_BRANCHES_DEFAULT = 20
+    MAX_VISIBLE_BRANCHES_LOWER = 2
+    MAX_VISIBLE_BRANCHES_UPPER = 50
+
     _managed_branches_with_depths: List[Tuple[LocalBranchShortName, int]]
     _current_branch: LocalBranchShortName
     _max_visible_branches: int
 
     def _get_max_visible_branches(self) -> int:
         """Get the maximum number of branches that can be displayed based on terminal height."""
-        try:
-            terminal_height = os.get_terminal_size().lines
-            # Reserve 1 line for header, plus 1 line for padding
-            # Also enforce minimum of 5 and maximum of 50 to avoid extremes
-            max_visible = max(5, min(terminal_height - 2, 50))
-            return max_visible
-        except (OSError, AttributeError):
+        terminal_height = utils.get_terminal_height()
+        if terminal_height is None:
             # Fallback if terminal size cannot be determined (e.g., not a TTY)
-            return self.MAX_VISIBLE_BRANCHES
+            return self.MAX_VISIBLE_BRANCHES_DEFAULT
+        # Reserve 1 line for header, plus 1 line for padding
+        max_visible_branches = terminal_height - 2
+        return max(self.MAX_VISIBLE_BRANCHES_LOWER, min(max_visible_branches, self.MAX_VISIBLE_BRANCHES_UPPER))
 
     def _get_branch_list_with_depths(self) -> List[Tuple[LocalBranchShortName, int]]:
         """Get a flat list of branches with their depths using DFS traversal."""
