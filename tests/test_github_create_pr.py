@@ -150,6 +150,7 @@ class TestGitHubCreatePR(BaseTest):
                 |
                 x-drop-constraint (untracked)
 
+            Checking if head branch chore/fields exists in origin remote... YES
             Checking if base branch ignore-trailing exists in origin remote... YES
             Creating a draft PR from chore/fields to ignore-trailing... OK, see www.github.com
             Checking for open GitHub PRs... OK
@@ -238,6 +239,7 @@ class TestGitHubCreatePR(BaseTest):
                 |
                 x-drop-constraint (untracked)
 
+            Checking if head branch hotfix/add-trigger exists in origin remote... YES
             Checking if base branch master exists in origin remote... YES
             Creating a PR from hotfix/add-trigger to master... OK, see www.github.com
             Updating description of PR #6 to include the chain of PRs... OK
@@ -335,6 +337,7 @@ class TestGitHubCreatePR(BaseTest):
               |
               o-testing/endpoints
 
+            Checking if head branch allow-ownership-link exists in origin remote... YES
             Checking if base branch develop exists in origin remote... YES
             Creating a PR from allow-ownership-link to develop... OK, see www.github.com
             Setting milestone of PR #7 to 42... OK
@@ -488,7 +491,8 @@ class TestGitHubCreatePR(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        expected_msg = ("Checking if base branch feature/api_handling exists in origin remote... NO\n"
+        expected_msg = ("Checking if head branch feature/api_exception_handling exists in origin remote... YES\n"
+                        "Checking if base branch feature/api_handling exists in origin remote... NO\n"
                         "Pushing untracked branch feature/api_handling to origin...\n"
                         "Creating a PR from feature/api_exception_handling to feature/api_handling... OK, see www.github.com\n")
 
@@ -629,6 +633,7 @@ class TestGitHubCreatePR(BaseTest):
         could not be created in example-org/example-repo-2, since its head branch feature lives in example-org/example-repo-1.
         Generally, PRs need to be created in whatever repository the base branch lives.
 
+        Checking if head branch feature exists in origin_1 remote... YES
         Checking if base branch branch-1 exists in origin_2 remote... YES
         Creating a PR from feature to branch-1... OK, see www.github.com
         Checking for open GitHub PRs... OK
@@ -690,6 +695,7 @@ class TestGitHubCreatePR(BaseTest):
         could not be created in example-org/example-repo-1, since its head branch feature_1 lives in example-org/example-repo-2.
         Generally, PRs need to be created in whatever repository the base branch lives.
 
+        Checking if head branch feature_1 exists in origin_2 remote... YES
         Checking if base branch feature exists in origin_1 remote... YES
         Creating a PR from feature_1 to feature... OK, see www.github.com
         Checking for open GitHub PRs... OK
@@ -726,6 +732,7 @@ class TestGitHubCreatePR(BaseTest):
               |
               o-feature_2 *
 
+        Checking if head branch feature_2 exists in origin_1 remote... YES
         Checking if base branch feature exists in origin_1 remote... YES
         Creating a PR from feature_2 to feature... OK, see www.github.com
         Checking for open GitHub PRs... OK
@@ -746,6 +753,7 @@ class TestGitHubCreatePR(BaseTest):
         expected_result = """
         Add feature_3 onto the inferred upstream (parent) branch feature_2? (y, N)
         Added branch feature_3 onto feature_2
+        Checking if head branch feature_3 exists in origin_1 remote... YES
         Checking if base branch feature_2 exists in origin_1 remote... YES
         Creating a PR from feature_3 to feature_2... OK, see www.github.com
         Checking for open GitHub PRs... OK
@@ -775,6 +783,7 @@ class TestGitHubCreatePR(BaseTest):
         could not be created in example-org/example-repo-1, since its head branch feature_4 lives in example-org/example-repo-2.
         Generally, PRs need to be created in whatever repository the base branch lives.
 
+        Checking if head branch feature_4 exists in origin_2 remote... YES
         Checking if base branch feature_3 exists in origin_1 remote... YES
         Creating a PR from feature_4 to feature_3... OK, see www.github.com
         Checking for open GitHub PRs... OK
@@ -805,6 +814,7 @@ class TestGitHubCreatePR(BaseTest):
         could not be created in example-org/example-repo-1, since its head branch feature_5 lives in example-org/example-repo-2.
         Generally, PRs need to be created in whatever repository the base branch lives.
 
+        Checking if head branch feature_5 exists in origin_2 remote... YES
         Checking if base branch feature_3 exists in origin_1 remote... YES
         Creating a PR from feature_5 to feature_3... OK, see www.github.com
         Checking for open GitHub PRs... OK
@@ -827,12 +837,14 @@ class TestGitHubCreatePR(BaseTest):
 
         new_branch("develop")
         commit()
+        push()  # Push the branch so it exists in the remote
 
         rewrite_branch_layout_file("master\n\tdevelop push=no")
 
         assert_success(
             ['github', 'create-pr'],
             """
+            Checking if head branch develop exists in origin remote... YES
             Checking if base branch master exists in origin remote... YES
             Creating a PR from develop to master... OK, see www.github.com
             """
@@ -881,6 +893,7 @@ class TestGitHubCreatePR(BaseTest):
             """
             Warn: branch develop is behind its remote counterpart. Consider using git pull.
             Proceed with creating pull request? (y, Q)
+            Checking if head branch develop exists in origin remote... YES
             Checking if base branch master exists in origin remote... YES
             Creating a PR from develop to master... OK, see www.github.com
             """
@@ -952,6 +965,7 @@ class TestGitHubCreatePR(BaseTest):
             """
             Warn: branch develop is diverged from and older than its remote counterpart. Consider using git reset --keep.
             Proceed with creating pull request? (y, Q)
+            Checking if head branch develop exists in origin remote... YES
             Checking if base branch master exists in origin remote... YES
             Creating a PR from develop to master... OK, see www.github.com
             """
@@ -959,8 +973,6 @@ class TestGitHubCreatePR(BaseTest):
 
     def test_github_create_pr_when_base_branch_disappeared_from_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
 
         (local_path, remote_path) = create_repo_with_remote()
 
@@ -977,15 +989,12 @@ class TestGitHubCreatePR(BaseTest):
         os.chdir(local_path)
 
         rewrite_branch_layout_file("develop\n\tfeature")
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
-        assert_success(
-            ['github', 'create-pr'],
-            """
-            Checking if base branch develop exists in origin remote... NO
-            Push untracked branch develop to origin? (y, Q)
-            Creating a PR from feature to develop... OK, see www.github.com
-            """
+
+        expected_error_message = (
+            "Base branch develop has been removed from origin remote since the last fetch/push.\n"
+            "Do you really want to create a PR to this branch?"
         )
+        assert_failure(['github', 'create-pr'], expected_error_message)
 
     def test_github_create_pr_when_base_branch_appeared_on_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
@@ -1008,6 +1017,7 @@ class TestGitHubCreatePR(BaseTest):
         assert_success(
             ['github', 'create-pr'],
             """
+            Checking if head branch feature exists in origin remote... YES
             Checking if base branch develop exists in origin remote... YES
             Creating a PR from feature to develop... OK, see www.github.com
             """

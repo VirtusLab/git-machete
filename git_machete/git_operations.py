@@ -485,6 +485,26 @@ class GitContext:
         result = self._popen_git("ls-remote", "--heads", remote, branch.full_name())
         return result.stdout != ''
 
+    def do_remote_branches_exist(self, remote: str, *branches: LocalBranchShortName) -> Dict[LocalBranchShortName, bool]:  # noqa: KW
+        # `--heads` is passed here to avoid checking for `refs/pulls/...`,
+        # which can take a lot of time in large repos (since they're present even for closed PRs).
+        # Even when a branch name or glob is passed to `git ls-remote`,
+        # data on all `refs/...` (or all `refs/heads/...`, with `--heads`) is still fetched.
+        # We pass all branch names to check them all in a single invocation.
+        branch_args = [branch.full_name() for branch in branches]
+        result = self._popen_git("ls-remote", "--heads", remote, *branch_args)
+
+        # Parse the output to see which branches exist
+        # Output format: <hash>\trefs/heads/<branch-name>
+        existing_branches: Set[str] = set()
+        for line in result.stdout.splitlines():
+            if '\t' in line:
+                ref = line.split('\t')[1]
+                if ref.startswith('refs/heads/'):
+                    existing_branches.add(ref[len('refs/heads/'):])
+
+        return {branch: branch in existing_branches for branch in branches}
+
     def set_upstream_to(self, remote_branch: RemoteBranchShortName) -> None:
         self._run_git("branch", "--set-upstream-to", remote_branch, flush_caches=True)
 

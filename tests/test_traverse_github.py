@@ -305,6 +305,7 @@ class TestTraverseGitHub(BaseTest):
 
             Branch allow-ownership-link does not have a PR in GitHub.
             Create a PR from allow-ownership-link to develop? (y, d[raft], N, q, yq)
+            Checking if head branch allow-ownership-link exists in origin remote... YES
             Checking if base branch develop exists in origin remote... YES
             Creating a PR from allow-ownership-link to develop... OK, see www.github.com
             Adding github_user as assignee to PR #2... OK
@@ -350,6 +351,7 @@ class TestTraverseGitHub(BaseTest):
 
             Branch drop-constraint does not have a PR in GitHub.
             Create a PR from drop-constraint to call-ws? (y, d[raft], N, q, yq)
+            Checking if head branch drop-constraint exists in origin remote... YES
             Checking if base branch call-ws exists in origin remote... YES
             Creating a draft PR from drop-constraint to call-ws... OK, see www.github.com
             Updating description of PR #3 to include the chain of PRs... OK
