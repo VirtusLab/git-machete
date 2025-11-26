@@ -7,7 +7,7 @@ import sys
 import textwrap
 import time
 from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, Optional,
-                    Set, Tuple, TypeVar)
+                    Sequence, Set, Tuple, TypeVar)
 
 T = TypeVar('T')
 U = TypeVar('U')
@@ -71,6 +71,13 @@ def flat_map(func: Callable[[T], List[T]], iterable: Iterable[T]) -> List[T]:
 
 def find_or_none(func: Callable[[T], bool], iterable: Iterable[T]) -> Optional[T]:
     return next(filter(func, iterable), None)  # type: ignore [arg-type]
+
+
+def index_or_none(seq: Sequence[T], value: T) -> Optional[int]:
+    try:
+        return seq.index(value)
+    except ValueError:
+        return None
 
 
 def map_truthy_only(func: Callable[[T], Optional[U]], iterable: Iterable[T]) -> List[U]:
