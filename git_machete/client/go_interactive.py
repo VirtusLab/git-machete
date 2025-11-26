@@ -49,10 +49,10 @@ class GoInteractiveMacheteClient(MacheteClient):
 
         return result
 
-    def _render_branch_line(self, branch: LocalBranchShortName, depth: int, *, current_branch: str) -> str:
+    def _render_branch_line(self, branch: LocalBranchShortName, depth: int, *, current_branch: LocalBranchShortName) -> str:
         """Render a single branch line with indentation."""
         indent = "  " * depth
-        marker = " " if str(branch) != current_branch else "*"
+        marker = " " if branch != current_branch else "*"
 
         line = f"{indent}{marker} {branch}"
         annotation = self.annotations.get(branch)
@@ -62,7 +62,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         return line
 
     def _draw_screen(self, branches_with_depths: List[Tuple[LocalBranchShortName, int]], *,
-                     selected_idx: int, current_branch: str, scroll_offset: int,
+                     selected_idx: int, current_branch: LocalBranchShortName, scroll_offset: int,
                      max_visible_branches: int, num_lines_drawn: int, is_first_draw: bool) -> int:
         """Draw the branch selection screen using ANSI escape codes."""
         # Move cursor up to the start of our display area (if we've drawn before)
@@ -122,12 +122,12 @@ class GoInteractiveMacheteClient(MacheteClient):
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
     def _run_interactive_interface(self, branches_with_depths: List[Tuple[LocalBranchShortName, int]],
-                                   current_branch: str) -> Optional[str]:
+                                   current_branch: LocalBranchShortName) -> Optional[LocalBranchShortName]:
         """Run the interactive interface and return the selected branch or None."""
         # Find initial selection (current branch)
         selected_idx = 0
         for i, (branch, _) in enumerate(branches_with_depths):
-            if str(branch) == current_branch:
+            if branch == current_branch:
                 selected_idx = i
                 break
 
@@ -187,7 +187,7 @@ class GoInteractiveMacheteClient(MacheteClient):
                                 break
                 elif key in KEY_ENTER or key == KEY_SPACE:
                     selected_branch, _ = branches_with_depths[selected_idx]
-                    return str(selected_branch)
+                    return selected_branch
                 elif key in ('q', 'Q'):
                     return None
                 elif key == KEY_CTRL_C:
