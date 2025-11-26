@@ -239,7 +239,7 @@ class TestGoInteractive(BaseTest):
         self.run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_left_arrow_parent(self, mocker: MockerFixture) -> None:
-        """Test that left arrow navigates to parent branch (not just up)."""
+        """Test that left arrow navigates to parent branch (not just up), and does nothing on root."""
         check_out("feature-2")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
@@ -259,6 +259,12 @@ class TestGoInteractive(BaseTest):
 
             # Press left arrow to go to parent (develop)
             # If left arrow was equivalent to up, it would go to feature-1
+            send_key(stdin_write_fd, KEY_LEFT)
+
+            # Press left arrow again to go to develop's parent (master)
+            send_key(stdin_write_fd, KEY_LEFT)
+
+            # Now we're on master (root branch). Press left arrow again - should not move
             send_key(stdin_write_fd, KEY_LEFT)
 
             # Use Ctrl+C to quit
@@ -502,6 +508,7 @@ class TestGoInteractive(BaseTest):
             send_key(stdin_write_fd, 'x')
             send_key(stdin_write_fd, 'z')
             send_key(stdin_write_fd, '1')
+            send_key(stdin_write_fd, '\x1ba')  # Alt+a (ESC followed by 'a')
 
             # Now press a valid key to verify the interface still works
             send_key(stdin_write_fd, KEY_DOWN)

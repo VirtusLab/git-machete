@@ -688,24 +688,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 fork_point_client.unset_fork_point_override(branch)
             else:
                 print(fork_point_client.fork_point(branch=branch, use_overrides=True))
-        elif cmd in {"go", alias_by_command["go"]}:
-            git.expect_no_operation_in_progress()
-            current_branch = git.get_current_branch()
-
-            if parsed_cli.direction is not None:
-                go_client = GoShowMacheteClient(git)
-                go_client.read_branch_layout_file()
-                # with pick_if_multiple=True, there returned list will have exactly one element
-                dest = go_client.parse_direction(parsed_cli.direction, branch=current_branch, allow_current=False, pick_if_multiple=True)[0]
-                if dest != current_branch:
-                    git.checkout(dest)
-            else:
-                interactive_client = GoInteractiveMacheteClient(git)
-                dest_ = interactive_client.go_interactive()
-                if dest_ is not None and dest_ != current_branch:
-                    git.checkout(dest_)
-                    print(fmt(f"Checked out <b>{dest_}</b>"))
-        elif cmd in ("github", "gitlab"):
+        elif cmd in {"github", "gitlab"}:
             subcommand = parsed_cli.subcommand
             spec = GITHUB_CLIENT_SPEC if cmd == "github" else GITLAB_CLIENT_SPEC
             pr_or_mr = spec.pr_short_name.lower()
@@ -787,6 +770,25 @@ def launch_internal(orig_args: List[str]) -> None:
                     all=cli_opts.opt_all, by=cli_opts.opt_by, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
             else:  # an unknown subcommand is handled by argparse
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")
+        elif cmd in {"go", alias_by_command["go"]}:
+            git.expect_no_operation_in_progress()
+            current_branch = git.get_current_branch()
+
+            if parsed_cli.direction is not None:
+                go_client = GoShowMacheteClient(git)
+                go_client.read_branch_layout_file()
+                # with pick_if_multiple=True, there returned list will have exactly one element
+                dest = go_client.parse_direction(parsed_cli.direction, branch=current_branch, allow_current=False, pick_if_multiple=True)[0]
+                if dest != current_branch:
+                    git.checkout(dest)
+            else:
+                interactive_client = GoInteractiveMacheteClient(git)
+                interactive_client.read_branch_layout_file()
+                interactive_client.expect_at_least_one_managed_branch()
+                dest_ = interactive_client.go_interactive()
+                if dest_ is not None and dest_ != current_branch:
+                    git.checkout(dest_)
+                    print(fmt(f"Checked out <b>{dest_}</b>"))
         elif cmd == "is-managed":
             is_managed_client = MacheteClient(git)
             is_managed_client.read_branch_layout_file()

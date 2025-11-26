@@ -202,19 +202,10 @@ class GoInteractiveMacheteClient(MacheteClient):
         Launch interactive branch selection interface.
         Returns the selected branch or None if cancelled.
         """
-        self.read_branch_layout_file()
-
-        # Check if we have any branches
-        if not self.managed_branches:
-            return None
-
         current_branch = self._git.get_current_branch()
 
         # Get flat list of branches with depths from already-parsed state
         branches_with_depths = self._get_branch_list_with_depths()
-
-        if not branches_with_depths:
-            return None
 
         try:
             selected_branch = self._run_interactive_interface(branches_with_depths, current_branch)
