@@ -37,6 +37,7 @@ class GoInteractiveMacheteClient(MacheteClient):
 
     # Maximum number of branches to show at once (can be overridden in tests)
     _max_visible_branches: int = 20
+    _managed_branches_with_depths: List[Tuple[LocalBranchShortName, int]]
 
     def _get_branch_list_with_depths(self) -> List[Tuple[LocalBranchShortName, int]]:
         """Get a flat list of branches with their depths using DFS traversal."""
@@ -64,8 +65,7 @@ class GoInteractiveMacheteClient(MacheteClient):
 
         return line
 
-    def _draw_screen(self, managed_branches_with_depths: List[Tuple[LocalBranchShortName, int]], *,
-                     selected_idx: int, current_branch: LocalBranchShortName, scroll_offset: int,
+    def _draw_screen(self, *, selected_idx: int, current_branch: LocalBranchShortName, scroll_offset: int,
                      num_lines_drawn: int, is_first_draw: bool) -> int:
         """Draw the branch selection screen using ANSI escape codes."""
         # Move cursor up to the start of our display area (if we've drawn before)
@@ -81,7 +81,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         sys.stdout.write(bold(header_text) + '\n')
 
         # Adjust scroll offset if needed
-        visible_lines = min(self._max_visible_branches, len(managed_branches_with_depths))
+        visible_lines = min(self._max_visible_branches, len(self._managed_branches_with_depths))
         if selected_idx < scroll_offset:
             scroll_offset = selected_idx
         elif selected_idx >= scroll_offset + visible_lines:
@@ -90,7 +90,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         # Draw branches
         for i in range(visible_lines):
             branch_idx = scroll_offset + i
-            branch, depth = managed_branches_with_depths[branch_idx]
+            branch, depth = self._managed_branches_with_depths[branch_idx]
             line = self._render_branch_line(branch, depth, current_branch=current_branch)
 
             if branch_idx == selected_idx:
@@ -121,9 +121,10 @@ class GoInteractiveMacheteClient(MacheteClient):
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
-    def _run_interactive_interface(self, managed_branches_with_depths: List[Tuple[LocalBranchShortName, int]],
-                                   current_branch: LocalBranchShortName) -> Optional[LocalBranchShortName]:
+    def _run_interactive_interface(self) -> Optional[LocalBranchShortName]:
         """Run the interactive interface and return the selected branch or None."""
+        current_branch = self._git.get_current_branch()
+
         # Find initial selection (current branch)
         selected_idx = index_or_none(self.managed_branches, current_branch)
         if selected_idx is None:
@@ -141,11 +142,10 @@ class GoInteractiveMacheteClient(MacheteClient):
         try:
             while True:
                 # Calculate how many lines we'll draw (header + visible branches)
-                visible_lines = min(self._max_visible_branches, len(managed_branches_with_depths))
+                visible_lines = min(self._max_visible_branches, len(self._managed_branches_with_depths))
                 num_lines_drawn = visible_lines + 1  # +1 for header
 
                 scroll_offset = self._draw_screen(
-                    managed_branches_with_depths,
                     selected_idx=selected_idx,
                     current_branch=current_branch,
                     scroll_offset=scroll_offset,
@@ -159,24 +159,24 @@ class GoInteractiveMacheteClient(MacheteClient):
 
                 if key == KEY_UP:
                     # Wrap around from first to last
-                    selected_idx = (selected_idx - 1) % len(managed_branches_with_depths)
+                    selected_idx = (selected_idx - 1) % len(self._managed_branches_with_depths)
                 elif key == KEY_DOWN:
                     # Wrap around from last to first
-                    selected_idx = (selected_idx + 1) % len(managed_branches_with_depths)
+                    selected_idx = (selected_idx + 1) % len(self._managed_branches_with_depths)
                 elif key == KEY_LEFT:
                     # Go to parent
-                    selected_branch, _ = managed_branches_with_depths[selected_idx]
+                    selected_branch, _ = self._managed_branches_with_depths[selected_idx]
                     parent_branch = self.up_branch_for(selected_branch)
                     if parent_branch:
                         selected_idx = self.managed_branches.index(parent_branch)
                 elif key == KEY_RIGHT:
                     # Go to first child
-                    selected_branch, _ = managed_branches_with_depths[selected_idx]
+                    selected_branch, _ = self._managed_branches_with_depths[selected_idx]
                     child_branches = self.down_branches_for(selected_branch)
                     if child_branches:
                         selected_idx = self.managed_branches.index(child_branches[0])
                 elif key in KEY_ENTER or key == KEY_SPACE:
-                    selected_branch, _ = managed_branches_with_depths[selected_idx]
+                    selected_branch, _ = self._managed_branches_with_depths[selected_idx]
                     return selected_branch
                 elif key in ('q', 'Q'):
                     return None
@@ -192,17 +192,11 @@ class GoInteractiveMacheteClient(MacheteClient):
         Launch interactive branch selection interface.
         Returns the selected branch or None if cancelled.
         """
-        current_branch = self._git.get_current_branch()
-
         # Get flat list of branches with depths from already-parsed state
-        managed_branches_with_depths = self._get_branch_list_with_depths()
+        self._managed_branches_with_depths = self._get_branch_list_with_depths()
 
         try:
-            selected_branch = self._run_interactive_interface(managed_branches_with_depths, current_branch)
-
-            if selected_branch:
-                return LocalBranchShortName.of(selected_branch)
-            return None
+            return self._run_interactive_interface()
         except KeyboardInterrupt:
             # Make sure cursor is visible
             sys.stdout.write(ANSI_SHOW_CURSOR)
