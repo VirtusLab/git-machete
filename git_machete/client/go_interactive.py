@@ -90,9 +90,6 @@ class GoInteractiveMacheteClient(MacheteClient):
         # Draw branches
         for i in range(visible_lines):
             branch_idx = scroll_offset + i
-            if branch_idx >= len(managed_branches_with_depths):
-                break
-
             branch, depth = managed_branches_with_depths[branch_idx]
             line = self._render_branch_line(branch, depth, current_branch=current_branch)
 

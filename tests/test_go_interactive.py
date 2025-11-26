@@ -375,12 +375,13 @@ class TestGoInteractive(BaseTest):
                 line = read_line_from_fd(stdout_read_fd, timeout=0.3)
                 if not line:
                     continue
-                if "Checked out" in line:
-                    checkout_msg = line
+                checkout_msg += line
+                if "OK" in line:
                     break
 
-            assert "Checked out" in checkout_msg, f"Expected 'Checked out' message but got: {repr(checkout_msg)}"
+            assert "Checking out" in checkout_msg, f"Expected 'Checking out' message but got: {repr(checkout_msg)}"
             assert "feature-1" in checkout_msg
+            assert "OK" in checkout_msg
 
         self.run_interactive_test(test_logic, mocker, timeout=3.0)
 
@@ -601,13 +602,14 @@ class TestGoInteractive(BaseTest):
                     try:
                         line = read_line_from_fd(stdout_read_fd, timeout=0.5)
                         checkout_msg += line
-                        if "Checked out" in line:
+                        if "OK" in line:
                             break
                     except TimeoutError:
                         break
 
-                assert "Checked out" in checkout_msg
+                assert "Checking out" in checkout_msg
                 assert "feature-2" in checkout_msg
+                assert "OK" in checkout_msg
 
             self.run_interactive_test(test_logic, mocker, timeout=3.0)
 
@@ -668,13 +670,14 @@ class TestGoInteractive(BaseTest):
                     try:
                         line = read_line_from_fd(stdout_read_fd, timeout=0.5)
                         checkout_msg += line
-                        if "Checked out" in line:
+                        if "OK" in line:
                             break
                     except TimeoutError:
                         break
 
-                assert "Checked out" in checkout_msg
+                assert "Checking out" in checkout_msg
                 assert "master" in checkout_msg
+                assert "OK" in checkout_msg
 
             self.run_interactive_test(test_logic, mocker, timeout=3.0)
 

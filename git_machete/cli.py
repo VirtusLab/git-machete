@@ -787,8 +787,9 @@ def launch_internal(orig_args: List[str]) -> None:
                 interactive_client.expect_at_least_one_managed_branch()
                 dest_ = interactive_client.go_interactive()
                 if dest_ is not None and dest_ != current_branch:
+                    print(f"Checking out {bold(dest_)}... ", end='', flush=True)
                     git.checkout(dest_)
-                    print(fmt(f"Checked out <b>{dest_}</b>"))
+                    print(fmt('<green><b>OK</b></green>'))
         elif cmd == "is-managed":
             is_managed_client = MacheteClient(git)
             is_managed_client.read_branch_layout_file()
