@@ -15,6 +15,8 @@ If ``<direction>`` is not provided, an interactive mode is launched where you ca
 **Interactive mode controls:**
 
 * **↑/↓**: Navigate up/down through branches
+* **Shift+↑**: Jump to the first branch
+* **Shift+↓**: Jump to the last branch
 * **←**: Jump to the parent branch of the currently selected branch
 * **→**: Jump to the first child branch of the currently selected branch
 * **Enter or Space**: Check out the selected branch

@@ -19,6 +19,8 @@ KEY_UP = '\x1b[A'
 KEY_DOWN = '\x1b[B'
 KEY_RIGHT = '\x1b[C'
 KEY_LEFT = '\x1b[D'
+KEY_SHIFT_UP = '\x1b[1;2A'
+KEY_SHIFT_DOWN = '\x1b[1;2B'
 KEY_SPACE = ' '
 KEY_CTRL_C = '\x03'
 
@@ -686,3 +688,78 @@ class TestGoInteractive(BaseTest):
         finally:
             # Restore original value
             GoInteractiveMacheteClient._max_visible_branches = original_max
+
+    def test_go_interactive_shift_arrows_jump(self, mocker: MockerFixture) -> None:
+        """Test that Shift+Up/Down jumps to first/last branch."""
+        check_out("develop")
+
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
+            # Read initial output (should start on develop)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+
+            # Press Shift+Down to jump to last branch (feature-2)
+            send_key(stdin_write_fd, KEY_SHIFT_DOWN)
+
+            # Press Space to checkout feature-2
+            send_key(stdin_write_fd, KEY_SPACE, sleep_time=0.5)
+
+            # Read checkout confirmation
+            checkout_msg = ""
+            for _ in range(10):
+                try:
+                    line = read_line_from_fd(stdout_read_fd, timeout=0.5)
+                    checkout_msg += line
+                    if "OK" in line:
+                        break
+                except TimeoutError:
+                    break
+
+            assert "Checking out" in checkout_msg
+            assert "feature-2" in checkout_msg
+            assert "OK" in checkout_msg
+
+        self.run_interactive_test(test_logic, mocker, timeout=3.0)
+
+        # Verify we checked out feature-2 (the last branch)
+        current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert current_branch == "feature-2"
+
+        # Now test Shift+Up to jump to first branch (master)
+        def test_logic_shift_up(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
+            # Read initial output (should start on feature-2)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+
+            # Press Shift+Up to jump to first branch (master)
+            send_key(stdin_write_fd, KEY_SHIFT_UP)
+
+            # Press Space to checkout master
+            send_key(stdin_write_fd, KEY_SPACE, sleep_time=0.5)
+
+            # Read checkout confirmation
+            checkout_msg = ""
+            for _ in range(10):
+                try:
+                    line = read_line_from_fd(stdout_read_fd, timeout=0.5)
+                    checkout_msg += line
+                    if "OK" in line:
+                        break
+                except TimeoutError:
+                    break
+
+            assert "Checking out" in checkout_msg
+            assert "master" in checkout_msg
+            assert "OK" in checkout_msg
+
+        self.run_interactive_test(test_logic_shift_up, mocker, timeout=3.0)
+
+        # Verify we checked out master (the first branch)
+        current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert current_branch == "master"

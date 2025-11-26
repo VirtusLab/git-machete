@@ -25,6 +25,8 @@ KEY_UP = '\x1b[A'
 KEY_DOWN = '\x1b[B'
 KEY_RIGHT = '\x1b[C'
 KEY_LEFT = '\x1b[D'
+KEY_SHIFT_UP = '\x1b[1;2A'
+KEY_SHIFT_DOWN = '\x1b[1;2B'
 
 # Other keys
 KEYS_ENTER = ('\r', '\n')
@@ -78,7 +80,8 @@ class GoInteractiveMacheteClient(MacheteClient):
             sys.stdout.write(ANSI_CLEAR_TO_END)
 
         # Header
-        header_text = "Select branch (↑/↓: prev/next, ←: parent, →: child, Enter or Space: checkout, q or Ctrl+C: quit)"
+        header_text = ("Select branch (↑/↓: prev/next, Shift+↑/↓: first/last, ←: parent, →: child, "
+                       "Enter or Space: checkout, q or Ctrl+C: quit)")
         sys.stdout.write(bold(header_text) + '\n')
 
         # Adjust scroll offset if needed
@@ -112,10 +115,16 @@ class GoInteractiveMacheteClient(MacheteClient):
             ch = sys.stdin.read(1)
             # Handle escape sequences for arrow keys
             if ch == ANSI_ESCAPE:
-                # Read the next two characters
+                # Read the next character
                 ch2 = sys.stdin.read(1)
                 if ch2 == '[':
                     ch3 = sys.stdin.read(1)
+                    # Check for Shift+arrow keys (e.g., \x1b[1;2A for Shift+Up)
+                    if ch3 == '1':
+                        ch4 = sys.stdin.read(1)  # Should be ';'
+                        ch5 = sys.stdin.read(1)  # Should be '2'
+                        ch6 = sys.stdin.read(1)  # Should be 'A' or 'B'
+                        return ANSI_CSI + ch3 + ch4 + ch5 + ch6
                     return ANSI_CSI + ch3
                 return ch + ch2
             return ch
@@ -169,6 +178,12 @@ class GoInteractiveMacheteClient(MacheteClient):
                 elif key == KEY_DOWN:
                     # Wrap around from last to first
                     selected_idx = (selected_idx + 1) % len(self._managed_branches_with_depths)
+                elif key == KEY_SHIFT_UP:
+                    # Jump to first branch
+                    selected_idx = 0
+                elif key == KEY_SHIFT_DOWN:
+                    # Jump to last branch
+                    selected_idx = len(self._managed_branches_with_depths) - 1
                 elif key == KEY_LEFT:
                     # Go to parent
                     selected_branch, _ = self._managed_branches_with_depths[selected_idx]
