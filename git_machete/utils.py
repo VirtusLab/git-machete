@@ -457,6 +457,10 @@ def get_pretty_choices(*choices: str) -> str:
     return " (" + (", ".join(map_truthy_only(format_choice, choices))) + ") "
 
 
+def colored_yes_no(value: bool) -> str:  # noqa: KW
+    return '<green><b>YES</b></green>' if value else '<red><b>NO</b></red>'
+
+
 def get_current_date() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d")
 

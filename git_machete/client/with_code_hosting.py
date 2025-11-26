@@ -16,7 +16,7 @@ from git_machete.git_operations import (GitContext, GitFormatPatterns,
                                         GitLogEntry, LocalBranchShortName,
                                         RemoteBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (bold, debug, find_or_none, fmt,
+from git_machete.utils import (bold, colored_yes_no, debug, find_or_none, fmt,
                                get_pretty_choices, get_right_arrow, slurp_file,
                                warn)
 
@@ -265,15 +265,54 @@ class MacheteClientWithCodeHosting(MacheteClient):
                  f"Generally, {spec.pr_short_name}s need to be created "
                  f"in whatever {spec.repository_name} the {spec.base_branch_name} branch lives.\n")
 
+        head_remote_branch = RemoteBranchShortName(f"{head_org_repo_remote.remote}/{head}")
+        remote_head_branch_exists_locally = head_remote_branch in self._git.get_remote_branches()
         base_remote_branch = RemoteBranchShortName(f"{base_org_repo_remote.remote}/{base}")
         remote_base_branch_exists_locally = base_remote_branch in self._git.get_remote_branches()
-        print(f"Checking if {spec.base_branch_name} branch {bold(base)} "
-              f"exists in {bold(base_org_repo_remote.remote)} remote... ", end='', flush=True)
-        base_branch_found_on_remote = self._git.does_remote_branch_exist(base_org_repo_remote.remote, base)
-        print(fmt('<green><b>YES</b></green>' if base_branch_found_on_remote else '<red><b>NO</b></red>'))
-        if not base_branch_found_on_remote and remote_base_branch_exists_locally:
-            self._git.delete_remote_branch(base_remote_branch)
 
+        # Check both base and head branches in a single git ls-remote call if they use the same remote
+        if base_org_repo_remote.remote == head_org_repo_remote.remote:
+            print(f"Checking if {spec.head_branch_name} branch {bold(head)} "
+                  f"exists in {bold(head_org_repo_remote.remote)} remote... ", end='', flush=True)
+
+            branches_existence = self._git.do_remote_branches_exist(base_org_repo_remote.remote, base, head)
+            base_branch_found_on_remote = branches_existence[base]
+            head_branch_found_on_remote = branches_existence[head]
+
+            print(fmt(colored_yes_no(head_branch_found_on_remote)))
+
+            print(f"Checking if {spec.base_branch_name} branch {bold(base)} "
+                  f"exists in {bold(base_org_repo_remote.remote)} remote... ", end='', flush=True)
+            print(fmt(colored_yes_no(base_branch_found_on_remote)))
+        else:
+            # Different remotes, check separately (head first, then base)
+            print(f"Checking if {spec.head_branch_name} branch {bold(head)} "
+                  f"exists in {bold(head_org_repo_remote.remote)} remote... ", end='', flush=True)
+            head_branch_found_on_remote = self._git.does_remote_branch_exist(head_org_repo_remote.remote, head)
+            print(fmt(colored_yes_no(head_branch_found_on_remote)))
+
+            print(f"Checking if {spec.base_branch_name} branch {bold(base)} "
+                  f"exists in {bold(base_org_repo_remote.remote)} remote... ", end='', flush=True)
+            base_branch_found_on_remote = self._git.does_remote_branch_exist(base_org_repo_remote.remote, base)
+            print(fmt(colored_yes_no(base_branch_found_on_remote)))
+
+        # Check head branch first - fail fast if it was removed from remote
+        # Branch was pushed before but has been removed from remote
+        # (sync_before_creating_pull_request ensures the branch is pushed, so if it's missing here, it must have been removed)
+        if not head_branch_found_on_remote and remote_head_branch_exists_locally:
+            raise MacheteException(
+                f"{spec.head_branch_name.capitalize()} branch {bold(head)} "
+                f"has been removed from {bold(head_org_repo_remote.remote)} remote since the last fetch/push.\n"
+                f"Do you really want to create {spec.pr_short_name_article} {spec.pr_short_name} for this branch?")
+
+        # Check base branch - fail fast if it was removed from remote
+        if not base_branch_found_on_remote and remote_base_branch_exists_locally:
+            raise MacheteException(
+                f"{spec.base_branch_name.capitalize()} branch {bold(base)} "
+                f"has been removed from {bold(base_org_repo_remote.remote)} remote since the last fetch/push.\n"
+                f"Do you really want to create {spec.pr_short_name_article} {spec.pr_short_name} to this branch?")
+
+        # Handle missing base branch (push it if necessary)
         if not base_branch_found_on_remote:
             self._handle_untracked_branch(
                 branch=base,
