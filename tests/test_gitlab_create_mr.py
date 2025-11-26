@@ -150,6 +150,7 @@ class TestGitLabCreateMR(BaseTest):
                 |
                 x-drop-constraint (untracked)
 
+            Checking if source branch chore/fields exists in origin remote... YES
             Checking if target branch ignore-trailing exists in origin remote... YES
             Creating a draft MR from chore/fields to ignore-trailing... OK, see www.gitlab.com
             Checking for open GitLab MRs... OK
@@ -237,6 +238,7 @@ class TestGitLabCreateMR(BaseTest):
                 |
                 x-drop-constraint (untracked)
 
+            Checking if source branch hotfix/add-trigger exists in origin remote... YES
             Checking if target branch master exists in origin remote... YES
             Creating an MR from hotfix/add-trigger to master... OK, see www.gitlab.com
             Updating description of MR !6 to include the chain of MRs... OK
@@ -333,6 +335,7 @@ class TestGitLabCreateMR(BaseTest):
               |
               o-testing/endpoints
 
+            Checking if source branch allow-ownership-link exists in origin remote... YES
             Checking if target branch develop exists in origin remote... YES
             Creating an MR from allow-ownership-link to develop... OK, see www.gitlab.com
             Setting milestone of MR !7 to 42... OK
@@ -468,7 +471,8 @@ class TestGitLabCreateMR(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        expected_msg = ("Checking if target branch feature/api_handling exists in origin remote... NO\n"
+        expected_msg = ("Checking if source branch feature/api_exception_handling exists in origin remote... YES\n"
+                        "Checking if target branch feature/api_handling exists in origin remote... NO\n"
                         "Pushing untracked branch feature/api_handling to origin...\n"
                         "Creating an MR from feature/api_exception_handling to feature/api_handling... OK, see www.gitlab.com\n")
 
@@ -609,6 +613,7 @@ class TestGitLabCreateMR(BaseTest):
         could not be created in example-org/example-repo-2, since its source branch feature lives in example-org/example-repo-1.
         Generally, MRs need to be created in whatever project the target branch lives.
 
+        Checking if source branch feature exists in origin_1 remote... YES
         Checking if target branch branch-1 exists in origin_2 remote... YES
         Creating an MR from feature to branch-1... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK
@@ -670,6 +675,7 @@ class TestGitLabCreateMR(BaseTest):
         could not be created in example-org/example-repo-1, since its source branch feature_1 lives in example-org/example-repo-2.
         Generally, MRs need to be created in whatever project the target branch lives.
 
+        Checking if source branch feature_1 exists in origin_2 remote... YES
         Checking if target branch feature exists in origin_1 remote... YES
         Creating an MR from feature_1 to feature... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK
@@ -706,6 +712,7 @@ class TestGitLabCreateMR(BaseTest):
               |
               o-feature_2 *
 
+        Checking if source branch feature_2 exists in origin_1 remote... YES
         Checking if target branch feature exists in origin_1 remote... YES
         Creating an MR from feature_2 to feature... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK
@@ -726,6 +733,7 @@ class TestGitLabCreateMR(BaseTest):
         expected_result = """
         Add feature_3 onto the inferred upstream (parent) branch feature_2? (y, N)
         Added branch feature_3 onto feature_2
+        Checking if source branch feature_3 exists in origin_1 remote... YES
         Checking if target branch feature_2 exists in origin_1 remote... YES
         Creating an MR from feature_3 to feature_2... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK
@@ -755,6 +763,7 @@ class TestGitLabCreateMR(BaseTest):
         could not be created in example-org/example-repo-1, since its source branch feature_4 lives in example-org/example-repo-2.
         Generally, MRs need to be created in whatever project the target branch lives.
 
+        Checking if source branch feature_4 exists in origin_2 remote... YES
         Checking if target branch feature_3 exists in origin_1 remote... YES
         Creating an MR from feature_4 to feature_3... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK
@@ -785,6 +794,7 @@ class TestGitLabCreateMR(BaseTest):
         could not be created in example-org/example-repo-1, since its source branch feature_5 lives in example-org/example-repo-2.
         Generally, MRs need to be created in whatever project the target branch lives.
 
+        Checking if source branch feature_5 exists in origin_2 remote... YES
         Checking if target branch feature_3 exists in origin_1 remote... YES
         Creating an MR from feature_5 to feature_3... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK
@@ -808,12 +818,14 @@ class TestGitLabCreateMR(BaseTest):
 
         new_branch("develop")
         commit()
+        push()
 
         rewrite_branch_layout_file("master\n\tdevelop push=no")
 
         assert_success(
             ['gitlab', 'create-mr'],
             """
+            Checking if source branch develop exists in origin remote... YES
             Checking if target branch master exists in origin remote... YES
             Creating an MR from develop to master... OK, see www.gitlab.com
             """
@@ -864,6 +876,7 @@ class TestGitLabCreateMR(BaseTest):
             """
             Warn: branch develop is behind its remote counterpart. Consider using git pull.
             Proceed with creating merge request? (y, Q)
+            Checking if source branch develop exists in origin remote... YES
             Checking if target branch master exists in origin remote... YES
             Creating an MR from develop to master... OK, see www.gitlab.com
             """
@@ -936,15 +949,15 @@ class TestGitLabCreateMR(BaseTest):
             """
             Warn: branch develop is diverged from and older than its remote counterpart. Consider using git reset --keep.
             Proceed with creating merge request? (y, Q)
+            Checking if source branch develop exists in origin remote... YES
             Checking if target branch master exists in origin remote... YES
             Creating an MR from develop to master... OK, see www.gitlab.com
             """
         )
 
     def test_gitlab_create_mr_when_target_branch_disappeared_from_remote(self, mocker: MockerFixture) -> None:
+        # No need to mock GitLab API since we catch the error before making API calls
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
 
         (local_path, remote_path) = create_repo_with_remote()
 
@@ -961,15 +974,40 @@ class TestGitLabCreateMR(BaseTest):
         os.chdir(local_path)
 
         rewrite_branch_layout_file("develop\n\tfeature")
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y'))
-        assert_success(
-            ['gitlab', 'create-mr'],
-            """
-            Checking if target branch develop exists in origin remote... NO
-            Push untracked branch develop to origin? (y, Q)
-            Creating an MR from feature to develop... OK, see www.gitlab.com
-            """
+
+        expected_error_message = (
+            "Target branch develop has been removed from origin remote since the last fetch/push.\n"
+            "Do you really want to create an MR to this branch?"
         )
+        assert_failure(['gitlab', 'create-mr'], expected_error_message)
+
+    def test_gitlab_create_mr_with_missing_source_branch_on_remote(self, mocker: MockerFixture) -> None:
+        """Test that creating an MR fails gracefully when source branch doesn't exist in remote"""
+        # No need to mock GitLab API since we catch the error before making API calls
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+
+        (local_path, remote_path) = create_repo_with_remote()
+        new_branch("develop")
+        commit()
+        push()
+
+        new_branch("feature")
+        commit()
+        push()
+
+        # Delete the branch from the actual remote repository to simulate the scenario
+        os.chdir(remote_path)
+        delete_branch("feature")
+        os.chdir(local_path)
+
+        rewrite_branch_layout_file("develop\n\tfeature")
+
+        # This should now fail with a clear error message before attempting to call the GitLab API
+        expected_error_message = (
+            "Source branch feature has been removed from origin remote since the last fetch/push.\n"
+            "Do you really want to create an MR for this branch?"
+        )
+        assert_failure(['gitlab', 'create-mr'], expected_error_message)
 
     def test_gitlab_create_mr_when_target_branch_appeared_on_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
@@ -992,6 +1030,7 @@ class TestGitLabCreateMR(BaseTest):
         assert_success(
             ['gitlab', 'create-mr'],
             """
+            Checking if source branch feature exists in origin remote... YES
             Checking if target branch develop exists in origin remote... YES
             Creating an MR from feature to develop... OK, see www.gitlab.com
             """

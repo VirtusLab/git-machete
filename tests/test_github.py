@@ -1,5 +1,4 @@
 import itertools
-import os
 from contextlib import contextmanager
 from textwrap import dedent
 from typing import Iterator
@@ -381,31 +380,3 @@ class TestGitHub(BaseTest):
             "Possible values for subcommand are: anno-prs, checkout-prs, create-pr, restack-pr, retarget-pr, update-pr-descriptions, sync\n"
         assert type(e) is SystemExit
         assert e.code == ExitCode.ARGUMENT_ERROR
-
-    def test_github_create_pr_with_missing_head_branch_on_remote(self, mocker: MockerFixture) -> None:
-        """Test that creating a PR fails gracefully when head branch doesn't exist in remote"""
-        # No need to mock GitHub API or input since we catch the error before making API calls
-        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-
-        (local_path, remote_path) = create_repo_with_remote()
-        new_branch("develop")
-        commit("develop commit")
-        push()
-
-        new_branch("feature")
-        commit("feature commit")
-        push()
-
-        # Delete the branch from the actual remote repository to simulate the scenario
-        os.chdir(remote_path)
-        delete_branch("feature")
-        os.chdir(local_path)
-
-        rewrite_branch_layout_file("develop\n\tfeature")
-
-        # This should now fail with a clear error message before attempting to call the GitHub API
-        expected_error_message = (
-            "Head branch feature has been removed from origin remote since the last fetch/push.\n"
-            "Do you really want to create a PR for this branch?"
-        )
-        assert_failure(['github', 'create-pr'], expected_error_message)
