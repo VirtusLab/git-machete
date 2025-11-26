@@ -10,7 +10,7 @@ from pytest_mock import MockerFixture
 from git_machete import cli
 
 from .mockers import rewrite_branch_layout_file
-from .mockers_git_repository import commit, create_repo, new_branch
+from .mockers_git_repository import check_out, commit, create_repo, new_branch
 
 # Key codes matching those in go_interactive.py
 KEY_UP = '\x1b[A'
@@ -23,6 +23,12 @@ KEY_CTRL_C = '\x03'
 
 # Global buffer to store leftover data from previous reads
 _read_buffer = {}
+
+
+def send_key(stdin_write_fd: int, key: str, sleep_time: float = 0.1) -> None:
+    """Send a key to the interactive interface and wait for it to be processed."""
+    os.write(stdin_write_fd, key.encode('utf-8'))
+    time.sleep(sleep_time)
 
 
 def make_non_blocking(fd: int) -> None:
@@ -175,8 +181,9 @@ def run_interactive_test(
 
 
 class TestGoInteractive:
-    def test_go_interactive_navigation_up_down(self, mocker: MockerFixture) -> None:
-        """Test that up/down arrow keys navigate through branches."""
+    @staticmethod
+    def setup_standard_repo() -> None:
+        """Set up a standard 3-branch repository for testing."""
         create_repo()
         new_branch("master")
         commit()
@@ -193,8 +200,45 @@ class TestGoInteractive:
             """
         rewrite_branch_layout_file(body)
 
-        # Start on develop
-        os.system("git checkout develop")
+    @staticmethod
+    def setup_two_branch_repo() -> None:
+        """Set up a 2-branch repository for testing."""
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+
+        body: str = \
+            """
+            master
+                develop
+            """
+        rewrite_branch_layout_file(body)
+
+    @staticmethod
+    def setup_repo_with_annotations() -> None:
+        """Set up a 3-branch repository with annotations for testing."""
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        new_branch("feature-1")
+        commit()
+
+        body: str = \
+            """
+            master
+                develop  PR #123 rebase=no
+                    feature-1  Work in progress
+            """
+        rewrite_branch_layout_file(body)
+
+    def test_go_interactive_navigation_up_down(self, mocker: MockerFixture) -> None:
+        """Test that up/down arrow keys navigate through branches."""
+        self.setup_standard_repo()
+        check_out("develop")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
             # Read initial interface output
@@ -213,39 +257,20 @@ class TestGoInteractive:
             assert "feature-1" in line3
 
             # Press down arrow to select feature-1
-            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_DOWN)
 
             # Press up arrow to go back
-            os.write(stdin_write_fd, KEY_UP.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_UP)
 
             # Use Ctrl+C to quit
-            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_CTRL_C)
 
         run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_left_arrow_parent(self, mocker: MockerFixture) -> None:
         """Test that left arrow navigates to parent branch."""
-        create_repo()
-        new_branch("master")
-        commit()
-        new_branch("develop")
-        commit()
-        new_branch("feature-1")
-        commit()
-
-        body: str = \
-            """
-            master
-                develop
-                    feature-1
-            """
-        rewrite_branch_layout_file(body)
-
-        # Start on feature-1
-        os.system("git checkout feature-1")
+        self.setup_standard_repo()
+        check_out("feature-1")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
             # Read initial output
@@ -262,35 +287,17 @@ class TestGoInteractive:
             assert "*" in line3
 
             # Press left arrow to go to parent (develop)
-            os.write(stdin_write_fd, KEY_LEFT.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_LEFT)
 
             # Use Ctrl+C to quit
-            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_CTRL_C)
 
         run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_right_arrow_child(self, mocker: MockerFixture) -> None:
         """Test that right arrow navigates to first child branch."""
-        create_repo()
-        new_branch("master")
-        commit()
-        new_branch("develop")
-        commit()
-        new_branch("feature-1")
-        commit()
-
-        body: str = \
-            """
-            master
-                develop
-                    feature-1
-            """
-        rewrite_branch_layout_file(body)
-
-        # Start on develop
-        os.system("git checkout develop")
+        self.setup_standard_repo()
+        check_out("develop")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
             # Read initial output
@@ -307,32 +314,17 @@ class TestGoInteractive:
             assert "*" in line2
 
             # Press right arrow to go to first child (feature-1)
-            os.write(stdin_write_fd, KEY_RIGHT.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_RIGHT)
 
             # Use Ctrl+C to quit
-            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_CTRL_C)
 
         run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_quit_without_checkout(self, mocker: MockerFixture) -> None:
         """Test that pressing Ctrl+C quits without checking out."""
-        create_repo()
-        new_branch("master")
-        commit()
-        new_branch("develop")
-        commit()
-
-        body: str = \
-            """
-            master
-                develop
-            """
-        rewrite_branch_layout_file(body)
-
-        # Start on master
-        os.system("git checkout master")
+        self.setup_two_branch_repo()
+        check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
@@ -345,12 +337,10 @@ class TestGoInteractive:
             read_line_from_fd(stdout_read_fd)
 
             # Press down to select develop
-            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_DOWN)
 
             # Press Ctrl+C to quit without checking out
-            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_CTRL_C)
 
         run_interactive_test(test_logic, mocker)
 
@@ -360,24 +350,8 @@ class TestGoInteractive:
 
     def test_go_interactive_space_checkout(self, mocker: MockerFixture) -> None:
         """Test that pressing Space checks out the selected branch."""
-        create_repo()
-        new_branch("master")
-        commit()
-        new_branch("develop")
-        commit()
-        new_branch("feature-1")
-        commit()
-
-        body: str = \
-            """
-            master
-                develop
-                    feature-1
-            """
-        rewrite_branch_layout_file(body)
-
-        # Start on master
-        os.system("git checkout master")
+        self.setup_standard_repo()
+        check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert initial_branch == "master"
 
@@ -392,14 +366,11 @@ class TestGoInteractive:
             read_line_from_fd(stdout_read_fd)
 
             # Press down twice to select feature-1
-            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
-            time.sleep(0.1)
-            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_DOWN)
+            send_key(stdin_write_fd, KEY_DOWN)
 
             # Press Space to checkout feature-1
-            os.write(stdin_write_fd, KEY_SPACE.encode('utf-8'))
-            time.sleep(0.5)
+            send_key(stdin_write_fd, KEY_SPACE, sleep_time=0.5)
 
             # Read until we get the checkout confirmation message
             # (may need to skip screen redraws with ANSI escape codes)
@@ -423,24 +394,8 @@ class TestGoInteractive:
 
     def test_go_interactive_with_annotations(self, mocker: MockerFixture) -> None:
         """Test that branch annotations are displayed with proper formatting."""
-        create_repo()
-        new_branch("master")
-        commit()
-        new_branch("develop")
-        commit()
-        new_branch("feature-1")
-        commit()
-
-        body: str = \
-            """
-            master
-                develop  PR #123 rebase=no
-                    feature-1  Work in progress
-            """
-        rewrite_branch_layout_file(body)
-
-        # Start on master
-        os.system("git checkout master")
+        self.setup_repo_with_annotations()
+        check_out("master")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
             # Read initial output
@@ -466,31 +421,14 @@ class TestGoInteractive:
             assert "Work in progress" in line3 or "\x1b[2m" in line3
 
             # Use Ctrl+C to quit
-            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_CTRL_C)
 
         run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_wrapping_navigation(self, mocker: MockerFixture) -> None:
         """Test that up/down arrow keys wrap around at the edges."""
-        create_repo()
-        new_branch("master")
-        commit()
-        new_branch("develop")
-        commit()
-        new_branch("feature-1")
-        commit()
-
-        body: str = \
-            """
-            master
-                develop
-                    feature-1
-            """
-        rewrite_branch_layout_file(body)
-
-        # Start on master (first item)
-        os.system("git checkout master")
+        self.setup_standard_repo()
+        check_out("master")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
             # Read initial output
@@ -507,51 +445,32 @@ class TestGoInteractive:
             assert "*" in line1
 
             # Press UP to wrap to last item (feature-1)
-            os.write(stdin_write_fd, KEY_UP.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_UP)
 
             # Press DOWN twice to verify we can navigate forward from last item to first
-            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_DOWN)
             # Now at master (wrapped from feature-1)
 
-            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_DOWN)
             # Now at develop
 
             # Press UP to go back to master
-            os.write(stdin_write_fd, KEY_UP.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_UP)
             # Now at master
 
             # Press UP again to wrap to feature-1
-            os.write(stdin_write_fd, KEY_UP.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_UP)
             # Now at feature-1 (wrapped)
 
             # Use Ctrl+C to quit
-            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_CTRL_C)
 
         run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_q_key_quit(self, mocker: MockerFixture) -> None:
         """Test that pressing 'q' or 'Q' quits without checking out."""
-        create_repo()
-        new_branch("master")
-        commit()
-        new_branch("develop")
-        commit()
-
-        body: str = \
-            """
-            master
-                develop
-            """
-        rewrite_branch_layout_file(body)
-
-        # Start on master
-        os.system("git checkout master")
+        self.setup_two_branch_repo()
+        check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
@@ -564,12 +483,10 @@ class TestGoInteractive:
             read_line_from_fd(stdout_read_fd)
 
             # Press down to select develop
-            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_DOWN)
 
             # Press 'q' to quit without checking out
-            os.write(stdin_write_fd, 'q'.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, 'q')
 
         run_interactive_test(test_logic, mocker)
 
@@ -579,21 +496,8 @@ class TestGoInteractive:
 
     def test_go_interactive_unknown_key_ignored(self, mocker: MockerFixture) -> None:
         """Test that unknown keys are ignored and don't break the interface."""
-        create_repo()
-        new_branch("master")
-        commit()
-        new_branch("develop")
-        commit()
-
-        body: str = \
-            """
-            master
-                develop
-            """
-        rewrite_branch_layout_file(body)
-
-        # Start on master
-        os.system("git checkout master")
+        self.setup_two_branch_repo()
+        check_out("master")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
             # Read initial output
@@ -605,19 +509,14 @@ class TestGoInteractive:
             read_line_from_fd(stdout_read_fd)
 
             # Press some unknown keys - they should be ignored
-            os.write(stdin_write_fd, 'x'.encode('utf-8'))
-            time.sleep(0.05)
-            os.write(stdin_write_fd, 'z'.encode('utf-8'))
-            time.sleep(0.05)
-            os.write(stdin_write_fd, '1'.encode('utf-8'))
-            time.sleep(0.05)
+            send_key(stdin_write_fd, 'x')
+            send_key(stdin_write_fd, 'z')
+            send_key(stdin_write_fd, '1')
 
             # Now press a valid key to verify the interface still works
-            os.write(stdin_write_fd, KEY_DOWN.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_DOWN)
 
             # Quit with Ctrl+C to verify we can still exit
-            os.write(stdin_write_fd, KEY_CTRL_C.encode('utf-8'))
-            time.sleep(0.1)
+            send_key(stdin_write_fd, KEY_CTRL_C)
 
         run_interactive_test(test_logic, mocker)
