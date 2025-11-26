@@ -5,33 +5,7 @@ from typing import List, Optional, Tuple
 
 from git_machete.client.base import MacheteClient
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import bold, index_or_none, warn
-
-# ANSI escape sequences for terminal control
-ANSI_ESCAPE = '\x1b'
-ANSI_CSI = '\x1b['  # Control Sequence Introducer
-
-# Cursor control
-ANSI_HIDE_CURSOR = '\x1b[?25l'
-ANSI_SHOW_CURSOR = '\x1b[?25h'
-ANSI_CLEAR_TO_END = '\x1b[J'  # Clear from cursor to end of screen
-
-# Text styling
-ANSI_REVERSE_VIDEO = '\x1b[7m'
-ANSI_RESET = '\x1b[0m'
-
-# Arrow key codes
-KEY_UP = '\x1b[A'
-KEY_DOWN = '\x1b[B'
-KEY_RIGHT = '\x1b[C'
-KEY_LEFT = '\x1b[D'
-KEY_SHIFT_UP = '\x1b[1;2A'
-KEY_SHIFT_DOWN = '\x1b[1;2B'
-
-# Other keys
-KEYS_ENTER = ('\r', '\n')
-KEY_SPACE = ' '
-KEY_CTRL_C = '\x03'
+from git_machete.utils import AnsiEscapeCodes, bold, index_or_none, warn
 
 
 class GoInteractiveMacheteClient(MacheteClient):
@@ -73,11 +47,11 @@ class GoInteractiveMacheteClient(MacheteClient):
         """Draw the branch selection screen using ANSI escape codes."""
         # Move cursor up to the start of our display area (if we've drawn before)
         if not is_first_draw and num_lines_drawn > 0:
-            sys.stdout.write(f'{ANSI_CSI}{num_lines_drawn}A')
+            sys.stdout.write(f'{AnsiEscapeCodes.CSI}{num_lines_drawn}A')
 
         # Clear from cursor to end of screen (only if not first draw)
         if not is_first_draw:
-            sys.stdout.write(ANSI_CLEAR_TO_END)
+            sys.stdout.write(AnsiEscapeCodes.CLEAR_TO_END)
 
         # Header
         header_text = ("Select branch (↑/↓: prev/next, Shift+↑/↓: first/last, ←: parent, →: child, "
@@ -99,7 +73,7 @@ class GoInteractiveMacheteClient(MacheteClient):
 
             if branch_idx == selected_idx:
                 # Highlight selected line (inverse video)
-                sys.stdout.write(f'{ANSI_REVERSE_VIDEO}{line}{ANSI_RESET}\n')
+                sys.stdout.write(f'{AnsiEscapeCodes.REVERSE_VIDEO}{line}{AnsiEscapeCodes.ENDC}\n')
             else:
                 sys.stdout.write(f'{line}\n')
 
@@ -114,18 +88,18 @@ class GoInteractiveMacheteClient(MacheteClient):
             tty.setraw(fd)
             ch = sys.stdin.read(1)
             # Handle escape sequences for arrow keys
-            if ch == ANSI_ESCAPE:
+            if ch == AnsiEscapeCodes.ESCAPE:
                 # Read the next character
                 ch2 = sys.stdin.read(1)
                 if ch2 == '[':
                     ch3 = sys.stdin.read(1)
-                    # Check for Shift+arrow keys (e.g., \x1b[1;2A for Shift+Up)
+                    # Check for Shift+arrow keys (e.g., \033[1;2A for Shift+Up)
                     if ch3 == '1':
                         ch4 = sys.stdin.read(1)  # Should be ';'
                         ch5 = sys.stdin.read(1)  # Should be '2'
                         ch6 = sys.stdin.read(1)  # Should be 'A' or 'B'
-                        return ANSI_CSI + ch3 + ch4 + ch5 + ch6
-                    return ANSI_CSI + ch3
+                        return AnsiEscapeCodes.CSI + ch3 + ch4 + ch5 + ch6
+                    return AnsiEscapeCodes.CSI + ch3
                 return ch + ch2
             return ch
         finally:
@@ -152,7 +126,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         is_first_draw = True
 
         # Hide cursor
-        sys.stdout.write(ANSI_HIDE_CURSOR)
+        sys.stdout.write(AnsiEscapeCodes.HIDE_CURSOR)
         sys.stdout.flush()
 
         try:
@@ -172,38 +146,38 @@ class GoInteractiveMacheteClient(MacheteClient):
                 # Read key
                 key = self._getch()
 
-                if key == KEY_UP:
+                if key == AnsiEscapeCodes.KEY_UP:
                     # Wrap around from first to last
                     selected_idx = (selected_idx - 1) % len(self._managed_branches_with_depths)
-                elif key == KEY_DOWN:
+                elif key == AnsiEscapeCodes.KEY_DOWN:
                     # Wrap around from last to first
                     selected_idx = (selected_idx + 1) % len(self._managed_branches_with_depths)
-                elif key == KEY_SHIFT_UP:
+                elif key == AnsiEscapeCodes.KEY_SHIFT_UP:
                     # Jump to first branch
                     selected_idx = 0
-                elif key == KEY_SHIFT_DOWN:
+                elif key == AnsiEscapeCodes.KEY_SHIFT_DOWN:
                     # Jump to last branch
                     selected_idx = len(self._managed_branches_with_depths) - 1
-                elif key == KEY_LEFT:
+                elif key == AnsiEscapeCodes.KEY_LEFT:
                     # Go to parent
                     selected_branch, _ = self._managed_branches_with_depths[selected_idx]
                     parent_branch = self.up_branch_for(selected_branch)
                     if parent_branch:
                         selected_idx = self.managed_branches.index(parent_branch)
-                elif key == KEY_RIGHT:
+                elif key == AnsiEscapeCodes.KEY_RIGHT:
                     # Go to first child
                     selected_branch, _ = self._managed_branches_with_depths[selected_idx]
                     child_branches = self.down_branches_for(selected_branch)
                     if child_branches:
                         selected_idx = self.managed_branches.index(child_branches[0])
-                elif key in KEYS_ENTER or key == KEY_SPACE:
+                elif key in AnsiEscapeCodes.KEYS_ENTER or key == AnsiEscapeCodes.KEY_SPACE:
                     selected_branch, _ = self._managed_branches_with_depths[selected_idx]
                     return selected_branch
                 elif key in ('q', 'Q'):
                     return None
-                elif key == KEY_CTRL_C:
+                elif key == AnsiEscapeCodes.KEY_CTRL_C:
                     return None
         finally:
             # Show cursor again and move past our interface
-            sys.stdout.write(ANSI_SHOW_CURSOR)
+            sys.stdout.write(AnsiEscapeCodes.SHOW_CURSOR)
             sys.stdout.flush()

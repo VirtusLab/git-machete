@@ -342,6 +342,11 @@ class AnsiEscapeCodes:
     # (`[2m`-style dimmed text is invisible in asciicinema renders).
     __dim_as_gray = os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true'
 
+    # Basic ANSI sequences
+    ESCAPE = '\033'
+    CSI = '\033['  # Control Sequence Introducer
+
+    # Text styling
     ENDC = '\033[0m'
     ENDC_UNDERLINE = '\033[24m'
     ENDC_BOLD_DIM = '\033[22m'
@@ -355,6 +360,25 @@ class AnsiEscapeCodes:
     ORANGE = '\033[00;38;5;208m' if __is_terminal_fully_fledged else '\033[33m'
     # Let's fall back to dark red (which might be similar to yellow :/) on 8-color terminals
     RED = '\033[91m' if __is_terminal_fully_fledged else '\033[31m'
+    REVERSE_VIDEO = '\033[7m'
+
+    # Cursor control
+    HIDE_CURSOR = '\033[?25l'
+    SHOW_CURSOR = '\033[?25h'
+    CLEAR_TO_END = '\033[J'  # Clear from cursor to end of screen
+
+    # Arrow key codes
+    KEY_UP = '\033[A'
+    KEY_DOWN = '\033[B'
+    KEY_RIGHT = '\033[C'
+    KEY_LEFT = '\033[D'
+    KEY_SHIFT_UP = '\033[1;2A'
+    KEY_SHIFT_DOWN = '\033[1;2B'
+
+    # Other keys
+    KEYS_ENTER = ('\r', '\n')
+    KEY_SPACE = ' '
+    KEY_CTRL_C = '\003'
 
 
 def bold(s: str) -> str:

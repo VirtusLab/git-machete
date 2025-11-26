@@ -9,20 +9,21 @@ import pytest
 from pytest_mock import MockerFixture
 
 from git_machete import cli
+from git_machete.utils import AnsiEscapeCodes
 
 from .base_test import BaseTest
 from .mockers import rewrite_branch_layout_file
 from .mockers_git_repository import check_out, commit, create_repo, new_branch
 
-# Key codes matching those in go_interactive.py
-KEY_UP = '\x1b[A'
-KEY_DOWN = '\x1b[B'
-KEY_RIGHT = '\x1b[C'
-KEY_LEFT = '\x1b[D'
-KEY_SHIFT_UP = '\x1b[1;2A'
-KEY_SHIFT_DOWN = '\x1b[1;2B'
-KEY_SPACE = ' '
-KEY_CTRL_C = '\x03'
+# Key codes for tests
+KEY_UP = AnsiEscapeCodes.KEY_UP
+KEY_DOWN = AnsiEscapeCodes.KEY_DOWN
+KEY_RIGHT = AnsiEscapeCodes.KEY_RIGHT
+KEY_LEFT = AnsiEscapeCodes.KEY_LEFT
+KEY_SHIFT_UP = AnsiEscapeCodes.KEY_SHIFT_UP
+KEY_SHIFT_DOWN = AnsiEscapeCodes.KEY_SHIFT_DOWN
+KEY_SPACE = AnsiEscapeCodes.KEY_SPACE
+KEY_CTRL_C = AnsiEscapeCodes.KEY_CTRL_C
 
 # Global buffer to store leftover data from previous reads
 _read_buffer = {}
