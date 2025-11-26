@@ -87,7 +87,7 @@ def read_line_from_fd(fd: int, timeout: float = 2.0) -> str:
 
 class TestGoInteractive(BaseTest):
     def setup_method(self) -> None:
-        """Set up a standard 3-branch repository for each test."""
+        """Set up a standard 4-branch repository for each test."""
         super().setup_method()
         create_repo()
         new_branch("master")
@@ -96,12 +96,16 @@ class TestGoInteractive(BaseTest):
         commit()
         new_branch("feature-1")
         commit()
+        check_out("develop")
+        new_branch("feature-2")
+        commit()
 
         body: str = \
             """
             master
                 develop
                     feature-1
+                    feature-2
             """
         rewrite_branch_layout_file(body)
 
@@ -214,12 +218,14 @@ class TestGoInteractive(BaseTest):
             line1 = read_line_from_fd(stdout_read_fd)
             line2 = read_line_from_fd(stdout_read_fd)
             line3 = read_line_from_fd(stdout_read_fd)
+            line4 = read_line_from_fd(stdout_read_fd)
 
             # develop should be marked with * (current branch)
             assert "master" in line1
             assert "develop" in line2
             assert "*" in line2  # Current branch marker
             assert "feature-1" in line3
+            assert "feature-2" in line4
 
             # Press down arrow to select feature-1
             send_key(stdin_write_fd, KEY_DOWN)
@@ -233,8 +239,8 @@ class TestGoInteractive(BaseTest):
         self.run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_left_arrow_parent(self, mocker: MockerFixture) -> None:
-        """Test that left arrow navigates to parent branch."""
-        check_out("feature-1")
+        """Test that left arrow navigates to parent branch (not just up)."""
+        check_out("feature-2")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
             # Read initial output
@@ -242,15 +248,17 @@ class TestGoInteractive(BaseTest):
             assert "Select branch" in header
 
             # Read branch list
-            read_line_from_fd(stdout_read_fd)
-            read_line_from_fd(stdout_read_fd)
-            line3 = read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)  # master
+            read_line_from_fd(stdout_read_fd)  # develop
+            read_line_from_fd(stdout_read_fd)  # feature-1
+            line4 = read_line_from_fd(stdout_read_fd)  # feature-2
 
-            # feature-1 should be current
-            assert "feature-1" in line3
-            assert "*" in line3
+            # feature-2 should be current
+            assert "feature-2" in line4
+            assert "*" in line4
 
             # Press left arrow to go to parent (develop)
+            # If left arrow was equivalent to up, it would go to feature-1
             send_key(stdin_write_fd, KEY_LEFT)
 
             # Use Ctrl+C to quit
@@ -259,7 +267,7 @@ class TestGoInteractive(BaseTest):
         self.run_interactive_test(test_logic, mocker)
 
     def test_go_interactive_right_arrow_child(self, mocker: MockerFixture) -> None:
-        """Test that right arrow navigates to first child branch."""
+        """Test that right arrow navigates to first child branch (not just down)."""
         check_out("develop")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:
@@ -268,15 +276,23 @@ class TestGoInteractive(BaseTest):
             assert "Select branch" in header
 
             # Read branch list
-            read_line_from_fd(stdout_read_fd)
-            line2 = read_line_from_fd(stdout_read_fd)
-            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)  # master
+            line2 = read_line_from_fd(stdout_read_fd)  # develop
+            read_line_from_fd(stdout_read_fd)  # feature-1
+            read_line_from_fd(stdout_read_fd)  # feature-2
 
             # develop should be current
             assert "develop" in line2
             assert "*" in line2
 
             # Press right arrow to go to first child (feature-1)
+            send_key(stdin_write_fd, KEY_RIGHT)
+
+            # Now we're on feature-1. Press down to go to feature-2
+            send_key(stdin_write_fd, KEY_DOWN)
+
+            # Now we're on feature-2. Press right - should NOT move (no children)
+            # If right was equivalent to down, we'd wrap to master
             send_key(stdin_write_fd, KEY_RIGHT)
 
             # Use Ctrl+C to quit
@@ -295,6 +311,7 @@ class TestGoInteractive(BaseTest):
             assert "Select branch" in header
 
             # Read branch list
+            read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
@@ -323,6 +340,7 @@ class TestGoInteractive(BaseTest):
             assert "Select branch" in header
 
             # Read branch list
+            read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
@@ -408,17 +426,18 @@ class TestGoInteractive(BaseTest):
             line1 = read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
 
             # master should be initially selected (marked with *)
             assert "master" in line1
             assert "*" in line1
 
-            # Press UP to wrap to last item (feature-1)
+            # Press UP to wrap to last item (feature-2)
             send_key(stdin_write_fd, KEY_UP)
 
             # Press DOWN twice to verify we can navigate forward from last item to first
             send_key(stdin_write_fd, KEY_DOWN)
-            # Now at master (wrapped from feature-1)
+            # Now at master (wrapped from feature-2)
 
             send_key(stdin_write_fd, KEY_DOWN)
             # Now at develop
@@ -427,9 +446,9 @@ class TestGoInteractive(BaseTest):
             send_key(stdin_write_fd, KEY_UP)
             # Now at master
 
-            # Press UP again to wrap to feature-1
+            # Press UP again to wrap to feature-2
             send_key(stdin_write_fd, KEY_UP)
-            # Now at feature-1 (wrapped)
+            # Now at feature-2 (wrapped)
 
             # Use Ctrl+C to quit
             send_key(stdin_write_fd, KEY_CTRL_C)
@@ -447,6 +466,7 @@ class TestGoInteractive(BaseTest):
             assert "Select branch" in header
 
             # Read branch list
+            read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
@@ -473,6 +493,7 @@ class TestGoInteractive(BaseTest):
             assert "Select branch" in header
 
             # Read branch list
+            read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
