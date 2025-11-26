@@ -297,7 +297,7 @@ only_special_branches: &only_special_branches
   filters:
     branches:
       only:
-        - "/.*(ci|dependabot.pip|deploy|dry.run|hotfix|publish|release|windows).*/"
+        - "/.*(ci|dependabot.pip|deploy|dry.run|hotfix|macos|publish|release|windows).*/"
         - "develop"
         - "master"
 

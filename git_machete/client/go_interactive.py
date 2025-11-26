@@ -1,10 +1,17 @@
 import sys
-import termios
-import tty
 from typing import List, Optional, Tuple
+
+try:
+    import termios
+    import tty
+except ImportError:
+    # termios and tty are not available on Windows
+    termios = None  # type: ignore[assignment]
+    tty = None  # type: ignore[assignment]
 
 from git_machete import utils
 from git_machete.client.base import MacheteClient
+from git_machete.exceptions import UnexpectedMacheteException
 from git_machete.git_operations import LocalBranchShortName
 from git_machete.utils import AnsiEscapeCodes, bold, index_or_none, warn
 
@@ -124,6 +131,9 @@ class GoInteractiveMacheteClient(MacheteClient):
         Launch interactive branch selection interface.
         Returns the selected branch or None if cancelled.
         """
+        if termios is None or tty is None:
+            raise UnexpectedMacheteException("Interactive mode is not supported on Windows yet")
+
         # Get flat list of branches with depths from already-parsed state
         self._managed_branches_with_depths = self._get_branch_list_with_depths()
 

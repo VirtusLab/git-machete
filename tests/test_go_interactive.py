@@ -1,9 +1,14 @@
-import fcntl
 import os
 import sys
 import threading
 import time
 from typing import Any, Callable, Dict
+
+try:
+    import fcntl
+except ImportError:
+    # fcntl is not available on Windows
+    fcntl = None  # type: ignore[assignment]
 
 import pytest
 from pytest_mock import MockerFixture
@@ -88,6 +93,7 @@ def read_line_from_fd(fd: int, timeout: float = 2.0) -> str:
     return ''
 
 
+@pytest.mark.skipif(sys.platform == 'win32', reason="Interactive mode is not supported on Windows")
 class TestGoInteractive(BaseTest):
     def setup_method(self) -> None:
         """Set up a standard 4-branch repository for each test."""

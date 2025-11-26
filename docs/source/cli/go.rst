@@ -22,6 +22,8 @@ If ``<direction>`` is not provided, an interactive mode is launched where you ca
 * **Enter or Space**: Check out the selected branch
 * **q or Ctrl+C**: Quit without checking out
 
+**Note:** Interactive mode is not supported on Windows yet.
+
 If ``<direction>`` is provided, checks out the branch specified by the given direction relative to the current branch:
 
 * ``down``:    the direct children/downstream branch of the current branch.

@@ -994,6 +994,8 @@ long_docs: Dict[str, str] = {
            * <b>Enter or Space</b>: Check out the selected branch
            * <b>q or Ctrl+C</b>: Quit without checking out
 
+        <b>Note:</b> Interactive mode is not supported on Windows yet.
+
         If `<direction>` is provided, checks out the branch specified by the given direction relative to the current branch:
 
            * `down`:    the direct children/downstream branch of the current branch.
