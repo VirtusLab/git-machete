@@ -121,8 +121,14 @@ class GoInteractiveMacheteClient(MacheteClient):
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
-    def _run_interactive_interface(self) -> Optional[LocalBranchShortName]:
-        """Run the interactive interface and return the selected branch or None."""
+    def go_interactive(self) -> Optional[LocalBranchShortName]:
+        """
+        Launch interactive branch selection interface.
+        Returns the selected branch or None if cancelled.
+        """
+        # Get flat list of branches with depths from already-parsed state
+        self._managed_branches_with_depths = self._get_branch_list_with_depths()
+
         current_branch = self._git.get_current_branch()
 
         # Find initial selection (current branch)
@@ -186,19 +192,3 @@ class GoInteractiveMacheteClient(MacheteClient):
             # Show cursor again and move past our interface
             sys.stdout.write(ANSI_SHOW_CURSOR)
             sys.stdout.flush()
-
-    def go_interactive(self) -> Optional[LocalBranchShortName]:
-        """
-        Launch interactive branch selection interface.
-        Returns the selected branch or None if cancelled.
-        """
-        # Get flat list of branches with depths from already-parsed state
-        self._managed_branches_with_depths = self._get_branch_list_with_depths()
-
-        try:
-            return self._run_interactive_interface()
-        except KeyboardInterrupt:
-            # Make sure cursor is visible
-            sys.stdout.write(ANSI_SHOW_CURSOR)
-            sys.stdout.flush()
-            return None
