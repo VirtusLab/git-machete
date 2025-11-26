@@ -637,8 +637,9 @@ class TestGoInteractive(BaseTest):
     @pytest.mark.skipif(sys.version_info < (3, 10), reason="Test times out in CI on Python < 3.10")
     def test_go_interactive_scrolling_down(self, mocker: MockerFixture) -> None:
         """Test that scrolling works when there are more branches than fit on screen."""
-        # Set max_visible_branches to 2 to test scrolling with our 4 branches
-        self.patch_symbol(mocker, 'git_machete.client.go_interactive.GoInteractiveMacheteClient.MAX_VISIBLE_BRANCHES', 2)
+        # Mock max_visible_branches to 2 to test scrolling with our 4 branches
+        self.patch_symbol(mocker, 'git_machete.client.go_interactive.GoInteractiveMacheteClient._get_max_visible_branches',
+                          lambda self: 2)
 
         check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
@@ -694,8 +695,9 @@ class TestGoInteractive(BaseTest):
     @pytest.mark.skipif(sys.version_info < (3, 10), reason="Test times out in CI on Python < 3.10")
     def test_go_interactive_scrolling_up(self, mocker: MockerFixture) -> None:
         """Test that scrolling up works when starting from a branch that requires initial scroll offset."""
-        # Set max_visible_branches to 2 to test scrolling with our 4 branches
-        self.patch_symbol(mocker, 'git_machete.client.go_interactive.GoInteractiveMacheteClient.MAX_VISIBLE_BRANCHES', 2)
+        # Mock max_visible_branches to 2 to test scrolling with our 4 branches
+        self.patch_symbol(mocker, 'git_machete.client.go_interactive.GoInteractiveMacheteClient._get_max_visible_branches',
+                          lambda self: 2)
 
         # Start from feature-2 (index 3) - this should start with scroll_offset = 2
         # so that feature-1 and feature-2 are visible

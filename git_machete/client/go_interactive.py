@@ -1,3 +1,4 @@
+import os
 import sys
 import termios
 import tty
@@ -11,10 +12,23 @@ from git_machete.utils import AnsiEscapeCodes, bold, index_or_none, warn
 class GoInteractiveMacheteClient(MacheteClient):
     """Client for interactive branch selection using curses-style interface (implemented without curses, just using ANSI sequences)."""
 
-    # Maximum number of branches to show at once (can be overridden in tests)
+    # Fallback value if terminal size cannot be determined (can be overridden in tests)
     MAX_VISIBLE_BRANCHES: int = 20
     _managed_branches_with_depths: List[Tuple[LocalBranchShortName, int]]
     _current_branch: LocalBranchShortName
+    _max_visible_branches: int
+
+    def _get_max_visible_branches(self) -> int:
+        """Get the maximum number of branches that can be displayed based on terminal height."""
+        try:
+            terminal_height = os.get_terminal_size().lines
+            # Reserve 1 line for header, plus 1 line for padding
+            # Also enforce minimum of 5 and maximum of 50 to avoid extremes
+            max_visible = max(5, min(terminal_height - 2, 50))
+            return max_visible
+        except (OSError, AttributeError):
+            # Fallback if terminal size cannot be determined (e.g., not a TTY)
+            return self.MAX_VISIBLE_BRANCHES
 
     def _get_branch_list_with_depths(self) -> List[Tuple[LocalBranchShortName, int]]:
         """Get a flat list of branches with their depths using DFS traversal."""
@@ -59,7 +73,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         sys.stdout.write(bold(header_text) + '\n')
 
         # Adjust scroll offset if needed
-        visible_lines = min(self.MAX_VISIBLE_BRANCHES, len(self._managed_branches_with_depths))
+        visible_lines = min(self._max_visible_branches, len(self._managed_branches_with_depths))
         if selected_idx < scroll_offset:
             scroll_offset = selected_idx
         elif selected_idx >= scroll_offset + visible_lines:
@@ -115,6 +129,9 @@ class GoInteractiveMacheteClient(MacheteClient):
 
         self._current_branch = self._git.get_current_branch()
 
+        # Determine maximum visible branches from terminal height
+        self._max_visible_branches = self._get_max_visible_branches()
+
         # Find initial selection (current branch)
         selected_idx = index_or_none(self.managed_branches, self._current_branch)
         if selected_idx is None:
@@ -132,7 +149,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         try:
             while True:
                 # Calculate how many lines we'll draw (header + visible branches)
-                visible_lines = min(self.MAX_VISIBLE_BRANCHES, len(self._managed_branches_with_depths))
+                visible_lines = min(self._max_visible_branches, len(self._managed_branches_with_depths))
                 num_lines_drawn = visible_lines + 1  # +1 for header
 
                 scroll_offset = self._draw_screen(
