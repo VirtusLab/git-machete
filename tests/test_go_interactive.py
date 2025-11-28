@@ -242,6 +242,7 @@ class TestGoInteractive(BaseTest):
             line2 = read_line_from_fd(stdout_read_fd)
             line3 = read_line_from_fd(stdout_read_fd)
             line4 = read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
 
             # develop should be marked with * (current branch)
             assert "master" in line1
@@ -352,6 +353,7 @@ class TestGoInteractive(BaseTest):
             read_line_from_fd(stdout_read_fd)  # develop
             read_line_from_fd(stdout_read_fd)  # feature-1
             line4 = read_line_from_fd(stdout_read_fd)  # feature-2
+            read_line_from_fd(stdout_read_fd)
 
             # feature-2 should be current
             assert "feature-2" in line4
@@ -387,6 +389,7 @@ class TestGoInteractive(BaseTest):
             line2 = read_line_from_fd(stdout_read_fd)  # develop
             read_line_from_fd(stdout_read_fd)  # feature-1
             read_line_from_fd(stdout_read_fd)  # feature-2
+            read_line_from_fd(stdout_read_fd)
 
             # develop should be current
             assert "develop" in line2
@@ -423,6 +426,7 @@ class TestGoInteractive(BaseTest):
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
 
             # Press down to select develop
             send_key(stdin_write_fd, KEY_DOWN)
@@ -449,6 +453,7 @@ class TestGoInteractive(BaseTest):
             assert "Select branch" in header
 
             # Read branch list
+            read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
@@ -505,6 +510,8 @@ class TestGoInteractive(BaseTest):
             line1 = read_line_from_fd(stdout_read_fd)
             line2 = read_line_from_fd(stdout_read_fd)
             line3 = read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
 
             # Check that master doesn't have annotation
             assert "master" in line1
@@ -536,6 +543,7 @@ class TestGoInteractive(BaseTest):
 
             # Read branch list
             line1 = read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
@@ -583,6 +591,7 @@ class TestGoInteractive(BaseTest):
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
 
             # Press down to select develop
             send_key(stdin_write_fd, KEY_DOWN)
@@ -607,6 +616,7 @@ class TestGoInteractive(BaseTest):
             assert "Select branch" in header
 
             # Read branch list
+            read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
             read_line_from_fd(stdout_read_fd)
@@ -739,6 +749,8 @@ class TestGoInteractive(BaseTest):
             # the initial view should show feature-1 and feature-2 (scroll_offset=2)
             line1 = read_line_from_fd(stdout_read_fd)
             line2 = read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
             initial_view = line1 + line2
             assert "feature-1" in initial_view
             assert "feature-2" in initial_view
