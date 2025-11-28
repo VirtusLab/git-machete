@@ -42,9 +42,6 @@ commands:
           command: PYTHON_VERSION=<<parameters.python>> GIT_VERSION=<<parameters.git>>  bash ci/tox/ci-run.sh
       - store_test_results:
           path: test-results/
-      - persist_to_workspace:
-          root: .
-          paths: [ .coverage.* ]
 
 jobs:
   "general checks":
