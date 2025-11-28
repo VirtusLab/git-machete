@@ -46,7 +46,7 @@ def make_non_blocking(fd: int) -> None:
     fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
 
-def read_line_from_fd(fd: int, timeout: float = 2.0) -> str:
+def read_line_from_fd(fd: int, timeout: float = 0.5) -> str:
     """Read a line from a file descriptor with timeout."""
     if fd not in _read_buffer:
         _read_buffer[fd] = bytearray()
