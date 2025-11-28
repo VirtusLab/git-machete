@@ -201,7 +201,7 @@ class TestGoInteractive(BaseTest):
 
         try:
             # Run the actual test
-            test_func(stdin_write_fd_obj.fileno(), stdout_read_fd_obj.fileno())
+            test_func(stdin_write_fd_obj.fileno(), stdout_read_fd_obj.fileno(), 0)
 
             # Wait for thread to finish
             thread.join(timeout=timeout)
@@ -226,7 +226,7 @@ class TestGoInteractive(BaseTest):
         print("\n*** test_go_interactive_navigation_up_down ***")
         check_out("develop")
 
-        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:  # noqa: U100
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
             # Read initial interface output
             header = read_line_from_fd(stdout_read_fd)
             print("header = read_line_from_fd", file=sys.stderr)
