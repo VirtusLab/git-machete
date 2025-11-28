@@ -643,10 +643,14 @@ class TestGoInteractive(BaseTest):
             header = read_line_from_fd(stdout_read_fd)
             assert "Select branch" in header
 
-            # Read branch list - first branch should be selected (no * marker since unmanaged is current)
+            # Read branch list - first branch should be selected (no * marker since the current branch is unmanaged)
             line1 = read_line_from_fd(stdout_read_fd)
             # The first branch (master) should be highlighted
             assert "master" in line1
+            # Read the remaining lines
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
+            read_line_from_fd(stdout_read_fd)
 
             # Quit with Ctrl+C
             send_key(stdin_write_fd, KEY_CTRL_C)
