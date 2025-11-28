@@ -243,10 +243,6 @@ class TestGoInteractive(BaseTest):
             print("line3 = read_line_from_fd", file=sys.stderr)
             line4 = read_line_from_fd(stdout_read_fd)
             print("line4 = read_line_from_fd", file=sys.stderr)
-            read_line_from_fd(stdout_read_fd)
-            print("read_line_from_fd", file=sys.stderr)
-            read_line_from_fd(stdout_read_fd)
-            print("read_line_from_fd", file=sys.stderr)
 
             # develop should be marked with * (current branch)
             assert "master" in line1
