@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 try:
     import termios
     import tty
-except ImportError:
+except ImportError:  # pragma: no cover; Windows-specific
     # termios and tty are not available on Windows
     termios = None  # type: ignore[assignment]
     tty = None  # type: ignore[assignment]

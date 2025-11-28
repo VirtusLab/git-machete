@@ -103,22 +103,30 @@ class TestGoInteractive(BaseTest):
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "feature-2"
 
+        # Now test Shift+Up to jump to first
+        check_out("develop")
+        self.run_interactive_test(mocker, (KEY_SHIFT_UP, KEY_SPACE), capsys)
+
+        # Verify we checked out master
+        current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert current_branch == "master"
+
     def test_go_interactive_left_arrow_parent(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that left arrow navigates to parent branch (not just up), and does nothing on root."""
         check_out("feature-2")
 
-        # Left (to develop), Left (to master), Space (checkout master)
-        self.run_interactive_test(mocker, (KEY_LEFT, KEY_LEFT, KEY_SPACE), capsys)
+        # Left (to develop), Left (to master), Left (no parent - should stay on master), Space (checkout master)
+        self.run_interactive_test(mocker, (KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_SPACE), capsys)
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "master"
 
     def test_go_interactive_right_arrow_child(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
-        """Test that right arrow navigates to first child branch (not just down)."""
+        """Test that right arrow navigates to first child branch (not just down), and does nothing if no child."""
         check_out("develop")
 
-        # Right (to feature-1), Space (checkout)
-        self.run_interactive_test(mocker, (KEY_RIGHT, KEY_SPACE), capsys)
+        # Right (to feature-1), Right (no child - should stay on feature-1), Space (checkout)
+        self.run_interactive_test(mocker, (KEY_RIGHT, KEY_RIGHT, KEY_SPACE), capsys)
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "feature-1"
