@@ -173,10 +173,6 @@ class GoInteractiveMacheteClient(MacheteClient):
                 # Read key
                 key = self._getch()
 
-                # Handle EOF (empty string means stdin was closed)
-                if not key:
-                    return None
-
                 if key == AnsiEscapeCodes.KEY_UP:
                     # Wrap around from first to last
                     selected_idx = (selected_idx - 1) % len(self._managed_branches_with_depths)
