@@ -101,23 +101,15 @@ class GoInteractiveMacheteClient(MacheteClient):
         sys.stdout.flush()
         return scroll_offset
 
-    def _get_stdin_fd(self) -> int:
-        """Get file descriptor for stdin."""
-        try:
-            return sys.stdin.fileno()
-        except (ValueError, AttributeError):
-            # stdin is closed or not a real file (e.g., in tests with parallel execution)
-            return -1
+    def _get_stdin_fd(self) -> int:  # pragma: no cover; always mocked in tests
+        return sys.stdin.fileno()
 
-    def _read_stdin(self, n: int) -> str:
-        """Read n characters from stdin."""
+    def _read_stdin(self, n: int) -> str:  # pragma: no cover; always mocked in tests
         return sys.stdin.read(n)
 
     def _getch(self) -> str:
         """Read a single character from stdin without echo."""
         fd = self._get_stdin_fd()
-        if fd == -1:
-            return ''
         old_settings = termios.tcgetattr(fd)
         try:
             tty.setraw(fd)

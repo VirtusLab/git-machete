@@ -19,6 +19,7 @@ KEY_LEFT = AnsiEscapeCodes.KEY_LEFT
 KEY_SHIFT_UP = AnsiEscapeCodes.KEY_SHIFT_UP
 KEY_SHIFT_DOWN = AnsiEscapeCodes.KEY_SHIFT_DOWN
 KEY_SPACE = AnsiEscapeCodes.KEY_SPACE
+KEY_ENTER = '\r'  # Enter key
 KEY_CTRL_C = AnsiEscapeCodes.KEY_CTRL_C
 
 
@@ -94,15 +95,19 @@ class TestGoInteractive(BaseTest):
         """Test that up/down arrow keys navigate through branches."""
         check_out("develop")
 
-        # Navigate down once, then quit
-        output = self.run_interactive_test(mocker, (KEY_DOWN, 'q'))
+        # Navigate: DOWN (to feature-1), UP (back to develop), DOWN (to feature-1 again), SPACE (checkout)
+        output = self.run_interactive_test(mocker, (KEY_DOWN, KEY_UP, KEY_DOWN, KEY_SPACE))
 
-        # Should show the branch list
+        # Verify the branch list is displayed
         assert "Select branch" in output
         assert "master" in output
         assert "develop" in output
         assert "feature-1" in output
         assert "feature-2" in output
+
+        # Verify we checked out feature-1
+        current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert current_branch == "feature-1"
 
     def test_go_interactive_shift_arrows_jump(self, mocker: MockerFixture) -> None:
         """Test that Shift+Up/Down jumps to first/last branch."""
@@ -115,9 +120,9 @@ class TestGoInteractive(BaseTest):
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "feature-2"
 
-        # Now test Shift+Up to jump to first
+        # Now test Shift+Up to jump to first branch, use Enter to checkout
         check_out("develop")
-        self.run_interactive_test(mocker, (KEY_SHIFT_UP, KEY_SPACE))
+        self.run_interactive_test(mocker, (KEY_SHIFT_UP, KEY_ENTER))
 
         # Verify we checked out master
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
@@ -155,11 +160,18 @@ class TestGoInteractive(BaseTest):
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == initial_branch
 
-    def test_go_interactive_space_checkout(self, mocker: MockerFixture) -> None:
-        """Test that pressing Space checks out the selected branch."""
+    def test_go_interactive_enter_and_space_checkout(self, mocker: MockerFixture) -> None:
+        """Test that pressing Enter or Space checks out the selected branch."""
         check_out("master")
 
-        # Navigate down to develop, checkout with Space
+        # Navigate down to develop, checkout with Enter
+        self.run_interactive_test(mocker, (KEY_DOWN, KEY_ENTER))
+
+        current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert current_branch == "develop"
+
+        # Now test Space as well
+        check_out("master")
         self.run_interactive_test(mocker, (KEY_DOWN, KEY_SPACE))
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
@@ -182,8 +194,8 @@ class TestGoInteractive(BaseTest):
         # Just quit
         output = self.run_interactive_test(mocker, ('q',))
 
-        # Check that annotations are shown (they should be dimmed/formatted)
-        assert "PR #123" in output or "123" in output  # Annotation might be formatted
+        # Check that annotations are shown
+        assert "PR #123" in output
         assert "rebase=no push=no" in output or "rebase" in output
 
     def test_go_interactive_wrapping_navigation(self, mocker: MockerFixture) -> None:
@@ -234,9 +246,8 @@ class TestGoInteractive(BaseTest):
         # Just quit
         output = self.run_interactive_test(mocker, ('q',))
 
-        # Check for warning in output (it might be in stderr, but let's check stdout first)
-        # Note: We might need to capture stderr separately if warning goes there
-        # For now, just verify no crash and we can navigate
+        # Check for warning in output
+        assert "current branch unmanaged is unmanaged" in output
         assert "Select branch" in output
 
     def test_go_interactive_scrolling_down(self, mocker: MockerFixture) -> None:
@@ -246,7 +257,18 @@ class TestGoInteractive(BaseTest):
 
         check_out("master")
 
-        # Navigate down and checkout
+        # First, check initial output without scrolling - feature-2 should be hidden
+        output_no_scroll = self.run_interactive_test(mocker, ('q',))
+        assert "master" in output_no_scroll
+        assert "develop" in output_no_scroll
+        # feature-1 and feature-2 should NOT be visible initially (only 2 branches fit on screen)
+        assert "feature-2" not in output_no_scroll
+
+        # Now navigate down to trigger scrolling and verify feature-2 becomes visible
+        output_with_scroll = self.run_interactive_test(mocker, (KEY_DOWN, KEY_DOWN, KEY_DOWN, 'q'))
+        assert "feature-2" in output_with_scroll
+
+        # Finally, navigate down and checkout to verify functionality
         self.run_interactive_test(mocker, (KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_SPACE))
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
@@ -259,7 +281,18 @@ class TestGoInteractive(BaseTest):
 
         check_out("feature-2")
 
-        # Navigate up to master and checkout
+        # First, check initial output without scrolling - master should be hidden
+        output_no_scroll = self.run_interactive_test(mocker, ('q',))
+        assert "feature-1" in output_no_scroll
+        assert "feature-2" in output_no_scroll
+        # master and develop should NOT be visible initially (only last 2 branches fit on screen)
+        assert "master" not in output_no_scroll
+
+        # Now navigate up to trigger scrolling and verify master becomes visible
+        output_with_scroll = self.run_interactive_test(mocker, (KEY_UP, KEY_UP, KEY_UP, 'q'))
+        assert "master" in output_with_scroll
+
+        # Finally, navigate up and checkout to verify functionality
         self.run_interactive_test(mocker, (KEY_UP, KEY_UP, KEY_UP, KEY_SPACE))
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
