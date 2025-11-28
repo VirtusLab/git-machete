@@ -139,19 +139,15 @@ class TestGoInteractive(BaseTest):
         # Create pipes for stdin, stdout, and stderr
         stdin_read_fd, stdin_write_fd = os.pipe()
         stdout_read_fd, stdout_write_fd = os.pipe()
-        stderr_read_fd, stderr_write_fd = os.pipe()
 
         # Open file objects for all ends
         stdin_read = os.fdopen(stdin_read_fd, 'r')
         stdin_write_fd_obj = os.fdopen(stdin_write_fd, 'w')
         stdout_read_fd_obj = os.fdopen(stdout_read_fd, 'r')
         stdout_write = os.fdopen(stdout_write_fd, 'w', buffering=1)  # Line buffered
-        stderr_read_fd_obj = os.fdopen(stderr_read_fd, 'r')
-        stderr_write = os.fdopen(stderr_write_fd, 'w', buffering=1)  # Line buffered
 
         # Make stdout and stderr read ends non-blocking
         make_non_blocking(stdout_read_fd_obj.fileno())
-        make_non_blocking(stderr_read_fd_obj.fileno())
 
         # Mock termios operations since pipes don't support them
         fake_termios_settings = ['fake_settings']
@@ -177,11 +173,9 @@ class TestGoInteractive(BaseTest):
 
             original_stdin = sys.stdin
             original_stdout = sys.stdout
-            original_stderr = sys.stderr
             try:
                 sys.stdin = stdin_read
                 sys.stdout = stdout_write
-                sys.stderr = stderr_write
                 print("*** run_git_machete_go start ***", file=original_stdout)
                 # Run the CLI command
                 cli.launch(['go'])
@@ -197,7 +191,6 @@ class TestGoInteractive(BaseTest):
             finally:
                 sys.stdin = original_stdin
                 sys.stdout = original_stdout
-                sys.stderr = original_stderr
 
         # Start git machete go in a separate thread
         thread = threading.Thread(target=run_git_machete_go, daemon=True)
@@ -208,7 +201,7 @@ class TestGoInteractive(BaseTest):
 
         try:
             # Run the actual test
-            test_func(stdin_write_fd_obj.fileno(), stdout_read_fd_obj.fileno(), stderr_read_fd_obj.fileno())
+            test_func(stdin_write_fd_obj.fileno(), stdout_read_fd_obj.fileno())
 
             # Wait for thread to finish
             thread.join(timeout=timeout)
@@ -227,26 +220,31 @@ class TestGoInteractive(BaseTest):
             stdin_write_fd_obj.close()
             stdout_read_fd_obj.close()
             stdout_write.close()
-            stderr_read_fd_obj.close()
-            stderr_write.close()
 
     def test_go_interactive_navigation_up_down(self, mocker: MockerFixture) -> None:
         """Test that up/down arrow keys navigate through branches."""
         print("\n*** test_go_interactive_navigation_up_down ***")
         check_out("develop")
 
-        def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
+        def test_logic(stdin_write_fd: int, stdout_read_fd: int) -> None:  # noqa: U100
             # Read initial interface output
             header = read_line_from_fd(stdout_read_fd)
+            print("header = read_line_from_fd", file=sys.stderr)
             assert "Select branch" in header
 
             # Read the branch list
             line1 = read_line_from_fd(stdout_read_fd)
+            print("line1 = read_line_from_fd", file=sys.stderr)
             line2 = read_line_from_fd(stdout_read_fd)
+            print("line2 = read_line_from_fd", file=sys.stderr)
             line3 = read_line_from_fd(stdout_read_fd)
+            print("line3 = read_line_from_fd", file=sys.stderr)
             line4 = read_line_from_fd(stdout_read_fd)
+            print("line4 = read_line_from_fd", file=sys.stderr)
             read_line_from_fd(stdout_read_fd)
+            print("read_line_from_fd", file=sys.stderr)
             read_line_from_fd(stdout_read_fd)
+            print("read_line_from_fd", file=sys.stderr)
 
             # develop should be marked with * (current branch)
             assert "master" in line1
