@@ -202,9 +202,11 @@ class TestGoInteractive(BaseTest):
         try:
             # Run the actual test
             test_func(stdin_write_fd_obj.fileno(), stdout_read_fd_obj.fileno(), 0)
+            print("test_func finished", file=sys.stderr)
 
             # Wait for thread to finish
             thread.join(timeout=timeout)
+            print("thread.join finished", file=sys.stderr)
 
             # Check if thread is still running (timeout)
             if thread.is_alive():
@@ -255,12 +257,15 @@ class TestGoInteractive(BaseTest):
 
             # Press down arrow to select feature-1
             send_key(stdin_write_fd, KEY_DOWN)
+            print("send_key(stdin_write_fd, KEY_DOWN)", file=sys.stderr)
 
             # Press up arrow to go back
             send_key(stdin_write_fd, KEY_UP)
+            print("send_key(stdin_write_fd, KEY_UP)", file=sys.stderr)
 
             # Use Ctrl+C to quit
             send_key(stdin_write_fd, KEY_CTRL_C)
+            print("send_key(stdin_write_fd, KEY_CTRL_C)", file=sys.stderr)
 
         self.run_interactive_test(test_logic, mocker)
 
