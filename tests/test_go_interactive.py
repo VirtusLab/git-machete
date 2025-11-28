@@ -174,6 +174,7 @@ class TestGoInteractive(BaseTest):
 
         def run_git_machete_go() -> None:
             """Run git machete go in a thread with replaced stdin/stdout/stderr."""
+
             original_stdin = sys.stdin
             original_stdout = sys.stdout
             original_stderr = sys.stderr
@@ -181,8 +182,10 @@ class TestGoInteractive(BaseTest):
                 sys.stdin = stdin_read
                 sys.stdout = stdout_write
                 sys.stderr = stderr_write
+                print("*** run_git_machete_go start ***", file=original_stdout)
                 # Run the CLI command
                 cli.launch(['go'])
+                print("*** run_git_machete_go end ***", file=original_stdout)
             except SystemExit as e:
                 # CLI may exit with sys.exit(), that's normal
                 if e.code != 0:
@@ -236,19 +239,14 @@ class TestGoInteractive(BaseTest):
             # Read initial interface output
             header = read_line_from_fd(stdout_read_fd)
             assert "Select branch" in header
-            print("*** header = read_line_from_fd ***")
 
             # Read the branch list
             line1 = read_line_from_fd(stdout_read_fd)
-            print("*** line1 = read_line_from_fd ***")
             line2 = read_line_from_fd(stdout_read_fd)
-            print("*** line2 = read_line_from_fd ***")
             line3 = read_line_from_fd(stdout_read_fd)
-            print("*** line3 = read_line_from_fd ***")
             line4 = read_line_from_fd(stdout_read_fd)
-            print("*** line4 = read_line_from_fd ***")
             read_line_from_fd(stdout_read_fd)
-            print("*** read_line_from_fd ***")
+            read_line_from_fd(stdout_read_fd)
 
             # develop should be marked with * (current branch)
             assert "master" in line1
