@@ -1,8 +1,9 @@
 import os
 import sys
-from typing import Any, Callable
+from typing import Any, Callable, Tuple
 
 import pytest
+from _pytest.capture import CaptureFixture
 from pytest_mock import MockerFixture
 
 from git_machete import cli
@@ -61,7 +62,7 @@ class TestGoInteractive(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-    def run_interactive_test(self, mocker: MockerFixture, keys: tuple, capsys: pytest.CaptureFixture) -> str:
+    def run_interactive_test(self, mocker: MockerFixture, keys: Tuple[str, ...], capsys: CaptureFixture[str]) -> str:
         """
         Helper to run an interactive test by mocking _getch with a sequence of keys.
         Returns the captured stdout.
@@ -75,9 +76,9 @@ class TestGoInteractive(BaseTest):
 
         # Capture and return the output
         captured = capsys.readouterr()
-        return captured.out
+        return str(captured.out)
 
-    def test_go_interactive_navigation_up_down(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_navigation_up_down(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that up/down arrow keys navigate through branches."""
         check_out("develop")
 
@@ -91,7 +92,7 @@ class TestGoInteractive(BaseTest):
         assert "feature-1" in output
         assert "feature-2" in output
 
-    def test_go_interactive_shift_arrows_jump(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_shift_arrows_jump(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that Shift+Up/Down jumps to first/last branch."""
         check_out("develop")
 
@@ -102,7 +103,7 @@ class TestGoInteractive(BaseTest):
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "feature-2"
 
-    def test_go_interactive_left_arrow_parent(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_left_arrow_parent(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that left arrow navigates to parent branch (not just up), and does nothing on root."""
         check_out("feature-2")
 
@@ -112,7 +113,7 @@ class TestGoInteractive(BaseTest):
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "master"
 
-    def test_go_interactive_right_arrow_child(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_right_arrow_child(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that right arrow navigates to first child branch (not just down)."""
         check_out("develop")
 
@@ -122,7 +123,7 @@ class TestGoInteractive(BaseTest):
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "feature-1"
 
-    def test_go_interactive_quit_without_checkout(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_quit_without_checkout(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that pressing Ctrl+C quits without checking out."""
         check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
@@ -134,7 +135,7 @@ class TestGoInteractive(BaseTest):
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == initial_branch
 
-    def test_go_interactive_space_checkout(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_space_checkout(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that pressing Space checks out the selected branch."""
         check_out("master")
 
@@ -144,7 +145,7 @@ class TestGoInteractive(BaseTest):
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "develop"
 
-    def test_go_interactive_with_annotations(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_with_annotations(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that branch annotations are displayed with proper formatting."""
         # Overwrite .git/machete with annotations
         body: str = \
@@ -165,7 +166,7 @@ class TestGoInteractive(BaseTest):
         assert "PR #123" in output or "123" in output  # Annotation might be formatted
         assert "rebase=no push=no" in output or "rebase" in output
 
-    def test_go_interactive_wrapping_navigation(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_wrapping_navigation(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that up/down arrow keys wrap around at the edges."""
         check_out("master")
 
@@ -176,7 +177,7 @@ class TestGoInteractive(BaseTest):
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "master"
 
-    def test_go_interactive_q_key_quit(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_q_key_quit(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that pressing 'q' or 'Q' quits without checking out."""
         check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
@@ -193,7 +194,7 @@ class TestGoInteractive(BaseTest):
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == initial_branch
 
-    def test_go_interactive_unknown_key_ignored(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_unknown_key_ignored(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that unknown keys are ignored and don't break the interface."""
         check_out("master")
 
@@ -204,7 +205,7 @@ class TestGoInteractive(BaseTest):
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "master"
 
-    def test_go_interactive_unmanaged_current_branch(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_unmanaged_current_branch(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that when current branch is unmanaged, a warning is shown and selection starts at first branch."""
         # Create an unmanaged branch (not in .git/machete)
         new_branch("unmanaged")
@@ -218,7 +219,7 @@ class TestGoInteractive(BaseTest):
         # For now, just verify no crash and we can navigate
         assert "Select branch" in output
 
-    def test_go_interactive_scrolling_down(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_scrolling_down(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that scrolling works when there are more branches than fit on screen."""
         # Mock terminal height to 4, which results in max_visible_branches = 2 (4 - 2)
         self.patch_symbol(mocker, 'git_machete.utils.get_terminal_height', lambda: 4)
@@ -231,7 +232,7 @@ class TestGoInteractive(BaseTest):
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "feature-2"
 
-    def test_go_interactive_scrolling_up(self, mocker: MockerFixture, capsys: pytest.CaptureFixture) -> None:
+    def test_go_interactive_scrolling_up(self, mocker: MockerFixture, capsys: CaptureFixture[str]) -> None:
         """Test that scrolling up works when starting from a branch that requires initial scroll offset."""
         # Mock terminal height to 4, which results in max_visible_branches = 2 (4 - 2)
         self.patch_symbol(mocker, 'git_machete.utils.get_terminal_height', lambda: 4)
