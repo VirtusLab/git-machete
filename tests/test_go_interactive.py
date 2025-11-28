@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Any, Callable, Tuple
+from typing import Any, Tuple
 
 import pytest
 from pytest_mock import MockerFixture
@@ -22,15 +22,24 @@ KEY_SPACE = AnsiEscapeCodes.KEY_SPACE
 KEY_CTRL_C = AnsiEscapeCodes.KEY_CTRL_C
 
 
-def mock_getch_returning(*keys: str) -> Callable[[Any], str]:
+def mock_read_stdin_returning(*keys: str) -> Any:
     """
-    Mock for _getch that returns a predetermined sequence of keys.
-    Similar to mock_input_returning but for _getch.
+    Create a mock for _read_stdin that returns characters from the key sequence.
+    Multi-character keys (like arrow keys) are expanded into individual characters.
     """
-    gen = (key for key in keys)
+    # Expand all keys into a single string of characters
+    all_chars = ''.join(keys)
+    char_list = list(all_chars)
+    char_iter = iter(char_list)
 
-    def inner(self: Any) -> str:  # noqa: U100
-        return next(gen, '')  # Return empty string when exhausted (EOF)
+    def inner(self: Any, n: int) -> str:  # noqa: U100
+        result = ''
+        for _ in range(n):
+            try:
+                result += next(char_iter)
+            except StopIteration:
+                break
+        return result if result else ''  # Return empty string when exhausted (EOF)
     return inner
 
 
@@ -62,12 +71,21 @@ class TestGoInteractive(BaseTest):
 
     def run_interactive_test(self, mocker: MockerFixture, keys: Tuple[str, ...]) -> str:
         """
-        Helper to run an interactive test by mocking _getch with a sequence of keys.
+        Helper to run an interactive test by mocking stdin and terminal methods.
         Returns the captured stdout.
         """
-        # Mock _getch to return the sequence of keys
-        self.patch_symbol(mocker, 'git_machete.client.go_interactive.GoInteractiveMacheteClient._getch',
-                          mock_getch_returning(*keys))
+        # Mock _get_stdin_fd to return a fake file descriptor
+        self.patch_symbol(mocker, 'git_machete.client.go_interactive.GoInteractiveMacheteClient._get_stdin_fd',
+                          lambda self: 0)
+
+        # Mock _read_stdin to return characters from the key sequence
+        self.patch_symbol(mocker, 'git_machete.client.go_interactive.GoInteractiveMacheteClient._read_stdin',
+                          mock_read_stdin_returning(*keys))
+
+        # Mock termios and tty functions to avoid actual terminal manipulation
+        self.patch_symbol(mocker, 'termios.tcgetattr', lambda _fd: None)  # noqa: U100
+        self.patch_symbol(mocker, 'termios.tcsetattr', lambda _fd, _when, _attributes: None)  # noqa: U100
+        self.patch_symbol(mocker, 'tty.setraw', lambda _fd: None)  # noqa: U100
 
         # Run the command and return the output
         return launch_command('go')

@@ -101,24 +101,38 @@ class GoInteractiveMacheteClient(MacheteClient):
         sys.stdout.flush()
         return scroll_offset
 
+    def _get_stdin_fd(self) -> int:
+        """Get file descriptor for stdin."""
+        try:
+            return sys.stdin.fileno()
+        except (ValueError, AttributeError):
+            # stdin is closed or not a real file (e.g., in tests with parallel execution)
+            return -1
+
+    def _read_stdin(self, n: int) -> str:
+        """Read n characters from stdin."""
+        return sys.stdin.read(n)
+
     def _getch(self) -> str:
         """Read a single character from stdin without echo."""
-        fd = sys.stdin.fileno()
+        fd = self._get_stdin_fd()
+        if fd == -1:
+            return ''
         old_settings = termios.tcgetattr(fd)
         try:
             tty.setraw(fd)
-            ch = sys.stdin.read(1)
+            ch = self._read_stdin(1)
             # Handle escape sequences for arrow keys
             if ch == AnsiEscapeCodes.ESCAPE:
                 # Read the next character
-                ch2 = sys.stdin.read(1)
+                ch2 = self._read_stdin(1)
                 if ch2 == '[':
-                    ch3 = sys.stdin.read(1)
+                    ch3 = self._read_stdin(1)
                     # Check for Shift+arrow keys (e.g., \033[1;2A for Shift+Up)
                     if ch3 == '1':
-                        ch4 = sys.stdin.read(1)  # Should be ';'
-                        ch5 = sys.stdin.read(1)  # Should be '2'
-                        ch6 = sys.stdin.read(1)  # Should be 'A' or 'B'
+                        ch4 = self._read_stdin(1)  # Should be ';'
+                        ch5 = self._read_stdin(1)  # Should be '2'
+                        ch6 = self._read_stdin(1)  # Should be 'A' or 'B'
                         return AnsiEscapeCodes.CSI + ch3 + ch4 + ch5 + ch6
                     return AnsiEscapeCodes.CSI + ch3
                 return ch + ch2
