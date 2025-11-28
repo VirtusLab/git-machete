@@ -207,10 +207,6 @@ jobs:
       - attach_workspace:
           at: .
       - run: pip3 install tox
-      - run: tox -e coverage-combine
-      - codecov/upload:
-          disable_search: true  # otherwise, requirements/coverage.txt gets picked up
-          files: coverage.xml
 
   "dry run releases":
     executor: ubuntu_executor
