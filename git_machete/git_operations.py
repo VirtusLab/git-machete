@@ -1216,9 +1216,6 @@ class GitContext:
         delete_option = '-D' if force else '-d'
         return self._run_git('branch', delete_option, branch_name, flush_caches=True)
 
-    def delete_remote_branch(self, branch_name: RemoteBranchShortName) -> int:
-        return self._run_git('branch', '-d', '-r', branch_name, flush_caches=True)
-
     def display_diff(self, branch: Optional[LocalBranchShortName], against: AnyRevision,
                      *, opt_stat: bool, extra_git_diff_args: List[str]) -> int:
         params = []

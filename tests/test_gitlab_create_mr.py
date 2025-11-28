@@ -820,6 +820,10 @@ class TestGitLabCreateMR(BaseTest):
         commit()
         push()
 
+        # Add another commit to make the branch AHEAD_OF_REMOTE,
+        # which tests the case where push=no prevents automatic push during create-mr
+        commit()
+
         rewrite_branch_layout_file("master\n\tdevelop push=no")
 
         assert_success(
