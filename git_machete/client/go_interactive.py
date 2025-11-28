@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 try:
     import termios
     import tty
-except ImportError:
+except ImportError:  # pragma: no cover; Windows-specific
     # termios and tty are not available on Windows
     termios = None  # type: ignore[assignment]
     tty = None  # type: ignore[assignment]
@@ -101,24 +101,30 @@ class GoInteractiveMacheteClient(MacheteClient):
         sys.stdout.flush()
         return scroll_offset
 
+    def _get_stdin_fd(self) -> int:  # pragma: no cover; always mocked in tests
+        return sys.stdin.fileno()
+
+    def _read_stdin(self, n: int) -> str:  # pragma: no cover; always mocked in tests
+        return sys.stdin.read(n)
+
     def _getch(self) -> str:
         """Read a single character from stdin without echo."""
-        fd = sys.stdin.fileno()
+        fd = self._get_stdin_fd()
         old_settings = termios.tcgetattr(fd)
         try:
             tty.setraw(fd)
-            ch = sys.stdin.read(1)
+            ch = self._read_stdin(1)
             # Handle escape sequences for arrow keys
             if ch == AnsiEscapeCodes.ESCAPE:
                 # Read the next character
-                ch2 = sys.stdin.read(1)
+                ch2 = self._read_stdin(1)
                 if ch2 == '[':
-                    ch3 = sys.stdin.read(1)
+                    ch3 = self._read_stdin(1)
                     # Check for Shift+arrow keys (e.g., \033[1;2A for Shift+Up)
                     if ch3 == '1':
-                        ch4 = sys.stdin.read(1)  # Should be ';'
-                        ch5 = sys.stdin.read(1)  # Should be '2'
-                        ch6 = sys.stdin.read(1)  # Should be 'A' or 'B'
+                        ch4 = self._read_stdin(1)  # Should be ';'
+                        ch5 = self._read_stdin(1)  # Should be '2'
+                        ch6 = self._read_stdin(1)  # Should be 'A' or 'B'
                         return AnsiEscapeCodes.CSI + ch3 + ch4 + ch5 + ch6
                     return AnsiEscapeCodes.CSI + ch3
                 return ch + ch2
