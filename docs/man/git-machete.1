@@ -1761,6 +1761,7 @@ since all branches are usually meant to be ultimately merged to one of those.
 git machete slide\-out \-\-removed\-from\-remote [\-\-delete]
 git machete slide\-out [\-d|\-\-down\-fork\-point=<down\-fork\-point\-commit>] [\-\-delete]
                       [\-M|\-\-merge] [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase]
+                      [\-\-no\-rebase]
                       [<branch> [<branch> [<branch> ...]]]
 .EE
 .UNINDENT
@@ -1851,6 +1852,12 @@ Not allowed if updating by rebase.
 .B  \-\-no\-interactive\-rebase
 If updating by rebase, run \fBgit rebase\fP in non\-interactive mode (without \fB\-i/\-\-interactive\fP flag).
 Not allowed if updating by merge.
+.TP
+.B  \-\-no\-rebase
+Skip rebase/merge of downstream branches after sliding out.
+Only remove the branches from the branch layout without syncing their children to the new upstream.
+This is useful when you want to manually handle the downstream branches,
+or when using \fBgit machete traverse\fP afterwards to sync everything at once.
 .TP
 .B  \-\-removed\-from\-remote
 Slide out managed branches whose remote tracking branches have been deleted and that have no downstreams.

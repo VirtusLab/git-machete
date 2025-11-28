@@ -285,6 +285,24 @@ Avoiding such "balls" is one of the main reasons for opening small PRs in the fi
 
 <br/>
 
+#### How to cleanly slide out a PR merged via a merge queue in a corporate setting?
+
+When working in corporate environments with merge queues (where PRs are merged remotely, not from your local machine),
+you can use the following workflow to cleanly manage your branch dependencies after a PR is merged:
+
+1. Once the PR is merged remotely, run `git machete slide-out --no-rebase <branch>` to remove the branch from the layout without triggering any rebases
+2. Then run `git machete traverse -WH` to:
+   - Pull the fresh `master`/`main` branch (`-W` includes `--fetch`)
+   - Put all child PRs back in sync
+   - Retarget child PRs to their new base branches
+
+**Note:** git-machete can sometimes detect merges automatically and suggest slide-out during `traverse`.
+The config option `machete.squashMergeDetection=simple` usually works well for this, but isn't perfect.
+The `exact` detection mode is more precise but might take longer on larger repositories.
+If automatic detection doesn't work reliably for your workflow, `slide-out --no-rebase` + `traverse -WH` is a good fallback approach.
+
+<br/>
+
 #### Is it possible to create stacked PRs from forks in GitHub?
 
 Due to the limitations of GitHub's PR model, it is not possible to cleanly create stacked PRs from forks.

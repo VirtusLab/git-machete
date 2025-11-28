@@ -29,7 +29,7 @@ _git_machete() {
   local githublab_retarget_opts="-b --branch= --ignore-if-missing -U --update-related-descriptions"
   local githublab_update_descriptions_opts="--all --by= --mine --related"
   local reapply_opts="-f --fork-point="
-  local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase --removed-from-remote"
+  local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase --no-rebase --removed-from-remote"
   local squash_opts="-f --fork-point="
   local status_opts="--color= -L --list-commits-with-hashes -l --list-commits --no-detect-squash-merges"
   local traverse_opts="-F --fetch -H --sync-github-prs -L --sync-gitlab-mrs -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --no-push-untracked --push --push-untracked --return-to= --start-from= --stop-after= -w --whole -W -y --yes"

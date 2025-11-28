@@ -1201,6 +1201,7 @@ long_docs: Dict[str, str] = {
            git machete slide-out --removed-from-remote [--delete]
            git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete]
                                  [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]
+                                 [--no-rebase]
                                  [<branch> [<branch> [<branch> ...]]]</b>
 
         Remove the given branch (or multiple branches) from the branch layout.
@@ -1268,6 +1269,12 @@ long_docs: Dict[str, str] = {
            <b>--no-interactive-rebase</b>
               If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
               Not allowed if updating by merge.
+
+           <b>--no-rebase</b>
+              Skip rebase/merge of downstream branches after sliding out.
+              Only remove the branches from the branch layout without syncing their children to the new upstream.
+              This is useful when you want to manually handle the downstream branches,
+              or when using `git machete traverse` afterwards to sync everything at once.
 
            <b>--removed-from-remote</b>
               Slide out managed branches whose remote tracking branches have been deleted and that have no downstreams.

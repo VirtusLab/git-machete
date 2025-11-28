@@ -14,7 +14,8 @@ class SlideOutMacheteClient(MacheteClient):
                   opt_down_fork_point: Optional[AnyRevision],
                   opt_merge: bool,
                   opt_no_interactive_rebase: bool,
-                  opt_no_edit_merge: bool
+                  opt_no_edit_merge: bool,
+                  opt_no_rebase: bool
                   ) -> None:
         self._git.expect_no_operation_in_progress()
 
@@ -88,26 +89,27 @@ class SlideOutMacheteClient(MacheteClient):
         if self._git.get_current_branch_or_none() in branches_to_slide_out:
             self._git.checkout(new_upstream)
 
-        for new_downstream in new_downstreams:
-            anno = self.annotations.get(new_downstream)
-            use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
-            use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
-            if use_merge or use_rebase:
-                self._git.checkout(new_downstream)
-            if use_merge:
-                print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
-                self._git.merge(
-                    branch=new_upstream,
-                    into=new_downstream,
-                    opt_no_edit_merge=opt_no_edit_merge)
-            elif use_rebase:
-                print(f"Rebasing {bold(new_downstream)} onto {bold(new_upstream)}...")
-                down_fork_point = opt_down_fork_point or self.fork_point(new_downstream, use_overrides=True)
-                self.rebase(
-                    onto=new_upstream.full_name(),
-                    from_exclusive=down_fork_point,
-                    branch=new_downstream,
-                    opt_no_interactive_rebase=opt_no_interactive_rebase)
+        if not opt_no_rebase:
+            for new_downstream in new_downstreams:
+                anno = self.annotations.get(new_downstream)
+                use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
+                use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
+                if use_merge or use_rebase:
+                    self._git.checkout(new_downstream)
+                if use_merge:
+                    print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
+                    self._git.merge(
+                        branch=new_upstream,
+                        into=new_downstream,
+                        opt_no_edit_merge=opt_no_edit_merge)
+                elif use_rebase:
+                    print(f"Rebasing {bold(new_downstream)} onto {bold(new_upstream)}...")
+                    down_fork_point = opt_down_fork_point or self.fork_point(new_downstream, use_overrides=True)
+                    self.rebase(
+                        onto=new_upstream.full_name(),
+                        from_exclusive=down_fork_point,
+                        branch=new_downstream,
+                        opt_no_interactive_rebase=opt_no_interactive_rebase)
 
         if opt_delete:
             self._delete_branches(branches_to_delete=branches_to_slide_out,

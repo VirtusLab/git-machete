@@ -1,0 +1,6 @@
+Run autoformatting/linters etc. with just `tox`.
+Run tests with `tox -e py [-- <pytest flags like -k>...]`.
+Don't pipe command outputs through `head` or `tail`, I'd like to see the full output as it's produced.
+
+Don't leave whitespace at the end of the lines.
+Always leave a single newline at the end of the file.

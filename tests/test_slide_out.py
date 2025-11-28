@@ -536,10 +536,74 @@ class TestSlideOut(BaseTest):
         branches = get_local_branches()
         assert 'not_deleted_remotely' in branches
 
-    @pytest.mark.parametrize('extra_arg', ['foo', '-d=foo', '--down-fork-point=foo', '-M', '--merge', '-n', '--no-interactive-rebase'])
+    @pytest.mark.parametrize('extra_arg', ['foo', '-d=foo', '--down-fork-point=foo', '-M', '--merge', '-n',
+                                           '--no-interactive-rebase', '--no-rebase'])
     def test_slide_out_removed_from_remote_with_extra_args(self, extra_arg: str) -> None:
         create_repo()
         assert_failure(
             ['slide-out', '--removed-from-remote', extra_arg],
             "Only --delete can be passed with --removed-from-remote",
+        )
+
+    def test_slide_out_with_no_rebase(self) -> None:
+        """Test that --no-rebase flag skips rebasing downstream branches."""
+        create_repo()
+        new_branch("root")
+        commit("root commit")
+        new_branch("branch-1")
+        commit("branch-1 commit")
+        new_branch("branch-2")
+        commit("branch-2 commit")
+
+        body: str = \
+            """
+            root
+                branch-1
+                    branch-2
+            """
+        rewrite_branch_layout_file(body)
+
+        # Get commit hash of branch-2 before slide-out
+        branch_2_commit_before = get_current_commit_hash()
+
+        # Slide out branch-1 with --no-rebase, branch-2 should not be rebased
+        launch_command("slide-out", "branch-1", "--no-rebase")
+
+        # Verify that branch-2 is now a child of root in the layout
+        expected_layout = ["root", "    branch-2"]
+        assert read_branch_layout_file().splitlines() == expected_layout
+
+        # Verify we're still on branch-2
+        assert get_current_branch() == "branch-2"
+
+        # Verify that branch-2 was NOT rebased (commit hash unchanged)
+        branch_2_commit_after = get_current_commit_hash()
+        assert branch_2_commit_before == branch_2_commit_after
+
+    def test_slide_out_no_rebase_conflicts_with_merge(self) -> None:
+        """Test that --no-rebase and --merge cannot be used together."""
+        assert_failure(
+            ['slide-out', '--no-rebase', '-M'],
+            "Option -M/--merge cannot be specified together with --no-rebase."
+        )
+
+    def test_slide_out_no_rebase_conflicts_with_down_fork_point(self) -> None:
+        """Test that --no-rebase and --down-fork-point cannot be used together."""
+        assert_failure(
+            ['slide-out', '--no-rebase', '--down-fork-point=@'],
+            "Option -d/--down-fork-point only makes sense when using rebase and cannot be specified together with --no-rebase."
+        )
+
+    def test_slide_out_no_rebase_conflicts_with_no_interactive_rebase(self) -> None:
+        """Test that --no-rebase and --no-interactive-rebase cannot be used together."""
+        assert_failure(
+            ['slide-out', '--no-rebase', '--no-interactive-rebase'],
+            "Option --no-interactive-rebase only makes sense when using rebase and cannot be specified together with --no-rebase."
+        )
+
+    def test_slide_out_no_rebase_conflicts_with_no_edit_merge(self) -> None:
+        """Test that --no-rebase and --no-edit-merge cannot be used together."""
+        assert_failure(
+            ['slide-out', '--no-rebase', '--no-edit-merge'],
+            "Option --no-edit-merge only makes sense when using merge and cannot be specified together with --no-rebase."
         )

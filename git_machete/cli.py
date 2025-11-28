@@ -297,6 +297,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
     slide_out_parser.add_argument('-n', action='store_true')
     slide_out_parser.add_argument('--no-edit-merge', action='store_true')
     slide_out_parser.add_argument('--no-interactive-rebase', action='store_true')
+    slide_out_parser.add_argument('--no-rebase', action='store_true')
     slide_out_parser.add_argument('--removed-from-remote', action='store_true')
 
     squash_parser = create_subparser('squash')
@@ -404,6 +405,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_no_edit_merge = True
         elif opt == "no_interactive_rebase":
             cli_opts.opt_no_interactive_rebase = True
+        elif opt == "no_rebase":
+            cli_opts.opt_no_rebase = True
         elif opt == "no_push":
             cli_opts.opt_push_tracked = False
             cli_opts.opt_push_untracked = False
@@ -858,12 +861,28 @@ def launch_internal(orig_args: List[str]) -> None:
                 raise MacheteException(
                     "Option `-d/--down-fork-point` only makes sense when using "
                     "rebase and cannot be specified together with `-M/--merge`.")
+            if cli_opts.opt_down_fork_point and cli_opts.opt_no_rebase:
+                raise MacheteException(
+                    "Option `-d/--down-fork-point` only makes sense when using "
+                    "rebase and cannot be specified together with `--no-rebase`.")
+            if cli_opts.opt_merge and cli_opts.opt_no_rebase:
+                raise MacheteException(
+                    "Option `-M/--merge` cannot be specified together with `--no-rebase`.")
+            if cli_opts.opt_no_interactive_rebase and cli_opts.opt_no_rebase:
+                raise MacheteException(
+                    "Option `--no-interactive-rebase` only makes sense when using "
+                    "rebase and cannot be specified together with `--no-rebase`.")
+            if cli_opts.opt_no_edit_merge and cli_opts.opt_no_rebase:
+                raise MacheteException(
+                    "Option `--no-edit-merge` only makes sense when using "
+                    "merge and cannot be specified together with `--no-rebase`.")
 
             slide_out_client = SlideOutMacheteClient(git)
             slide_out_client.read_branch_layout_file()
             branches_to_slide_out: Optional[List[str]] = parsed_cli_as_dict.get('branches')
             if cli_opts.opt_removed_from_remote:
-                if branches_to_slide_out or cli_opts.opt_down_fork_point or cli_opts.opt_merge or cli_opts.opt_no_interactive_rebase:
+                if (branches_to_slide_out or cli_opts.opt_down_fork_point or cli_opts.opt_merge or
+                        cli_opts.opt_no_interactive_rebase or cli_opts.opt_no_rebase):
                     raise MacheteException("Only `--delete` can be passed with `--removed-from-remote`")
                 slide_out_client.slide_out_removed_from_remote(opt_delete=cli_opts.opt_delete)
             else:
@@ -874,7 +893,8 @@ def launch_internal(orig_args: List[str]) -> None:
                     opt_down_fork_point=cli_opts.opt_down_fork_point,
                     opt_merge=cli_opts.opt_merge,
                     opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
-                    opt_no_edit_merge=cli_opts.opt_no_edit_merge)
+                    opt_no_edit_merge=cli_opts.opt_no_edit_merge,
+                    opt_no_rebase=cli_opts.opt_no_rebase)
         elif cmd == "squash":
             squash_client = SquashMacheteClient(git)
             squash_client.read_branch_layout_file()

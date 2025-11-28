@@ -27,6 +27,7 @@ class CommandLineOptions:
         self.opt_n: bool = False
         self.opt_no_edit_merge: bool = False
         self.opt_no_interactive_rebase: bool = False
+        self.opt_no_rebase: bool = False
         self.opt_onto: Optional[LocalBranchShortName] = None
         self.opt_override_to: Optional[str] = None
         self.opt_override_to_inferred: bool = False

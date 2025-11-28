@@ -152,7 +152,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         selected_idx = index_or_none(self.managed_branches, self._current_branch)
         if selected_idx is None:
             selected_idx = 0
-            warn(f"current branch {self._current_branch} is unmanaged")
+            warn(f"current branch {self._current_branch} is unmanaged\n")
 
         scroll_offset = 0
         num_lines_drawn = 0
