@@ -225,6 +225,7 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_navigation_up_down(self, mocker: MockerFixture) -> None:
         """Test that up/down arrow keys navigate through branches."""
+        print("*** test_go_interactive_navigation_up_down ***")
         check_out("develop")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
@@ -258,6 +259,7 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_shift_arrows_jump(self, mocker: MockerFixture) -> None:
         """Test that Shift+Up/Down jumps to first/last branch."""
+        print("*** test_go_interactive_shift_arrows_jump ***")
         check_out("develop")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
@@ -333,6 +335,7 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_left_arrow_parent(self, mocker: MockerFixture) -> None:
         """Test that left arrow navigates to parent branch (not just up), and does nothing on root."""
+        print("*** test_go_interactive_left_arrow_parent ***")
         check_out("feature-2")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
@@ -367,6 +370,7 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_right_arrow_child(self, mocker: MockerFixture) -> None:
         """Test that right arrow navigates to first child branch (not just down)."""
+        print("*** test_go_interactive_right_arrow_child ***")
         check_out("develop")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
@@ -401,6 +405,7 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_quit_without_checkout(self, mocker: MockerFixture) -> None:
         """Test that pressing Ctrl+C quits without checking out."""
+        print("*** test_go_interactive_quit_without_checkout ***")
         check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
 
@@ -429,6 +434,7 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_space_checkout(self, mocker: MockerFixture) -> None:
         """Test that pressing Space checks out the selected branch."""
+        print("*** test_go_interactive_space_checkout ***")
         check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert initial_branch == "master"
@@ -474,6 +480,7 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_with_annotations(self, mocker: MockerFixture) -> None:
         """Test that branch annotations are displayed with proper formatting."""
+        print("*** test_go_interactive_with_annotations ***")
         # Overwrite .git/machete with annotations
         body: str = \
             """
@@ -515,6 +522,7 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_wrapping_navigation(self, mocker: MockerFixture) -> None:
         """Test that up/down arrow keys wrap around at the edges."""
+        print("*** test_go_interactive_wrapping_navigation ***")
         check_out("master")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
@@ -557,6 +565,7 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_q_key_quit(self, mocker: MockerFixture) -> None:
         """Test that pressing 'q' or 'Q' quits without checking out."""
+        print("*** test_go_interactive_q_key_quit ***")
         check_out("master")
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
 
@@ -585,6 +594,7 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_unknown_key_ignored(self, mocker: MockerFixture) -> None:
         """Test that unknown keys are ignored and don't break the interface."""
+        print("*** test_go_interactive_unknown_key_ignored ***")
         check_out("master")
 
         def test_logic(stdin_write_fd: int, stdout_read_fd: int, stderr_read_fd: int) -> None:  # noqa: U100
@@ -614,6 +624,7 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_unmanaged_current_branch(self, mocker: MockerFixture) -> None:
         """Test that when current branch is unmanaged, a warning is shown and selection starts at first branch."""
+        print("*** test_go_interactive_unmanaged_current_branch ***")
         # Create an unmanaged branch (not in .git/machete)
         new_branch("unmanaged")
         commit()
@@ -642,6 +653,7 @@ class TestGoInteractive(BaseTest):
     # Skipping on older Python versions to avoid CI failures.
     def test_go_interactive_scrolling_down(self, mocker: MockerFixture) -> None:
         """Test that scrolling works when there are more branches than fit on screen."""
+        print("*** test_go_interactive_scrolling_down ***")
         # Mock terminal height to 4, which results in max_visible_branches = 2 (4 - 2)
         # This forces scrolling with our 4 branches
         self.patch_symbol(mocker, 'git_machete.utils.get_terminal_height', lambda: 4)
@@ -699,6 +711,7 @@ class TestGoInteractive(BaseTest):
     # Skipping on older Python versions to avoid CI failures.
     def test_go_interactive_scrolling_up(self, mocker: MockerFixture) -> None:
         """Test that scrolling up works when starting from a branch that requires initial scroll offset."""
+        print("*** test_go_interactive_scrolling_up ***")
         # Mock terminal height to 4, which results in max_visible_branches = 2 (4 - 2)
         # This forces scrolling with our 4 branches
         self.patch_symbol(mocker, 'git_machete.utils.get_terminal_height', lambda: 4)
