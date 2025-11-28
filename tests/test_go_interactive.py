@@ -94,7 +94,6 @@ def read_line_from_fd(fd: int, timeout: float = 2.0) -> str:
 
 
 @pytest.mark.skipif(sys.platform == 'win32', reason="Interactive mode is not supported on Windows")
-@pytest.mark.xdist_group("interactive")  # Run all tests in this class sequentially in a dedicated worker
 class TestGoInteractive(BaseTest):
     def setup_method(self) -> None:
         """Set up a standard 4-branch repository for each test."""
@@ -641,7 +640,6 @@ class TestGoInteractive(BaseTest):
 
     # This test times out in CI on Python < 3.11, but it's hard to reproduce locally.
     # Skipping on older Python versions to avoid CI failures.
-    @pytest.mark.skipif(sys.version_info < (3, 11), reason="Test times out in CI on Python < 3.11")
     def test_go_interactive_scrolling_down(self, mocker: MockerFixture) -> None:
         """Test that scrolling works when there are more branches than fit on screen."""
         # Mock terminal height to 4, which results in max_visible_branches = 2 (4 - 2)
@@ -699,7 +697,6 @@ class TestGoInteractive(BaseTest):
 
     # This test times out in CI on Python < 3.11, but it's hard to reproduce locally.
     # Skipping on older Python versions to avoid CI failures.
-    @pytest.mark.skipif(sys.version_info < (3, 11), reason="Test times out in CI on Python < 3.11")
     def test_go_interactive_scrolling_up(self, mocker: MockerFixture) -> None:
         """Test that scrolling up works when starting from a branch that requires initial scroll offset."""
         # Mock terminal height to 4, which results in max_visible_branches = 2 (4 - 2)
