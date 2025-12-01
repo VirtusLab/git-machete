@@ -275,34 +275,6 @@ However, we still recommend using merge for the narrow case of [backporting hotf
 
 <br/>
 
-#### In what order should I merge stacked PRs?
-
-We recommend merging PRs from the top-most (closest to the root branch, typically `main` or `master`).
-In other words, PR should only be merged when its base is a root branch.
-
-This way, you don't end up with a big-ball-of-code PR at the end.
-Avoiding such "balls" is one of the main reasons for opening small PRs in the first place.
-
-<br/>
-
-#### How to cleanly slide out a PR merged via a merge queue in a corporate setting?
-
-When working in corporate environments with merge queues (where PRs are merged remotely, not from your local machine),
-you can use the following workflow to cleanly manage your branch dependencies after a PR is merged:
-
-1. Once the PR is merged remotely, run `git machete slide-out --no-rebase <branch>` to remove the branch from the layout without triggering any rebases
-2. Then run `git machete traverse -WH` to:
-   - Pull the fresh `master`/`main` branch (`-W` includes `--fetch`)
-   - Put all child PRs back in sync
-   - Retarget child PRs to their new base branches
-
-**Note:** git-machete can sometimes detect merges automatically and suggest slide-out during `traverse`.
-The config option `machete.squashMergeDetection=simple` usually works well for this, but isn't perfect.
-The `exact` detection mode is more precise but might take longer on larger repositories.
-If automatic detection doesn't work reliably for your workflow, `slide-out --no-rebase` + `traverse -WH` is a good fallback approach.
-
-<br/>
-
 #### Is it possible to create stacked PRs from forks in GitHub?
 
 Due to the limitations of GitHub's PR model, it is not possible to cleanly create stacked PRs from forks.
@@ -320,6 +292,35 @@ The alternative is to always open the PRs directly to `master` in the original r
 but this is also inconvenient as the range of commits would need to be narrowed down manually when viewing the PRs.
 
 <br/>
+
+#### In what order should I merge stacked PRs?
+
+We recommend merging PRs from the top-most (closest to the root branch, typically `main` or `master`).
+In other words, PR should only be merged when its base is a root branch.
+
+This way, you don't end up with a big-ball-of-code PR at the end.
+Avoiding such "balls" is one of the main reasons for opening small PRs in the first place.
+
+<br/>
+
+#### How to cleanly slide out a PR merged via a merge queue or Squash button?
+
+When the PRs are are merged remotely &mdash; for example, by using a merge queue or GitHub's squash-merge button,
+you can use the following workflow to cleanly manage your branch dependencies after a PR is merged:
+
+1. Once the PR is merged remotely, run `git machete slide-out --no-rebase <branch>` to remove the branch from the layout without triggering any rebases
+2. Then run `git machete traverse -WH` (or `-WL` for GitLab instead of GitHub) to:
+   - Pull the fresh `master`/`main` branch (`-W` includes `--fetch`)
+   - Put all child PRs back in sync
+   - Retarget child PRs to their new base branches
+
+**Note:** git-machete can sometimes detect merges automatically and suggest slide-out during `traverse`.
+The config option `git config machete.squashMergeDetection simple` usually works well for this, but isn't perfect.
+The `exact` detection mode is more precise but might take longer on larger repositories.
+If automatic detection doesn't work reliably for your workflow, `git machete slide-out --no-rebase` + `git machete traverse -WH` is a good fallback approach.
+
+<br/>
+
 
 ## Reference
 

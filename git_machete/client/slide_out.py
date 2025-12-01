@@ -13,8 +13,8 @@ class SlideOutMacheteClient(MacheteClient):
                   opt_delete: bool,
                   opt_down_fork_point: Optional[AnyRevision],
                   opt_merge: bool,
-                  opt_no_interactive_rebase: bool,
                   opt_no_edit_merge: bool,
+                  opt_no_interactive_rebase: bool,
                   opt_no_rebase: bool
                   ) -> None:
         self._git.expect_no_operation_in_progress()

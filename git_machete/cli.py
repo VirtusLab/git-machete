@@ -405,13 +405,13 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_no_edit_merge = True
         elif opt == "no_interactive_rebase":
             cli_opts.opt_no_interactive_rebase = True
-        elif opt == "no_rebase":
-            cli_opts.opt_no_rebase = True
         elif opt == "no_push":
             cli_opts.opt_push_tracked = False
             cli_opts.opt_push_untracked = False
         elif opt == "no_push_untracked":
             cli_opts.opt_push_untracked = False
+        elif opt == "no_rebase":
+            cli_opts.opt_no_rebase = True
         elif opt == "onto":
             cli_opts.opt_onto = LocalBranchShortName.of(arg) if arg else None
         elif opt == "override_to":
@@ -892,8 +892,8 @@ def launch_internal(orig_args: List[str]) -> None:
                     opt_delete=cli_opts.opt_delete,
                     opt_down_fork_point=cli_opts.opt_down_fork_point,
                     opt_merge=cli_opts.opt_merge,
-                    opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                     opt_no_edit_merge=cli_opts.opt_no_edit_merge,
+                    opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                     opt_no_rebase=cli_opts.opt_no_rebase)
         elif cmd == "squash":
             squash_client = SquashMacheteClient(git)

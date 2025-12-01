@@ -121,7 +121,7 @@ _git-machete() {
             '(-n)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
             '(--no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
             '(--no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
-            '(--no-rebase)'--no-rebase'[Skip rebase/merge of downstream branches after sliding out]' \
+            '(--no-rebase)'--no-rebase'[Skip rebase of downstream branches after sliding out]' \
             '(--removed-from-remote)'--removed-from-remote'[Slide out all branches removed from the remote]' \
             "${common_flags[@]}"
           ;;

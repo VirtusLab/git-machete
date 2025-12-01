@@ -3,7 +3,7 @@
 ## New in git-machete 3.38.0
 
 - added: interactive terminal interface for checking out a branch, via `git machete go` (without a direction)
-- added: `--no-rebase` flag to `slide-out` command to skip rebasing/merging downstream branches after sliding out; useful for merge queue workflows where you want to follow up with `git machete traverse -WH`
+- added: `--no-rebase` flag to `slide-out` command to skip rebasing downstream branches after sliding out
 - fixed: `-y` short option now works for `github create-pr` and `gitlab create-mr` commands (previously only `--yes` was accepted)
 
 ## New in git-machete 3.37.1

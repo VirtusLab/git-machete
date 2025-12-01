@@ -78,8 +78,6 @@ See help for :ref:`traverse` for more details on the qualifiers.
 
 --no-rebase                                       Skip rebase/merge of downstream branches after sliding out.
                                                   Only remove the branches from the branch layout without syncing their children to the new upstream.
-                                                  This is useful when you want to manually handle the downstream branches,
-                                                  or when using ``git machete traverse`` afterwards to sync everything at once.
 
 --removed-from-remote                             Slide out managed branches whose remote tracking branches have been deleted and that have no downstreams.
                                                   In other words, this deletes all branches except:
