@@ -730,3 +730,29 @@ class TestSlideOut(BaseTest):
         check_out("child-2")
         child_2_commit_after = get_current_commit_hash()
         assert child_2_commit_before == child_2_commit_after
+
+    def test_slide_out_root_branch_with_no_downstreams(self) -> None:
+        """Test that when sliding out a root branch with no downstreams, we stay on that branch."""
+        create_repo()
+        new_branch("root-1")
+        commit("root-1 commit")
+        new_branch("root-2")
+        commit("root-2 commit")
+
+        body: str = \
+            """
+            root-1
+            root-2
+            """
+        rewrite_branch_layout_file(body)
+
+        # Slide out root-2 (which has no downstreams)
+        check_out("root-2")
+        launch_command("slide-out")
+
+        # Verify that only root-1 remains in the layout
+        expected_layout = ["root-1"]
+        assert read_branch_layout_file().splitlines() == expected_layout
+
+        # Verify we're still on root-2 (the slid-out branch, since it has no downstreams to check out)
+        assert get_current_branch() == "root-2"

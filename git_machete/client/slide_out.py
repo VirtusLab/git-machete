@@ -74,12 +74,11 @@ class SlideOutMacheteClient(MacheteClient):
                 if branch != branches_to_slide_out[0]]
         else:
             # If the slid-out branch was a root, remove it from roots and add its children as new roots
-            if branches_to_slide_out[0] in self._state.roots:
-                root_index = self._state.roots.index(branches_to_slide_out[0])
-                # Replace the slid-out root with its children in the same position
-                self._state.roots = (self._state.roots[:root_index] +
-                                     new_downstreams +
-                                     self._state.roots[root_index + 1:])
+            root_index = self._state.roots.index(branches_to_slide_out[0])
+            # Replace the slid-out root with its children in the same position
+            self._state.roots = (self._state.roots[:root_index] +
+                                 new_downstreams +
+                                 self._state.roots[root_index + 1:])
 
         # Reconnect the downstreams to the new upstream in the tree
         for new_downstream in new_downstreams:
@@ -88,8 +87,7 @@ class SlideOutMacheteClient(MacheteClient):
                 self._state.down_branches_for[new_upstream] += [new_downstream]
             else:
                 # If there's no new upstream, the downstream becomes a root branch
-                if new_downstream in self._state.up_branch_for:
-                    del self._state.up_branch_for[new_downstream]
+                del self._state.up_branch_for[new_downstream]
 
         # Update definition, fire post-hook, and perform the branch update
         self.save_branch_layout_file()
