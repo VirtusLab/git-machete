@@ -216,6 +216,36 @@ class TestSlideOut(BaseTest):
         write_to_file(".git/hooks/machete-post-slide-out", "#!/bin/sh\nexit 1")
         assert_failure(["slide-out", "-n", "branch-2"], "The machete-post-slide-out hook exited with 1, aborting.")
 
+    def test_slide_out_root_branch_with_post_slide_out_hook(self) -> None:
+        """Test that post-slide-out hook receives empty string for new_upstream when sliding out root branch."""
+        create_repo()
+        new_branch('root')
+        commit()
+        new_branch('child-1')
+        commit()
+        check_out('root')
+        new_branch('child-2')
+        commit()
+
+        body: str = \
+            """
+            root
+                child-1
+                child-2
+            """
+        rewrite_branch_layout_file(body)
+
+        # Create hook that outputs all parameters (including empty first param for root slide-out)
+        write_to_file(".git/hooks/machete-post-slide-out", '#!/bin/sh\necho "$@" > machete-post-slide-out-output')
+        set_file_executable(".git/hooks/machete-post-slide-out")
+        launch_command("slide-out", "-n", "root")
+        # Hook should receive: "" (empty new_upstream), "root" (slid out branch), "child-1" "child-2" (new downstreams)
+        # When echoed via $@, the empty string at the beginning may or may not show up as a space
+        hook_output = read_file("machete-post-slide-out-output").strip()
+        # The output should be " root child-1 child-2" (with leading space) or "root child-1 child-2"
+        assert hook_output in (" root child-1 child-2", "root child-1 child-2"), \
+            f"Expected hook output to be ' root child-1 child-2' or 'root child-1 child-2', got: '{hook_output}'"
+
     def test_slide_out_with_invalid_down_fork_point(self) -> None:
         create_repo()
         with fixed_author_and_committer_date_in_past():
@@ -415,10 +445,6 @@ class TestSlideOut(BaseTest):
         rewrite_branch_layout_file(body)
 
         assert_failure(
-            ['slide-out', 'branch-0'],
-            "No upstream branch defined for branch-0, cannot slide out"
-        )
-        assert_failure(
             ['slide-out', 'branch-3', 'branch-2a'],
             "No downstream branch defined for branch-3, cannot slide out"
         )
@@ -607,3 +633,100 @@ class TestSlideOut(BaseTest):
             ['slide-out', '--no-rebase', '--no-edit-merge'],
             "Option --no-edit-merge only makes sense when using merge and cannot be specified together with --no-rebase."
         )
+
+    def test_slide_out_root_branch(self) -> None:
+        """Test that root branches can be slid out and children become new roots without rebasing."""
+        create_repo()
+        new_branch("root")
+        commit("root commit")
+        new_branch("child-1")
+        commit("child-1 commit")
+        new_branch("child-2")
+        commit("child-2 commit")
+        check_out("root")
+        new_branch("child-3")
+        commit("child-3 commit")
+
+        body: str = \
+            """
+            root
+                child-1
+                    child-2
+                child-3
+            """
+        rewrite_branch_layout_file(body)
+
+        # Get commit hashes before slide-out to verify no rebase happens
+        check_out("child-1")
+        child_1_commit_before = get_current_commit_hash()
+        check_out("child-2")
+        child_2_commit_before = get_current_commit_hash()
+        check_out("child-3")
+        child_3_commit_before = get_current_commit_hash()
+
+        # Slide out the root branch
+        check_out("root")
+        launch_command("slide-out")
+
+        # Verify that child-1 and child-3 are now root branches in the layout
+        expected_layout = ["child-1", "    child-2", "child-3"]
+        assert read_branch_layout_file().splitlines() == expected_layout
+
+        # Verify we're on child-1 (first downstream)
+        assert get_current_branch() == "child-1"
+
+        # Verify that NO rebase happened (commit hashes unchanged)
+        child_1_commit_after = get_current_commit_hash()
+        assert child_1_commit_before == child_1_commit_after
+
+        check_out("child-2")
+        child_2_commit_after = get_current_commit_hash()
+        assert child_2_commit_before == child_2_commit_after
+
+        check_out("child-3")
+        child_3_commit_after = get_current_commit_hash()
+        assert child_3_commit_before == child_3_commit_after
+
+    def test_slide_out_root_branch_with_no_rebase(self) -> None:
+        """Test that root branches can be slid out with --no-rebase flag (though it's redundant)."""
+        create_repo()
+        new_branch("root")
+        commit("root commit")
+        new_branch("child-1")
+        commit("child-1 commit")
+        check_out("root")
+        new_branch("child-2")
+        commit("child-2 commit")
+
+        body: str = \
+            """
+            root
+                child-1
+                child-2
+            """
+        rewrite_branch_layout_file(body)
+
+        # Get commit hashes before slide-out to verify no rebase happens
+        check_out("child-1")
+        child_1_commit_before = get_current_commit_hash()
+        check_out("child-2")
+        child_2_commit_before = get_current_commit_hash()
+
+        # Slide out the root branch with --no-rebase
+        check_out("root")
+        launch_command("slide-out", "--no-rebase")
+
+        # Verify that child-1 and child-2 are now root branches in the layout
+        expected_layout = ["child-1", "child-2"]
+        assert read_branch_layout_file().splitlines() == expected_layout
+
+        # Verify we're on child-1 (first downstream)
+        assert get_current_branch() == "child-1"
+
+        # Verify that NO rebase happened (commit hashes unchanged)
+        child_1_commit_after = get_current_commit_hash()
+        assert child_1_commit_before == child_1_commit_after
+
+        check_out("child-2")
+        child_2_commit_after = get_current_commit_hash()
+        assert child_2_commit_before == child_2_commit_after

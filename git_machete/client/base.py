@@ -1008,7 +1008,8 @@ class MacheteClient:
 
     @property
     def slidable_branches(self) -> List[LocalBranchShortName]:
-        return [branch for branch in self.managed_branches if branch in self._state.up_branch_for]
+        # All managed branches can be slid out, including root branches
+        return self.managed_branches
 
     def get_slidable_after(self, branch: LocalBranchShortName) -> List[LocalBranchShortName]:
         if branch in self._state.up_branch_for:
@@ -1027,7 +1028,7 @@ class MacheteClient:
     def _run_post_slide_out_hook(
         self,
         *,
-        new_upstream: LocalBranchShortName,
+        new_upstream: Optional[LocalBranchShortName],
         slid_out_branch: LocalBranchShortName,
         new_downstreams: List[LocalBranchShortName]
     ) -> None:
@@ -1035,7 +1036,9 @@ class MacheteClient:
         if self._git.check_hook_executable(hook_path):
             debug(f"running machete-post-slide-out hook ({hook_path})")
             new_downstreams_strings: List[str] = [str(db) for db in new_downstreams]
-            exit_code = self.__run_hook(hook_path, new_upstream, slid_out_branch, *new_downstreams_strings,
+            # When sliding out root branches, new_upstream is None; pass empty string to the hook
+            new_upstream_str = str(new_upstream) if new_upstream is not None else ""
+            exit_code = self.__run_hook(hook_path, new_upstream_str, slid_out_branch, *new_downstreams_strings,
                                         cwd=self._git.get_current_worktree_root_dir())
             if exit_code != 0:
                 raise MacheteException(f"The machete-post-slide-out hook exited with {exit_code}, aborting.")

@@ -28,7 +28,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Dec 01, 2025" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Dec 02, 2025" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.38.0
 .sp
@@ -1537,15 +1537,16 @@ At least two parameters (branch names) are passed to the hook:
 .INDENT 7.0
 .IP \(bu 2
 <new\-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out
-\-\-\- the upstream of the highest slid out branch;
+\-\-\- the upstream of the highest slid out branch.
+When sliding out a root branch (a branch without an upstream), this parameter is an empty string;
 .IP \(bu 2
 <lowest\-slid\-out\-branch> is the branch that has been slid out, or in case of multiple branches being slid out \-\-\- the lowest slid out branch;
 .IP \(bu 2
 <new\-downstreams> are all the following (possibly zero) parameters, which correspond to all original downstreams
-of <lowest\-slid\-out\-branch>, now reattached as the downstreams of <new\-upstream>.
+of <lowest\-slid\-out\-branch>, now reattached as the downstreams of <new\-upstream> (or becoming new root branches if <new\-upstream> is empty).
 .UNINDENT
 .sp
-Note that this may be zero, one, or multiple branches.
+Note that <new\-downstreams> may be zero, one, or multiple branches.
 .sp
 Note: the hook, if present, is executed:
 .INDENT 7.0
@@ -1645,7 +1646,7 @@ List all branches that fall into one of the specified categories:
 .IP \(bu 2
 \fBmanaged\fP: all branches that appear in the branch layout file,
 .IP \(bu 2
-\fBslidable\fP: all managed branches that have an upstream and can be slid out with slide\-out command,
+\fBslidable\fP: branches that can be slid out with slide\-out command; currently just equivalent to \fBmanaged\fP
 .IP \(bu 2
 \fBslidable\-after <branch>\fP: the downstream branch of the <branch>, if it exists and is the only downstream of <branch>
 (and thus can be slid out immediately following <branch>),
@@ -1808,17 +1809,10 @@ and \fBchange\-table\fP and \fBadd\-notification\fP will be rebased onto develop
 .sp
 The most common use is to slide out a single branch whose upstream was a \fBdevelop\fP/\fBmaster\fP branch and that has been recently merged.
 .sp
-The provided branches must form a chain \-\-\- all of the following conditions must be met:
-.INDENT 0.0
-.INDENT 3.5
-.INDENT 0.0
-.IP \(bu 2
-for i=1..N\-1, (i+1)\-th branch must be the only downstream (child) branch of the i\-th branch,
-.IP \(bu 2
-all provided branches must have an upstream branch (so, in other words, roots of branch layout cannot be slid out).
-.UNINDENT
-.UNINDENT
-.UNINDENT
+The provided branches must form a chain \-\-\- for i=1..N\-1, (i+1)\-th branch must be the only downstream (child) branch of the i\-th branch.
+.sp
+Root branches (branches without an upstream) can be slid out.
+When a root branch is slid out, its children become new root branches, and no rebase or merge is performed (since there is no upstream to rebase/merge onto).
 .sp
 Note: Unless \fB\-\-delete\fP is passed, \fBslide\-out\fP doesn\(aqt delete any branches from git, just removes them from the tree of branch dependencies.
 .sp

@@ -1039,12 +1039,13 @@ long_docs: Dict[str, str] = {
               At least two parameters (branch names) are passed to the hook:
 
               * <new-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out
-                — the upstream of the highest slid out branch;
+                — the upstream of the highest slid out branch.
+                When sliding out a root branch (a branch without an upstream), this parameter is an empty string;
               * <lowest-slid-out-branch> is the branch that has been slid out, or in case of multiple branches being slid out — the lowest slid out branch;
               * <new-downstreams> are all the following (possibly zero) parameters, which correspond to all original downstreams
-                of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream>.
+                of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream> (or becoming new root branches if <new-upstream> is empty).
 
-              Note that this may be zero, one, or multiple branches.
+              Note that <new-downstreams> may be zero, one, or multiple branches.
 
               Note: the hook, if present, is executed:
 
@@ -1116,7 +1117,7 @@ long_docs: Dict[str, str] = {
 
            * `managed`: all branches that appear in the branch layout file,
 
-           * `slidable`: all managed branches that have an upstream and can be slid out with `slide-out` command,
+           * `slidable`: branches that can be slid out with `slide-out` command; currently just equivalent to `managed`
 
            * `slidable-after <branch>`: the downstream branch of the <branch>, if it exists and is the only downstream of <branch>
              (and thus can be slid out immediately following <branch>),
@@ -1233,10 +1234,10 @@ long_docs: Dict[str, str] = {
 
         The most common use is to slide out a single branch whose upstream was a `develop`/`master` branch and that has been recently merged.
 
-        The provided branches must form a chain — all of the following conditions must be met:
+        The provided branches must form a chain — for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch.
 
-              * for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch,
-              * all provided branches must have an upstream branch (so, in other words, roots of branch layout cannot be slid out).
+        Root branches (branches without an upstream) can be slid out.
+        When a root branch is slid out, its children become new root branches, and no rebase or merge is performed (since there is no upstream to rebase/merge onto).
 
         Note: Unless `--delete` is passed, `slide-out` doesn't delete any branches from git, just removes them from the tree of branch dependencies.
 

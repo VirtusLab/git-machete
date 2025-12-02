@@ -1,4 +1,6 @@
 
+# bump base image: 1
+
 FROM archlinux:base-devel
 # https://wiki.archlinux.org/title/System_maintenance#Partial_upgrades_are_unsupported
 RUN pacman -Syu --noconfirm git

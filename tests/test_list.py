@@ -91,6 +91,8 @@ class TestList(BaseTest):
         )
 
         expected_output = """
+        master
+        develop
         feature_0
         feature_0_0
         feature_0_0_0

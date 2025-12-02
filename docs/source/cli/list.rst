@@ -18,7 +18,7 @@ List all branches that fall into one of the specified categories:
 
 * ``managed``: all branches that appear in the branch layout file,
 
-* ``slidable``: all managed branches that have an upstream and can be slid out with :ref:`slide-out` command,
+* ``slidable``: branches that can be slid out with :ref:`slide-out` command; currently just equivalent to ``managed``
 
 * ``slidable-after <branch>``: the downstream branch of the <branch>, if it exists and is the only downstream of <branch>
   (and thus can be slid out immediately following <branch>),

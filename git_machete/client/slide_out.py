@@ -19,16 +19,13 @@ class SlideOutMacheteClient(MacheteClient):
                   ) -> None:
         self._git.expect_no_operation_in_progress()
 
-        # Verify that all branches exist, are managed, have an upstream and are NOT annotated with slide-out=no qualifier.
+        # Verify that all branches exist, are managed and are NOT annotated with slide-out=no qualifier.
         for branch in branches_to_slide_out:
             self.expect_in_managed_branches(branch)
             anno = self.annotations.get(branch)
             if anno and not anno.qualifiers.slide_out:
                 raise MacheteException(f"Branch {bold(branch)} is annotated with `slide-out=no` qualifier, aborting.\n"
                                        f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
-            new_upstream = self.up_branch_for(branch)
-            if not new_upstream:
-                raise MacheteException(f"No upstream branch defined for {bold(branch)}, cannot slide out")
 
         if opt_down_fork_point:
             last_branch_to_slide_out = branches_to_slide_out[-1]
@@ -59,25 +56,40 @@ class SlideOutMacheteClient(MacheteClient):
                 raise MacheteException(f"{bold(bd)} is not downstream of {bold(bu)}, cannot slide out")
 
         # Get new branches
-        new_upstream = self._state.up_branch_for[branches_to_slide_out[0]]
+        new_upstream = self._state.up_branch_for.get(branches_to_slide_out[0])
         new_downstreams = self.down_branches_for(branches_to_slide_out[-1]) or []
 
         # Remove the slid-out branches from the tree
         for branch in branches_to_slide_out:
-            del self._state.up_branch_for[branch]
+            if branch in self._state.up_branch_for:
+                del self._state.up_branch_for[branch]
             if branch in self._state.down_branches_for:
                 del self._state.down_branches_for[branch]
             self.managed_branches.remove(branch)
 
-        assert new_upstream is not None
-        self._state.down_branches_for[new_upstream] = [
-            branch for branch in (self.down_branches_for(new_upstream) or [])
-            if branch != branches_to_slide_out[0]]
+        # Update the upstream's children list if the slid-out branch had an upstream
+        if new_upstream is not None:
+            self._state.down_branches_for[new_upstream] = [
+                branch for branch in (self.down_branches_for(new_upstream) or [])
+                if branch != branches_to_slide_out[0]]
+        else:
+            # If the slid-out branch was a root, remove it from roots and add its children as new roots
+            if branches_to_slide_out[0] in self._state.roots:
+                root_index = self._state.roots.index(branches_to_slide_out[0])
+                # Replace the slid-out root with its children in the same position
+                self._state.roots = (self._state.roots[:root_index] +
+                                     new_downstreams +
+                                     self._state.roots[root_index + 1:])
 
         # Reconnect the downstreams to the new upstream in the tree
         for new_downstream in new_downstreams:
-            self._state.up_branch_for[new_downstream] = new_upstream
-            self._state.down_branches_for[new_upstream] += [new_downstream]
+            if new_upstream is not None:
+                self._state.up_branch_for[new_downstream] = new_upstream
+                self._state.down_branches_for[new_upstream] += [new_downstream]
+            else:
+                # If there's no new upstream, the downstream becomes a root branch
+                if new_downstream in self._state.up_branch_for:
+                    del self._state.up_branch_for[new_downstream]
 
         # Update definition, fire post-hook, and perform the branch update
         self.save_branch_layout_file()
@@ -86,10 +98,17 @@ class SlideOutMacheteClient(MacheteClient):
             slid_out_branch=branches_to_slide_out[-1],
             new_downstreams=new_downstreams)
 
+        # Check out new upstream if we were on a slid-out branch, but only if there is an upstream
         if self._git.get_current_branch_or_none() in branches_to_slide_out:
-            self._git.checkout(new_upstream)
+            if new_upstream is not None:
+                self._git.checkout(new_upstream)
+            elif new_downstreams:
+                # If no upstream and there are downstreams, check out the first downstream
+                self._git.checkout(new_downstreams[0])
+            # Otherwise, stay on the current (slid-out) branch
 
-        if not opt_no_rebase:
+        # Only perform rebase/merge if there is a new upstream
+        if not opt_no_rebase and new_upstream is not None:
             for new_downstream in new_downstreams:
                 anno = self.annotations.get(new_downstream)
                 use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)

@@ -45,10 +45,10 @@ and ``change-table`` and ``add-notification`` will be rebased onto develop (fork
 
 The most common use is to slide out a single branch whose upstream was a ``develop``/``master`` branch and that has been recently merged.
 
-The provided branches must form a chain --- all of the following conditions must be met:
+The provided branches must form a chain --- for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch.
 
-    * for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch,
-    * all provided branches must have an upstream branch (so, in other words, roots of branch layout cannot be slid out).
+Root branches (branches without an upstream) can be slid out.
+When a root branch is slid out, its children become new root branches, and no rebase or merge is performed (since there is no upstream to rebase/merge onto).
 
 Note: Unless ``--delete`` is passed, ``slide-out`` doesn't delete any branches from git, just removes them from the tree of branch dependencies.
 

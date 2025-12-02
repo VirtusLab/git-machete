@@ -16,12 +16,13 @@ Note: ``hooks`` is not a command as such, just a help topic (there is no ``git m
     At least two parameters (branch names) are passed to the hook:
 
     * <new-upstream> is the upstream of the branch that has been slid out, or in case of multiple branches being slid out
-      --- the upstream of the highest slid out branch;
+      --- the upstream of the highest slid out branch.
+      When sliding out a root branch (a branch without an upstream), this parameter is an empty string;
     * <lowest-slid-out-branch> is the branch that has been slid out, or in case of multiple branches being slid out --- the lowest slid out branch;
     * <new-downstreams> are all the following (possibly zero) parameters, which correspond to all original downstreams
-      of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream>.
+      of <lowest-slid-out-branch>, now reattached as the downstreams of <new-upstream> (or becoming new root branches if <new-upstream> is empty).
 
-    Note that this may be zero, one, or multiple branches.
+    Note that <new-downstreams> may be zero, one, or multiple branches.
 
     Note: the hook, if present, is executed:
 
