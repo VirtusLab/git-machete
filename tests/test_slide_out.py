@@ -235,16 +235,16 @@ class TestSlideOut(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        # Create hook that outputs all parameters (including empty first param for root slide-out)
-        write_to_file(".git/hooks/machete-post-slide-out", '#!/bin/sh\necho "$@" > machete-post-slide-out-output')
+        # Create hook that explicitly shows each argument (including empty ones)
+        hook_script = '#!/bin/sh\nprintf "argc=%d arg1=[%s] arg2=[%s] arg3=[%s] arg4=[%s]\\n" ' \
+                      '"$#" "$1" "$2" "$3" "$4" > machete-post-slide-out-output'
+        write_to_file(".git/hooks/machete-post-slide-out", hook_script)
         set_file_executable(".git/hooks/machete-post-slide-out")
         launch_command("slide-out", "-n", "root")
-        # Hook should receive: "" (empty new_upstream), "root" (slid out branch), "child-1" "child-2" (new downstreams)
-        # When echoed via $@, the empty string at the beginning may or may not show up as a space
+        # Hook receives: "" (empty new_upstream), "root" (slid out branch), "child-1" "child-2" (new downstreams)
         hook_output = read_file("machete-post-slide-out-output").strip()
-        # The output should be " root child-1 child-2" (with leading space) or "root child-1 child-2"
-        assert hook_output in (" root child-1 child-2", "root child-1 child-2"), \
-            f"Expected hook output to be ' root child-1 child-2' or 'root child-1 child-2', got: '{hook_output}'"
+        assert hook_output == "argc=4 arg1=[] arg2=[root] arg3=[child-1] arg4=[child-2]", \
+            f"Expected 4 args with first being empty, got: '{hook_output}'"
 
     def test_slide_out_with_invalid_down_fork_point(self) -> None:
         create_repo()

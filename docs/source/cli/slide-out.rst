@@ -47,7 +47,7 @@ The most common use is to slide out a single branch whose upstream was a ``devel
 
 The provided branches must form a chain --- for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch.
 
-Root branches (branches without an upstream) can be slid out.
+Root branches (branches without an upstream) can also be slid out.
 When a root branch is slid out, its children become new root branches, and no rebase or merge is performed (since there is no upstream to rebase/merge onto).
 
 Note: Unless ``--delete`` is passed, ``slide-out`` doesn't delete any branches from git, just removes them from the tree of branch dependencies.
