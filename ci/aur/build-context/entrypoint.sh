@@ -12,4 +12,7 @@ hash=$(curl -L -s $url | sha256sum | head -c 64)
 sed -i "s/sha256sums=('[^']*/sha256sums=('$hash/" PKGBUILD
 cat PKGBUILD
 
+# Refresh package database to avoid 404 errors with stale Docker images
+sudo pacman --sync --refresh --noconfirm
+
 makepkg --syncdeps --log --install --clean --noconfirm
