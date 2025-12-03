@@ -145,6 +145,15 @@ git machete status --list-commits
 **Red** edge means it is **out of sync** &mdash; parent has some commits that the given branch does not have. <br/>
 **Gray** edge means that the branch is **merged** to its parent.
 
+### Interactively navigate and check out branches
+```shell script
+git machete go
+```
+
+Select a branch to check out using an interactive interface with keyboard navigation (arrow keys, Enter to select).
+
+**Note:** interactive mode is not supported on Windows yet. Use ``git machete go <down|next|prev|up>`` instead.
+
 ### Rebase, reset to remote, push, pull all branches as needed
 ```shell script
 git machete traverse --fetch --start-from=first-root
