@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.38.1
+
 ## New in git-machete 3.38.0
 
 - added: interactive terminal interface for checking out a branch, via `git machete go` (without a direction)
