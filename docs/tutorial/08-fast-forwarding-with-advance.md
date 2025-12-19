@@ -1,9 +1,9 @@
-# Tutorial - Part 8: Fast-forwarding with Advance
+# Tutorial - Part 8: Fast-forwarding with advance
 
 Sometimes you've finished work on a child branch and you want to merge it into its parent.
 If you're using a linear workflow, you might want to do a fast-forward merge.
 
-### The `advance` Command
+### The advance command
 
 When you are on a parent branch (e.g., `develop`), and you want to fast-forward it to its child branch (e.g., `feature-1`), run:
 
@@ -39,4 +39,4 @@ The `feature-1` branch is now merged into `develop` and removed from the machete
 
 In the next part, we'll learn more about "sliding out" branches.
 
-[< Previous: Automating Workflow with Traverse](07-automating-workflow-with-traverse.md) | [Next: Cleaning Up with Slide-Out >](09-cleaning-up-with-slide-out.md)
+[< Previous: Automating workflow with traverse](07-automating-workflow-with-traverse.md) | [Next: Cleaning up with slide-out >](09-cleaning-up-with-slide-out.md)

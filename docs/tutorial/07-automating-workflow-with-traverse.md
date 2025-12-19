@@ -1,12 +1,12 @@
-# Tutorial - Part 7: Automating Workflow with Traverse
+# Tutorial - Part 7: Automating workflow with traverse
 
 If you have a chain of branches like `develop -> feature-1 -> feature-2`, and `develop` gets new commits, both `feature-1` and `feature-2` will become out of sync.
 
 Updating them one by one with `git machete update` is fine, but `git-machete` can do better.
 
-### The `traverse` Command
+### The traverse command
 
-The `traverse` command is the "killer feature" of `git-machete`.
+The `traverse` command is a core feature of `git-machete`.
 It walks through your branch tree and, for each branch, asks what you want to do if it's out of sync.
 
 Run:
@@ -15,21 +15,21 @@ git machete traverse
 ```
 
 For each branch that needs attention, it will ask you:
-*   **Rebase** onto parent?
-*   **Push** to remote?
-*   **Pull** from remote?
-*   **Slide out** (if it's already merged)?
+* **Rebase** onto parent?
+* **Push** to remote?
+* **Pull** from remote?
+* **Slide out** (if it's already merged)?
 
-### Powerful Options
+### Powerful options
 
 You can make `traverse` even more automated with flags:
 
-*   `--fetch`: Run `git fetch` before starting.
-*   `--push`: Automatically push branches that are in sync locally but ahead of remote.
-*   `--pull`: Automatically pull branches that are behind remote.
-*   `--start-from=...`: Start traversing from a specific branch.
+* `--fetch` — run `git fetch` before starting.
+* `--push` — automatically push branches that are in sync locally but ahead of remote.
+* `--pull` — automatically pull branches that are behind remote.
+* `--start-from=...` — start traversing from a specific branch.
 
-### Example Workflow
+### Example workflow
 
 ```shell
 git machete traverse --fetch --push
@@ -45,4 +45,4 @@ This single command can:
 
 Next, we'll look at a specialized command for merging children back into their parents.
 
-[< Previous: Updating a Branch](06-updating-a-branch.md) | [Next: Fast-forwarding with Advance >](08-fast-forwarding-with-advance.md)
+[< Previous: Updating a branch](06-updating-a-branch.md) | [Next: Fast-forwarding with advance >](08-fast-forwarding-with-advance.md)

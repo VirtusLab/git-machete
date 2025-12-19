@@ -1,6 +1,6 @@
-# Tutorial - Part 10: GitHub/GitLab Integration
+# Tutorial - Part 10: GitHub/GitLab integration
 
-`git-machete` shines when working with Pull Requests (PRs) or Merge Requests (MRs).
+`git-machete` is particularly useful when working with Pull Requests (PRs) or Merge Requests (MRs).
 
 ### Checking out PRs/MRs
 
@@ -28,9 +28,9 @@ git machete github create-pr
 2.  Use it as the "base" for the PR.
 3.  Open a browser window to create the PR (or create it directly via API if a token is provided).
 
-### PR Chains
+### PR chains
 
-One of the coolest features is that `git-machete` can include a "PR chain" in the PR description, showing all the dependent PRs.
+`git-machete` can include a "PR chain" in the PR description, showing all the dependent PRs.
 This helps reviewers understand the context of your changes.
 
 ### Configuration
@@ -40,4 +40,4 @@ See the [full documentation](https://git-machete.readthedocs.io/en/stable/cli/gi
 
 In the final part, we'll wrap up and see where to go next.
 
-[< Previous: Cleaning Up with Slide-Out](09-cleaning-up-with-slide-out.md) | [Next: Conclusion >](11-conclusion.md)
+[< Previous: Cleaning up with slide-out](09-cleaning-up-with-slide-out.md) | [Next: Conclusion and next steps >](11-conclusion.md)

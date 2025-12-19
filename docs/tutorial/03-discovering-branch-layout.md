@@ -1,6 +1,6 @@
-# Tutorial - Part 3: Discovering Branch Layout
+# Tutorial - Part 3: Discovering branch layout
 
-To work its magic, `git-machete` needs to know how your branches are related.
+To function correctly, `git-machete` needs to know how your branches are related.
 It stores this information in a simple text file: `.git/machete`.
 
 ### The `.git/machete` file
@@ -17,7 +17,7 @@ master
 Indentation defines the parent-child relationship.
 In this example, `develop` is a child of `master`, and `feature-1` and `feature-2` are children of `develop`.
 
-### Automatic Discovery
+### Automatic discovery
 
 If you have an existing repository with many branches, you don't have to create this file manually.
 Run:
@@ -27,7 +27,7 @@ git machete discover
 `git-machete` will analyze your commit history and suggest a layout.
 It will open your default editor so you can review and adjust the suggested layout.
 
-### Manual Editing
+### Manual editing
 
 You can always change the layout by running:
 ```shell
@@ -41,9 +41,9 @@ Alternatively, you can add the current branch to the layout using:
 git machete add <parent-branch-name>
 ```
 
-> **Tip**: You only need to list the branches you want `git-machete` to manage.
+> Tip — you only need to list the branches you want `git-machete` to manage.
 > You can leave out short-lived or irrelevant branches.
 
 Now that we have a layout, let's see how `git-machete` visualizes the state of these branches.
 
-[< Previous: Installation & Setup](02-installation-setup.md) | [Next: Understanding Status >](04-understanding-status.md)
+[< Previous: Installation and setup](02-installation-setup.md) | [Next: Understanding status >](04-understanding-status.md)
