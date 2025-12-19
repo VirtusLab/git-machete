@@ -1,12 +1,12 @@
 .. raw:: html
 
     <style> .green {color:green} </style>
-    <style> .grey {color:dimgrey} </style>
+    <style> .gray {color:dimgray} </style>
     <style> .red {color:red} </style>
     <style> .yellow {color:#FFBF00} </style>
 
 .. role:: green
-.. role:: grey
+.. role:: gray
 .. role:: red
 .. role:: yellow
 
@@ -36,7 +36,7 @@ Apart from simply ASCII-formatting the branch layout file, this also:
   - :green:`green edge` means *in sync*. The downstream branch is a direct descendant of the upstream branch
     and the fork point of the downstream branch is equal to the upstream branch.
 
-  - :grey:`grey/dimmed edge` means *merged*. The downstream branch has been merged to the upstream branch,
+  - :gray:`gray/dimmed edge` means *merged*. The downstream branch has been merged to the upstream branch,
     detected by commit equivalency (default), or by strict detection of merge commits (if ``--no-detect-squash-merges`` passed).
 
 * prints (``untracked``/``ahead of <remote>``/``behind <remote>``/``diverged from [& older than] <remote>``) message if the branch
@@ -55,7 +55,7 @@ In case of :yellow:`yellow edge`, use ``-l`` or ``-L`` flag to show the exact lo
 (which indicates, among other things, what range of commits is going to be rebased when the branch is updated).
 The inferred fork point can be always overridden manually, see help for :ref:`fork-point`.
 
-:grey:`Grey/dimmed edge` suggests that the downstream branch can be slid out (see help for :ref:`slide-out` and :ref:`traverse`).
+:gray:`Gray/dimmed edge` suggests that the downstream branch can be slid out (see help for :ref:`slide-out` and :ref:`traverse`).
 
 Use of colors can be disabled with a ``--color`` flag set to ``never``.
 With ``--color=always``, git machete always emits colors.
@@ -72,7 +72,7 @@ When colors are disabled, relation between branches is represented in the follow
     |   |
     |   ?-<branch3> # yellow (in sync with parent, but parent is not the fork point)
     |
-    m-<branch4>     # grey (merged to parent)
+    m-<branch4>     # gray (merged to parent)
 
 .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
 
@@ -88,7 +88,7 @@ When colors are disabled, relation between branches is represented in the follow
                                   Only consider *strict* (fast-forward or 2-parent) merges, rather than rebase/squash merges,
                                   when detecting if a branch is merged into its upstream (parent).
 
---squash-merge-detection=MODE     Specify the mode for detection of rebase/squash merges (grey edges).
+--squash-merge-detection=MODE     Specify the mode for detection of rebase/squash merges (gray edges).
                                   ``MODE`` can be ``none`` (fastest, no squash merges are detected), ``simple`` (default) or ``exact`` (slowest).
                                   See the below paragraph on ``machete.squashMergeDetection`` git config key for more details.
 

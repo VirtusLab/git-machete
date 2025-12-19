@@ -4,14 +4,16 @@ Before we can use `git-machete`, we need to install it.
 
 ### Installation
 
-The recommended way to install `git-machete` depends on your operating system:
+The recommended way to install `git-machete` depends on your setup.
 
-#### macOS / Linux (Homebrew)
+#### macOS
+On macOS, we recommend using Homebrew.
 ```shell
 brew install git-machete
 ```
 
-#### Python / Pip (Cross-platform)
+#### pip
+If you have Python and `pip` installed, it should work on almost any system.
 ```shell
 pip install --user git-machete
 ```
@@ -35,7 +37,6 @@ Once installed, verify it by running:
 git machete version
 ```
 
-If you see a version number, the installation was successful.
 In the next part, we'll see how to introduce `git-machete` to your existing project.
 
 [< Previous: Introduction](01-introduction.md) | [Next: Discovering branch layout >](03-discovering-branch-layout.md)

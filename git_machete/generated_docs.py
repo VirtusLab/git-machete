@@ -331,7 +331,7 @@ long_docs: Dict[str, str] = {
 
               This has an impact on:
 
-              * whether a grey edge is displayed in `status`,
+              * whether a gray edge is displayed in `status`,
               * whether `traverse` suggests to slide out the branch.
 
            `machete.status.extraSpaceBeforeBranchName`:
@@ -1331,7 +1331,7 @@ long_docs: Dict[str, str] = {
              - <green>green edge</green> means in sync. The downstream branch is a direct descendant of the upstream branch
               and the fork point of the downstream branch is equal to the upstream branch.
 
-             - <grey>grey/dimmed edge</grey> means merged. The downstream branch has been merged to the upstream branch,
+             - <gray>gray/dimmed edge</gray> means merged. The downstream branch has been merged to the upstream branch,
               detected by commit equivalency (default), or by strict detection of merge commits (if `--no-detect-squash-merges` passed).
 
            * prints (`untracked`/`ahead of <remote>`/`behind <remote>`/`diverged from [& older than] <remote>`) message if the branch
@@ -1350,7 +1350,7 @@ long_docs: Dict[str, str] = {
         (which indicates, among other things, what range of commits is going to be rebased when the branch is updated).
         The inferred fork point can be always overridden manually, see help for `fork-point`.
 
-        <grey>Grey/dimmed edge</grey> suggests that the downstream branch can be slid out (see help for `slide-out` and `traverse`).
+        <gray>Gray/dimmed edge</gray> suggests that the downstream branch can be slid out (see help for `slide-out` and `traverse`).
 
         Use of colors can be disabled with a `--color` flag set to `never`.
         With `--color=always`, git machete always emits colors.
@@ -1365,7 +1365,7 @@ long_docs: Dict[str, str] = {
           |   |
           |   ?-<branch3> # yellow (in sync with parent, but parent is not the fork point)
           |
-          m-<branch4>     # grey (merged to parent)
+          m-<branch4>     # gray (merged to parent)
         </dim>
         To make it easier to select branch name from the `status` output on certain terminals
         (like Alacritty), you can add an extra space between └─ and branch name
@@ -1404,7 +1404,7 @@ long_docs: Dict[str, str] = {
               when detecting if a branch is merged into its upstream (parent).
 
            <b>--squash-merge-detection=MODE</b>
-              Specify the mode for detection of rebase/squash merges (grey edges).
+              Specify the mode for detection of rebase/squash merges (gray edges).
               `MODE` can be `none` (fastest, no squash merges are detected), `simple` (default) or `exact` (slowest).
               See the below paragraph on `machete.squashMergeDetection` git config key for more details.
 
@@ -1424,7 +1424,7 @@ long_docs: Dict[str, str] = {
 
               This has an impact on:
 
-              * whether a grey edge is displayed in `status`,
+              * whether a gray edge is displayed in `status`,
               * whether `traverse` suggests to slide out the branch.
 
            `machete.status.extraSpaceBeforeBranchName`
@@ -1446,7 +1446,7 @@ long_docs: Dict[str, str] = {
 
         For each branch, the command:
 
-           * detects if the branch is merged (<grey>grey</grey> edge) to its parent (aka upstream):
+           * detects if the branch is merged (<gray>gray</gray> edge) to its parent (aka upstream):
 
              - if so, asks the user whether to <b>slide out</b> the branch from the dependency tree (typically branches are no longer needed after they're merged);
 
@@ -1564,7 +1564,7 @@ long_docs: Dict[str, str] = {
               Note: when user quits by `q`/`yq` or when traversal is stopped because one of git actions fails, the behavior is always `stay`.
 
            <b>--squash-merge-detection=MODE</b>
-              Specify the mode for detection of rebase/squash merges (grey edges).
+              Specify the mode for detection of rebase/squash merges (gray edges).
               `MODE` can be `none` (fastest, no squash merges are detected), `simple` (default) or `exact` (slowest).
               See the below paragraph on `machete.squashMergeDetection` git config key for more details.
 
@@ -1607,7 +1607,7 @@ long_docs: Dict[str, str] = {
 
               This has an impact on:
 
-              * whether a grey edge is displayed in `status`,
+              * whether a gray edge is displayed in `status`,
               * whether `traverse` suggests to slide out the branch.
 
            `machete.traverse.fetch.<remote>`:

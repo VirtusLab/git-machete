@@ -1,12 +1,12 @@
 .. raw:: html
 
     <style> .green {color:green} </style>
-    <style> .grey {color:dimgrey} </style>
+    <style> .gray {color:dimgray} </style>
     <style> .red {color:red} </style>
     <style> .yellow {color:#FFBF00} </style>
 
 .. role:: green
-.. role:: grey
+.. role:: gray
 .. role:: red
 .. role:: yellow
 
@@ -30,7 +30,7 @@ This behavior can, however, be customized using options: ``--start-from=``, ``--
 
 For each branch, the command:
 
-* detects if the branch is merged (:grey:`grey` edge) to its parent (aka upstream):
+* detects if the branch is merged (:gray:`gray` edge) to its parent (aka upstream):
 
   - if so, asks the user whether to **slide out** the branch from the dependency tree (typically branches are no longer needed after they're merged);
 
@@ -135,7 +135,7 @@ when the current user is NOT the author of the PR/MR associated with that branch
                                ``stay`` (the default --- just stay wherever the traversal stops). Values are case-insensitive.
                                Note: when user quits by ``q``/``yq`` or when traversal is stopped because one of git actions fails, the behavior is always ``stay``.
 
---squash-merge-detection=MODE  Specify the mode for detection of rebase/squash merges (grey edges).
+--squash-merge-detection=MODE  Specify the mode for detection of rebase/squash merges (gray edges).
                                ``MODE`` can be ``none`` (fastest, no squash merges are detected), ``simple`` (default) or ``exact`` (slowest).
                                See the below paragraph on ``machete.squashMergeDetection`` git config key for more details.
 

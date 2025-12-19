@@ -11,14 +11,15 @@ It provides a "bird's eye view" of your repository.
 When you run `status`, you'll see your branch tree with colored edges (the lines connecting branches):
 
 * Green — the branch is in sync with its parent.
-  All commits from the parent are already present in the child branch.
 * Red — the branch is out of sync.
   The parent has commits that are not yet in the child branch.
   This branch can be rebased onto its parent.
 * Gray — the branch is merged into its parent.
   It can be safely "slid out" (more on that later).
-* Yellow — the branch is in sync with its parent, but its remote tracking branch has different commits.
-  You might need to push or pull.
+* Yellow — the branch is in sync with its parent, but its fork point is off.
+  This is a rare edge case.
+  It usually means that the unique history of this branch starts at a different commit than its parent's tip.
+  For more details, see the [docs on fork points](https://git-machete.readthedocs.io/en/stable/#fork-point) (advanced content).
 
 ### Listing commits
 

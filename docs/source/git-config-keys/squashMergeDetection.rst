@@ -11,5 +11,5 @@ Select the algorithm used to detect squash merges. Possible values are:
 
 This has an impact on:
 
-* whether a grey edge is displayed in ``status``,
+* whether a gray edge is displayed in ``status``,
 * whether ``traverse`` suggests to slide out the branch.

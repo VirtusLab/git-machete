@@ -38,6 +38,7 @@ prohibit-fork-point-in-git-context.sh
 prohibit-github-in-gitlab-files.sh
 prohibit-github-mr-or-gitlab-pr.sh
 prohibit-gitlab-in-github-files.sh
+prohibit-grey.sh
 prohibit-id-est-in-rst.sh
 prohibit-markdown-links-in-rst.sh
 prohibit-mrs-in-github-files.sh

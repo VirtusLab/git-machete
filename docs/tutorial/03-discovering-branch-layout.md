@@ -32,7 +32,8 @@ You can always change the layout by running:
 ```shell
 git machete edit
 ```
-This opens `.git/machete` in your editor.
+This opens `.git/machete` in your default editor.
+You can always override the editor with `GIT_MACHETE_EDITOR` env var, for example `export GIT_MACHETE_EDITOR=vim`.
 You can reorder branches, change their parents by changing indentation, or add/remove branches.
 
 Alternatively, you can add the current branch to the layout using:
