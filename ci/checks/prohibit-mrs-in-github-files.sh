@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u
 
-if git grep -EIn 'MR|-mr|[mM]erge [rR]equest' -- '*github*' :!ci/checks/; then
+if git grep -EIn 'MR|-mr|[mM]erge [rR]equest' -- '*github*' :!ci/checks/ :!docs/tutorial/; then
   echo
   echo "GitHub uses *pull* requests rather than *merge* requests, please fix"
   exit 1

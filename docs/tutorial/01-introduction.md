@@ -1,6 +1,6 @@
 # Tutorial - Part 1: Introduction
 
-Welcome to the `git-machete` tutorial! 
+Welcome to the `git-machete` tutorial!
 
 `git-machete` is a robust tool that **simplifies your git workflows**. It's particularly useful when you work with many branches, stacked pull requests, or a "rebase-focused" workflow.
 
