@@ -1,6 +1,7 @@
 # Tutorial - Part 9: Automating workflow with `traverse`
 
-If you have a chain of branches like `feature-2 -> feature-1 -> develop`, and `develop` gets new commits, both `feature-1` and `feature-2` will become out of sync.
+If you have a chain of branches like `feature-2 -> feature-1 -> develop`,
+and `develop` gets new commits, both `feature-1` and `feature-2` will become out of sync.
 
 Updating them one by one with `git machete update` is fine, but `git-machete` can do better.
 

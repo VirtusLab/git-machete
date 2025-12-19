@@ -9,14 +9,16 @@ To sync the current branch with its parent, run:
 git machete update
 ```
 
-By default, this command performs a `rebase` of the current branch onto its parent branch (as defined in `.git/machete`).
+By default, this command performs a rebase of the current branch onto its parent branch (as defined in `.git/machete`).
 
 ### Fork-point mechanism
 
-A key feature of `git-machete` is its ability to find the correct "fork-point".
+A key feature of `git-machete` is its ability to find the correct _fork-point_.
 
-If you've ever manually rebased a branch that was already rebased before, you might have encountered "re-applying commits" that were already there.
-`git-machete` avoids this by tracking where a branch was originally forked from its parent, even if the parent has moved or the child has been rebased.
+If you've ever manually rebased a branch that was already rebased before,
+you might have encountered "reapplying commits" that were already there.
+`git-machete` avoids this by tracking where a branch was originally forked from its parent,
+even if the parent has changed over time, or the branch has been previously rebased.
 
 ### Benefits of `update`
 

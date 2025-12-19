@@ -14,7 +14,7 @@ The commit message will be taken from the first commit in the series.
 
 ### Reapplying a branch
 
-To re-run an interactive rebase of your current branch onto its fork point, use:
+To re-run an interactive rebase of your current branch onto its _fork point_ (see below), use:
 ```shell
 git machete reapply
 ```
@@ -22,13 +22,15 @@ This is useful if:
 * You want to manually pick, squash, or drop commits using the standard git interactive rebase interface.
 * You've cherry-picked some commits from the branch elsewhere and want `git-machete` to automatically drop the duplicates.
 
+Note that it's different from `update` in that it does **not** rebase onto the parent branch.
+
 ### Fork point mechanism
 
 Both `squash` and `reapply` rely on git-machete's **fork point** discovery.
 It's an algorithm that determines where your branch actually started, even if the parent branch has been rebased or moved.
-If the automatic discovery ever fails, you can override it:
-```shell
-git machete fork-point --override-to <commit-hash>
+If the automatic discovery ever fails, you can override the fork point with `--fork-point=...` flag in many commands:
+```
+git machete [reapply|squash|update] --fork-point <commit-hash>
 ```
 
 [< Previous: Updating a branch with a rebase](07-updating-a-branch-with-a-rebase.md) | [Next: Automating workflow with `traverse` >](09-automating-workflow-with-traverse.md)
