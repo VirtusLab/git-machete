@@ -37,6 +37,4 @@ After `advance`:
 
 The `feature-1` branch is now merged into `develop` and removed from the machete layout.
 
-In the next part, we'll learn more about "sliding out" branches.
-
 [< Previous: Automating workflow with `traverse`](09-automating-workflow-with-traverse.md) | [Next: Cleaning up with `slide-out` >](11-cleaning-up-with-slide-out.md)

@@ -43,6 +43,4 @@ We'll cover:
 10. Cleaning up with `slide-out`
 11. GitHub/GitLab integration
 
-The first step is to get `git-machete` installed.
-
-[Next: Installation & Setup >](02-installation-setup.md)
+[Next: Installation and setup >](02-installation-setup.md)

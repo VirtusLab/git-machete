@@ -41,6 +41,4 @@ This single command can:
 
 ...all while asking for your confirmation at each step (unless you use `-y` or `--yes` to skip confirmations).
 
-Next, we'll look at a specialized command for merging children back into their parents.
-
 [< Previous: Squashing and reapplying](08-squashing-and-reapplying.md) | [Next: Fast-forwarding with `advance` >](10-fast-forwarding-with-advance.md)

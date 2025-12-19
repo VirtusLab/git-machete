@@ -24,6 +24,4 @@ If you've ever manually rebased a branch that was already rebased before, you mi
 * Safe — it uses the fork-point to ensure only the commits unique to your branch are rebased.
 * Simple — one command to keep your feature branch up to date with `develop` or its parent feature branch.
 
-Now that your branch is up to date, you might want to clean up its history.
-
 [< Previous: Navigating between branches](06-navigating-between-branches.md) | [Next: Squashing and reapplying >](08-squashing-and-reapplying.md)

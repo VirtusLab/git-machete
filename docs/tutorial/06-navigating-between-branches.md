@@ -25,6 +25,4 @@ If you prefer using the command line directly, you can navigate relative to your
 * Context — you navigate based on the structure of your work, not just branch names.
 * Speed — it's often much faster than `git checkout` + tab completion, especially with many similar-looking branch names.
 
-Now that we can move around, let's learn how to keep our branches in sync.
-
 [< Previous: Using branch annotations](05-using-branch-annotations.md) | [Next: Updating a branch with a rebase >](07-updating-a-branch-with-a-rebase.md)

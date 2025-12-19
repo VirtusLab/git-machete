@@ -39,6 +39,4 @@ git machete anno -H
 Since annotations are just text in the layout file, you can also edit them by running `git machete edit`.
 Anything that follows the branch name on the same line (separated by at least one space) is considered an annotation.
 
-Next, we'll see how to quickly move between these branches.
-
 [< Previous: Understanding `status`](04-understanding-status.md) | [Next: Navigating between branches >](06-navigating-between-branches.md)

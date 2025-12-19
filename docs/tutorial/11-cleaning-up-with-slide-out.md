@@ -38,6 +38,4 @@ After `git machete slide-out` on `feature-1`:
 * Automatic re-parenting — you don't have to manually update `.git/machete` to connect `feature-1-bugfix` to `develop`.
 * Safety — `git-machete` will warn you if you're trying to slide out a branch that hasn't been merged yet (unless you use `--anyway`).
 
-In the next part, we'll see how `git-machete` integrates with GitHub and GitLab.
-
 [< Previous: Fast-forwarding with `advance`](10-fast-forwarding-with-advance.md) | [Next: GitHub/GitLab integration >](12-github-gitlab-integration.md)

@@ -51,6 +51,4 @@ Once installed, verify it by running:
 git machete version
 ```
 
-In the next part, we'll see how to introduce `git-machete` to your existing project.
-
 [< Previous: Introduction](01-introduction.md) | [Next: Discovering branch layout >](03-discovering-branch-layout.md)

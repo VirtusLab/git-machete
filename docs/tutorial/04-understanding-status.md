@@ -51,6 +51,4 @@ It's a great way to quickly remind yourself what you were working on in each bra
 
 The underlined branch is the one you are currently on.
 
-In the next part, we'll see how to add custom notes to these branches.
-
 [< Previous: Discovering branch layout](03-discovering-branch-layout.md) | [Next: Using branch annotations >](05-using-branch-annotations.md)
