@@ -1,6 +1,7 @@
 # git-machete Tutorial
 
-Welcome to the `git-machete` tutorial! This guide will take you through the core features of `git-machete` in bite-sized parts.
+Welcome to the `git-machete` tutorial!
+This guide will take you through the core features of `git-machete` in bite-sized parts.
 
 ### Table of Contents
 

@@ -335,13 +335,10 @@ If automatic detection doesn't work reliably for your workflow, `git machete sli
 
 ## Reference
 
-Check out the [tutorial](docs/tutorial/README.md) for a guide on how to use the tool.
-
 Find the docs at [Read the Docs](https://git-machete.readthedocs.io/).
 You can also check `git machete help` and `git machete help <command>`.
 
-For the excellent overview for the reasons to use small & stacked PRs,
-see [Ben Congdon](https://github.com/bcongdon)'s [blog post](https://benjamincongdon.me/blog/2022/07/17/In-Praise-of-Stacked-PRs/).
+Check out the [tutorial](docs/tutorial/README.md) for a guide on how to use the tool.
 
 <br/>
 

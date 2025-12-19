@@ -1,6 +1,8 @@
 # Tutorial - Part 11: Conclusion & Next Steps
 
-Congratulations! You've completed the `git-machete` tutorial. You now have the skills to:
+Congratulations!
+You've completed the `git-machete` tutorial.
+You now have the skills to:
 
 *   **Visualize** your branch layout.
 *   **Navigate** effortlessly between branches.
@@ -10,9 +12,12 @@ Congratulations! You've completed the `git-machete` tutorial. You now have the s
 
 ### Where to go from here?
 
-*   **Try it on a real project**: The best way to learn is by doing. Run `git machete discover` on your favorite project and see what happens.
-*   **Explore more commands**: We've only covered the most common ones. Run `git machete help` to see the full list.
-*   **Use the IntelliJ Plugin**: If you use PyCharm, IntelliJ IDEA, or other JetBrains IDEs, check out the [git-machete IntelliJ plugin](https://github.com/VirtusLab/git-machete-intellij-plugin). It provides a beautiful graphical interface for all the commands we've learned.
+*   **Try it on a real project**: The best way to learn is by doing.
+Run `git machete discover` on your favorite project and see what happens.
+*   **Explore more commands**: We've only covered the most common ones.
+Run `git machete help` to see the full list.
+*   **Use the IntelliJ Plugin**: If you use PyCharm, IntelliJ IDEA, or other JetBrains IDEs, check out the [git-machete IntelliJ plugin](https://github.com/VirtusLab/git-machete-intellij-plugin).
+It provides a beautiful graphical interface for all the commands we've learned.
 *   **Read the full docs**: For detailed information on every option and configuration key, visit the [official documentation](https://git-machete.readthedocs.io/).
 
 ### Share the love!

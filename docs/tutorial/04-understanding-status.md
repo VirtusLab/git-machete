@@ -10,9 +10,13 @@ It provides a "bird's eye view" of your repository.
 
 When you run `status`, you'll see your branch tree with colored edges (the lines connecting branches):
 
-*   **Green**: The branch is **in sync** with its parent. All commits from the parent are already present in the child branch.
-*   **Red**: The branch is **out of sync**. The parent has commits that are not yet in the child branch. It's time for a rebase!
-*   **Gray**: The branch is **merged** into its parent. You can safely "slide it out" (more on that later).
+*   **Green**: The branch is **in sync** with its parent.
+All commits from the parent are already present in the child branch.
+*   **Red**: The branch is **out of sync**.
+The parent has commits that are not yet in the child branch.
+It's time for a rebase!
+*   **Gray**: The branch is **merged** into its parent.
+You can safely "slide it out" (more on that later).
 *   **Yellow**: The branch is in sync with its parent, but its **remote tracking branch** has different commits (you might need to push or pull).
 
 ### Listing Commits
@@ -23,7 +27,8 @@ git machete status --list-commits
 ```
 (or `git machete s -l` for short).
 
-This will list the commits that are **unique** to each branch. It's a great way to quickly remind yourself what you were working on in each feature branch.
+This will list the commits that are **unique** to each branch.
+It's a great way to quickly remind yourself what you were working on in each feature branch.
 
 ### Example Output
 

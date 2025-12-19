@@ -1,6 +1,7 @@
 # Tutorial - Part 9: Cleaning Up with Slide-Out
 
-When a feature branch is merged into its parent, it usually appears in `git machete status` with a **gray edge**. This means the branch is no longer needed in the layout.
+When a feature branch is merged into its parent, it usually appears in `git machete status` with a **gray edge**.
+This means the branch is no longer needed in the layout.
 
 ### The `slide-out` Command
 

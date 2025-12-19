@@ -6,7 +6,8 @@ Updating them one by one with `git machete update` is fine, but `git-machete` ca
 
 ### The `traverse` Command
 
-The `traverse` command is the "killer feature" of `git-machete`. It walks through your branch tree and, for each branch, asks what you want to do if it's out of sync.
+The `traverse` command is the "killer feature" of `git-machete`.
+It walks through your branch tree and, for each branch, asks what you want to do if it's out of sync.
 
 Run:
 ```shell

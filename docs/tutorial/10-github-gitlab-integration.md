@@ -30,11 +30,13 @@ git machete github create-pr
 
 ### PR Chains
 
-One of the coolest features is that `git-machete` can include a "PR chain" in the PR description, showing all the dependent PRs. This helps reviewers understand the context of your changes.
+One of the coolest features is that `git-machete` can include a "PR chain" in the PR description, showing all the dependent PRs.
+This helps reviewers understand the context of your changes.
 
 ### Configuration
 
-To use these features, you might need to set up a GitHub/GitLab token. See the [full documentation](https://git-machete.readthedocs.io/en/stable/cli/github.html) for details.
+To use these features, you might need to set up a GitHub/GitLab token.
+See the [full documentation](https://git-machete.readthedocs.io/en/stable/cli/github.html) for details.
 
 In the final part, we'll wrap up and see where to go next.
 

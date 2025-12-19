@@ -15,7 +15,8 @@ By default, this command performs a `rebase` of the current branch onto its pare
 
 One of the most powerful features of `git-machete` is its ability to find the correct "fork-point".
 
-If you've ever manually rebased a branch that was already rebased before, you might have encountered "re-applying commits" that were already there. `git-machete` avoids this by tracking where a branch was originally forked from its parent, even if the parent has moved or the child has been rebased.
+If you've ever manually rebased a branch that was already rebased before, you might have encountered "re-applying commits" that were already there.
+`git-machete` avoids this by tracking where a branch was originally forked from its parent, even if the parent has moved or the child has been rebased.
 
 ### Benefits of `update`
 

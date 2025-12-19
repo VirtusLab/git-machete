@@ -1,6 +1,7 @@
 # Tutorial - Part 8: Fast-forwarding with Advance
 
-Sometimes you've finished work on a child branch and you want to merge it into its parent. If you're using a linear workflow, you might want to do a fast-forward merge.
+Sometimes you've finished work on a child branch and you want to merge it into its parent.
+If you're using a linear workflow, you might want to do a fast-forward merge.
 
 ### The `advance` Command
 

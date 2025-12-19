@@ -8,7 +8,8 @@ Run:
 ```shell
 git machete go
 ```
-This will open an interactive menu showing your branch layout. You can use the arrow keys to select a branch and press **Enter** to check it out.
+This will open an interactive menu showing your branch layout.
+You can use the arrow keys to select a branch and press **Enter** to check it out.
 
 ### Relative Navigation
 
