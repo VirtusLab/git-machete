@@ -1,14 +1,13 @@
-# Tutorial - Part 5: Navigating between branches
+# Tutorial - Part 6: Navigating between branches
 
 Instead of using `git checkout <branch-name>`, `git-machete` provides a much faster way to navigate your branch tree.
 
 ### Interactive navigation
 
-Run:
+To open an interactive menu showing your branch layout, run:
 ```shell
 git machete go
 ```
-This will open an interactive menu showing your branch layout.
 You can use the arrow keys to select a branch and press **Enter** to check it out.
 
 ### Relative navigation
@@ -28,4 +27,4 @@ If you prefer using the command line directly, you can navigate relative to your
 
 Now that we can move around, let's learn how to keep our branches in sync.
 
-[< Previous: Understanding status](04-understanding-status.md) | [Next: Updating a branch >](06-updating-a-branch.md)
+[< Previous: Using branch annotations](05-using-branch-annotations.md) | [Next: Updating a branch with a rebase >](07-updating-a-branch-with-a-rebase.md)

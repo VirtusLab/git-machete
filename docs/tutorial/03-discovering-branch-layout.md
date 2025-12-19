@@ -19,8 +19,7 @@ In this example, `develop` is a child of `master`, and `feature-1` and `feature-
 
 ### Automatic discovery
 
-If you have an existing repository with many branches, you don't have to create this file manually.
-Run:
+If you have an existing repository with many branches, you can automatically discover the layout by running:
 ```shell
 git machete discover
 ```

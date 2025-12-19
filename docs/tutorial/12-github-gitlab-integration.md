@@ -1,4 +1,4 @@
-# Tutorial - Part 10: GitHub/GitLab integration
+# Tutorial - Part 12: GitHub/GitLab integration
 
 `git-machete` is particularly useful when working with Pull Requests (PRs) or Merge Requests (MRs).
 
@@ -40,4 +40,4 @@ See the [full documentation](https://git-machete.readthedocs.io/en/stable/cli/gi
 
 In the final part, we'll wrap up and see where to go next.
 
-[< Previous: Cleaning up with slide-out](09-cleaning-up-with-slide-out.md) | [Next: Conclusion and next steps >](11-conclusion.md)
+[< Previous: Cleaning up with slide-out](11-cleaning-up-with-slide-out.md) | [Next: Conclusion and next steps >](13-conclusion.md)

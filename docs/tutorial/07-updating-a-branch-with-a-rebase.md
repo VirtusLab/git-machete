@@ -1,10 +1,10 @@
-# Tutorial - Part 6: Updating a branch
+# Tutorial - Part 7: Updating a branch with a rebase
 
 When `git machete status` shows a branch with a **red edge**, it means the branch is out of sync with its parent.
 
 ### The update command
 
-To sync the current branch with its parent, simply run:
+To sync the current branch with its parent, run:
 ```shell
 git machete update
 ```
@@ -22,8 +22,8 @@ If you've ever manually rebased a branch that was already rebased before, you mi
 
 * No need to remember parents — `git-machete` knows exactly what to rebase onto.
 * Safe — it uses the fork-point to ensure only the commits unique to your branch are rebased.
-* Simple — just one command to keep your feature branch up to date with `develop` or its parent feature branch.
+* Simple — one command to keep your feature branch up to date with `develop` or its parent feature branch.
 
-What if you have a whole chain of branches to update? That's where `traverse` comes in.
+Now that your branch is up to date, you might want to clean up its history.
 
-[< Previous: Navigating between branches](05-navigating-between-branches.md) | [Next: Automating workflow with traverse >](07-automating-workflow-with-traverse.md)
+[< Previous: Navigating between branches](06-navigating-between-branches.md) | [Next: Squashing and reapplying >](08-squashing-and-reapplying.md)

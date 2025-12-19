@@ -1,4 +1,4 @@
-# Tutorial - Part 11: Conclusion and next steps
+# Tutorial - Part 13: Conclusion and next steps
 
 You've completed the `git-machete` tutorial.
 
@@ -19,4 +19,4 @@ If you find `git-machete` useful, consider:
 * Recommending it to your teammates.
 * Contributing to the project!
 
-[< Previous: GitHub/GitLab integration](10-github-gitlab-integration.md) | [Back to Top](#tutorial---part-11-conclusion-and-next-steps)
+[< Previous: GitHub/GitLab integration](12-github-gitlab-integration.md) | [Back to Top](#tutorial---part-13-conclusion-and-next-steps)

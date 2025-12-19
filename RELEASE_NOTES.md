@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.38.1
 
+- added: a GitHub-viewable tutorial (under `docs/tutorial`)
 - fixed: Nix builds (reported by @ivanopagano)
 
 ## New in git-machete 3.38.0

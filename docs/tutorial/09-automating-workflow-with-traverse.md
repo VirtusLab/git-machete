@@ -1,15 +1,13 @@
-# Tutorial - Part 7: Automating workflow with traverse
+# Tutorial - Part 9: Automating workflow with traverse
 
-If you have a chain of branches like `develop -> feature-1 -> feature-2`, and `develop` gets new commits, both `feature-1` and `feature-2` will become out of sync.
+If you have a chain of branches like `feature-2 -> feature-1 -> develop`, and `develop` gets new commits, both `feature-1` and `feature-2` will become out of sync.
 
 Updating them one by one with `git machete update` is fine, but `git-machete` can do better.
 
 ### The traverse command
 
 The `traverse` command is a core feature of `git-machete`.
-It walks through your branch tree and, for each branch, asks what you want to do if it's out of sync.
-
-Run:
+To walk through your branch tree and sync your branches, run:
 ```shell
 git machete traverse
 ```
@@ -45,4 +43,4 @@ This single command can:
 
 Next, we'll look at a specialized command for merging children back into their parents.
 
-[< Previous: Updating a branch](06-updating-a-branch.md) | [Next: Fast-forwarding with advance >](08-fast-forwarding-with-advance.md)
+[< Previous: Squashing and reapplying](08-squashing-and-reapplying.md) | [Next: Fast-forwarding with advance >](10-fast-forwarding-with-advance.md)
