@@ -21,7 +21,8 @@ If you run `git machete status`, you will see your note next to the branch name:
 
 ### Why use annotations?
 
-* Keep track of purpose — remind yourself what a branch is for.
+* Primarily, to keep pull request numbers (see below).
+* Keep track of the purpose — remind yourself what a branch is for.
 * Status markers — mark branches as "DO NOT MERGE", "WIP", or "Ready for review".
 * Collaboration — if you share your `.git/machete` file (though it's usually local), others can see your notes.
 
@@ -40,4 +41,4 @@ Anything that follows the branch name on the same line (separated by at least on
 
 Next, we'll see how to quickly move between these branches.
 
-[< Previous: Understanding status](04-understanding-status.md) | [Next: Navigating between branches >](06-navigating-between-branches.md)
+[< Previous: Understanding `status`](04-understanding-status.md) | [Next: Navigating between branches >](06-navigating-between-branches.md)

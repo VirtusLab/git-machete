@@ -23,7 +23,7 @@ Doing this manually is tedious and error-prone.
 
 `git-machete` provides:
 * Bird's eye view — see all your branches and their relationships at a glance.
-* Automatic status — know instantly which branches are in sync, which need a rebase, and which are merged.
+* Automatic `status` — know instantly which branches are in sync, which need a rebase, and which are merged.
 * Simplified syncing — rebase, push, and pull multiple branches with a single command.
 * Integration with GitHub and GitLab - keep PR structure & descriptions in sync with your local state
 
@@ -33,14 +33,14 @@ This tutorial is divided into bite-sized parts that will take you through the mo
 We'll cover:
 1.  Installation and setup
 2.  Discovering branch layout
-3.  Understanding status
+3.  Understanding `status`
 4.  Using branch annotations
 5.  Navigating between branches
 6.  Updating a branch with a rebase
 7.  Squashing and reapplying
-8.  Automating workflow with traverse
-9.  Fast-forwarding with advance
-10. Cleaning up with slide-out
+8.  Automating workflow with `traverse`
+9.  Fast-forwarding with `advance`
+10. Cleaning up with `slide-out`
 11. GitHub/GitLab integration
 
 The first step is to get `git-machete` installed.

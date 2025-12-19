@@ -40,4 +40,4 @@ See the [full documentation](https://git-machete.readthedocs.io/en/stable/cli/gi
 
 In the final part, we'll wrap up and see where to go next.
 
-[< Previous: Cleaning up with slide-out](11-cleaning-up-with-slide-out.md) | [Next: Conclusion and next steps >](13-conclusion.md)
+[< Previous: Cleaning up with `slide-out`](11-cleaning-up-with-slide-out.md) | [Next: Conclusion and next steps >](13-conclusion.md)

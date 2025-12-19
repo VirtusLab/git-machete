@@ -46,4 +46,4 @@ git machete add <parent-branch-name>
 
 Now that we have a layout, let's see how `git-machete` visualizes the state of these branches.
 
-[< Previous: Installation and setup](02-installation-setup.md) | [Next: Understanding status >](04-understanding-status.md)
+[< Previous: Installation and setup](02-installation-setup.md) | [Next: Understanding `status` >](04-understanding-status.md)

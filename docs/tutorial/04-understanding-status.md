@@ -1,4 +1,4 @@
-# Tutorial - Part 4: Understanding status
+# Tutorial - Part 4: Understanding `status`
 
 The most frequently used command in `git-machete` is:
 ```shell
@@ -6,9 +6,11 @@ git machete status
 ```
 It provides a "bird's eye view" of your repository.
 
-### Color-coded status
+### Color-coded `status`
 
 When you run `status`, you'll see your branch tree with colored edges (the lines connecting branches):
+
+**TODO TODO TODO screenshot without commits**
 
 * Green — the branch is in sync with its parent.
 * Red — the branch is out of sync.
@@ -30,10 +32,11 @@ git machete status --list-commits
 (or `git machete s -l` for short).
 
 This will list the commits that are unique to each branch.
-It's a great way to quickly remind yourself what you were working on in each feature branch.
+It's a great way to quickly remind yourself what you were working on in each branch.
 
 ### Example output
 
+**TODO TODO TODO screenshot with commits**
 ```text
   master
   |

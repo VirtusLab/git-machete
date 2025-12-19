@@ -15,11 +15,11 @@ You can use the arrow keys to select a branch and press **Enter** to check it ou
 If you prefer using the command line directly, you can navigate relative to your current branch in the layout:
 
 * `git machete go up`: Check out the parent branch.
-* `git machete go down`: Check out the first child branch.
+* `git machete go down`: Check out a child branch.
 * `git machete go next`: Check out the next branch in the layout (depth-first).
 * `git machete go prev`: Check out the previous branch in the layout.
 
-### Why use go?
+### Why use `go`?
 
 * Less typing — you don't have to type out long branch names.
 * Context — you navigate based on the structure of your work, not just branch names.

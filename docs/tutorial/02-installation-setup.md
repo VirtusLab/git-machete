@@ -30,6 +30,20 @@ Bash: `source <(git machete completion bash)`
 Zsh: `source <(git machete completion zsh)`
 Fish: `git machete completion fish | source`
 
+### Shell aliases
+
+For a smoother experience, you might want to set up some short aliases in your shell.
+A common practice is to alias `git` to `g` in your shell configuration:
+```shell
+alias g=git
+```
+You can also add a git alias for `machete`:
+```shell
+git config --global alias.m machete
+```
+This allows you to run `g m` instead of `git machete`.
+It significantly speeds up your workflow.
+
 ### Verifying installation
 
 Once installed, verify it by running:

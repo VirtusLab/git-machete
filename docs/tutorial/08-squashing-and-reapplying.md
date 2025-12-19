@@ -33,4 +33,4 @@ git machete fork-point --override-to <commit-hash>
 
 Next, we'll see how to automate the sync process for your entire branch tree.
 
-[< Previous: Updating a branch with a rebase](07-updating-a-branch-with-a-rebase.md) | [Next: Automating workflow with traverse >](09-automating-workflow-with-traverse.md)
+[< Previous: Updating a branch with a rebase](07-updating-a-branch-with-a-rebase.md) | [Next: Automating workflow with `traverse` >](09-automating-workflow-with-traverse.md)
