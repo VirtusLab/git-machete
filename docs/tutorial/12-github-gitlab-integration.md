@@ -14,7 +14,7 @@ This will:
 2.  Check them out locally.
 3.  Add them to your `.git/machete` file in the correct order (if they are stacked).
 
-You can also checkout specific PRs by number: `git machete github checkout-prs 123 125`.
+You can also check out specific PRs by number: `git machete github checkout-prs 123 125`.
 
 ### Creating PRs/MRs
 

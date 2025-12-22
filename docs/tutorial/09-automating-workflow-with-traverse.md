@@ -24,22 +24,22 @@ For each branch that needs attention, it will ask you:
 You can make `traverse` even more automated with flags:
 
 * `--fetch` — run `git fetch` before starting.
-* `--push` — automatically push branches that are in sync locally but ahead of remote.
-* `--pull` — automatically pull branches that are behind remote.
-* `--start-from=...` — start traversing from a specific branch.
+* `--whole` — walk through the entire branch tree instead of starting from the current branch.
+* `-W` — equivalent to `--fetch --whole`.
+* `--yes` or `-y` — automatically confirm all actions.
 
 ### Example workflow
 
 ```shell
-git machete traverse --fetch --push
+git machete traverse -W -y
 ```
 This single command can:
 1.  Fetch latest changes from the server.
-2.  Rebase `feature-1` onto `develop`.
-3.  Push `feature-1`.
-4.  Rebase `feature-2` onto `feature-1`.
-5.  Push `feature-2`.
+2.  Walk through all branches in your layout.
+3.  Rebase any out-of-sync branches.
+4.  Push or pull branches as needed.
+5.  Slide out merged branches.
 
-...all while asking for your confirmation at each step (unless you use `-y` or `--yes` to skip confirmations).
+...all without asking for your confirmation.
 
 [< Previous: Squashing and reapplying](08-squashing-and-reapplying.md) | [Next: Fast-forwarding with `advance` >](10-fast-forwarding-with-advance.md)

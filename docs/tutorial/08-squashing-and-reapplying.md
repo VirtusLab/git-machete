@@ -5,16 +5,18 @@ After updating your branch with a rebase, you might want to clean up its history
 
 ### Squashing commits
 
-If you've made several small commits while working on a feature, you might want to combine them into a single, clean commit by running:
+If you've made several small commits while working on a feature,
+you might want to combine them into a single, clean commit by running:
 ```shell
 git machete squash
 ```
-`git-machete` will automatically find the fork point of your branch and squash all commits following it into one.
+`git-machete` will automatically find the _fork point_ (start of unique history; see below)
+of your branch and squash all commits following it into one.
 The commit message will be taken from the first commit in the series.
 
 ### Reapplying a branch
 
-To re-run an interactive rebase of your current branch onto its _fork point_ (see below), use:
+To re-run an interactive rebase of your current branch onto its fork point, use:
 ```shell
 git machete reapply
 ```
