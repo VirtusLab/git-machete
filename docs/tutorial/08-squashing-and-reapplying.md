@@ -10,7 +10,7 @@ you might want to combine them into a single, clean commit by running:
 ```shell
 git machete squash
 ```
-`git-machete` will automatically find the _fork point_ (start of unique history; see below)
+`git-machete` will automatically find the fork point (start of unique history)
 of your branch and squash all commits following it into one.
 The commit message will be taken from the first commit in the series.
 
@@ -20,19 +20,17 @@ To re-run an interactive rebase of your current branch onto its fork point, use:
 ```shell
 git machete reapply
 ```
-This is useful if:
-* You want to manually pick, squash, or drop commits using the standard git interactive rebase interface.
-* You've cherry-picked some commits from the branch elsewhere and want `git-machete` to automatically drop the duplicates.
+This is useful if you want to manually pick, squash, or drop commits using the standard git interactive rebase interface.
 
 Note that it's different from `update` in that it does **not** rebase onto the parent branch.
 
-### Fork point mechanism
+### Fork point
 
-Both `squash` and `reapply` rely on git-machete's **fork point** discovery.
-It's an algorithm that determines where your branch actually started, even if the parent branch has been rebased or moved.
-If the automatic discovery ever fails, you can override the fork point with `--fork-point=...` flag in many commands:
-```
-git machete [reapply|squash|update] --fork-point <commit-hash>
+Both `squash` and `reapply` rely on the fork point discovery.
+If the automatic discovery ever fails, you can override the fork point with the `--fork-point` flag,
+similarly to how it's done in `update`:
+```shell
+git machete [reapply|squash] --fork-point <commit-hash>
 ```
 
 [< Previous: Updating a branch with a rebase](07-updating-a-branch-with-a-rebase.md) | [Next: Automating workflow with `traverse` >](09-automating-workflow-with-traverse.md)

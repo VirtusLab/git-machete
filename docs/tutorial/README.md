@@ -6,7 +6,7 @@ This guide will take you through the core features of `git-machete` in bite-size
 
 1.  [Introduction](01-introduction.md) — what is git-machete and why use it?
 2.  [Installation and setup](02-installation-setup.md) — getting the tool ready.
-3.  [Discovering branch layout](03-discovering-branch-layout.md) — introducing `git-machete` to your project.
+3.  [Discovering and editing branch layout](03-discovering-and-editing-branch-layout.md) — introducing `git-machete` to your project.
 4.  [Understanding `status`](04-understanding-status.md) — reading the bird's eye view.
 5.  [Using branch annotations](05-using-branch-annotations.md) — attaching notes to branches.
 6.  [Navigating between branches](06-navigating-between-branches.md) — moving around with `go`.

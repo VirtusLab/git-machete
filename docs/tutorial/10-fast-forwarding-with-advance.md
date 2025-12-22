@@ -25,15 +25,15 @@ git machete advance
 Before `advance`:
 ```text
   develop
-    feature-1* (current branch)
+    feature-1  (current branch)
 ```
 
 Run `git machete go up` to get to `develop`.
-Run `git machete advance`.
+Run `git machete advance` and confirm the suggested actions.
 
 After `advance`:
 ```text
-  develop* (current branch; now at the same commit as feature-1 was)
+  develop  (current branch; now at the same commit as feature-1 was)
 ```
 
 The `feature-1` branch is now merged into `develop` and removed from the machete layout.

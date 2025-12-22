@@ -40,4 +40,4 @@ It's a great way to quickly remind yourself what you were working on in each bra
 
 The underlined branch is the one you are currently on.
 
-[< Previous: Discovering branch layout](03-discovering-branch-layout.md) | [Next: Using branch annotations >](05-using-branch-annotations.md)
+[< Previous: Discovering and editing branch layout](03-discovering-and-editing-branch-layout.md) | [Next: Using branch annotations >](05-using-branch-annotations.md)

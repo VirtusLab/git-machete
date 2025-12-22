@@ -1,4 +1,4 @@
-# Tutorial - Part 3: Discovering branch layout
+# Tutorial - Part 3: Discovering and editing branch layout
 
 To function correctly, `git-machete` needs to know how your branches are related.
 It stores this information in a simple text file: `.git/machete`.
@@ -8,14 +8,16 @@ It stores this information in a simple text file: `.git/machete`.
 This file defines the hierarchy of your branches.
 It looks something like this:
 ```text
+develop
+    allow-ownership-link
+        build-chain
+    call-ws
 master
-  develop
-    feature-1
-    feature-2
-      feature-2-bugfix
+    hotfix/add-trigger
 ```
 Indentation defines the parent-child relationship.
-In this example, `develop` is a child of `master`, and `feature-1` and `feature-2` are children of `develop`.
+In this example, `hotfix/add-trigger` is a child of `master`,
+and `allow-ownership-link` and `call-ws` are children of `develop`.
 
 ### Automatic discovery
 

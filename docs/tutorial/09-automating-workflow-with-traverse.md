@@ -33,7 +33,7 @@ You can make `traverse` even more automated with flags:
 ```shell
 git machete traverse -W -y
 ```
-This single command can:
+This single command will:
 1.  Fetch latest changes from the server.
 2.  Walk through all branches in your layout.
 3.  Rebase any out-of-sync branches.

@@ -8,11 +8,11 @@ It's particularly useful when you work with many branches and stacked pull reque
 ### Why git-machete?
 
 In modern software development, we often work on multiple features simultaneously.
-Sometimes these features depend on each other, leading to a "chain" of branches:
+Sometimes these features depend on each other, leading to a chain of branches:
 
 `feature-3` -> `feature-2` -> `feature-1` -> `develop`
 
-A very common case is when you have a refactor or a bugfix that a feature depends on before it can be merged.
+Another very common case is when you have a refactor or a bugfix that a feature depends on before it can be merged.
 Stacking branches allows you to continue working on your feature while the supporting changes are under review:
 
 `feature` -> `refactor` -> `bugfix` -> `develop`
@@ -32,7 +32,7 @@ Doing this manually is tedious and error-prone.
 This tutorial is divided into bite-sized parts that will take you through the most important features of git-machete.
 We'll cover:
 1.  Installation and setup
-2.  Discovering branch layout
+2.  Discovering and editing branch layout
 3.  Understanding `status`
 4.  Using branch annotations
 5.  Navigating between branches

@@ -19,6 +19,11 @@ If you run `git machete status`, you will see your note next to the branch name:
     o-feature-1  your note here
 ```
 
+### Editing manually
+
+Since annotations are just text in the layout file, you can also edit them by running `git machete edit`.
+Anything that follows the branch name on the same line (separated by at least one space) is considered an annotation.
+
 ### Why use annotations?
 
 * Primarily, to keep pull request numbers (see below).
@@ -30,13 +35,11 @@ If you run `git machete status`, you will see your note next to the branch name:
 
 To automatically annotate your branches with information from GitHub or GitLab, run:
 ```shell
-git machete anno -H
+git machete anno --sync-github-prs
 ```
-(or `-L` for GitLab) to fetch PR/MR numbers and authors for all branches that have them.
+(or `--sync-gitlab-mrs`) to fetch PR/MR numbers and authors for all branches that have them.
 
-### Editing manually
-
-Since annotations are just text in the layout file, you can also edit them by running `git machete edit`.
-Anything that follows the branch name on the same line (separated by at least one space) is considered an annotation.
+Note: in case of private repositories, this requires authorization —
+see the [chapter on GitHub/GitLab integration](12-github-gitlab-integration.md).
 
 [< Previous: Understanding `status`](04-understanding-status.md) | [Next: Navigating between branches >](06-navigating-between-branches.md)

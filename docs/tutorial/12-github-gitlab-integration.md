@@ -12,7 +12,7 @@ It will look for a token in the following places (in order):
 
 If you have the `gh` or `glab` CLI tool installed and logged in, things should "just work" out of the box.
 
-From now on, we'll focus on `git machete github`; the CLI for `gitlab` is very similar (with `-mr` instead of `-pr`).
+From now on, we'll focus on `git machete github`; the CLI for `gitlab` is very similar (with `-mr(s)` instead of `-pr(s)`).
 
 ### Checking out PRs/MRs
 
