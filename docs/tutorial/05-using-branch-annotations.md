@@ -11,13 +11,8 @@ git machete anno "your note here"
 ```
 
 If you run `git machete status`, you will see your note next to the branch name:
-```text
-  master
-  |
-  o-develop
-    |
-    o-feature-1  your note here
-```
+
+TODO screenshot
 
 ### Editing manually
 

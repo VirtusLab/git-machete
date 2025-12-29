@@ -21,16 +21,11 @@ git machete slide-out
 ### Example
 
 Before `slide-out`:
-```text
-  develop
-    feature-1 (merged)
-      feature-1-bugfix
-```
+
+TODO screenshot
 
 After `git machete slide-out` on `feature-1`:
-```text
-  develop
-    feature-1-bugfix
-```
+
+TODO screenshot
 
 [< Previous: Fast-forwarding with `advance`](10-fast-forwarding-with-advance.md) | [Next: GitHub/GitLab integration >](12-github-gitlab-integration.md)

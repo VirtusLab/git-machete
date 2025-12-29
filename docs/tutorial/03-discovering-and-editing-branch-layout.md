@@ -16,6 +16,7 @@ master
     hotfix/add-trigger
 ```
 Indentation defines the parent-child relationship.
+Both spaces and tabs are allowed, as long as they're used consistently.
 In this example, `hotfix/add-trigger` is a child of `master`,
 and `allow-ownership-link` and `call-ws` are children of `develop`.
 
@@ -43,7 +44,7 @@ Alternatively, you can add the current branch to the layout using:
 git machete add <parent-branch-name>
 ```
 
-> Tip — you only need to list the branches you want `git-machete` to manage.
-> You can leave out short-lived or irrelevant branches.
+You only need to list the branches you want `git-machete` to manage.
+You can leave out short-lived or irrelevant branches.
 
 [< Previous: Installation and setup](02-installation-setup.md) | [Next: Understanding `status` >](04-understanding-status.md)

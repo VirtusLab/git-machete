@@ -18,23 +18,20 @@ git machete advance
 2.  If there are multiple children, it asks you to choose one.
 3.  It fast-forwards the current branch to the selected child.
 4.  It optionally pushes the parent branch to the remote.
-5.  It "slides out" the child branch from the layout (since its commits are now part of the parent).
+5.  It optionally slides out the child branch from the layout (since its commits are now part of the parent).
 
 ### Example
 
 Before `advance`:
-```text
-  develop
-    feature-1  (current branch)
-```
+
+TODO screenshot
 
 Run `git machete go up` to get to `develop`.
 Run `git machete advance` and confirm the suggested actions.
 
 After `advance`:
-```text
-  develop  (current branch; now at the same commit as feature-1 was)
-```
+
+TODO screenshot
 
 The `feature-1` branch is now merged into `develop` and removed from the machete layout.
 

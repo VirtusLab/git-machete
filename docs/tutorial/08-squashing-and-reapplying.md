@@ -22,11 +22,13 @@ git machete reapply
 ```
 This is useful if you want to manually pick, squash, or drop commits using the standard git interactive rebase interface.
 
-Note that it's different from `update` in that it does **not** rebase onto the parent branch.
+Note that it's different from [`update`](07-updating-a-branch-with-a-rebase.md) in that it does **not** rebase onto the parent branch.
+After `reapply`, the sequence of commits (potentially reworded/squashed etc.)
+will still be based on the same commit (fork point) as before.
 
 ### Fork point
 
-Both `squash` and `reapply` rely on the fork point discovery.
+Both `squash` and `reapply` rely on fork point discovery.
 If the automatic discovery ever fails, you can override the fork point with the `--fork-point` flag,
 similarly to how it's done in `update`:
 ```shell

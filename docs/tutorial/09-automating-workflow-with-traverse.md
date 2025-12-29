@@ -1,6 +1,6 @@
 # Tutorial - Part 9: Automating workflow with `traverse`
 
-If you have a chain of branches like `feature-2 -> feature-1 -> develop`,
+If you have a chain of branches like `feature-2` → `feature-1` → `develop`,
 and `develop` gets new commits, both `feature-1` and `feature-2` will become out of sync.
 
 Updating them one by one with `git machete update` is fine, but `git-machete` can do better.
@@ -40,6 +40,6 @@ This single command will:
 4.  Push or pull branches as needed.
 5.  Slide out merged branches.
 
-...all without asking for your confirmation.
+...all without asking for a confirmation.
 
 [< Previous: Squashing and reapplying](08-squashing-and-reapplying.md) | [Next: Fast-forwarding with `advance` >](10-fast-forwarding-with-advance.md)

@@ -4,13 +4,16 @@
 
 ### Authorization
 
-To perform actions like opening a PR or checking out private repositories, `git-machete` needs an API token.
+Checking out PRs from public repositories doesn't require authorization.
+
+To perform actions like checking out PRs from private repositories,
+or opening a PR in any repository, `git-machete` needs an API token.
 It will look for a token in the following places (in order):
 1.  `GITHUB_TOKEN` (or `GITLAB_TOKEN`) environment variable.
 2.  `.github-token` (or `.gitlab-token`) file in your home directory.
 3.  `gh` (or `glab`) CLI's authentication token.
 
-If you have the `gh` or `glab` CLI tool installed and logged in, things should "just work" out of the box.
+If you have the `gh` or `glab` CLI tool installed and logged in, things should just work out of the box.
 
 From now on, we'll focus on `git machete github`; the CLI for `gitlab` is very similar (with `-mr(s)` instead of `-pr(s)`).
 
@@ -42,10 +45,11 @@ To create a PR from your current branch:
 ```shell
 git machete github create-pr [--draft]
 ```
+
 `git-machete` will:
 1.  Identify the parent branch from your layout, to use it as the base for the PR.
 2.  Push the branch to the remote (if needed).
-3.  Create the PR via the API.
+3.  Create a (draft) PR via the API.
 
 ### Retargeting PRs
 
@@ -62,11 +66,12 @@ To update your layout with PR numbers and authors for all branches, run:
 ```shell
 git machete github anno-prs
 ```
-This is a great way to quickly see which branches have open PRs in your `status` output.
+This is a great way to quickly see what branches have open PRs in your `status` output.
 
-### PR chains
+### Autogenerating PR descriptions
 
-When you create or retarget a PR that is part of a stack, `git-machete` automatically includes a "PR chain" in the description:
+When you create or retarget a PR that is part of a stack (2+ dependent PRs),
+`git-machete` automatically includes a "PR chain" in the description:
 
 <img src="../../graphics/pr-chain-github-screenshot.png"
      alt="PR chain on GitHub"

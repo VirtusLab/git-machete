@@ -11,12 +11,13 @@ brew install git-machete
 ```
 
 #### pip
-If you have Python and `pip` installed, it should work on almost any system.
+On almost any system, if you have Python and `pip` installed, the following should work:
 ```shell
 pip install --user git-machete
 ```
 
-For other installation methods (Windows, Nix, Arch Linux, etc.), see the [full installation guide](../../PACKAGES.md).
+For other common installation methods (Windows, Nix, conda, etc.), see the [README](../../README.md), _Install_ section.
+For the complete list of known wrapper packages for git-machete, see [PACKAGES](../../PACKAGES.md).
 
 ### Shell completions
 
