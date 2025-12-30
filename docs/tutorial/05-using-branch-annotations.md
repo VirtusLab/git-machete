@@ -10,9 +10,7 @@ To add a note to the current branch, run:
 git machete anno "your note here"
 ```
 
-If you run `git machete status`, you will see your note next to the branch name:
-
-TODO screenshot
+If you run `git machete status`, you will see your note next to the branch name.
 
 ### Editing manually
 

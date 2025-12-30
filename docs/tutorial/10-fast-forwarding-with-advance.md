@@ -6,7 +6,7 @@ you might want to do a fast-forward merge to keep the history linear.
 ### The `advance` command
 
 When you are on a parent branch (e.g., `develop`),
-and you want to fast-forward it to its child branch (e.g., `feature-1`), run:
+and you want to fast-forward it to its child branch, run:
 
 ```shell
 git machete advance
@@ -24,15 +24,14 @@ git machete advance
 
 Before `advance`:
 
-TODO screenshot
+<img src="img/status.png" width="50%" />
 
-Run `git machete go up` to get to `develop`.
-Run `git machete advance` and confirm the suggested actions.
+Checkout `develop` and run `git machete advance` and confirm the suggested actions:
 
 After `advance`:
 
-TODO screenshot
+<img src="img/advance.png" width="50%" />
 
-The `feature-1` branch is now merged into `develop` and removed from the machete layout.
+The `call-ws` branch is now merged into `develop` and removed from the machete layout.
 
 [< Previous: Automating workflow with `traverse`](09-automating-workflow-with-traverse.md) | [Next: Cleaning up with `slide-out` >](11-cleaning-up-with-slide-out.md)

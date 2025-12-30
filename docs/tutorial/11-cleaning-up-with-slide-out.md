@@ -8,7 +8,7 @@ This means the branch is no longer needed in the layout.
 To remove a merged branch from the layout and connect its children directly to its parent, use:
 
 ```shell
-git machete slide-out
+git machete slide-out [<branch1> [<branch2>...]]
 ```
 
 ### What it does
@@ -22,10 +22,10 @@ git machete slide-out
 
 Before `slide-out`:
 
-TODO screenshot
+<img src="img/status-2.png" width="50%" />
 
-After `git machete slide-out` on `feature-1`:
+After `git machete slide-out hotfix/add-trigger`:
 
-TODO screenshot
+<img src="img/slide-out.png" width="50%" />
 
 [< Previous: Fast-forwarding with `advance`](10-fast-forwarding-with-advance.md) | [Next: GitHub/GitLab integration >](12-github-gitlab-integration.md)
