@@ -15,7 +15,8 @@ It will look for a token in the following places (in order):
 
 If you have the `gh` or `glab` CLI tool installed and logged in, things should just work out of the box.
 
-From now on, we'll focus on `git machete github`; the CLI for `gitlab` is very similar (with `-mr(s)` instead of `-pr(s)`).
+From now on, we'll focus on `git machete github`.
+The CLI for `gitlab` is very similar (just use `gitlab` instead of `github` and `-mr(s)` instead of `-pr(s)`).
 
 ### Checking out PRs/MRs
 
@@ -37,7 +38,7 @@ git machete github checkout-prs 123 125
 ```
 
 When you check out someone else's PR, `git-machete` automatically adds `rebase=no push=no` annotations to these branches.
-This prevents git-machete from accidentally rebasing or pushing to someone else's branch during a `traverse`.
+This prevents `git-machete` from accidentally rebasing or pushing to someone else's branch during a `traverse`.
 
 ### Creating PRs/MRs
 
@@ -70,7 +71,7 @@ This is a great way to quickly see what branches have open PRs in your `status` 
 
 ### Autogenerating PR descriptions
 
-When you create or retarget a PR that is part of a stack (2+ dependent PRs),
+When you create or retarget a PR that is part of a stack (a chain of 2+ dependent PRs),
 `git-machete` automatically includes a "PR chain" in the description:
 
 <img src="../../graphics/pr-chain-github-screenshot.png"

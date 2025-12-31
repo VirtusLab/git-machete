@@ -26,7 +26,7 @@ Before `advance`:
 
 <img src="img/status.png" width="50%" />
 
-Checkout `develop` and run `git machete advance` and confirm the suggested actions:
+Check out `develop` and run `git machete advance` and confirm the suggested actions:
 
 After `advance`:
 

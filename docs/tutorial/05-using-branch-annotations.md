@@ -19,7 +19,7 @@ Anything that follows the branch name on the same line (separated by at least on
 
 ### Why use annotations?
 
-* Primarily, to keep pull request numbers (see below).
+* Primarily, to track pull request numbers (see below).
 * Keep track of the purpose — remind yourself what a branch is for.
 * Status markers — mark branches as "DO NOT MERGE", "WIP", or "Ready for review".
 * Collaboration — if you share your `.git/machete` file (though it's usually local), others can see your notes.
@@ -32,7 +32,7 @@ git machete anno --sync-github-prs
 ```
 (or `--sync-gitlab-mrs`) to fetch PR/MR numbers and authors for all branches that have them.
 
-Note: in case of private repositories, this requires authorization —
+Note: in case of private repositories, this requires authorization with an API token —
 see the [chapter on GitHub/GitLab integration](12-github-gitlab-integration.md).
 
 [< Previous: Understanding `status`](04-understanding-status.md) | [Next: Navigating between branches >](06-navigating-between-branches.md)

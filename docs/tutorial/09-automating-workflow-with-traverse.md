@@ -40,6 +40,6 @@ This single command will:
 4.  Push or pull branches as needed.
 5.  Slide out merged branches.
 
-...all without asking for a confirmation.
+All without asking for confirmation.
 
 [< Previous: Squashing and reapplying](08-squashing-and-reapplying.md) | [Next: Fast-forwarding with `advance` >](10-fast-forwarding-with-advance.md)

@@ -21,7 +21,7 @@ For the complete list of known wrapper packages for git-machete, see [PACKAGES](
 
 ### Shell completions
 
-`git-machete` comes with a shell completion support.
+`git-machete` comes with shell completion support.
 If you installed via Homebrew, it might already be set up.
 Otherwise, add the following to your shell configuration file (`.bashrc`, `.zshrc`, or `config.fish`):
 
@@ -31,7 +31,7 @@ Fish: `git machete completion fish | source`
 
 ### Shell aliases
 
-For a smoother experience, you might want to set up some aliases in your shell.
+For a smoother experience, you might want to set up some shell aliases to save typing.
 A common practice is to alias `git` to `g` in your shell configuration:
 ```shell
 alias g=git

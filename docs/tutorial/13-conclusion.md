@@ -2,7 +2,7 @@
 
 ### Where to go from here?
 
-* Run `git machete discover` (or `git machete github checkout-prs --mine`, if you already have PRs opened)
+* Run `git machete discover` (or `git machete github checkout-prs --mine`, if you already have open PRs)
   on your project and see what happens.
 * If you use PyCharm, IntelliJ IDEA, or other JetBrains IDEs,
   check out the [git-machete IntelliJ plugin](https://github.com/VirtusLab/git-machete-intellij-plugin).

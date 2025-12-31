@@ -27,7 +27,7 @@ When you run `status`, you'll see your branch tree with colored edges (the lines
 
 In addition to the colored edges showing sync status with parent branches, `status` also displays the relationship between each branch and its remote counterpart:
 
-* (nothing) - the branch is in sync with its remote tracking branch
+* (nothing) - the branch is in sync with its remote tracking branch.
 * `untracked` - the branch has no remote tracking branch configured.
 * `ahead of <remote>` - the local branch has commits that haven't been pushed to the remote yet.
 * `behind <remote>` - the remote branch has commits that aren't in the local branch yet.

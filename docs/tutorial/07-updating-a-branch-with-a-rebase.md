@@ -15,7 +15,7 @@ This command performs a rebase of the current branch onto its parent branch (as 
 
 A key feature of `git-machete` is its ability to find the correct _fork point_.
 It's the commit after which the unique history of your branch actually started,
-even if the parent branch has been switched since the commits were create, or the parent has been rebased itself.
+even if the parent branch has been switched since the commits were created, or the parent has been rebased itself.
 
 If you've ever manually rebased a branch that was already rebased before,
 you might have ended up "reapplying commits" that were already there.

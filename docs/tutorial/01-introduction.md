@@ -25,11 +25,11 @@ Doing this manually is tedious and error-prone.
 * Bird's eye view — see all your branches and their relationships at a glance.
 * Automatic `status` — know instantly which branches are in sync, which need a rebase, and which are merged.
 * Simplified syncing — rebase, push, and pull multiple branches with a single command.
-* Integration with GitHub and GitLab - keep PR structure & descriptions in sync with your local state.
+* Integration with GitHub and GitLab — keep PR structure & descriptions in sync with your local state.
 
 ### What's in this tutorial?
 
-This tutorial is divided into bite-sized parts that will take you through the most important features of git-machete.
+This tutorial is divided into bite-sized chapters that will take you through the most important features of git-machete.
 We'll cover:
 1.  Installation and setup
 2.  Discovering and editing branch layout
