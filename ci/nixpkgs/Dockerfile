@@ -10,8 +10,9 @@ RUN nix-env -iA nixpkgs.cacert nixpkgs.gnused nixpkgs.nix-update
 ENV SSL_CERT_FILE=/root/.nix-profile/etc/ssl/certs/ca-bundle.crt
 ENV NIX_SSL_CERT_FILE=/root/.nix-profile/etc/ssl/certs/ca-bundle.crt
 
-WORKDIR /work
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY entrypoint.sh /root/
+RUN chmod +x /root/entrypoint.sh
+CMD /root/entrypoint.sh
 
-ENTRYPOINT ["/entrypoint.sh"]
+WORKDIR /root/nixpkgs
+ENV EXPRESSION_PATH=pkgs/by-name/gi/git-machete/package.nix

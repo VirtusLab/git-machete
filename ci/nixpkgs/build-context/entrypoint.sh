@@ -10,7 +10,7 @@ git clone --depth=1 https://github.com/NixOS/nixpkgs.git .
 echo "--- Pre-patching expression to support raw revisions ---"
 # We change 'tag = "v${version}"' to 'rev = version'
 # This makes the expression compatible with both version numbers and commit hashes.
-sed -i.bak 's/tag = "v\${version}"/rev = version/' "$EXPRESSION_PATH"
+sed -i 's/tag = "v\${version}"/rev = version/' "$EXPRESSION_PATH"
 
 echo "--- Updating $EXPRESSION_PATH to $GIT_REVISION ---"
 # --version will now set the 'version' variable to your hash/tag.
