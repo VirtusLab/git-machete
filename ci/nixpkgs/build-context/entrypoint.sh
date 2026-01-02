@@ -17,6 +17,11 @@ sed -i 's/tag = "v\${version}"/rev = version/' "$EXPRESSION_PATH"
 # (Most GitHub releases use the 'v' prefix in the URL even if the revision is a hash/tag)
 sed -i 's/\${src.tag}/v\${version}/' "$EXPRESSION_PATH"
 
+# 3. Disable postInstallCheck when testing with commit hashes
+# The postInstallCheck expects the version output to match the nix package version,
+# but when we're testing a commit hash, the actual version in the code won't match.
+sed -i '/postInstallCheck = /,/^  '';$/d' "$EXPRESSION_PATH"
+
 echo "--- Updating $EXPRESSION_PATH to $GIT_REVISION ---"
 # nix-update will now set 'version' and 'hash' correctly.
 nix-update git-machete --version "$GIT_REVISION" --build
