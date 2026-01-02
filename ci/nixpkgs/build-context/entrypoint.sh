@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e -o pipefail
+set -e -o pipefail -u
 
 # GIT_REVISION: Tag (e.g. v3.38.1) or Hash (e.g. 874931f)
 # EXPRESSION_PATH: path to git-machete expression within NixOS/nixpkgs
