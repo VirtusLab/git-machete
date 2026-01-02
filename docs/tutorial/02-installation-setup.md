@@ -4,13 +4,11 @@
 
 The recommended way to install `git-machete` depends on your setup.
 
-#### macOS
 On macOS, we recommend using Homebrew.
 ```shell
 brew install git-machete
 ```
 
-#### pip
 On almost any system, if you have Python and `pip` installed, the following should work:
 ```shell
 pip install --user git-machete
@@ -26,7 +24,9 @@ If you installed via Homebrew, it might already be set up.
 Otherwise, add the following to your shell configuration file (`.bashrc`, `.zshrc`, or `config.fish`):
 
 Bash: `source <(git machete completion bash)`
+
 Zsh: `source <(git machete completion zsh)`
+
 Fish: `git machete completion fish | source`
 
 ### Shell aliases

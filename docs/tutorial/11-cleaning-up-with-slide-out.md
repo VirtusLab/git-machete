@@ -13,14 +13,14 @@ git machete slide-out [<branch1> [<branch2>...]]
 
 ### What it does
 
-1.  Removes the current branch from the `.git/machete` file.
+1.  Removes the current branch/given branch(es) from the `.git/machete` file.
 2.  If the branch had any children, they are now attached to the parent of the removed branch.
 3.  By default, rebases these children onto their new parent (skip with `--no-rebase`).
-4.  Optionally deletes the slid-out branch locally from git (use `--delete`).
+4.  Optionally deletes the slid-out branch locally from git with `git branch -D` (use `--delete`).
 
 ### Example
 
-Before `slide-out`:
+Before `git machete slide-out`:
 
 <img src="img/status-2.png" width="50%" />
 

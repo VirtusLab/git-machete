@@ -72,7 +72,7 @@ This is a great way to quickly see what branches have open PRs in your `status` 
 ### Autogenerating PR descriptions
 
 When you create or retarget a PR that is part of a stack (a chain of 2+ dependent PRs),
-`git-machete` automatically includes a "PR chain" in the description:
+`git-machete` automatically includes a PR chain in the description:
 
 <img src="../../graphics/pr-chain-github-screenshot.png"
      alt="PR chain on GitHub"

@@ -39,9 +39,10 @@ This opens `.git/machete` in your default editor.
 You can override the editor with the `GIT_MACHETE_EDITOR` environment variable (for example, `export GIT_MACHETE_EDITOR=vim`).
 You can reorder branches, change their parents by changing indentation, or add/remove branches.
 
-Alternatively, you can add the current branch to the layout using:
+Alternatively, you can add a branch to the layout using:
 ```shell
-git machete add <parent-branch-name>
+git machete add  # to add the current branch, or
+git machete add <branch> [--onto <parent-branch>]
 ```
 
 You only need to list the branches you want `git-machete` to manage.

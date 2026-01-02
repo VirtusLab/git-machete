@@ -19,7 +19,7 @@ For each branch that needs attention, it will ask you:
 * **Pull** from remote?
 * **Slide out** (if it's already merged)?
 
-### Powerful options
+### Common options
 
 You can make `traverse` even more automated with flags:
 

@@ -14,7 +14,7 @@ When you run `status`, you'll see your branch tree with colored edges (the lines
 
 * Green - the branch is in sync with its parent.
 * Red - the branch is out of sync with its parent.
-  The parent has commits that are not yet in the child branch.
+  The parent branch has commits that are not yet in the branch.
   This branch can be rebased onto its parent.
 * Gray - the branch is merged into its parent.
   It can be safely "slid out" (more on that [later](11-cleaning-up-with-slide-out.md)).

@@ -26,7 +26,7 @@ Fork point for the given branch (or the current branch, if none is specified) ca
 git machete fork-point [<branch>]
 ```
 
-If the automatic discovery ever fails, you can override it with the `--fork-point` flag:
+If the automatic discovery ever fails, you can override it with the `--fork-point` flag in `update` and a few other commands:
 ```shell
 git machete update --fork-point <commit-hash>
 ```
