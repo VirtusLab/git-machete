@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e -o pipefail
 
-# GIT_REVISION: Tag (e.g. 3.38.1) or Hash (e.g. 874931f)
-# EXPRESSION_PATH: pkgs/by-name/gi/git-machete/package.nix
+# GIT_REVISION: Tag (e.g. v3.38.1) or Hash (e.g. 874931f)
+# EXPRESSION_PATH: path to git-machete expression within NixOS/nixpkgs
 
 echo "--- Cloning nixpkgs ---"
 git clone --depth=1 https://github.com/NixOS/nixpkgs.git .
@@ -30,3 +30,5 @@ nix-update git-machete --version "$GIT_REVISION" --build
 
 echo "--- Build and Tests Successful! ---"
 cat "$EXPRESSION_PATH"
+
+git diff "$EXPRESSION_PATH" | cat

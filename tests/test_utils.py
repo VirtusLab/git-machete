@@ -83,8 +83,8 @@ class TestUtils:
             # (realpath resolves the symlink)
             if '/tmp' in tmpdir or '/var' in tmpdir:
                 # Should start with /private after normalization
-                assert normalized.startswith('/private/'), \
-                    f"Expected path to start with /private/, got: {normalized}"
+                assert normalized.startswith('/private/') or normalized.startswith('/nix/'), \
+                    f"Expected path to start with /private/ or /nix/ (for Nix builds), got: {normalized}"
 
     @pytest.mark.skipif(sys.platform == "win32", reason="Unix-specific test for absolute paths")
     def test_normalize_path_for_display_unix_absolute_paths(self) -> None:
