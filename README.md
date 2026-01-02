@@ -39,6 +39,8 @@ even when **multiple branches** are present in the repository
 🔌 See also [VirtusLab/git-machete-intellij-plugin](https://github.com/VirtusLab/git-machete-intellij-plugin#git-machete-intellij-plugin) &mdash;
 a port into a plugin for the IntelliJ Platform products, including PyCharm, WebStorm etc.
 
+🎓 **Check out our [tutorial](docs/tutorial/README.md) to get started!**
+
 
 ## Install
 
@@ -333,18 +335,13 @@ If automatic detection doesn't work reliably for your workflow, `git machete sli
 
 ## Reference
 
+Check out the [tutorial](docs/tutorial/README.md) for a guide on how to use the tool.
+
 Find the docs at [Read the Docs](https://git-machete.readthedocs.io/).
 You can also check `git machete help` and `git machete help <command>`.
 
 For the excellent overview for the reasons to use small & stacked PRs,
 see [Ben Congdon](https://github.com/bcongdon)'s [blog post](https://benjamincongdon.me/blog/2022/07/17/In-Praise-of-Stacked-PRs/).
-
-Take a look at git-machete
-[reference blog post](https://medium.com/virtuslab/make-your-way-through-the-git-rebase-jungle-with-git-machete-e2ed4dbacd02)
-for a guide on how to use the tool.
-
-The more advanced features like automated traversal, upstream inference and tree discovery are described in the
-[second part of the series](https://medium.com/virtuslab/git-machete-strikes-again-traverse-the-git-rebase-jungle-even-faster-with-v2-0-f43ebaf8abb0).
 
 <br/>
 
