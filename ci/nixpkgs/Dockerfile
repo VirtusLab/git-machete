@@ -1,8 +1,7 @@
-FROM nixos/nix
+FROM nixos/nix:latest
 
-ENV nix_flags="--extra-experimental-features nix-command --extra-experimental-features flakes"
-RUN nix profile add $nix_flags nixpkgs#bash nixpkgs#curl nixpkgs#git nixpkgs#gnused
-SHELL ["bash", "-e", "-o", "pipefail", "-u", "-x", "-c"]
+RUN echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
+RUN nix-env -iA nixpkgs.gnused nixpkgs.nix-update
 
 COPY entrypoint.sh /root/
 RUN chmod +x /root/entrypoint.sh

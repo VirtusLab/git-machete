@@ -39,7 +39,6 @@ setup(
         'Environment :: Console',
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
-        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent'
     ],
     # This is a pure-Python but NOT universal wheel:
