@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
+set -e -o pipefail
 
-set -e -o pipefail -u -x
+# Required Env Vars:
+# GIT_REVISION: The version/tag you want to test (e.g., "3.38.1")
+# EXPRESSION_PATH: Path inside nixpkgs (e.g., "pkgs/by-name/gi/git-machete/package.nix")
 
+echo "--- Cloning nixpkgs ---"
 git clone --depth=1 https://github.com/NixOS/nixpkgs.git .
 
-source_hash=$(nix-prefetch-url --unpack https://github.com/VirtusLab/git-machete/archive/$GIT_REVISION.tar.gz)
-version=$(curl https://raw.githubusercontent.com/VirtusLab/git-machete/$GIT_REVISION/git_machete/__init__.py | cut -d\' -f2)
-sed -i -f- $EXPRESSION_PATH <<EOF
-  s/version = ".*"/version = "$version"/
-  s/rev = \".*\"/rev = \"$GIT_REVISION\"/
-  s/sha256 = ".*"/sha256 = "$source_hash"/
-EOF
-cat $EXPRESSION_PATH
+echo "--- Updating $EXPRESSION_PATH to version $GIT_REVISION ---"
+# nix-update will:
+# 1. Modify the version string in the .nix file
+# 2. Fetch the source for that version
+# 3. Calculate the correct hash
+# 4. Replace the old hash in the .nix file
+# 5. Run the build to verify everything
+nix-update git-machete --version "$GIT_REVISION" --build
 
-nix-build -A git-machete --dry-run
+echo "--- Build and Tests Successful! ---"
+# Show the modified file so you can see the clean update
+cat "$EXPRESSION_PATH"

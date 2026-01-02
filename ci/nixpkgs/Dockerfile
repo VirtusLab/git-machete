@@ -1,12 +1,11 @@
-FROM nixos/nix
+FROM nixos/nix:latest
 
-ENV nix_flags="--extra-experimental-features nix-command --extra-experimental-features flakes"
-RUN nix profile add $nix_flags nixpkgs#bash nixpkgs#curl nixpkgs#git nixpkgs#gnused
-SHELL ["bash", "-e", "-o", "pipefail", "-u", "-x", "-c"]
+RUN echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
 
-COPY entrypoint.sh /root/
-RUN chmod +x /root/entrypoint.sh
-CMD /root/entrypoint.sh
+RUN nix-env -iA nixpkgs.nix-update
 
-WORKDIR /root/nixpkgs
-ENV EXPRESSION_PATH=pkgs/by-name/gi/git-machete/package.nix
+WORKDIR /work
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
