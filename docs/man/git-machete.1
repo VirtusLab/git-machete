@@ -28,7 +28,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Dec 22, 2025" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Jan 05, 2026" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.38.1
 .sp
@@ -273,7 +273,7 @@ then clears the annotation for the current branch (or a branch specified with \f
 .sp
 If invoked with \fB\-H\fP/\fB\-\-sync\-github\-prs\fP (for GitHub) or \fB\-L\fP/\fB\-\-sync\-gitlab\-mrs\fP (for GitLab),
 annotates the branches based on their corresponding GitHub PR/GitLab MR numbers and authors.
-When the current user is NOT the author of the PR/MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+When the current user is \fBnot\fP the author of the PR/MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
 so that you don\(aqt rebase or push someone else\(aqs PR/MR by accident (see help for traverse).
 Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR/MR;
 annotations for the other branches remain untouched.
@@ -830,7 +830,7 @@ passed to \fBgit rebase\fP by \fBgit machete\fP \fBreapply\fP/\fBslide\-out\fP/\
 provided to \fBgit diff\fP/\fBlog\fP by \fBgit machete\fP \fBdiff\fP/\fBlog\fP\&.
 .UNINDENT
 .sp
-\fBgit machete\fP assumes fork point of \fB<branch>\fP is the most recent commit in the log of \fB<branch>\fP that has NOT been introduced on that very branch,
+\fBgit machete\fP assumes fork point of \fB<branch>\fP is the most recent commit in the log of \fB<branch>\fP that has \fBnot\fP been introduced on that very branch,
 but instead occurs on a reflog (see help for \fBgit reflog\fP) of some other branch.
 This yields a correct result in typical cases, but there are some situations
 (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
@@ -852,8 +852,8 @@ Note: this option is \fBdeprecated\fP since it may lead to confusing user experi
 Use \fB\-\-override\-to\-parent\fP, or rebase the branch onto its parent with \fBgit machete update \-\-fork\-point=<revision>\fP\&.
 .sp
 With \fB\-\-inferred\fP, displays the commit that \fBgit machete fork\-point\fP infers to be fork point of \fB<branch>\fP\&.
-If there is NO fork point override for \fB<branch>\fP, this is identical to the output of \fBgit machete fork\-point\fP\&.
-If there is a fork point override for \fB<branch>\fP, this is identical to the what the output of \fBgit machete fork\-point\fP would be if the override was NOT present.
+If there is \fBno\fP fork point override for \fB<branch>\fP, this is identical to the output of \fBgit machete fork\-point\fP\&.
+If there is a fork point override for \fB<branch>\fP, this is identical to the what the output of \fBgit machete fork\-point\fP would be if the override was \fBnot\fP present.
 Note: this piece of information is also displayed by \fBgit machete status \-\-list\-commits\fP in case a yellow edge occurs.
 .sp
 With \fB\-\-override\-to\-inferred\fP option, overrides fork point of \fB<branch>\fP to the result of \fBgit machete fork\-point \-\-inferred\fP for \fB<branch>\fP\&.
@@ -863,7 +863,7 @@ With \fB\-\-unset\-override\fP, unsets fork point override for \fB<branch>\fP\&.
 This is simply done by removing the corresponding \fBmachete.overrideForkPoint.<branch>.to\fP git config entry.
 .sp
 Note: if branch \fBB\fP has an overridden fork point, then \fBB\fP is considered to be connected with a green edge to its upstream (parent) \fBU\fP,
-even if the overridden fork point of \fBB\fP is NOT equal to the commit pointed by \fBU\fP\&.
+even if the overridden fork point of \fBB\fP is \fBnot\fP equal to the commit pointed by \fBU\fP\&.
 .SH FORMAT
 .sp
 Note: there is no \fBgit machete format\fP command as such; \fBformat\fP is just a topic of \fBgit machete help\fP\&.
@@ -965,7 +965,7 @@ Annotate the branches based on their corresponding GitHub PR numbers and authors
 Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 Equivalent to \fBgit machete anno \-\-sync\-github\-prs\fP\&.
 .sp
-When the current user is NOT the author of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+When the current user is \fBnot\fP the author of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
 so that you don\(aqt rebase or push someone else\(aqs PR by accident (see help for traverse).
 .sp
 \fBOptions:\fP
@@ -981,7 +981,7 @@ also traverse chain of pull requests upwards, adding branches one by one to git\
 Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
 If only one PR has been checked out, then switch the local repository\(aqs HEAD to its head branch.
 .sp
-When the current user is NOT the author of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+When the current user is \fBnot\fP the author of the PR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
 so that you don\(aqt rebase or push someone else\(aqs PR by accident (see help for traverse).
 .sp
 \fBOptions:\fP
@@ -1245,7 +1245,7 @@ Annotate the branches based on their corresponding GitLab MR numbers and authors
 Any existing annotations are overwritten for the branches that have an opened MR; annotations for the other branches remain untouched.
 Equivalent to \fBgit machete anno \-\-sync\-gitlab\-mrs\fP\&.
 .sp
-When the current user is NOT the author of the MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+When the current user is \fBnot\fP the author of the MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
 so that you don\(aqt rebase or push someone else\(aqs MR by accident (see help for traverse).
 .sp
 \fBOptions:\fP
@@ -1261,7 +1261,7 @@ also traverse chain of merge requests upwards, adding branches one by one to git
 Once the specified merge requests are checked out locally, annotate local branches with corresponding merge request numbers.
 If only one MR has been checked out, then switch the local repository\(aqs HEAD to its source branch.
 .sp
-When the current user is NOT the author of the MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
+When the current user is \fBnot\fP the author of the MR associated with that branch, adds \fBrebase=no push=no\fP branch qualifiers used by \fBgit machete traverse\fP,
 so that you don\(aqt rebase or push someone else\(aqs MR by accident (see help for traverse).
 .sp
 \fBOptions:\fP
@@ -1568,7 +1568,7 @@ The hook is executed only once the slide\-out is complete and can in fact rely o
 .TP
 .B \fBmachete\-pre\-rebase <new\-base> <fork\-point\-hash> <branch\-being\-rebased>\fP
 The hook that is executed before rebase is run during \fBreapply\fP, \fBslide\-out\fP, \fBtraverse\fP and \fBupdate\fP\&.
-Note that it is NOT executed by \fBsquash\fP (despite its similarity to \fBreapply\fP), since no rebase is involved in \fBsquash\fP\&.
+Note that it is \fBnot\fP executed by \fBsquash\fP (despite its similarity to \fBreapply\fP), since no rebase is involved in \fBsquash\fP\&.
 .sp
 The parameters are exactly the three revisions that are passed to \fBgit rebase \-\-onto\fP:
 .INDENT 7.0
@@ -1594,7 +1594,7 @@ The standard output of this hook is displayed at the end of the line, after bran
 are ignored, and printing the status continues as usual.
 .sp
 Note: the hook is always invoked with \fBASCII_ONLY\fP variable passed into the environment.
-If \fBstatus\fP runs in ASCII\-only mode (if \fB\-\-color=auto\fP and stdout is NOT a terminal, or if \fB\-\-color=never\fP),
+If \fBstatus\fP runs in ASCII\-only mode (if \fB\-\-color=auto\fP and stdout is \fBnot\fP a terminal, or if \fB\-\-color=never\fP),
 then \fBASCII_ONLY=true\fP, otherwise \fBASCII_ONLY=false\fP\&.
 .UNINDENT
 .sp
@@ -1894,7 +1894,7 @@ The message for the resulting commit is taken from the earliest squashed commit 
 To simply squash the most recent N commits, use \fB\-\-fork\-point=HEAD~<N>\fP,
 for example \fBgit machete squash \-\-fork\-point=HEAD~3\fP\&.
 .sp
-Note: \fBsquash\fP does NOT run \fBgit rebase\fP under the hood.
+Note: \fBsquash\fP does \fBnot\fP run \fBgit rebase\fP under the hood.
 For more complex scenarios that require rewriting the history of current branch, see \fBreapply\fP and \fBupdate\fP\&.
 .sp
 \fBOptions:\fP
@@ -1925,10 +1925,10 @@ Apart from simply ASCII\-formatting the branch layout file, this also:
 colors the edges between upstream (parent) and downstream (children) branches:
 .INDENT 2.0
 .IP \(bu 2
-red edge means \fInot in sync\fP\&. The downstream branch is NOT a direct descendant of the upstream branch.
+red edge means \fInot in sync\fP\&. The downstream branch is \fBnot\fP a direct descendant of the upstream branch.
 .IP \(bu 2
 yellow edge means \fIin sync but fork point off\fP\&. The downstream branch is a direct descendant of the upstream branch,
-but the fork point of the downstream branch is NOT equal to the upstream branch.
+but the fork point of the downstream branch is \fBnot\fP equal to the upstream branch.
 .IP \(bu 2
 green edge means \fIin sync\fP\&. The downstream branch is a direct descendant of the upstream branch
 and the fork point of the downstream branch is equal to the upstream branch.
@@ -2163,7 +2163,7 @@ master
 .sp
 Operations like \fBgit machete github anno\-prs\fP (\fBgit machete gitlab anno\-mrs\fP)
 and \fBgit machete github checkout\-prs\fP (\fBgit machete gitlab checkout\-mrs\fP) add \fBrebase=no push=no\fP branch qualifiers
-when the current user is NOT the author of the PR/MR associated with that branch.
+when the current user is \fBnot\fP the author of the PR/MR associated with that branch.
 .sp
 \fBNote on git worktrees:\fP if a branch is already checked out in another worktree, \fBtraverse\fP will change directory to that worktree rather than failing.
 .sp

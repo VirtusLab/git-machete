@@ -47,7 +47,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
     Any existing annotations are overwritten for the branches that have an opened MR; annotations for the other branches remain untouched.
     Equivalent to ``git machete anno --sync-gitlab-mrs``.
 
-    When the current user is NOT the author of the MR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
+    When the current user is **not** the author of the MR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
     so that you don't rebase or push someone else's MR by accident (see help for :ref:`traverse`).
 
     **Options:**
@@ -61,7 +61,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
     Once the specified merge requests are checked out locally, annotate local branches with corresponding merge request numbers.
     If only one MR has been checked out, then switch the local repository's HEAD to its source branch.
 
-    When the current user is NOT the author of the MR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
+    When the current user is **not** the author of the MR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
     so that you don't rebase or push someone else's MR by accident (see help for :ref:`traverse`).
 
     **Options:**

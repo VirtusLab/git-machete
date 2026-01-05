@@ -18,7 +18,7 @@ then clears the annotation for the current branch (or a branch specified with ``
 
 If invoked with ``-H``/``--sync-github-prs`` (for GitHub) or ``-L``/``--sync-gitlab-mrs`` (for GitLab),
 annotates the branches based on their corresponding GitHub PR/GitLab MR numbers and authors.
-When the current user is NOT the author of the PR/MR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
+When the current user is **not** the author of the PR/MR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
 so that you don't rebase or push someone else's PR/MR by accident (see help for :ref:`traverse`).
 Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR/MR;
 annotations for the other branches remain untouched.

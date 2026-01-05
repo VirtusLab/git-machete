@@ -28,10 +28,10 @@ Apart from simply ASCII-formatting the branch layout file, this also:
 
 * colors the edges between upstream (parent) and downstream (children) branches:
 
-  - :red:`red edge` means *not in sync*. The downstream branch is NOT a direct descendant of the upstream branch.
+  - :red:`red edge` means *not in sync*. The downstream branch is **not** a direct descendant of the upstream branch.
 
   - :yellow:`yellow edge` means *in sync but fork point off*. The downstream branch is a direct descendant of the upstream branch,
-    but the :ref:`fork point<fork-point>` of the downstream branch is NOT equal to the upstream branch.
+    but the :ref:`fork point<fork-point>` of the downstream branch is **not** equal to the upstream branch.
 
   - :green:`green edge` means *in sync*. The downstream branch is a direct descendant of the upstream branch
     and the fork point of the downstream branch is equal to the upstream branch.

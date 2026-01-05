@@ -33,7 +33,7 @@ The range of commits between the fork point and the tip of the given branch is, 
 * passed to ``git rebase`` by ``git machete`` ``reapply``/``slide-out``/``traverse``/``update``
 * provided to ``git diff``/``log`` by ``git machete`` ``diff``/``log``.
 
-``git machete`` assumes fork point of ``<branch>`` is the most recent commit in the log of ``<branch>`` that has NOT been introduced on that very branch,
+``git machete`` assumes fork point of ``<branch>`` is the most recent commit in the log of ``<branch>`` that has **not** been introduced on that very branch,
 but instead occurs on a reflog (see help for ``git reflog``) of some other branch.
 This yields a correct result in typical cases, but there are some situations
 (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
@@ -55,8 +55,8 @@ Note: this option is **deprecated** since it may lead to confusing user experien
 Use ``--override-to-parent``, or rebase the branch onto its parent with ``git machete update --fork-point=<revision>``.
 
 With ``--inferred``, displays the commit that ``git machete fork-point`` infers to be fork point of ``<branch>``.
-If there is NO fork point override for ``<branch>``, this is identical to the output of ``git machete fork-point``.
-If there is a fork point override for ``<branch>``, this is identical to the what the output of ``git machete fork-point`` would be if the override was NOT present.
+If there is **no** fork point override for ``<branch>``, this is identical to the output of ``git machete fork-point``.
+If there is a fork point override for ``<branch>``, this is identical to the what the output of ``git machete fork-point`` would be if the override was **not** present.
 Note: this piece of information is also displayed by ``git machete status --list-commits`` in case a :yellow:`yellow` edge occurs.
 
 With ``--override-to-inferred`` option, overrides fork point of ``<branch>`` to the result of ``git machete fork-point --inferred`` for ``<branch>``.
@@ -67,4 +67,4 @@ This is simply done by removing the corresponding ``machete.overrideForkPoint.<b
 
 
 Note: if branch ``B`` has an overridden fork point, then ``B`` is considered to be connected with a :green:`green` edge to its upstream (parent) ``U``,
-even if the overridden fork point of ``B`` is NOT equal to the commit pointed by ``U``.
+even if the overridden fork point of ``B`` is **not** equal to the commit pointed by ``U``.
