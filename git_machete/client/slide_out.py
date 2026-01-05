@@ -99,10 +99,14 @@ class SlideOutMacheteClient(MacheteClient):
         # Check out new upstream if we were on a slid-out branch, but only if there is an upstream
         if self._git.get_current_branch_or_none() in branches_to_slide_out:
             if new_upstream is not None:
+                print(f"Checking out {bold(new_upstream)}... ", end='', flush=True)
                 self._git.checkout(new_upstream)
+                print(fmt('<green><b>OK</b></green>'))
             elif new_downstreams:
                 # If no upstream and there are downstreams, check out the first downstream
+                print(f"Checking out {bold(new_downstreams[0])}... ", end='', flush=True)
                 self._git.checkout(new_downstreams[0])
+                print(fmt('<green><b>OK</b></green>'))
             # Otherwise, stay on the current (slid-out) branch
 
         # Only perform rebase/merge if there is a new upstream
@@ -112,7 +116,9 @@ class SlideOutMacheteClient(MacheteClient):
                 use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
                 use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
                 if use_merge or use_rebase:
+                    print(f"Checking out {bold(new_downstream)}... ", end='', flush=True)
                     self._git.checkout(new_downstream)
+                    print(fmt('<green><b>OK</b></green>'))
                 if use_merge:
                     print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
                     self._git.merge(

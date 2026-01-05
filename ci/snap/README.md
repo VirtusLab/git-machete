@@ -6,9 +6,9 @@ See [Snapcraft forum thread](https://forum.snapcraft.io/t/is-there-any-way-to-ex
 
 To generate and upload a new Snapcraft token:
 
-- Install [`snapcraft`](https://snapcraft.io/docs/installing-snapcraft).
+- Install [`snapcraft`](https://snapcraft.io/docs/installing-snapcraft) (`brew install snapcraft` on macOS).
 
-- Move `~/.snapcraft-credentials` (if exists) to `~/.snapcraft-credentials~`
+- Move `~/.snapcraft-credentials` (if exist) to `~/.snapcraft-credentials~`
 
 - Generate a new token:
   ```shell

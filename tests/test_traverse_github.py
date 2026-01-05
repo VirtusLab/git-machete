@@ -121,10 +121,10 @@ class TestTraverseGitHub(BaseTest):
             """
             Fetching origin...
 
-            Checking out the first root branch (develop)
+            Checking out the first root branch (develop)... OK
             Checking for open GitHub PRs... OK
 
-            Checking out build-chain
+            Checking out build-chain... OK
 
               develop
               |
@@ -202,10 +202,10 @@ class TestTraverseGitHub(BaseTest):
             """
             Fetching origin...
 
-            Checking out the first root branch (develop)
+            Checking out the first root branch (develop)... OK
             Checking for open GitHub PRs... OK
 
-            Checking out build-chain
+            Checking out build-chain... OK
 
               develop
               |
@@ -266,7 +266,7 @@ class TestTraverseGitHub(BaseTest):
             ["traverse", "--sync-github-prs"],
             """
             Checking for open GitHub PRs... OK
-            Checking out allow-ownership-link
+            Checking out allow-ownership-link... OK
 
               develop
               |
@@ -291,7 +291,7 @@ class TestTraverseGitHub(BaseTest):
             ["traverse", "--sync-github-prs"],
             """
             Checking for open GitHub PRs... OK
-            Checking out allow-ownership-link
+            Checking out allow-ownership-link... OK
 
               develop
               |
@@ -318,7 +318,7 @@ class TestTraverseGitHub(BaseTest):
             ["traverse", "--sync-github-prs"],
             """
             Checking for open GitHub PRs... OK
-            Checking out build-chain
+            Checking out build-chain... OK
 
               develop
               |
@@ -335,7 +335,7 @@ class TestTraverseGitHub(BaseTest):
             Branch build-chain does not have a PR in GitHub.
             Create a PR from build-chain to allow-ownership-link? (y, d[raft], N, q, yq)
 
-            Checking out drop-constraint
+            Checking out drop-constraint... OK
 
               develop
               |

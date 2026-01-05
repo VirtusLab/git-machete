@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.38.2
 
+- improved: every time a branch is checked out, a `Checking out <branch>... OK` message is printed out for consistency
+
 ## New in git-machete 3.38.1
 
 - added: a GitHub-viewable tutorial under `docs/tutorial` (suggested by @joeprivett)

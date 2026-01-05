@@ -586,7 +586,7 @@ class TestTraverse(BaseTest):
         expected_result = '''
         Fetching origin...
 
-        Checking out the first root branch (develop)
+        Checking out the first root branch (develop)... OK
 
           develop
           |
@@ -734,9 +734,9 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "--start-from=root", "-M", "--no-edit-merge"],
             """
-            Checking out the root branch (develop)
+            Checking out the root branch (develop)... OK
 
-            Checking out mars
+            Checking out mars... OK
 
               develop
               |
@@ -776,9 +776,9 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "--start-from=root", "--no-edit-merge"],
             """
-            Checking out the root branch (develop)
+            Checking out the root branch (develop)... OK
 
-            Checking out mars
+            Checking out mars... OK
 
               develop
               |
@@ -1005,11 +1005,11 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "--start-from=call-ws", "-y"],
             """
-            Checking out branch call-ws
+            Checking out branch call-ws... OK
 
             Pushing call-ws to origin...
 
-            Checking out drop-constraint
+            Checking out drop-constraint... OK
 
               develop
               |
@@ -1031,7 +1031,7 @@ class TestTraverse(BaseTest):
 
             Pushing untracked branch drop-constraint to origin...
 
-            Checking out hotfix/add-trigger
+            Checking out hotfix/add-trigger... OK
 
               develop
               |
@@ -1052,7 +1052,7 @@ class TestTraverse(BaseTest):
             Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
             Pushing hotfix/add-trigger with force-with-lease to origin...
 
-            Checking out ignore-trailing
+            Checking out ignore-trailing... OK
 
               develop
               |
@@ -1102,9 +1102,9 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "--start-from=ROOT", "--return-to=HERE", "-y"],
             """
-            Checking out the root branch (develop)
+            Checking out the root branch (develop)... OK
 
-            Checking out allow-ownership-link
+            Checking out allow-ownership-link... OK
 
               develop
               |
@@ -1127,7 +1127,7 @@ class TestTraverse(BaseTest):
             Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
             Pushing allow-ownership-link with force-with-lease to origin...
 
-            Checking out build-chain
+            Checking out build-chain... OK
 
               develop
               |
@@ -1149,7 +1149,7 @@ class TestTraverse(BaseTest):
 
             Pushing untracked branch build-chain to origin...
 
-            Checking out call-ws
+            Checking out call-ws... OK
 
               develop
               |
@@ -1169,7 +1169,7 @@ class TestTraverse(BaseTest):
 
             Pushing call-ws to origin...
 
-            Checking out drop-constraint
+            Checking out drop-constraint... OK
 
               develop
               |
@@ -1191,7 +1191,7 @@ class TestTraverse(BaseTest):
 
             Pushing untracked branch drop-constraint to origin...
 
-            Checking out hotfix/add-trigger
+            Checking out hotfix/add-trigger... OK
 
               develop
               |
@@ -1212,7 +1212,7 @@ class TestTraverse(BaseTest):
             Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
             Pushing hotfix/add-trigger with force-with-lease to origin...
 
-            Checking out ignore-trailing
+            Checking out ignore-trailing... OK
 
               develop
               |
@@ -1284,11 +1284,11 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "--start-from=root", "-y"],
             """
-            Checking out branch root
+            Checking out branch root... OK
 
             Pushing untracked branch root to origin...
 
-            Checking out hotfix/add-trigger
+            Checking out hotfix/add-trigger... OK
 
               develop
               |
@@ -1311,7 +1311,7 @@ class TestTraverse(BaseTest):
             Branch hotfix/add-trigger diverged from (and has newer commits than) its remote counterpart origin/hotfix/add-trigger.
             Pushing hotfix/add-trigger with force-with-lease to origin...
 
-            Checking out ignore-trailing
+            Checking out ignore-trailing... OK
 
               develop
               |
@@ -1375,7 +1375,7 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "--stop-after=call-ws", "-y"],
             """
-            Checking out allow-ownership-link
+            Checking out allow-ownership-link... OK
 
               develop
               |
@@ -1398,7 +1398,7 @@ class TestTraverse(BaseTest):
             Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
             Pushing allow-ownership-link with force-with-lease to origin...
 
-            Checking out build-chain
+            Checking out build-chain... OK
 
               develop
               |
@@ -1420,7 +1420,7 @@ class TestTraverse(BaseTest):
 
             Pushing untracked branch build-chain to origin...
 
-            Checking out call-ws
+            Checking out call-ws... OK
 
               develop
               |
@@ -1469,14 +1469,14 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "--start-from=allow-ownership-link", "--stop-after=call-ws", "-y"],
             """
-            Checking out branch allow-ownership-link
+            Checking out branch allow-ownership-link... OK
 
             Rebasing allow-ownership-link onto develop...
 
             Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
             Pushing allow-ownership-link with force-with-lease to origin...
 
-            Checking out build-chain
+            Checking out build-chain... OK
 
               develop
               |
@@ -1498,7 +1498,7 @@ class TestTraverse(BaseTest):
 
             Pushing untracked branch build-chain to origin...
 
-            Checking out call-ws
+            Checking out call-ws... OK
 
               develop
               |
@@ -1569,7 +1569,7 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "--stop-after=call-ws", "-y"],
             """
-            Checking out allow-ownership-link
+            Checking out allow-ownership-link... OK
 
               develop
               |
@@ -1592,7 +1592,7 @@ class TestTraverse(BaseTest):
             Branch allow-ownership-link diverged from (and has newer commits than) its remote counterpart origin/allow-ownership-link.
             Pushing allow-ownership-link with force-with-lease to origin...
 
-            Checking out build-chain
+            Checking out build-chain... OK
 
               develop
               |
@@ -1614,7 +1614,7 @@ class TestTraverse(BaseTest):
 
             Pushing untracked branch build-chain to origin...
 
-            Checking out call-ws
+            Checking out call-ws... OK
 
               develop
               |
@@ -1680,7 +1680,7 @@ class TestTraverse(BaseTest):
 
             Pushing untracked branch with-directory to origin...
 
-            Checking out without-directory
+            Checking out without-directory... OK
 
               master (untracked)
               |
@@ -1779,25 +1779,25 @@ class TestTraverse(BaseTest):
             assert_success(
                 ["traverse", "-y"],
                 """
-                Pushing branch-0 to origin...
+            Pushing branch-0 to origin...
 
-                Checking out branch-1
+            Checking out branch-1... OK
 
-                  branch-0
-                  |
-                  x-branch-1 *
+              branch-0
+              |
+              x-branch-1 *
 
-                Rebasing branch-1 onto branch-0...
+            Rebasing branch-1 onto branch-0...
 
-                Branch branch-1 diverged from (and has older commits than) its remote counterpart origin/branch-1.
-                Resetting branch branch-1 to the commit pointed by origin/branch-1...
+            Branch branch-1 diverged from (and has older commits than) its remote counterpart origin/branch-1.
+            Resetting branch branch-1 to the commit pointed by origin/branch-1...
 
-                  branch-0
-                  |
-                  x-branch-1 *
+              branch-0
+              |
+              x-branch-1 *
 
-                Reached branch branch-1 which has no successor; nothing left to update
-                """
+            Reached branch branch-1 which has no successor; nothing left to update
+            """
             )
 
     def test_traverse_quit_on_pushing_untracked(self, mocker: MockerFixture) -> None:
@@ -1883,9 +1883,9 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "-w"],
             """
-            Checking out the first root branch (master)
+            Checking out the first root branch (master)... OK
 
-            Checking out feature-1
+            Checking out feature-1... OK
 
               master
               |
@@ -1900,7 +1900,7 @@ class TestTraverse(BaseTest):
 
             Rebase feature-1 onto master? (y, N, q, yq)
 
-            Checking out feature-2
+            Checking out feature-2... OK
 
               master
               |

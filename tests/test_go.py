@@ -74,6 +74,7 @@ class TestGo(BaseTest):
             ["g", "u"],
             "Warn: branch level-2-branch not found in the tree of branch dependencies; "
             "the upstream has been inferred to level-1-branch\n"
+            "Checking out level-1-branch... OK\n"
         )
         assert 'level-1-branch' == launch_command("show", "current").strip()
 
