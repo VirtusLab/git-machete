@@ -11,6 +11,7 @@ RUN \
     tar xzf v$git_version.tar.gz; \
     rm v$git_version.tar.gz; \
     cd git-$git_version/; \
+    export CFLAGS="-std=gnu99" `# to avoid errors on 'struct thread_local' as this identifier to be a keyword in C11`; \
     make configure; \
     ./configure; \
     sed -i 's/#warning .*//' /usr/include/sys/poll.h  `# to reduce amount of spam warnings in logs`; \
