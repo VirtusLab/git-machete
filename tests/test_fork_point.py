@@ -154,7 +154,13 @@ class TestForkPoint(BaseTest):
             """
         )
 
-        launch_command("fork-point", "--override-to-parent")
+        assert_success(
+            ["fork-point", "--override-to-parent"],
+            """
+            Fork point for develop is overridden to master (commit 81504c0).
+            This applies as long as develop points to commit 81504c0 or its descendant.
+            """
+        )
         assert launch_command("fork-point").strip() == "81504c0efc45763333d3a6f884e5d3a97d8f4c40"
         assert launch_command("fork-point", "--inferred").strip() == "ad97c343b69296e96858058d8d668cca0132402a"
         assert_success(
@@ -174,7 +180,7 @@ class TestForkPoint(BaseTest):
             ["fork-point", "--override-to-inferred"],
             """
             Fork point for develop is overridden to commit ad97c34.
-            This applies as long as develop points to a descendant of commit ad97c34.
+            This applies as long as develop points to commit ad97c34 or its descendant.
 
             Warn: git machete fork-point --override-to-inferred may lead to a confusing user experience and is deprecated.
 
@@ -217,7 +223,7 @@ class TestForkPoint(BaseTest):
             ['fork-point', '--override-to=5e35f5b'],
             """
             Fork point for branch-2 is overridden to commit 5e35f5b.
-            This applies as long as branch-2 points to a descendant of commit 5e35f5b.
+            This applies as long as branch-2 points to commit 5e35f5b or its descendant.
 
             Warn: git machete fork-point --override-to=... may lead to a confusing user experience and is deprecated.
 
