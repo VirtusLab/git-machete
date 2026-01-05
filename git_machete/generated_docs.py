@@ -137,7 +137,7 @@ long_docs: Dict[str, str] = {
 
         If invoked with `-H`/`--sync-github-prs` (for GitHub) or `-L`/`--sync-gitlab-mrs` (for GitLab),
         annotates the branches based on their corresponding GitHub PR/GitLab MR numbers and authors.
-        When the current user is NOT the author of the PR/MR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+        When the current user is <b>not</b> the author of the PR/MR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
         so that you don't rebase or push someone else's PR/MR by accident (see help for `traverse`).
         Any existing annotations (except branch qualifiers) are overwritten for the branches that have an opened PR/MR;
         annotations for the other branches remain untouched.
@@ -525,7 +525,7 @@ long_docs: Dict[str, str] = {
            * passed to `git rebase` by `git machete` `reapply`/`slide-out`/`traverse`/`update`
            * provided to `git diff`/`log` by `git machete` `diff`/`log`.
 
-        `git machete` assumes fork point of `<branch>` is the most recent commit in the log of `<branch>` that has NOT been introduced on that very branch,
+        `git machete` assumes fork point of `<branch>` is the most recent commit in the log of `<branch>` that has <b>not</b> been introduced on that very branch,
         but instead occurs on a reflog (see help for `git reflog`) of some other branch.
         This yields a correct result in typical cases, but there are some situations
         (esp. when some local branches have been deleted) where the fork point might not be determined correctly.
@@ -547,8 +547,8 @@ long_docs: Dict[str, str] = {
         Use `--override-to-parent`, or rebase the branch onto its parent with `git machete update --fork-point=<revision>`.
 
         With `--inferred`, displays the commit that `git machete fork-point` infers to be fork point of `<branch>`.
-        If there is NO fork point override for `<branch>`, this is identical to the output of `git machete fork-point`.
-        If there is a fork point override for `<branch>`, this is identical to the what the output of `git machete fork-point` would be if the override was NOT present.
+        If there is <b>no</b> fork point override for `<branch>`, this is identical to the output of `git machete fork-point`.
+        If there is a fork point override for `<branch>`, this is identical to the what the output of `git machete fork-point` would be if the override was <b>not</b> present.
         Note: this piece of information is also displayed by `git machete status --list-commits` in case a <yellow>yellow</yellow> edge occurs.
 
         With `--override-to-inferred` option, overrides fork point of `<branch>` to the result of `git machete fork-point --inferred` for `<branch>`.
@@ -558,7 +558,7 @@ long_docs: Dict[str, str] = {
         This is simply done by removing the corresponding `machete.overrideForkPoint.<branch>.to` git config entry.
 
         Note: if branch `B` has an overridden fork point, then `B` is considered to be connected with a <green>green</green> edge to its upstream (parent) `U`,
-        even if the overridden fork point of `B` is NOT equal to the commit pointed by `U`.
+        even if the overridden fork point of `B` is <b>not</b> equal to the commit pointed by `U`.
    """,
     "format": """
         Note: there is no `git machete format` command as such; `format` is just a topic of `git machete help`.
@@ -629,7 +629,7 @@ long_docs: Dict[str, str] = {
               Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
               Equivalent to `git machete anno --sync-github-prs`.
 
-              When the current user is NOT the author of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+              When the current user is <b>not</b> the author of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
               so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
 
               <b>Options:</b>
@@ -642,7 +642,7 @@ long_docs: Dict[str, str] = {
               Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
               If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
 
-              When the current user is NOT the author of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+              When the current user is <b>not</b> the author of the PR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
               so that you don't rebase or push someone else's PR by accident (see help for `traverse`).
 
               <b>Options:</b>
@@ -827,7 +827,7 @@ long_docs: Dict[str, str] = {
               Any existing annotations are overwritten for the branches that have an opened MR; annotations for the other branches remain untouched.
               Equivalent to `git machete anno --sync-gitlab-mrs`.
 
-              When the current user is NOT the author of the MR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+              When the current user is <b>not</b> the author of the MR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
               so that you don't rebase or push someone else's MR by accident (see help for `traverse`).
 
               <b>Options:</b>
@@ -840,7 +840,7 @@ long_docs: Dict[str, str] = {
               Once the specified merge requests are checked out locally, annotate local branches with corresponding merge request numbers.
               If only one MR has been checked out, then switch the local repository's HEAD to its source branch.
 
-              When the current user is NOT the author of the MR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
+              When the current user is <b>not</b> the author of the MR associated with that branch, adds `rebase=no push=no` branch qualifiers used by `git machete traverse`,
               so that you don't rebase or push someone else's MR by accident (see help for `traverse`).
 
               <b>Options:</b>
@@ -1063,7 +1063,7 @@ long_docs: Dict[str, str] = {
 
            `machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased>`
               The hook that is executed before rebase is run during `reapply`, `slide-out`, `traverse` and `update`.
-              Note that it is NOT executed by `squash` (despite its similarity to `reapply`), since no rebase is involved in `squash`.
+              Note that it is <b>not</b> executed by `squash` (despite its similarity to `reapply`), since no rebase is involved in `squash`.
 
               The parameters are exactly the three revisions that are passed to `git rebase --onto`:
 
@@ -1085,7 +1085,7 @@ long_docs: Dict[str, str] = {
               are ignored, and printing the status continues as usual.
 
               Note: the hook is always invoked with `ASCII_ONLY` variable passed into the environment.
-              If `status` runs in ASCII-only mode (if `--color=auto` and stdout is NOT a terminal, or if `--color=never`),
+              If `status` runs in ASCII-only mode (if `--color=auto` and stdout is <b>not</b> a terminal, or if `--color=never`),
               then `ASCII_ONLY=true`, otherwise `ASCII_ONLY=false`.
 
         Please see hook_samples directory in git-machete project for examples.
@@ -1303,7 +1303,7 @@ long_docs: Dict[str, str] = {
         To simply squash the most recent N commits, use `--fork-point=HEAD~<N>`,
         for example `git machete squash --fork-point=HEAD~3`.
 
-        Note: `squash` does NOT run `git rebase` under the hood.
+        Note: `squash` does <b>not</b> run `git rebase` under the hood.
         For more complex scenarios that require rewriting the history of current branch, see `reapply` and `update`.
 
         <b>Options:</b>
@@ -1323,10 +1323,10 @@ long_docs: Dict[str, str] = {
 
            * colors the edges between upstream (parent) and downstream (children) branches:
 
-             - <red>red edge</red> means not in sync. The downstream branch is NOT a direct descendant of the upstream branch.
+             - <red>red edge</red> means not in sync. The downstream branch is <b>not</b> a direct descendant of the upstream branch.
 
              - <yellow>yellow edge</yellow> means in sync but fork point off. The downstream branch is a direct descendant of the upstream branch,
-              but the `fork point` of the downstream branch is NOT equal to the upstream branch.
+              but the `fork point` of the downstream branch is <b>not</b> equal to the upstream branch.
 
              - <green>green edge</green> means in sync. The downstream branch is a direct descendant of the upstream branch
               and the fork point of the downstream branch is equal to the upstream branch.
@@ -1503,7 +1503,7 @@ long_docs: Dict[str, str] = {
         </dim>
         Operations like `git machete github anno-prs` (`git machete gitlab anno-mrs`)
         and `git machete github checkout-prs` (`git machete gitlab checkout-mrs`) add `rebase=no push=no` branch qualifiers
-        when the current user is NOT the author of the PR/MR associated with that branch.
+        when the current user is <b>not</b> the author of the PR/MR associated with that branch.
 
         <b>Note on git worktrees:</b> if a branch is already checked out in another worktree, `traverse` will change directory to that worktree rather than failing.
 

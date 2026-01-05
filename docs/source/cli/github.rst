@@ -48,7 +48,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
     Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
     Equivalent to ``git machete anno --sync-github-prs``.
 
-    When the current user is NOT the author of the PR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
+    When the current user is **not** the author of the PR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
     so that you don't rebase or push someone else's PR by accident (see help for :ref:`traverse`).
 
     **Options:**
@@ -62,7 +62,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
     Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
     If only one PR has been checked out, then switch the local repository's HEAD to its head branch.
 
-    When the current user is NOT the author of the PR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
+    When the current user is **not** the author of the PR associated with that branch, adds ``rebase=no push=no`` branch qualifiers used by ``git machete traverse``,
     so that you don't rebase or push someone else's PR by accident (see help for :ref:`traverse`).
 
     **Options:**

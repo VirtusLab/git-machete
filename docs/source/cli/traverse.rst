@@ -89,7 +89,7 @@ Example machete file with branch qualifiers:
 
 Operations like ``git machete github anno-prs`` (``git machete gitlab anno-mrs``)
 and ``git machete github checkout-prs`` (``git machete gitlab checkout-mrs``) add ``rebase=no push=no`` branch qualifiers
-when the current user is NOT the author of the PR/MR associated with that branch.
+when the current user is **not** the author of the PR/MR associated with that branch.
 
 **Note on git worktrees:** if a branch is already checked out in another worktree, ``traverse`` will change directory to that worktree rather than failing.
 

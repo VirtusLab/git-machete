@@ -40,7 +40,7 @@ Note: ``hooks`` is not a command as such, just a help topic (there is no ``git m
 
 ``machete-pre-rebase <new-base> <fork-point-hash> <branch-being-rebased>``
     The hook that is executed before rebase is run during ``reapply``, ``slide-out``, ``traverse`` and ``update``.
-    Note that it is NOT executed by ``squash`` (despite its similarity to ``reapply``), since no rebase is involved in ``squash``.
+    Note that it is **not** executed by ``squash`` (despite its similarity to ``reapply``), since no rebase is involved in ``squash``.
 
     The parameters are exactly the three revisions that are passed to ``git rebase --onto``:
 
@@ -62,7 +62,7 @@ Note: ``hooks`` is not a command as such, just a help topic (there is no ``git m
     are ignored, and printing the status continues as usual.
 
     Note: the hook is always invoked with ``ASCII_ONLY`` variable passed into the environment.
-    If ``status`` runs in ASCII-only mode (if ``--color=auto`` and stdout is NOT a terminal, or if ``--color=never``),
+    If ``status`` runs in ASCII-only mode (if ``--color=auto`` and stdout is **not** a terminal, or if ``--color=never``),
     then ``ASCII_ONLY=true``, otherwise ``ASCII_ONLY=false``.
 
 Please see `hook_samples <https://github.com/VirtusLab/git-machete/tree/master/hook_samples>`_ directory in git-machete project for examples.
