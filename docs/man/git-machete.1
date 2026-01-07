@@ -28,7 +28,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Jan 12, 2026" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Jan 19, 2026" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.38.2
 .sp
@@ -1111,9 +1111,7 @@ Update PR descriptions for all PRs authored by the given GitHub user, where \fB<
 Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
 .TP
 .B  \-\-related
-Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch.
-If \fBmachete.github.prDescriptionIntroStyle\fP is \fBup\-only\fP (default) or \fBup\-only\-no\-branches\fP, then only downstream PR descriptions are updated.
-If \fBmachete.github.prDescriptionIntroStyle\fP is \fBfull\fP or \fBfull\-no\-branches\fP, then both downstream and upstream PR descriptions are updated.
+Update PR descriptions for all PRs both upstream and downstream of the PR for the current branch (the entire stack).
 .UNINDENT
 .UNINDENT
 .sp
@@ -1379,9 +1377,7 @@ Update MR descriptions for all MRs authored by the given GitLab user, where \fB<
 Update MR descriptions for all MRs opened by the current user associated with the GitLab token.
 .TP
 .B  \-\-related
-Update MR descriptions for all MRs that are upstream and/or downstream of the MR for the current branch.
-If \fBmachete.gitlab.mrDescriptionIntroStyle\fP is \fBup\-only\fP (default) or \fBup\-only\-no\-branches\fP, then only downstream MR descriptions are updated.
-If \fBmachete.gitlab.mrDescriptionIntroStyle\fP is \fBfull\fP or \fBfull\-no\-branches\fP, then both downstream and upstream MR descriptions are updated.
+Update MR descriptions for all MRs both upstream and downstream of the MR for the current branch (the entire stack).
 .UNINDENT
 .UNINDENT
 .sp

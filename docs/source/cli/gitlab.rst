@@ -150,9 +150,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 
     --mine               Update MR descriptions for all MRs opened by the current user associated with the GitLab token.
 
-    --related            Update MR descriptions for all MRs that are upstream and/or downstream of the MR for the current branch.
-                         If ``machete.gitlab.mrDescriptionIntroStyle`` is ``up-only`` (default) or ``up-only-no-branches``, then only downstream MR descriptions are updated.
-                         If ``machete.gitlab.mrDescriptionIntroStyle`` is ``full`` or ``full-no-branches``, then both downstream and upstream MR descriptions are updated.
+    --related            Update MR descriptions for all MRs both upstream and downstream of the MR for the current branch (the entire stack).
 
 **Git config keys:**
 

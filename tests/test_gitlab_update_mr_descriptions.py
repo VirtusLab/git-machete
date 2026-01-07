@@ -18,6 +18,78 @@ from tests.mockers_gitlab import (MockGitLabAPIState,
 
 
 class TestGitLabUpdateMRDescriptions(BaseTest):
+    def test_gitlab_update_mr_descriptions_related_updates_entire_stack(self, mocker: MockerFixture) -> None:
+        """
+        Test that --related flag updates the entire stack (both upstream and downstream MRs),
+        even with the default up-only prDescriptionIntroStyle.
+
+        With the OLD logic (before #1574), when running `--related` from branch2 with the default
+        up-only style, only MR #2 and MR #3 (current and downstream) would be checked/updated.
+        MR #1 (upstream) would be skipped entirely.
+
+        With the NEW logic, all MRs in the stack (MR #1, MR #2, MR #3) are checked and updated,
+        regardless of the prDescriptionIntroStyle setting.
+        Still, the generated intro will follow the prDescriptionIntroStyle setting.
+        """
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+
+        # Create a simple 3-MR chain: MR1 -> MR2 -> MR3
+        # Give them bodies that will need updating:
+        # - MR #1 has an old git-machete generated section with outdated date
+        # - MR #2 and #3 have minimal bodies that will be updated with the MR chain info
+        mrs = [
+            mock_mr_json(head='branch1', base='root', number=1,
+                         body='<!-- start git-machete generated -->\n\n'
+                              '**Last updated: 2020-01-01**\n\n'
+                              '<!-- end git-machete generated -->\n\n'
+                              '# Summary\n\nOld content'),
+            mock_mr_json(head='branch2', base='branch1', number=2, body='# Summary\n'),
+            mock_mr_json(head='branch3', base='branch2', number=3, body='# Summary\n')
+        ]
+        gitlab_api_state = MockGitLabAPIState.with_mrs(*mrs)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        push()
+        new_branch("branch1")
+        commit("branch1 commit")
+        push()
+        new_branch("branch2")
+        commit("branch2 commit")
+        push()
+        new_branch("branch3")
+        commit("branch3 commit")
+        push()
+
+        body = """
+            root
+              branch1
+                branch2
+                  branch3
+            """
+        rewrite_branch_layout_file(body)
+
+        # Check out the middle branch (branch2)
+        check_out('branch2')
+
+        # Run with `--related` from the middle branch
+        # With the NEW logic, ALL MRs in the stack (MR1, MR2, MR3) are checked and updated
+        # With the OLD logic (before #1574), only MR2 and MR3 (current and downstream) would be updated,
+        # but NOT MR1 (upstream), because the default up-only style would exclude upstream MRs
+        assert_success(
+            ['gitlab', 'update-mr-descriptions', '--related'],
+            """
+            Checking for open GitLab MRs... OK
+            Description of MR !1 (branch1 -> root) has been updated
+            Description of MR !2 (branch2 -> branch1) has been updated
+            Description of MR !3 (branch3 -> branch2) has been updated
+            """
+        )
+
     @staticmethod
     def mrs_for_test_update_mr_descriptions() -> List[Dict[str, Any]]:
         return [

@@ -979,11 +979,9 @@ class MacheteClientWithCodeHosting(MacheteClient):
                 return []
             return result
         elif related_to:
-            style = self.__get_pr_description_into_style_from_config()
-            if style in (PRDescriptionIntroStyle.FULL, PRDescriptionIntroStyle.FULL_NO_BRANCHES):
-                result = list(reversed(self.__get_upwards_path_including_pr(related_to)))
-            else:
-                result = [related_to]
+            # Always update the entire stack (both upstream and downstream) when --related is used,
+            # regardless of prDescriptionIntroStyle setting.
+            result = list(reversed(self.__get_upwards_path_including_pr(related_to)))
             result += [pr_ for pr_, _ in self.__get_downwards_tree_excluding_pr(related_to)]
             return result
 

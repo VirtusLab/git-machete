@@ -18,6 +18,78 @@ from tests.mockers_github import (MockGitHubAPIState,
 
 
 class TestGitHubUpdatePRDescriptions(BaseTest):
+    def test_github_update_pr_descriptions_related_updates_entire_stack(self, mocker: MockerFixture) -> None:
+        """
+        Test that --related flag updates the entire stack (both upstream and downstream PRs),
+        even with the default up-only prDescriptionIntroStyle.
+
+        With the OLD logic (before PR #1574), when running `--related` from branch2 with the default
+        up-only style, only PR #2 and PR #3 (current and downstream) would be checked/updated.
+        PR #1 (upstream) would be skipped entirely.
+
+        With the NEW logic, all PRs in the stack (PR #1, PR #2, PR #3) are checked and updated,
+        regardless of the prDescriptionIntroStyle setting.
+        Still, the generated intro will follow the prDescriptionIntroStyle setting.
+        """
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+
+        # Create a simple 3-PR chain: PR1 -> PR2 -> PR3
+        # Give them bodies that will need updating:
+        # - PR #1 has an old git-machete generated section with outdated date
+        # - PR #2 and #3 have minimal bodies that will be updated with the PR chain info
+        prs = [
+            mock_pr_json(head='branch1', base='root', number=1,
+                         body='<!-- start git-machete generated -->\n\n'
+                              '**Last updated: 2020-01-01**\n\n'
+                              '<!-- end git-machete generated -->\n\n'
+                              '# Summary\n\nOld content'),
+            mock_pr_json(head='branch2', base='branch1', number=2, body='# Summary\n'),
+            mock_pr_json(head='branch3', base='branch2', number=3, body='# Summary\n')
+        ]
+        github_api_state = MockGitHubAPIState.with_prs(*prs)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        push()
+        new_branch("branch1")
+        commit("branch1 commit")
+        push()
+        new_branch("branch2")
+        commit("branch2 commit")
+        push()
+        new_branch("branch3")
+        commit("branch3 commit")
+        push()
+
+        body = """
+            root
+              branch1
+                branch2
+                  branch3
+            """
+        rewrite_branch_layout_file(body)
+
+        # Check out the middle branch (branch2)
+        check_out('branch2')
+
+        # Run with `--related` from the middle branch
+        # With the NEW logic, ALL PRs in the stack (PR1, PR2, PR3) are checked and updated
+        # With the OLD logic (before PR #1574), only PR2 and PR3 (current and downstream) would be updated,
+        # but NOT PR1 (upstream), because the default up-only style would exclude upstream PRs
+        assert_success(
+            ['github', 'update-pr-descriptions', '--related'],
+            """
+            Checking for open GitHub PRs... OK
+            Description of PR #1 (branch1 -> root) has been updated
+            Description of PR #2 (branch2 -> branch1) has been updated
+            Description of PR #3 (branch3 -> branch2) has been updated
+            """
+        )
+
     @staticmethod
     def prs_for_test_update_pr_descriptions() -> List[Dict[str, Any]]:
         return [

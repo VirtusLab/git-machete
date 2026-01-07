@@ -739,9 +739,7 @@ long_docs: Dict[str, str] = {
 
               --mine               Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
 
-              --related            Update PR descriptions for all PRs that are upstream and/or downstream of the PR for the current branch.
-                                   If `machete.github.prDescriptionIntroStyle` is `up-only` (default) or `up-only-no-branches`, then only downstream PR descriptions are updated.
-                                   If `machete.github.prDescriptionIntroStyle` is `full` or `full-no-branches`, then both downstream and upstream PR descriptions are updated.
+              --related            Update PR descriptions for all PRs both upstream and downstream of the PR for the current branch (the entire stack).
 
         <b>Git config keys:</b>
 
@@ -929,9 +927,7 @@ long_docs: Dict[str, str] = {
 
               --mine               Update MR descriptions for all MRs opened by the current user associated with the GitLab token.
 
-              --related            Update MR descriptions for all MRs that are upstream and/or downstream of the MR for the current branch.
-                                   If `machete.gitlab.mrDescriptionIntroStyle` is `up-only` (default) or `up-only-no-branches`, then only downstream MR descriptions are updated.
-                                   If `machete.gitlab.mrDescriptionIntroStyle` is `full` or `full-no-branches`, then both downstream and upstream MR descriptions are updated.
+              --related            Update MR descriptions for all MRs both upstream and downstream of the MR for the current branch (the entire stack).
 
         <b>Git config keys:</b>
 
