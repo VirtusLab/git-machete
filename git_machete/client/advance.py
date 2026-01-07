@@ -1,7 +1,8 @@
 from git_machete.client.base import MacheteClient, SquashMergeDetection
 from git_machete.exceptions import MacheteException
-from git_machete.git_operations import GitContext, LocalBranchShortName
-from git_machete.utils import bold, flat_map, get_pretty_choices
+from git_machete.git_operations import (GitContext, LocalBranchShortName,
+                                        SyncToRemoteStatus)
+from git_machete.utils import bold, flat_map, get_pretty_choices, warn
 
 
 class AdvanceMacheteClient(MacheteClient):
@@ -51,9 +52,10 @@ class AdvanceMacheteClient(MacheteClient):
             else:
                 return
 
-        remote = self._git.get_combined_remote_for_fetching_of_branch(branch)
+        s, remote = self._git.get_combined_remote_sync_status(branch)
         anno = self.annotations.get(branch)
-        if remote and (not anno or anno.qualifiers.push):
+
+        if remote and (not anno or anno.qualifiers.push) and s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
             push_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. " \
                 f"Push {bold(branch)} to {bold(remote)}?" + get_pretty_choices('y', 'N')
             opt_yes_push_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}. " \
@@ -65,6 +67,20 @@ class AdvanceMacheteClient(MacheteClient):
             else:
                 branch_pushed_or_fast_forwarded_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}."
         else:
+            if remote:
+                sync_status_warnings = {
+                    SyncToRemoteStatus.BEHIND_REMOTE:
+                        f"Branch {bold(branch)} is behind {bold(remote)}. "
+                        f"Consider fetching and re-running the operation.",
+                    SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
+                        f"Branch {bold(branch)} diverged from (and is older than) {bold(remote)}.",
+                    SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                        f"Branch {bold(branch)} diverged from (and is newer than) {bold(remote)}.",
+                    SyncToRemoteStatus.UNTRACKED:
+                        f"Branch {bold(branch)} is untracked. Consider setting up a remote tracking branch."
+                }
+                if s in sync_status_warnings:
+                    warn(sync_status_warnings[s])
             branch_pushed_or_fast_forwarded_msg = f"\nBranch {bold(branch)} is now fast-forwarded to match {bold(down_branch)}."
 
         down_anno = self.annotations.get(down_branch)

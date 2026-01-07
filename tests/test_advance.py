@@ -273,3 +273,133 @@ class TestAdvance(BaseTest):
             m-level-1-branch  slide-out=no (untracked)
             """
         )
+
+    def test_advance_when_branch_in_sync_with_remote_after_ff(self, mocker: MockerFixture) -> None:
+        """
+        Verify that when the branch is in sync with remote after fast-forward,
+        push is not suggested.
+        """
+        create_repo_with_remote()
+        new_branch("root")
+        commit("root-initial")
+        push()
+
+        # Create level-1-branch and push it to origin/root
+        # This simulates the scenario where origin/root is already at the target commit
+        new_branch("level-1-branch")
+        commit("level-1-commit")
+        push(tracking_branch="root", set_upstream=False)
+
+        # Go back to root (which is behind origin/root now)
+        check_out("root")
+
+        body: str = \
+            """
+            root
+                level-1-branch
+            """
+        rewrite_branch_layout_file(body)
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
+        output = launch_command("advance")
+
+        # After advance, root is at level-1-branch commit, which is same as origin/root
+        # So they are in sync, and push should not be suggested
+        assert "Push root to origin?" not in output
+
+    def test_advance_when_branch_diverged_from_and_older_than_remote(self, mocker: MockerFixture) -> None:
+        """
+        Verify that when the branch diverged from and is older than remote after fast-forward,
+        a warning is shown and push is not suggested.
+        """
+        import time
+
+        from .mockers_git_repository import fetch, reset_to
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("root-initial")
+        push()
+
+        # Get the commit hash before we diverge
+        initial_hash = get_commit_hash("root")
+
+        # Create level-1-branch (this will be the target of advance)
+        new_branch("level-1-branch")
+        commit("level-1-commit")
+
+        # Go back to root
+        check_out("root")
+
+        # Create divergence on remote: push a different commit as origin/root (newer timestamp)
+        new_branch("temp-diverge")
+        reset_to(initial_hash)
+        # Wait a bit to ensure newer timestamp
+        time.sleep(1)
+        commit("diverged-remote-newer")
+        push(tracking_branch="root", set_upstream=False)
+
+        # Now level-1-branch (where root will advance to) has diverged from origin/root
+        # and is older (was created before the remote commit)
+        check_out("root")
+        reset_to(initial_hash)
+        fetch()
+
+        body: str = \
+            """
+            root
+                level-1-branch
+            """
+        rewrite_branch_layout_file(body)
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
+        output = launch_command("advance")
+
+        assert "Branch root diverged from (and is older than) origin." in output
+        assert "Push root to origin?" not in output
+
+    def test_advance_when_branch_diverged_from_and_newer_than_remote(self, mocker: MockerFixture) -> None:
+        """
+        Verify that when the branch diverged from and is newer than remote after fast-forward,
+        a warning is shown and push is not suggested.
+        """
+        import time
+
+        from .mockers_git_repository import fetch, reset_to
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("root-initial")
+        push()
+        root_hash = get_commit_hash("root")
+
+        # Make remote commit (older timestamp)
+        new_branch("temp-old-remote")
+        reset_to(root_hash)
+        commit("diverged-remote-older")
+        push(tracking_branch="root", set_upstream=False)
+
+        # Now make local diverge (newer timestamp) - this will be level-1-branch
+        check_out("root")
+        reset_to(root_hash)
+        # Wait a bit to ensure newer timestamp
+        time.sleep(1)
+        new_branch("level-1-branch")
+        commit("diverged-local-newer")
+
+        # level-1-branch is now diverged from origin/root and newer
+        check_out("root")
+        fetch()
+
+        body: str = \
+            """
+            root
+                level-1-branch
+            """
+        rewrite_branch_layout_file(body)
+
+        self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
+        output = launch_command("advance")
+
+        assert "Branch root diverged from (and is newer than) origin." in output
+        assert "Push root to origin?" not in output
