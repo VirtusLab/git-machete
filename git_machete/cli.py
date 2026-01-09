@@ -33,7 +33,7 @@ from .exceptions import (ExitCode, InteractionStopped, MacheteException,
                          UnderlyingGitException, UnexpectedMacheteException)
 from .generated_docs import long_docs, short_docs
 from .git_operations import AnyRevision, GitContext, LocalBranchShortName
-from .utils import bold, fmt, underline, warn
+from .utils import bold, fmt, green_ok, print_no_newline, underline, warn
 
 T = TypeVar('T')
 
@@ -783,18 +783,18 @@ def launch_internal(orig_args: List[str]) -> None:
                 # with pick_if_multiple=True, there returned list will have exactly one element
                 dest = go_client.parse_direction(parsed_cli.direction, branch=current_branch, allow_current=False, pick_if_multiple=True)[0]
                 if dest != current_branch:
-                    print(f"Checking out {bold(dest)}... ", end='', flush=True)
+                    print_no_newline(f"Checking out {bold(dest)}... ")
                     git.checkout(dest)
-                    print(fmt('<green><b>OK</b></green>'))
+                    print(green_ok())
             else:
                 interactive_client = GoInteractiveMacheteClient(git)
                 interactive_client.read_branch_layout_file()
                 interactive_client.expect_at_least_one_managed_branch()
                 dest_ = interactive_client.go_interactive()
                 if dest_ is not None and dest_ != current_branch:
-                    print(f"Checking out {bold(dest_)}... ", end='', flush=True)
+                    print_no_newline(f"Checking out {bold(dest_)}... ")
                     git.checkout(dest_)
-                    print(fmt('<green><b>OK</b></green>'))
+                    print(green_ok())
         elif cmd == "is-managed":
             is_managed_client = MacheteClient(git)
             is_managed_client.read_branch_layout_file()

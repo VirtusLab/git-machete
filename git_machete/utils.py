@@ -322,6 +322,14 @@ def warn(msg: str, *, apply_fmt: bool = True, end: str = '\n') -> None:
         displayed_warnings.add(msg)
 
 
+def print_no_newline(msg: str) -> None:
+    print(msg, end='', flush=True)
+
+
+def green_ok() -> str:
+    return fmt('<green><b>OK</b></green>')
+
+
 def slurp_file(path: str) -> str:
     with open(path, 'r') as file:
         return file.read()

@@ -11,7 +11,8 @@ from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import (GitContext, LocalBranchShortName,
                                         SyncToRemoteStatus)
 from git_machete.utils import (bold, flat_map, fmt, get_pretty_choices,
-                               get_right_arrow, normalize_path_for_display,
+                               get_right_arrow, green_ok,
+                               normalize_path_for_display, print_no_newline,
                                warn)
 
 
@@ -143,17 +144,17 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             if opt_start_from == TraverseStartFrom.ROOT:
                 dest = self.root_branch_for(self._git.get_current_branch(), if_unmanaged=PickRoot.FIRST)
                 self._print_new_line(False)
-                print(f"Checking out the root branch ({bold(dest)})... ", end='', flush=True)
+                print_no_newline(f"Checking out the root branch ({bold(dest)})... ")
                 self._switch_to_branch_worktree(dest)
-                print(fmt('<green><b>OK</b></green>'))
+                print(green_ok())
                 current_branch = dest
             elif opt_start_from == TraverseStartFrom.FIRST_ROOT:
                 # Note that we already ensured that there is at least one managed branch.
                 dest = self.managed_branches[0]
                 self._print_new_line(False)
-                print(f"Checking out the first root branch ({bold(dest)})... ", end='', flush=True)
+                print_no_newline(f"Checking out the first root branch ({bold(dest)})... ")
                 self._switch_to_branch_worktree(dest)
-                print(fmt('<green><b>OK</b></green>'))
+                print(green_ok())
                 current_branch = dest
             elif opt_start_from == TraverseStartFrom.HERE:
                 current_branch = self._git.get_current_branch()
@@ -162,9 +163,9 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 dest = opt_start_from
                 self.expect_in_managed_branches(dest)
                 self._print_new_line(False)
-                print(f"Checking out branch {bold(dest)}... ", end='', flush=True)
+                print_no_newline(f"Checking out branch {bold(dest)}... ")
                 self._switch_to_branch_worktree(dest)
-                print(fmt('<green><b>OK</b></green>'))
+                print(green_ok())
                 current_branch = dest
             else:
                 raise UnexpectedMacheteException(f"Unexpected value for opt_start_from: {opt_start_from}")
@@ -240,9 +241,9 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 needs_any_action = needs_slide_out or needs_parent_sync or needs_remote_sync or needs_retarget_pr or needs_create_pr
                 if branch != current_branch and needs_any_action:
                     self._print_new_line(False)
-                    print(f"Checking out {bold(branch)}... ", end='', flush=True)
+                    print_no_newline(f"Checking out {bold(branch)}... ")
                     self._switch_to_branch_worktree(branch)
-                    print(fmt('<green><b>OK</b></green>'))
+                    print(green_ok())
                     current_branch = branch
                     self._print_new_line(False)
                     self.status(

@@ -17,8 +17,8 @@ from git_machete.git_operations import (GitContext, GitFormatPatterns,
                                         RemoteBranchShortName,
                                         SyncToRemoteStatus)
 from git_machete.utils import (bold, colored_yes_no, debug, find_or_none, fmt,
-                               get_pretty_choices, get_right_arrow, slurp_file,
-                               warn)
+                               get_pretty_choices, get_right_arrow, green_ok,
+                               print_no_newline, slurp_file, warn)
 
 
 class PRDescriptionIntroStyle(ParsableEnum):
@@ -53,9 +53,9 @@ class MacheteClientWithCodeHosting(MacheteClient):
     def _get_all_open_prs(self) -> List[PullRequest]:
         if self.__all_open_prs is None:
             spec = self.code_hosting_spec
-            print(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ', end='', flush=True)
+            print_no_newline(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ')
             self.__all_open_prs = self.code_hosting_client.get_open_pull_requests()
-            print(fmt('<green><b>OK</b></green>'))
+            print(green_ok())
         return self.__all_open_prs
 
     def _pull_request_annotation(self, pr: PullRequest, current_user: Optional[str], *, include_url: bool = False) -> str:
@@ -272,8 +272,8 @@ class MacheteClientWithCodeHosting(MacheteClient):
 
         # Check both base and head branches in a single git ls-remote call if they use the same remote
         if base_org_repo_remote.remote == head_org_repo_remote.remote:
-            print(f"Checking if {spec.head_branch_name} branch {bold(head)} "
-                  f"exists in {bold(head_org_repo_remote.remote)} remote... ", end='', flush=True)
+            print_no_newline(f"Checking if {spec.head_branch_name} branch {bold(head)} "
+                             f"exists in {bold(head_org_repo_remote.remote)} remote... ")
 
             branches_existence = self._git.do_remote_branches_exist(base_org_repo_remote.remote, base, head)
             base_branch_found_on_remote = branches_existence[base]
@@ -281,18 +281,18 @@ class MacheteClientWithCodeHosting(MacheteClient):
 
             print(fmt(colored_yes_no(head_branch_found_on_remote)))
 
-            print(f"Checking if {spec.base_branch_name} branch {bold(base)} "
-                  f"exists in {bold(base_org_repo_remote.remote)} remote... ", end='', flush=True)
+            print_no_newline(f"Checking if {spec.base_branch_name} branch {bold(base)} "
+                             f"exists in {bold(base_org_repo_remote.remote)} remote... ")
             print(fmt(colored_yes_no(base_branch_found_on_remote)))
         else:
             # Different remotes, check separately (head first, then base)
-            print(f"Checking if {spec.head_branch_name} branch {bold(head)} "
-                  f"exists in {bold(head_org_repo_remote.remote)} remote... ", end='', flush=True)
+            print_no_newline(f"Checking if {spec.head_branch_name} branch {bold(head)} "
+                             f"exists in {bold(head_org_repo_remote.remote)} remote... ")
             head_branch_found_on_remote = self._git.does_remote_branch_exist(head_org_repo_remote.remote, head)
             print(fmt(colored_yes_no(head_branch_found_on_remote)))
 
-            print(f"Checking if {spec.base_branch_name} branch {bold(base)} "
-                  f"exists in {bold(base_org_repo_remote.remote)} remote... ", end='', flush=True)
+            print_no_newline(f"Checking if {spec.base_branch_name} branch {bold(base)} "
+                             f"exists in {bold(base_org_repo_remote.remote)} remote... ")
             base_branch_found_on_remote = self._git.does_remote_branch_exist(base_org_repo_remote.remote, base)
             print(fmt(colored_yes_no(base_branch_found_on_remote)))
 
@@ -361,15 +361,14 @@ class MacheteClientWithCodeHosting(MacheteClient):
                 else:
                     description = self._git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
 
-        ok_str = '<green><b>OK</b></green>'
         article = "a" if opt_draft else spec.pr_short_name_article
-        print(f'Creating {article} {"draft " if opt_draft else ""}{spec.pr_short_name} '
-              f'from {bold(head)} to {bold(base)}... ', end='', flush=True)
+        print_no_newline(f'Creating {article} {"draft " if opt_draft else ""}{spec.pr_short_name} '
+                         f'from {bold(head)} to {bold(base)}... ')
 
         pr: PullRequest = self.code_hosting_client.create_pull_request(
             head=head, head_org_repo=head_org_repo, base=base,
             title=title, description=description, draft=opt_draft)
-        print(fmt(f'{ok_str}, see `{pr.html_url}`'))
+        print(fmt(green_ok() + f', see `{pr.html_url}`'))
 
         style = self.__get_pr_description_into_style_from_config()
         # If base branch has NOT originally been found on the remote,
@@ -380,10 +379,10 @@ class MacheteClientWithCodeHosting(MacheteClient):
             # let's update the PR description after it's already created (so that we know the current PR's number).
             new_description = self._get_updated_pull_request_description(pr)
             if new_description.strip() != description.strip():
-                print(f'Updating description of {pr.display_text()} to include '
-                      f'the chain of {spec.pr_short_name}s... ', end='', flush=True)
+                print_no_newline(f'Updating description of {pr.display_text()} to include '
+                                 f'the chain of {spec.pr_short_name}s... ')
                 self.code_hosting_client.set_description_of_pull_request(pr.number, new_description)
-                print(fmt(ok_str))
+                print(green_ok())
 
         milestone_path: str = self._git.get_main_worktree_git_subpath('info', 'milestone')
         if os.path.isfile(milestone_path):
@@ -391,14 +390,14 @@ class MacheteClientWithCodeHosting(MacheteClient):
         else:
             milestone = None
         if milestone:
-            print(f'Setting milestone of {pr.display_text()} to {bold(milestone)}... ', end='', flush=True)
+            print_no_newline(f'Setting milestone of {pr.display_text()} to {bold(milestone)}... ')
             self.code_hosting_client.set_milestone_of_pull_request(pr.number, milestone=milestone)
-            print(fmt(ok_str))
+            print(green_ok())
 
         if current_user:
-            print(f'Adding {bold(current_user)} as assignee to {pr.display_text()}... ', end='', flush=True)
+            print_no_newline(f'Adding {bold(current_user)} as assignee to {pr.display_text()}... ')
             self.code_hosting_client.add_assignees_to_pull_request(pr.number, [current_user])
-            print(fmt(ok_str))
+            print(green_ok())
 
         reviewers_path = self._git.get_main_worktree_git_subpath('info', 'reviewers')
         if os.path.isfile(reviewers_path):
@@ -406,11 +405,10 @@ class MacheteClientWithCodeHosting(MacheteClient):
         else:
             reviewers = []
         if reviewers:
-            print(f'Adding {", ".join(bold(reviewer) for reviewer in reviewers)} '
-                  f'as reviewer{"s" if len(reviewers) > 1 else ""} to {pr.display_text()}... ',
-                  end='', flush=True)
+            print_no_newline(f'Adding {", ".join(bold(reviewer) for reviewer in reviewers)} '
+                             f'as reviewer{"s" if len(reviewers) > 1 else ""} to {pr.display_text()}... ')
             self.code_hosting_client.add_reviewers_to_pull_request(pr.number, reviewers)
-            print(fmt(ok_str))
+            print(green_ok())
 
         self._state.annotations[head] = Annotation(self._pull_request_annotation(pr, current_user), qualifiers=Qualifiers())
         self.save_branch_layout_file()
