@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.38.2
+
 ## New in git-machete 3.38.1
 
 - added: a GitHub-viewable tutorial under `docs/tutorial` (suggested by @joeprivett)
