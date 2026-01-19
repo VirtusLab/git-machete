@@ -668,7 +668,8 @@ class TestStatus(BaseTest):
             Warn: yellow edges indicate that fork points for feature-1, feature-2 are probably incorrectly inferred,
             or that some extra branch should be added between each of these branches and its parent.
 
-            Consider using git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent <branch> for each affected branch,
+            Consider using git machete fork-point --override-to-parent <branch> for each affected branch,
+            rebasing each branch onto its parent with git machete update,
             or reattaching the affected branches under different parent branches.
             """  # noqa: E501
         )

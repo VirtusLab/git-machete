@@ -149,7 +149,8 @@ class TestForkPoint(BaseTest):
             Warn: yellow edge indicates that fork point for develop is probably incorrectly inferred,
             or that some extra branch should be between master and develop.
 
-            Consider using git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent develop,
+            Consider using git machete fork-point --override-to-parent develop,
+            rebasing develop onto its parent with git machete update,
             or reattaching develop under a different parent branch.
             """
         )

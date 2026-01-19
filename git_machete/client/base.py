@@ -643,11 +643,13 @@ class MacheteClient:
                               "`git machete status --list-commits-with-hashes` to see more details"
             elif len(branches_in_sync_but_fork_point_off) == 1:
                 second_part = "Consider using `git machete fork-point " \
-                              f"--override-to=<revision>|--override-to-inferred|--override-to-parent {bold(yellow_edge_branch)}`,\n" \
+                              f"--override-to-parent {bold(yellow_edge_branch)}`,\n" \
+                              f"rebasing {bold(yellow_edge_branch)} onto its parent with `git machete update`,\n" \
                               f"or reattaching {bold(yellow_edge_branch)} under a different parent branch"
             else:
                 second_part = "Consider using `git machete fork-point " \
-                              "--override-to=<revision>|--override-to-inferred|--override-to-parent <branch>` for each affected branch,\n" \
+                              "--override-to-parent <branch>` for each affected branch,\n" \
+                              "rebasing each branch onto its parent with `git machete update`,\n" \
                               "or reattaching the affected branches under different parent branches"
 
             print("", file=sys.stderr)
