@@ -8,8 +8,8 @@ import sys
 import textwrap
 from collections import OrderedDict
 from enum import Enum, auto
-from typing import (Callable, Dict, Iterator, List, Optional, Tuple, Type,
-                    TypeVar)
+from typing import (Callable, Dict, Iterator, List, NoReturn, Optional, Tuple,
+                    Type, TypeVar)
 
 from git_machete import git_config_keys, utils
 from git_machete.annotation import Annotation
@@ -182,7 +182,7 @@ class MacheteClient:
         if not self._state.roots:
             self.__raise_no_branches_error()
 
-    def __raise_no_branches_error(self) -> None:
+    def __raise_no_branches_error(self) -> NoReturn:
         raise MacheteException(
             textwrap.dedent(f"""
                 No branches listed in {self._branch_layout_file_path}. Consider one of:
@@ -953,6 +953,18 @@ class MacheteClient:
         if index == -1:
             raise MacheteException(f"Branch {bold(branch)} has no predecessor")
         return self.managed_branches[index]
+
+    def first_root_branch(self) -> LocalBranchShortName:
+        if self._state.roots:
+            return self._state.roots[0]
+        else:
+            self.__raise_no_branches_error()  # pragma: no cover; this case should never happen
+
+    def last_root_branch(self) -> LocalBranchShortName:
+        if self._state.roots:
+            return self._state.roots[-1]
+        else:
+            self.__raise_no_branches_error()  # pragma: no cover; this case should never happen
 
     def root_branch_for(self, branch: LocalBranchShortName, if_unmanaged: PickRoot) -> LocalBranchShortName:
         if branch not in self.managed_branches:

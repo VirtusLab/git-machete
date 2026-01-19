@@ -297,3 +297,16 @@ class TestGoInteractive(BaseTest):
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "master"
+
+    def test_go_interactive_when_detached_head(self, mocker: MockerFixture) -> None:
+        """Test that interactive mode works when in detached HEAD mode."""
+        # Detached HEAD - no current branch, so selection should start at first branch
+        commit_hash = os.popen("git rev-parse develop").read().strip()
+        check_out(commit_hash)
+
+        # Simulate pressing Enter (to select the first branch which will be pre-selected at master)
+        self.run_interactive_test(mocker, (KEY_ENTER,))
+
+        # Verify we checked out master (the first branch in the layout)
+        current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        assert current_branch == "master"

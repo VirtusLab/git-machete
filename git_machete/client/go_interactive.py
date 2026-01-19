@@ -24,7 +24,7 @@ class GoInteractiveMacheteClient(MacheteClient):
     MAX_VISIBLE_BRANCHES_UPPER = 50
 
     _managed_branches_with_depths: List[Tuple[LocalBranchShortName, int]]
-    _current_branch: LocalBranchShortName
+    _current_branch: Optional[LocalBranchShortName]
     _max_visible_branches: int
 
     def _get_max_visible_branches(self) -> int:
@@ -54,7 +54,7 @@ class GoInteractiveMacheteClient(MacheteClient):
     def _render_branch_line(self, branch: LocalBranchShortName, depth: int) -> str:
         """Render a single branch line with indentation."""
         indent = "  " * depth
-        marker = " " if branch != self._current_branch else "*"
+        marker = " " if self._current_branch is None or branch != self._current_branch else "*"
 
         line = f"{indent}{marker} {branch}"
         annotation = self.annotations.get(branch)
@@ -132,7 +132,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
-    def go_interactive(self) -> Optional[LocalBranchShortName]:
+    def go_interactive(self, *, current_branch: Optional[LocalBranchShortName]) -> Optional[LocalBranchShortName]:
         """
         Launch interactive branch selection interface.
         Returns the selected branch or None if cancelled.
@@ -143,16 +143,20 @@ class GoInteractiveMacheteClient(MacheteClient):
         # Get flat list of branches with depths from already-parsed state
         self._managed_branches_with_depths = self._get_branch_list_with_depths()
 
-        self._current_branch = self._git.get_current_branch()
+        self._current_branch = current_branch
 
         # Determine maximum visible branches from terminal height
         self._max_visible_branches = self._get_max_visible_branches()
 
-        # Find initial selection (current branch)
-        selected_idx = index_or_none(self.managed_branches, self._current_branch)
-        if selected_idx is None:
+        # Find initial selection (current branch or first branch if detached HEAD)
+        if current_branch is not None:
+            selected_idx = index_or_none(self.managed_branches, self._current_branch)
+            if selected_idx is None:
+                selected_idx = 0
+                warn(f"current branch {self._current_branch} is unmanaged\n")
+        else:
+            # Detached HEAD - start with first managed branch
             selected_idx = 0
-            warn(f"current branch {self._current_branch} is unmanaged\n")
 
         scroll_offset = 0
         num_lines_drawn = 0

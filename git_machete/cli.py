@@ -775,14 +775,16 @@ def launch_internal(orig_args: List[str]) -> None:
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")
         elif cmd in {"go", alias_by_command["go"]}:
             git.expect_no_operation_in_progress()
-            current_branch = git.get_current_branch()
+            current_branch_or_none = git.get_current_branch_or_none()
 
             if parsed_cli.direction is not None:
                 go_client = GoShowMacheteClient(git)
                 go_client.read_branch_layout_file()
                 # with pick_if_multiple=True, there returned list will have exactly one element
-                dest = go_client.parse_direction(parsed_cli.direction, branch=current_branch, allow_current=False, pick_if_multiple=True)[0]
-                if dest != current_branch:
+                dest = go_client.parse_direction(
+                    parsed_cli.direction, branch=current_branch_or_none,
+                    allow_current=False, pick_if_multiple=True)[0]
+                if dest != current_branch_or_none:
                     print_no_newline(f"Checking out {bold(dest)}... ")
                     git.checkout(dest)
                     print(green_ok())
@@ -790,8 +792,8 @@ def launch_internal(orig_args: List[str]) -> None:
                 interactive_client = GoInteractiveMacheteClient(git)
                 interactive_client.read_branch_layout_file()
                 interactive_client.expect_at_least_one_managed_branch()
-                dest_ = interactive_client.go_interactive()
-                if dest_ is not None and dest_ != current_branch:
+                dest_ = interactive_client.go_interactive(current_branch=current_branch_or_none)
+                if dest_ is not None and dest_ != current_branch_or_none:
                     print_no_newline(f"Checking out {bold(dest_)}... ")
                     git.checkout(dest_)
                     print(green_ok())

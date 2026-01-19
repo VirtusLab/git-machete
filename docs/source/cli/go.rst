@@ -28,7 +28,7 @@ If ``<direction>`` is provided, checks out the branch specified by the given dir
 
 * ``down``:    the direct children/downstream branch of the current branch.
 
-* ``first``:   the first downstream of the root branch of the current branch (like ``root`` followed by ``next``),
+* ``first``:   the first downstream of the root branch of the current branch,
   or the root branch itself if the root has no downstream branches.
 
 * ``last``:    the last branch in the branch layout file that has the same root as the current branch;

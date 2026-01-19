@@ -9,7 +9,8 @@ from .mockers import (assert_failure, assert_success, launch_command,
                       launch_command_capturing_output_and_exception,
                       mock_input_returning, rewrite_branch_layout_file)
 from .mockers_git_repository import (add_worktree, check_out, commit,
-                                     create_repo, get_git_version, new_branch,
+                                     create_repo, get_commit_hash,
+                                     get_git_version, new_branch,
                                      new_orphan_branch)
 
 
@@ -509,3 +510,70 @@ class TestGo(BaseTest):
 
         # Also verify the directory hasn't changed (unlike traverse which cd's into worktrees)
         assert os.getcwd() == initial_dir, "go should not change directory"
+
+    def test_go_directions_when_detached_head(self) -> None:
+        """Verify behavior of 'git machete go' commands when in detached HEAD mode.
+
+        Expected behavior:
+        - first, root, last should work (navigate to absolute positions)
+          - first: go to first downstream of first root (child-1a)
+          - root: go to first root (root-1)
+          - last: go to last branch under last root (child-2a)
+        - down, next, prev, up should fail (require current branch context)
+        """
+        create_repo()
+        new_branch("root-1")
+        commit()
+        new_branch("child-1a")
+        commit()
+        new_branch("child-1b")
+        commit()
+        check_out("root-1")
+        new_orphan_branch("root-2")
+        commit()
+        new_branch("child-2a")
+        commit()
+
+        body: str = \
+            """
+            root-1
+                child-1a
+                child-1b
+            root-2
+                child-2a
+            """
+        rewrite_branch_layout_file(body)
+
+        # Get a commit hash to checkout in detached HEAD mode
+        detached_commit = get_commit_hash("root-2")
+
+        from git_machete.exceptions import UnderlyingGitException
+
+        # These should work (navigate to absolute positions):
+        check_out(detached_commit)
+        launch_command("go", "first")
+        assert 'child-1a' == launch_command("show", "current").strip(), \
+            "go first should work in detached HEAD mode and go to first downstream of first root"
+
+        # Re-enter detached HEAD
+        check_out(detached_commit)
+
+        launch_command("go", "root")
+        assert 'root-1' == launch_command("show", "current").strip(), \
+            "go root should work in detached HEAD mode and go to first root"
+
+        # Re-enter detached HEAD
+        check_out(detached_commit)
+
+        launch_command("go", "last")
+        assert 'child-2a' == launch_command("show", "current").strip(), \
+            "go last should work in detached HEAD mode and go to last branch under last root"
+
+        # Re-enter detached HEAD for the failing commands
+        check_out(detached_commit)
+
+        # These should fail (require current branch context):
+        assert_failure(["go", "down"], "Not currently on any branch", expected_type=UnderlyingGitException)
+        assert_failure(["go", "next"], "Not currently on any branch", expected_type=UnderlyingGitException)
+        assert_failure(["go", "prev"], "Not currently on any branch", expected_type=UnderlyingGitException)
+        assert_failure(["go", "up"], "Not currently on any branch", expected_type=UnderlyingGitException)
