@@ -659,7 +659,7 @@ def launch_internal(orig_args: List[str]) -> None:
                         f"    `git machete update --fork-point=\"{revision}\" {branch}`\n\n"
                         "Otherwise, if you're okay with treating these commits "
                         f"as a part of <b>{branch}</b>'s unique history, use instead:\n"
-                        f"    `git machete fork-point --override-to-parent {branch}`"
+                        f"    `git machete fork-point {branch} --override-to-parent`"
                     )
                 # It's unlikely that anyone overrides fork point for a branch that doesn't have a parent,
                 # also it's unclear what the suggested action should even be - let's skip this case.

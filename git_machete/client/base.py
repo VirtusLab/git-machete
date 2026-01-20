@@ -630,9 +630,9 @@ class MacheteClient:
         if branches_in_sync_but_fork_point_off and warn_when_branch_in_sync_but_fork_point_off:
             yellow_edge_branch: LocalBranchShortName = branches_in_sync_but_fork_point_off[0]
             if len(branches_in_sync_but_fork_point_off) == 1:
-                first_part = (f"yellow edge indicates that fork point for {bold(str(yellow_edge_branch))} "
+                first_part = (f"yellow edge indicates that fork point for {bold(yellow_edge_branch)} "
                               f"is probably incorrectly inferred,\nor that some extra branch should be between "
-                              f"{bold(str(self._state.up_branch_for[yellow_edge_branch]))} and {bold(str(yellow_edge_branch))}")
+                              f"{bold(str(self._state.up_branch_for[yellow_edge_branch]))} and {bold(yellow_edge_branch)}")
             else:
                 affected_branches = ", ".join(map(bold, branches_in_sync_but_fork_point_off))
                 first_part = f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred,\n" \
@@ -642,13 +642,11 @@ class MacheteClient:
                 second_part = "Run `git machete status --list-commits` or " \
                               "`git machete status --list-commits-with-hashes` to see more details"
             elif len(branches_in_sync_but_fork_point_off) == 1:
-                second_part = "Consider using `git machete fork-point " \
-                              f"--override-to-parent {bold(yellow_edge_branch)}`,\n" \
+                second_part = f"Consider using `git machete fork-point {yellow_edge_branch} --override-to-parent`,\n" \
                               f"rebasing {bold(yellow_edge_branch)} onto its parent with `git machete update`,\n" \
                               f"or reattaching {bold(yellow_edge_branch)} under a different parent branch"
             else:
-                second_part = "Consider using `git machete fork-point " \
-                              "--override-to-parent <branch>` for each affected branch,\n" \
+                second_part = "Consider using `git machete fork-point <branch> --override-to-parent` for each affected branch,\n" \
                               "rebasing each branch onto its parent with `git machete update`,\n" \
                               "or reattaching the affected branches under different parent branches"
 

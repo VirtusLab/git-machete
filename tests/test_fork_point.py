@@ -149,7 +149,7 @@ class TestForkPoint(BaseTest):
             Warn: yellow edge indicates that fork point for develop is probably incorrectly inferred,
             or that some extra branch should be between master and develop.
 
-            Consider using git machete fork-point --override-to-parent develop,
+            Consider using git machete fork-point develop --override-to-parent,
             rebasing develop onto its parent with git machete update,
             or reattaching develop under a different parent branch.
             """
@@ -189,7 +189,7 @@ class TestForkPoint(BaseTest):
                 git machete update --fork-point="ad97c343b69296e96858058d8d668cca0132402a" develop
 
             Otherwise, if you're okay with treating these commits as a part of develop's unique history, use instead:
-                git machete fork-point --override-to-parent develop
+                git machete fork-point develop --override-to-parent
             """
         )
         assert launch_command("fork-point").strip() == "ad97c343b69296e96858058d8d668cca0132402a"
@@ -232,7 +232,7 @@ class TestForkPoint(BaseTest):
                 git machete update --fork-point="5e35f5b" branch-2
 
             Otherwise, if you're okay with treating these commits as a part of branch-2's unique history, use instead:
-                git machete fork-point --override-to-parent branch-2
+                git machete fork-point branch-2 --override-to-parent
             """
         )
 
