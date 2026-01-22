@@ -1,6 +1,7 @@
 SQUASH_MERGE_DETECTION = 'machete.squashMergeDetection'
 STATUS_EXTRA_SPACE_BEFORE_BRANCH_NAME = 'machete.status.extraSpaceBeforeBranchName'
 TRAVERSE_PUSH = 'machete.traverse.push'
+TRAVERSE_WHEN_BRANCH_NOT_CHECKED_OUT_IN_ANY_WORKTREE = 'machete.traverse.whenBranchNotCheckedOutInAnyWorktree'
 WORKTREE_USE_TOP_LEVEL_MACHETE_FILE = 'machete.worktree.useTopLevelMacheteFile'
 
 

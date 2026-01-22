@@ -8,6 +8,8 @@ from git_machete.client.base import (ParsableEnum, PickRoot,
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.code_hosting import PullRequest
 from git_machete.exceptions import MacheteException, UnexpectedMacheteException
+from git_machete.git_config_keys import \
+    TRAVERSE_WHEN_BRANCH_NOT_CHECKED_OUT_IN_ANY_WORKTREE
 from git_machete.git_operations import (GitContext, LocalBranchShortName,
                                         SyncToRemoteStatus)
 from git_machete.utils import (bold, flat_map, fmt, get_pretty_choices,
@@ -47,6 +49,11 @@ class TraverseStartFrom(ParsableEnum):
             raise MacheteException(f"{bold(value)} is neither a special value ({all_values}), nor a local branch")
 
 
+class TraverseWhenBranchNotCheckedOutInAnyWorktree(ParsableEnum):
+    CD_INTO_MAIN_WORKTREE = auto()
+    STAY_IN_THE_CURRENT_WORKTREE = auto()  # noqa: F841
+
+
 class TraverseMacheteClient(MacheteClientWithCodeHosting):
     def _update_worktrees_cache_after_checkout(self, checked_out_branch: LocalBranchShortName) -> None:
         """
@@ -65,6 +72,19 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
         self.__worktree_root_dir_for_branch[checked_out_branch] = current_worktree_root_dir
 
+    def _get_when_branch_not_checked_out_in_any_worktree_config(self) -> TraverseWhenBranchNotCheckedOutInAnyWorktree:
+        """
+        Get the configured behavior for when checking out a branch that is not checked out in any worktree.
+        Returns the default value if the config key is not set.
+        """
+        config_value_str = self._git.get_config_attr_or_none(TRAVERSE_WHEN_BRANCH_NOT_CHECKED_OUT_IN_ANY_WORKTREE)
+        if config_value_str is None:
+            return TraverseWhenBranchNotCheckedOutInAnyWorktree.CD_INTO_MAIN_WORKTREE
+        else:
+            return TraverseWhenBranchNotCheckedOutInAnyWorktree.from_string(
+                config_value_str,
+                f"`{TRAVERSE_WHEN_BRANCH_NOT_CHECKED_OUT_IN_ANY_WORKTREE}` git config key")
+
     def _switch_branch(
             self,
             target_branch: LocalBranchShortName,
@@ -82,20 +102,21 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
         current_worktree_root_dir = self._git.get_current_worktree_root_dir()
 
         if target_worktree_root_dir is None:
-            # Branch is not checked out anywhere, need to checkout
-            main_worktree_root_dir = self._git.get_main_worktree_root_dir()
-            if current_worktree_root_dir != main_worktree_root_dir:
-                # We're in a linked worktree, need to cd to main worktree first
-                print(f"Changing directory to main worktree at {bold(main_worktree_root_dir)}")
-                self._git.chdir(main_worktree_root_dir)
+            # Branch is not checked out anywhere
+            config_value = self._get_when_branch_not_checked_out_in_any_worktree_config()
 
-            # Print checkout message
+            # Default behavior: cd to main worktree if we're in a linked worktree
+            # Otherwise (STAY_IN_THE_CURRENT_WORKTREE), stay in the current worktree and checkout the branch there
+            if config_value == TraverseWhenBranchNotCheckedOutInAnyWorktree.CD_INTO_MAIN_WORKTREE:
+                main_worktree_root_dir = self._git.get_main_worktree_root_dir()
+                if current_worktree_root_dir != main_worktree_root_dir:
+                    print(f"Changing directory to main worktree at {bold(main_worktree_root_dir)}")
+                    self._git.chdir(main_worktree_root_dir)
+
             checkout_msg = custom_checkout_message if custom_checkout_message else f"Checking out {bold(target_branch)}"
             print_no_newline(f"{checkout_msg}... ")
             self._git.checkout(target_branch)
             print(green_ok())
-
-            # Update cache after checkout
             self._update_worktrees_cache_after_checkout(target_branch)
         else:
             # Branch is already checked out in a worktree - no need to checkout, just cd there

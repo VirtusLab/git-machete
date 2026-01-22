@@ -92,6 +92,8 @@ and ``git machete github checkout-prs`` (``git machete gitlab checkout-mrs``) ad
 when the current user is **not** the author of the PR/MR associated with that branch.
 
 **Note on git worktrees:** if a branch is already checked out in another worktree, ``traverse`` will change directory to that worktree rather than failing.
+If a branch is not checked out in any worktree, by default ``traverse`` will change directory to the main worktree before checking out the branch.
+This behavior can be customized using ``machete.traverse.whenBranchNotCheckedOutInAnyWorktree`` git config key (see below).
 
 **Options:**
 
@@ -167,6 +169,9 @@ when the current user is **not** the author of the PR/MR associated with that br
 
 ``machete.traverse.push``
     .. include:: git-config-keys/traverse_push.rst
+
+``machete.traverse.whenBranchNotCheckedOutInAnyWorktree``
+    .. include:: git-config-keys/traverse_whenBranchNotCheckedOutInAnyWorktree.rst
 
 **Environment variables:**
 

@@ -54,6 +54,9 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 ``machete.traverse.push``:
     .. include:: git-config-keys/traverse_push.rst
 
+``machete.traverse.whenBranchNotCheckedOutInAnyWorktree``:
+    .. include:: git-config-keys/traverse_whenBranchNotCheckedOutInAnyWorktree.rst
+
 ``machete.worktree.useTopLevelMacheteFile``:
     The default value of this key is ``true``, which means that the path to branch layout file will be ``.git/machete``
     for both regular directory and worktree.

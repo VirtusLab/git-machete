@@ -366,6 +366,15 @@ long_docs: Dict[str, str] = {
               The default value of this key is `true`.
               Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
 
+           `machete.traverse.whenBranchNotCheckedOutInAnyWorktree`:
+              Controls the behavior of `git machete traverse` when checking out a branch that is not currently checked out in any worktree.
+
+              The default value is `cd-into-main-worktree`, which means that `traverse` will change directory to the main worktree before checking out the branch.
+
+              Set to `stay-in-the-current-worktree` to make `traverse` stay in whatever worktree has already been reached by that point,
+              and check out the branch there instead.
+              Note that this worktree might be different then the initial working directory where `traverse` started.
+
            `machete.worktree.useTopLevelMacheteFile`:
               The default value of this key is `true`, which means that the path to branch layout file will be `.git/machete`
               for both regular directory and worktree.
@@ -1502,6 +1511,8 @@ long_docs: Dict[str, str] = {
         when the current user is <b>not</b> the author of the PR/MR associated with that branch.
 
         <b>Note on git worktrees:</b> if a branch is already checked out in another worktree, `traverse` will change directory to that worktree rather than failing.
+        If a branch is not checked out in any worktree, by default `traverse` will change directory to the main worktree before checking out the branch.
+        This behavior can be customized using `machete.traverse.whenBranchNotCheckedOutInAnyWorktree` git config key (see below).
 
         <b>Options:</b>
 
@@ -1616,6 +1627,15 @@ long_docs: Dict[str, str] = {
               Set to `false` to change the behavior of `git machete traverse` so that it doesn't push branches by default.
               The default value of this key is `true`.
               Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
+
+           `machete.traverse.whenBranchNotCheckedOutInAnyWorktree`
+              Controls the behavior of `git machete traverse` when checking out a branch that is not currently checked out in any worktree.
+
+              The default value is `cd-into-main-worktree`, which means that `traverse` will change directory to the main worktree before checking out the branch.
+
+              Set to `stay-in-the-current-worktree` to make `traverse` stay in whatever worktree has already been reached by that point,
+              and check out the branch there instead.
+              Note that this worktree might be different then the initial working directory where `traverse` started.
 
         <b>Environment variables:</b>
 

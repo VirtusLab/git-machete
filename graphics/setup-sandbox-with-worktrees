@@ -8,6 +8,12 @@ root_dir=$(realpath "${1-$HOME}")
 script_dir=$(cd "$(dirname "$0")" && pwd)
 "$script_dir/setup-sandbox" "$root_dir"
 
+# Clean up any existing worktree directories
+if [ -d "$root_dir/machete-sandbox-worktrees" ]; then
+  echo "Removing existing worktree directories..."
+  rm -rf "$root_dir/machete-sandbox-worktrees"
+fi
+
 # Now create worktrees
 cd "$root_dir/machete-sandbox"
 
@@ -42,4 +48,13 @@ echo
 echo
 git machete status
 echo
+echo "Note: Branches 'develop' and 'call-ws' are NOT checked out in any worktree."
+echo "This demonstrates the behavior controlled by:"
+echo "  machete.traverse.whenBranchNotCheckedOutInAnyWorktree"
+echo
+echo "To stay in the current worktree when checking out such branches:"
+echo "  git config machete.traverse.whenBranchNotCheckedOutInAnyWorktree stay-in-the-current-worktree"
+echo
+echo "To use the default behavior (cd to main worktree):"
+echo "  git config machete.traverse.whenBranchNotCheckedOutInAnyWorktree cd-into-main-worktree"
 echo

@@ -28,9 +28,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Jan 28, 2026" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Jan 29, 2026" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.38.2
+git-machete \- git-machete 3.39.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -492,6 +492,15 @@ This is useful for excluding remotes that are temporarily offline, or take a lon
 Set to \fBfalse\fP to change the behavior of \fBgit machete traverse\fP so that it doesn\(aqt push branches by default.
 The default value of this key is \fBtrue\fP\&.
 Configuration key value can be overridden by the presence of the \fB\-\-push\fP or \fB\-\-push\-untracked\fP flags.
+.TP
+.B \fBmachete.traverse.whenBranchNotCheckedOutInAnyWorktree\fP:
+Controls the behavior of \fBgit machete traverse\fP when checking out a branch that is not currently checked out in any worktree.
+.sp
+The default value is \fBcd\-into\-main\-worktree\fP, which means that \fBtraverse\fP will change directory to the main worktree before checking out the branch.
+.sp
+Set to \fBstay\-in\-the\-current\-worktree\fP to make \fBtraverse\fP stay in whatever worktree has already been reached by that point,
+and check out the branch there instead.
+Note that this worktree might be different then the initial working directory where \fBtraverse\fP started.
 .TP
 .B \fBmachete.worktree.useTopLevelMacheteFile\fP:
 The default value of this key is \fBtrue\fP, which means that the path to branch layout file will be \fB\&.git/machete\fP
@@ -2162,6 +2171,8 @@ and \fBgit machete github checkout\-prs\fP (\fBgit machete gitlab checkout\-mrs\
 when the current user is \fBnot\fP the author of the PR/MR associated with that branch.
 .sp
 \fBNote on git worktrees:\fP if a branch is already checked out in another worktree, \fBtraverse\fP will change directory to that worktree rather than failing.
+If a branch is not checked out in any worktree, by default \fBtraverse\fP will change directory to the main worktree before checking out the branch.
+This behavior can be customized using \fBmachete.traverse.whenBranchNotCheckedOutInAnyWorktree\fP git config key (see below).
 .sp
 \fBOptions:\fP
 .INDENT 0.0
@@ -2284,6 +2295,15 @@ This is useful for excluding remotes that are temporarily offline, or take a lon
 Set to \fBfalse\fP to change the behavior of \fBgit machete traverse\fP so that it doesn\(aqt push branches by default.
 The default value of this key is \fBtrue\fP\&.
 Configuration key value can be overridden by the presence of the \fB\-\-push\fP or \fB\-\-push\-untracked\fP flags.
+.TP
+.B \fBmachete.traverse.whenBranchNotCheckedOutInAnyWorktree\fP
+Controls the behavior of \fBgit machete traverse\fP when checking out a branch that is not currently checked out in any worktree.
+.sp
+The default value is \fBcd\-into\-main\-worktree\fP, which means that \fBtraverse\fP will change directory to the main worktree before checking out the branch.
+.sp
+Set to \fBstay\-in\-the\-current\-worktree\fP to make \fBtraverse\fP stay in whatever worktree has already been reached by that point,
+and check out the branch there instead.
+Note that this worktree might be different then the initial working directory where \fBtraverse\fP started.
 .UNINDENT
 .sp
 \fBEnvironment variables:\fP

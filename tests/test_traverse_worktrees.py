@@ -11,7 +11,7 @@ from .mockers import (assert_success, launch_command, mock_input_returning,
                       rewrite_branch_layout_file)
 from .mockers_git_repository import (add_worktree, check_out, commit,
                                      create_repo_with_remote, get_git_version,
-                                     new_branch, push)
+                                     new_branch, push, set_git_config_key)
 
 # pytestmark is a special variable that pytest recognizes automatically.
 # It applies the specified marks to all test functions in this module.
@@ -381,5 +381,139 @@ class TestTraverseWorktrees(BaseTest):
             Warn: branch branch-1 is checked out in worktree at {normalized_branch_1_worktree}
             You may want to change directory with:
               cd {normalized_branch_1_worktree}
+            """
+        )
+
+    def test_traverse_stay_in_same_worktree_when_branch_not_checked_out(self, mocker: MockerFixture) -> None:
+        """Test that traverse can stay in the same worktree when branch not checked out, based on config."""
+        (local_path, _) = create_repo_with_remote()
+        new_branch("root")
+        commit()
+
+        new_branch("branch-1")
+        commit()
+        push()
+
+        check_out("root")
+        new_branch("branch-2")
+        commit()
+        push()
+
+        # Modify root so both branch-1 and branch-2 need rebase
+        check_out("root")
+        commit("root additional commit")
+
+        body = """
+        root
+          branch-1
+          branch-2
+        """
+        rewrite_branch_layout_file(body)
+
+        # Setup: Main worktree on some other branch, linked worktrees for root and branch-2
+        # branch-1 is NOT checked out anywhere
+        check_out("root")  # Start with root in main worktree
+        check_out("branch-2")  # Then branch-2 in main worktree
+        root_worktree = add_worktree("root")  # Linked worktree for root
+        branch_2_worktree = add_worktree("branch-2")  # Linked worktree for branch-2
+
+        # cd into root linked worktree to start traverse from there
+        os.chdir(root_worktree)
+
+        normalized_local_path = normalize_path_for_display(local_path)
+        normalized_branch_2_worktree = normalize_path_for_display(branch_2_worktree)
+
+        # First test: default behavior (without config key set)
+        # We're in root linked worktree
+        # Traverse visits: root (already here) -> branch-1 (not checked out anywhere) -> branch-2 (in  worktree)
+        # The key difference is when visiting branch-1 (in the MIDDLE of traverse):
+        # - Default: cd to main worktree before checking out branch-1
+        # - With config: stay in current (root linked) worktree and check out branch-1 there
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n", "n", "n"))
+        assert_success(
+            ["traverse"],
+            f"""
+            Push untracked branch root to origin? (y, N, q, yq)
+
+            Changing directory to main worktree at {normalized_local_path}
+            Checking out branch-1... OK
+
+              root (untracked)
+              |
+              x-branch-1 *
+              |
+              x-branch-2
+
+            Rebase branch-1 onto root? (y, N, q, yq)
+
+            Changing directory to {normalized_branch_2_worktree} worktree where branch-2 is checked out
+
+              root (untracked)
+              |
+              x-branch-1
+              |
+              x-branch-2 *
+
+            Rebase branch-2 onto root? (y, N, q, yq)
+
+              root (untracked)
+              |
+              x-branch-1
+              |
+              x-branch-2 *
+
+            Reached branch branch-2 which has no successor; nothing left to update
+            Warn: branch branch-2 is checked out in worktree at {normalized_branch_2_worktree}
+            You may want to change directory with:
+              cd {normalized_branch_2_worktree}
+            """
+        )
+
+        # Reset state: checkout a temporary branch in main worktree so branch-1 is not checked out anywhere
+        os.chdir(local_path)  # Go to main worktree
+        new_branch("temp-branch")  # Create and checkout temp branch, so branch-1 is no longer checked out
+        os.chdir(root_worktree)  # Go back to root linked worktree for the second test
+
+        # Set config to stay in the same worktree
+        set_git_config_key("machete.traverse.whenBranchNotCheckedOutInAnyWorktree", "stay-in-the-current-worktree")
+
+        # Second test: with config key set to stay-in-the-current-worktree
+        # Now when visiting branch-1 in the MIDDLE, it stays in the current (root linked) worktree instead of cd'ing to main
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n", "n", "n"))
+        assert_success(
+            ["traverse"],
+            f"""
+            Push untracked branch root to origin? (y, N, q, yq)
+
+            Checking out branch-1... OK
+
+              root (untracked)
+              |
+              x-branch-1 *
+              |
+              x-branch-2
+
+            Rebase branch-1 onto root? (y, N, q, yq)
+
+            Changing directory to {normalized_branch_2_worktree} worktree where branch-2 is checked out
+
+              root (untracked)
+              |
+              x-branch-1
+              |
+              x-branch-2 *
+
+            Rebase branch-2 onto root? (y, N, q, yq)
+
+              root (untracked)
+              |
+              x-branch-1
+              |
+              x-branch-2 *
+
+            Reached branch branch-2 which has no successor; nothing left to update
+            Warn: branch branch-2 is checked out in worktree at {normalized_branch_2_worktree}
+            You may want to change directory with:
+              cd {normalized_branch_2_worktree}
             """
         )

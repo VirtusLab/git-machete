@@ -1,11 +1,16 @@
 # Release notes
 
-## New in git-machete 3.38.2
+## New in git-machete 3.39.0
 
-- changed: `github update-pr-descriptions --related`, `gitlab update-mr-descriptions --related`, and all subcommands with `-U/--update-related-descriptions` flag now always update the entire stack (both upstream and downstream PRs/MRs); the description style still respects the `machete.github.prDescriptionIntroStyle` or `machete.gitlab.mrDescriptionIntroStyle` config setting
+- added: `machete.traverse.whenBranchNotCheckedOutInAnyWorktree` git config key to control the behavior
+  when checking out a branch that is not checked out in any worktree; values: `cd-into-main-worktree` (default) or `stay-in-the-current-worktree`
+- changed: `github update-pr-descriptions --related`, `gitlab update-mr-descriptions --related`,
+  and all subcommands with `-U/--update-related-descriptions` flag now always update the entire stack (both upstream and downstream PRs/MRs);
+  the description style still respects the `machete.github.prDescriptionIntroStyle` or `machete.gitlab.mrDescriptionIntroStyle` config setting
 - fixed: `go first`, `go last`, `go root` no longer fail when run in detached HEAD state; instead, a sensible default is selected
 - fixed: `go` (interactive mode) no longer fails when run in detached HEAD state; the interface is shown as usual
-- improved: `advance` now only suggests push when the branch is ahead of remote; for other sync-to-remote statuses (behind, diverged, in sync, untracked), a warning is displayed instead
+- improved: `advance` now only suggests push when the branch is ahead of remote;
+  for other sync-to-remote statuses (behind, diverged, in sync, untracked), a warning is displayed instead
 - improved: every time a branch is checked out, a `Checking out <branch>... OK` message is printed out for consistency
 
 ## New in git-machete 3.38.1
