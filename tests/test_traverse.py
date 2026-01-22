@@ -1971,18 +1971,55 @@ class TestTraverse(BaseTest):
 
         # Now run traverse - it should cd into the worktrees automatically
         # Using -y flag so no need to mock input
-        output = launch_command("traverse", "-y", "--start-from=first-root")
-
-        # Verify key behaviors happened:
-        # 1. It switched to feature-1 worktree
         normalized_feature_1_worktree = normalize_path_for_display(feature_1_worktree)
-        assert f"Changing directory to {normalized_feature_1_worktree} worktree where feature-1 is checked out" in output
-        # 2. It switched to feature-2 worktree
         normalized_feature_2_worktree = normalize_path_for_display(feature_2_worktree)
-        assert f"Changing directory to {normalized_feature_2_worktree} worktree where feature-2 is checked out" in output
-        # 3. Operations were performed
-        assert "Rebasing feature-1 onto develop" in output
-        assert "Rebasing feature-2 onto feature-1" in output
+
+        # Assert the full output to verify proper messaging:
+        # - When branch is not checked out anywhere: "Checking out ... OK"
+        # - When branch is already checked out in a worktree: "Changing directory ..." (no OK, chdir is instant)
+        # - When already in correct worktree with correct branch: no message
+        assert_success(
+            ["traverse", "-y", "--start-from=first-root"],
+            f"""
+
+            Changing directory to {normalized_feature_1_worktree} worktree where feature-1 is checked out
+
+              develop
+              |
+              x-feature-1 * (ahead of origin)
+                |
+                x-feature-2
+
+            Rebasing feature-1 onto develop...
+
+            Branch feature-1 diverged from (and has newer commits than) its remote counterpart origin/feature-1.
+            Pushing feature-1 with force-with-lease to origin...
+
+            Changing directory to {normalized_feature_2_worktree} worktree where feature-2 is checked out
+
+              develop
+              |
+              o-feature-1
+                |
+                x-feature-2 *
+
+            Rebasing feature-2 onto feature-1...
+
+            Branch feature-2 diverged from (and has newer commits than) its remote counterpart origin/feature-2.
+            Pushing feature-2 with force-with-lease to origin...
+
+              develop
+              |
+              o-feature-1
+                |
+                o-feature-2 *
+
+            Reached branch feature-2 which has no successor; nothing left to update
+            Warn: branch feature-2 is checked out in worktree at {normalized_feature_2_worktree}
+            You may want to change directory with:
+              cd {normalized_feature_2_worktree}
+            """
+        )
 
         # Verify that feature-1 was pushed in its worktree
         os.chdir(feature_1_worktree)
@@ -2038,19 +2075,40 @@ class TestTraverse(BaseTest):
 
         # Now run traverse --start-from=first-root
         # This will:
-        # 1. Checkout root (not in any worktree) in main worktree - triggers cache update (lines 63-66)
-        # 2. Checkout branch-1 (already in linked worktree where we are)
-        # 3. Checkout branch-2 (was in main worktree, now root is there) - triggers cache update again
-        # The cache updates should cover lines 63-66 where we delete the old branch entry
-        output = launch_command("traverse", "-y", "--start-from=first-root")
-
-        # Verify lines 88-89 were executed (cd to main worktree for root)
+        # 1. Checkout root (not in any worktree) in main worktree - triggers cache update
+        # 2. Visit branch-1 (already in linked worktree, but no action needed so don't cd)
+        # 3. Checkout branch-2 (not in any worktree) in main worktree - triggers cache update
         normalized_local_path = normalize_path_for_display(local_path)
-        assert f"Changing directory to main worktree at {normalized_local_path}" in output, \
-            f"Expected 'Changing directory to main worktree at {normalized_local_path}' in output, but got:\n{output}"
 
-        # Verify branch-2 was pushed (confirms traverse completed successfully)
-        assert "Pushing untracked branch branch-2" in output
+        # This test verifies the worktree cache update logic and cd'ing from linked to main worktree
+        assert_success(
+            ["traverse", "-y", "--start-from=first-root"],
+            f"""
+            Changing directory to main worktree at {normalized_local_path}
+            Checking out the first root branch (root)... OK
+
+            Checking out branch-2... OK
+
+              root
+              |
+              o-branch-1
+              |
+              o-branch-2 * (untracked)
+
+            Pushing untracked branch branch-2 to origin...
+
+              root
+              |
+              o-branch-1
+              |
+              o-branch-2 *
+
+            Reached branch branch-2 which has no successor; nothing left to update
+            Warn: branch branch-2 is checked out in worktree at {normalized_local_path}
+            You may want to change directory with:
+              cd {normalized_local_path}
+            """
+        )
 
     def test_traverse_updates_worktree_cache_on_checkout(self) -> None:
         """Test that the worktree cache is properly updated when checking out in the same worktree."""
@@ -2085,18 +2143,42 @@ class TestTraverse(BaseTest):
         # This will:
         # 1. Initial cache: {root: main_worktree_path, branch-1: linked_worktree_path}
         # 2. Visit root (already checked out in main worktree) - no operation
-        # 3. Visit branch-1 (in linked worktree) - cd to linked worktree, no checkout
-        # 4. Visit branch-2 (not checked out anywhere) - cd to main worktree, checkout branch-2
+        # 3. Visit branch-1 (in linked worktree, but no action needed so don't cd)
+        # 4. Visit branch-2 (not checked out anywhere) - checkout branch-2 in main worktree
         #    - When checking out branch-2, _update_worktrees_cache_after_checkout is called
-        #    - The cache has {root: main_worktree_path, branch-1: linked_worktree_path}
-        #    - current_worktree_path = main_worktree_path
-        #    - Loop finds root with main_worktree_path, deletes it (covers line 64-65)
-        #    - Adds branch-2: main_worktree_path
-        output = launch_command("traverse", "-y")
+        #    - Tests the cache update logic (deletes old entry, adds new entry)
 
-        # Verify branch-2 was checked out and pushed
-        assert "Checking out branch-2" in output
-        assert "Pushing untracked branch branch-2" in output
+        # Note: branch-2 was created on top of branch-1, so it will appear yellow (?)
+        # because the fork point inference will see that branch-2 doesn't contain branch-1
+        assert_success(
+            ["traverse", "-y"],
+            """
+            Checking out branch-2... OK
+
+              root
+              |
+              o-branch-1
+              |
+              ?-branch-2 * (untracked)
+
+            Warn: yellow edge indicates that fork point for branch-2 is probably incorrectly inferred,
+            or that some extra branch should be between root and branch-2.
+
+            Run git machete status --list-commits or git machete status --list-commits-with-hashes to see more details.
+
+            Rebasing branch-2 onto root...
+
+            Pushing untracked branch branch-2 to origin...
+
+              root
+              |
+              o-branch-1
+              |
+              o-branch-2 *
+
+            Reached branch branch-2 which has no successor; nothing left to update
+            """
+        )
 
     def test_traverse_warns_when_final_branch_in_different_worktree(self) -> None:
         if get_git_version() < (2, 5):
@@ -2201,16 +2283,23 @@ class TestTraverse(BaseTest):
         # Start from root (main worktree), traverse will ask to rebase branch-1, user quits
         check_out("root")
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
-        output = launch_command("traverse")
 
         normalized_branch_1_worktree = normalize_path_for_display(branch_1_worktree)
 
-        # Verify traverse changed directory to the worktree during traversal
-        assert f"Changing directory to {normalized_branch_1_worktree} worktree where branch-1 is checked out" in output
+        # This corner case tests that when user quits mid-traverse,
+        # the final warning is shown if ended in a different worktree
+        assert_success(
+            ["traverse"],
+            f"""
+            Changing directory to {normalized_branch_1_worktree} worktree where branch-1 is checked out
 
-        # Verify traverse stops early when user quits
-        assert "Rebase branch-1 onto root?" in output
+              root
+              |
+              x-branch-1 *
 
-        # Verify the final warning is still emitted
-        assert "branch branch-1 is checked out in worktree at" in output
-        assert f"You may want to change directory with:\n  cd {normalized_branch_1_worktree}" in output
+            Rebase branch-1 onto root? (y, N, q, yq)
+            Warn: branch branch-1 is checked out in worktree at {normalized_branch_1_worktree}
+            You may want to change directory with:
+              cd {normalized_branch_1_worktree}
+            """
+        )

@@ -65,32 +65,50 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
         self.__worktree_root_dir_for_branch[checked_out_branch] = current_worktree_root_dir
 
-    def _switch_to_branch_worktree(
+    def _switch_branch(
             self,
-            target_branch: LocalBranchShortName) -> None:
+            target_branch: LocalBranchShortName,
+            custom_checkout_message: Optional[str] = None,
+            *,
+            silent_checkout: bool = False) -> None:
         """
-        Switch to the worktree where the branch is checked out, or to main worktree if branch is not checked out.
-        This may involve changing the current working directory.
+        Switch to the given branch, doing whatever is needed:
+        - If branch is already checked out in a worktree, cd there (always silent for cd)
+        - If branch is not checked out anywhere, checkout the branch (possibly after cd'ing to main worktree)
+        - If already on the branch in the correct worktree, do nothing
+
         Updates the worktrees cache after checkout.
+        Handles directory change messages. For checkout, can be silent or print messages based on silent_checkout parameter.
         """
         target_worktree_root_dir = self.__worktree_root_dir_for_branch.get(target_branch)
         current_worktree_root_dir = self._git.get_current_worktree_root_dir()
 
         if target_worktree_root_dir is None:
-            # Branch is not checked out anywhere, need to checkout in main worktree
-            # Only cd if we're currently in a different worktree (linked worktree)
+            # Branch is not checked out anywhere, need to checkout
             main_worktree_root_dir = self._git.get_main_worktree_root_dir()
             if current_worktree_root_dir != main_worktree_root_dir:
+                # We're in a linked worktree, need to cd to main worktree first
                 print(f"Changing directory to main worktree at {bold(main_worktree_root_dir)}")
                 self._git.chdir(main_worktree_root_dir)
+
+            # Print checkout message unless silent
+            if not silent_checkout:
+                checkout_msg = custom_checkout_message if custom_checkout_message else f"Checking out {bold(target_branch)}"
+                print_no_newline(f"{checkout_msg}... ")
+
             self._git.checkout(target_branch)
+
+            if not silent_checkout:
+                print(green_ok())
+
             # Update cache after checkout
             self._update_worktrees_cache_after_checkout(target_branch)
         else:
-            # Branch is checked out in a worktree
-            # Only cd if we're in a different worktree
+            # Branch is already checked out in a worktree - no need to checkout, just cd there
             if current_worktree_root_dir != target_worktree_root_dir:
-                print(f"Changing directory to {bold(target_worktree_root_dir)} worktree where {bold(target_branch)} is checked out")
+                # Directory changes are always silent (no "OK" printed)
+                if not silent_checkout:
+                    print(f"Changing directory to {bold(target_worktree_root_dir)} worktree where {bold(target_branch)} is checked out")
                 self._git.chdir(target_worktree_root_dir)
 
     def traverse(
@@ -144,17 +162,13 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             if opt_start_from == TraverseStartFrom.ROOT:
                 dest = self.root_branch_for(self._git.get_current_branch(), if_unmanaged=PickRoot.FIRST)
                 self._print_new_line(False)
-                print_no_newline(f"Checking out the root branch ({bold(dest)})... ")
-                self._switch_to_branch_worktree(dest)
-                print(green_ok())
+                self._switch_branch(dest, custom_checkout_message=f"Checking out the root branch ({bold(dest)})")
                 current_branch = dest
             elif opt_start_from == TraverseStartFrom.FIRST_ROOT:
                 # Note that we already ensured that there is at least one managed branch.
                 dest = self.managed_branches[0]
                 self._print_new_line(False)
-                print_no_newline(f"Checking out the first root branch ({bold(dest)})... ")
-                self._switch_to_branch_worktree(dest)
-                print(green_ok())
+                self._switch_branch(dest, custom_checkout_message=f"Checking out the first root branch ({bold(dest)})")
                 current_branch = dest
             elif opt_start_from == TraverseStartFrom.HERE:
                 current_branch = self._git.get_current_branch()
@@ -163,9 +177,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 dest = opt_start_from
                 self.expect_in_managed_branches(dest)
                 self._print_new_line(False)
-                print_no_newline(f"Checking out branch {bold(dest)}... ")
-                self._switch_to_branch_worktree(dest)
-                print(green_ok())
+                self._switch_branch(dest, custom_checkout_message=f"Checking out branch {bold(dest)}")
                 current_branch = dest
             else:
                 raise UnexpectedMacheteException(f"Unexpected value for opt_start_from: {opt_start_from}")
@@ -241,9 +253,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 needs_any_action = needs_slide_out or needs_parent_sync or needs_remote_sync or needs_retarget_pr or needs_create_pr
                 if branch != current_branch and needs_any_action:
                     self._print_new_line(False)
-                    print_no_newline(f"Checking out {bold(branch)}... ")
-                    self._switch_to_branch_worktree(branch)
-                    print(green_ok())
+                    self._switch_branch(branch)
                     current_branch = branch
                     self._print_new_line(False)
                     self.status(
@@ -469,9 +479,9 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             if opt_return_to == TraverseReturnTo.HERE:
                 # Return to initial branch
                 # No point switching back to initial directory as cwd won't propagate back to the calling shell anyway
-                self._switch_to_branch_worktree(initial_branch)
+                self._switch_branch(initial_branch, silent_checkout=True)
             elif opt_return_to == TraverseReturnTo.NEAREST_REMAINING:
-                self._switch_to_branch_worktree(nearest_remaining_branch)
+                self._switch_branch(nearest_remaining_branch, silent_checkout=True)
                 # For NEAREST_REMAINING, we stay in the worktree where the branch is checked out
             # otherwise opt_return_to == TraverseReturnTo.STAY, so no action is needed
 
