@@ -587,6 +587,7 @@ class TestTraverse(BaseTest):
         Fetching origin...
 
         Checking out the first root branch (develop)... OK
+        Checking out hotfix/add-trigger... OK
 
           develop
           |
@@ -1005,7 +1006,7 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "--start-from=call-ws", "-y"],
             """
-            Checking out branch call-ws... OK
+            Checking out call-ws... OK
 
             Pushing call-ws to origin...
 
@@ -1232,6 +1233,7 @@ class TestTraverse(BaseTest):
 
             Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
             Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
+            Checking out call-ws... OK
 
               develop
               |
@@ -1284,7 +1286,7 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "--start-from=root", "-y"],
             """
-            Checking out branch root... OK
+            Checking out root... OK
 
             Pushing untracked branch root to origin...
 
@@ -1469,7 +1471,7 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "--start-from=allow-ownership-link", "--stop-after=call-ws", "-y"],
             """
-            Checking out branch allow-ownership-link... OK
+            Checking out allow-ownership-link... OK
 
             Rebasing allow-ownership-link onto develop...
 
