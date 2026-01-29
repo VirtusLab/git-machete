@@ -3,7 +3,7 @@
 ## New in git-machete 3.39.0
 
 - added: `machete.traverse.whenBranchNotCheckedOutInAnyWorktree` git config key to control the behavior
-  when checking out a branch that is not checked out in any worktree; values: `cd-into-main-worktree` (default) or `stay-in-the-current-worktree`
+  when checking out a branch that is not checked out in any worktree (suggested by @a-harhar)
 - changed: `github update-pr-descriptions --related`, `gitlab update-mr-descriptions --related`,
   and all subcommands with `-U/--update-related-descriptions` flag now always update the entire stack (both upstream and downstream PRs/MRs);
   the description style still respects the `machete.github.prDescriptionIntroStyle` or `machete.gitlab.mrDescriptionIntroStyle` config setting

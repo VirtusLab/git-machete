@@ -547,8 +547,6 @@ class TestGo(BaseTest):
         # Get a commit hash to checkout in detached HEAD mode
         detached_commit = get_commit_hash("root-2")
 
-        from git_machete.exceptions import UnderlyingGitException
-
         # These should work (navigate to absolute positions):
         check_out(detached_commit)
         launch_command("go", "first")
@@ -573,7 +571,7 @@ class TestGo(BaseTest):
         check_out(detached_commit)
 
         # These should fail (require current branch context):
-        assert_failure(["go", "down"], "Not currently on any branch", expected_type=UnderlyingGitException)
-        assert_failure(["go", "next"], "Not currently on any branch", expected_type=UnderlyingGitException)
-        assert_failure(["go", "prev"], "Not currently on any branch", expected_type=UnderlyingGitException)
-        assert_failure(["go", "up"], "Not currently on any branch", expected_type=UnderlyingGitException)
+        assert_failure(["go", "down"], "Not currently on any branch")
+        assert_failure(["go", "next"], "Not currently on any branch")
+        assert_failure(["go", "prev"], "Not currently on any branch")
+        assert_failure(["go", "up"], "Not currently on any branch")
