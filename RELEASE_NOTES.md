@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.39.1
+
 ## New in git-machete 3.39.0
 
 - added: `machete.traverse.whenBranchNotCheckedOutInAnyWorktree` git config key to control the behavior
