@@ -7,4 +7,3 @@ RUN chmod +x /root/entrypoint.sh
 CMD /root/entrypoint.sh
 
 WORKDIR /root/nixpkgs
-ENV EXPRESSION_PATH=pkgs/by-name/gi/git-machete/package.nix
