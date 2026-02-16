@@ -5,7 +5,7 @@ from git_machete.git_operations import (AnyBranchName, AnyRevision,
                                         LocalBranchShortName)
 
 from .base_test import BaseTest
-from .mockers import write_to_file
+from .mockers import read_file, write_to_file
 from .mockers_git_repository import (add_worktree, check_out, commit,
                                      create_repo, get_current_commit_hash,
                                      get_git_version, is_ancestor_or_equal,
@@ -299,3 +299,158 @@ class TestGitOperations(BaseTest):
         feature2_path = worktrees.get(LocalBranchShortName.of("feature-2"))
         assert feature2_path is not None
         assert os.path.realpath(feature2_path) == os.path.realpath(feature2_worktree)
+
+    def test_merge_base_cache_loading_and_saving(self) -> None:
+        """Test merge-base cache with various edge cases."""
+        create_repo()
+        new_branch("master")
+        commit("master first commit")
+        master_hash = FullCommitHash.of(get_current_commit_hash())
+        new_branch("feature")
+        commit("feature commit")
+        feature_hash = FullCommitHash.of(get_current_commit_hash())
+        check_out("master")
+        commit("master second commit")
+        master_hash2 = FullCommitHash.of(get_current_commit_hash())
+
+        git = GitContext()
+        cache_path = os.path.join(git.get_main_worktree_git_dir(), "machete-merge-base-cache")
+
+        # Test 1: Cache file doesn't exist - should work normally
+        assert not os.path.exists(cache_path)
+        merge_base1 = git.get_merge_base(master_hash, feature_hash)
+        assert merge_base1 is not None
+        # Cache should now exist and contain the entry
+        assert os.path.exists(cache_path)
+        cache_content = read_file(cache_path)
+        assert master_hash.full_name() in cache_content or feature_hash.full_name() in cache_content
+        assert merge_base1.full_name() in cache_content
+
+        # Test 2: Cache with valid entries (using fake hashes that will be loaded into cache)
+        valid_hash1 = "a" * 40
+        valid_hash2 = "b" * 40
+        valid_merge_base = "c" * 40
+        write_to_file(cache_path, f"{valid_hash1} {valid_hash2} {valid_merge_base}\n")
+        git = GitContext()  # New instance to test cache loading
+        # Access cache by calling get_merge_base (which triggers cache load)
+        git.get_merge_base(master_hash, feature_hash)
+        # Check that valid entry was loaded (even though these are fake hashes, they should be in cache)
+        assert git._merge_base_cached is not None
+        # Normalize hash order
+        if valid_hash1 < valid_hash2:
+            hash1_norm, hash2_norm = FullCommitHash.of(valid_hash1), FullCommitHash.of(valid_hash2)
+        else:
+            hash1_norm, hash2_norm = FullCommitHash.of(valid_hash2), FullCommitHash.of(valid_hash1)
+        assert (hash1_norm, hash2_norm) in git._merge_base_cached
+        assert git._merge_base_cached[(hash1_norm, hash2_norm)] == FullCommitHash.of(valid_merge_base)
+
+        # Test 3: Cache with valid entry missing 3rd field (no merge-base - rare case)
+        orphan_hash1 = "d" * 40
+        orphan_hash2 = "e" * 40
+        write_to_file(cache_path, f"{orphan_hash1} {orphan_hash2}\n")
+        git = GitContext()
+        git.get_merge_base(master_hash, feature_hash)  # Trigger cache load
+        assert git._merge_base_cached is not None
+        # Normalize hash order
+        if orphan_hash1 < orphan_hash2:
+            orphan1_norm, orphan2_norm = FullCommitHash.of(orphan_hash1), FullCommitHash.of(orphan_hash2)
+        else:
+            orphan1_norm, orphan2_norm = FullCommitHash.of(orphan_hash2), FullCommitHash.of(orphan_hash1)
+        assert (orphan1_norm, orphan2_norm) in git._merge_base_cached
+        assert git._merge_base_cached[(orphan1_norm, orphan2_norm)] is None
+
+        # Test 4: Cache with various invalid entries - should ignore them
+        invalid_entries = [
+            "single_entry",  # Only 1 entry
+            "hash1 hash2 hash3 hash4",  # 4+ entries
+            "short1 short2 merge",  # Short hashes (not 40 chars)
+            "x" * 39 + " " + "y" * 39 + " " + "z" * 39,  # 39-char hashes
+            "complete gibberish with spaces and stuff",  # Gibberish
+            "a" * 40 + " " + "b" * 40 + " " + "short",  # Valid hashes but short merge-base
+            "a" * 40 + " " + "short" + " " + "c" * 40,  # Short hash2
+            "short" + " " + "b" * 40 + " " + "c" * 40,  # Short hash1
+            "nothex" + "x" * 34 + " " + "b" * 40 + " " + "c" * 40,  # Invalid hex in hash1
+            "a" * 40 + " " + "nothex" + "x" * 34 + " " + "c" * 40,  # Invalid hex in hash2
+            "a" * 40 + " " + "b" * 40 + " " + "nothex" + "x" * 34,  # Invalid hex in merge-base
+        ]
+        valid_entry = f"{valid_hash1} {valid_hash2} {valid_merge_base}"
+        cache_content_with_invalid = "\n".join(invalid_entries) + "\n" + valid_entry + "\n"
+        write_to_file(cache_path, cache_content_with_invalid)
+        git = GitContext()
+        git.get_merge_base(master_hash, feature_hash)  # Trigger cache load
+        # Should still have the valid entry loaded
+        assert git._merge_base_cached is not None
+        # Normalize hash order
+        if valid_hash1 < valid_hash2:
+            valid1_norm, valid2_norm = FullCommitHash.of(valid_hash1), FullCommitHash.of(valid_hash2)
+        else:
+            valid1_norm, valid2_norm = FullCommitHash.of(valid_hash2), FullCommitHash.of(valid_hash1)
+        assert (valid1_norm, valid2_norm) in git._merge_base_cached
+        # Invalid entries should be ignored (not cause errors)
+
+        # Test 5: Cache with empty lines and whitespace
+        write_to_file(cache_path, f"\n  \n\t\n{valid_hash1} {valid_hash2} {valid_merge_base}\n\n")
+        git = GitContext()
+        git.get_merge_base(master_hash, feature_hash)  # Trigger cache load
+        assert git._merge_base_cached is not None
+        # Normalize hash order
+        if valid_hash1 < valid_hash2:
+            valid1_norm, valid2_norm = FullCommitHash.of(valid_hash1), FullCommitHash.of(valid_hash2)
+        else:
+            valid1_norm, valid2_norm = FullCommitHash.of(valid_hash2), FullCommitHash.of(valid_hash1)
+        assert (valid1_norm, valid2_norm) in git._merge_base_cached
+
+        # Test 6: Cache with hash order normalization (hash1 > hash2)
+        hash_larger = "f" * 40
+        hash_smaller = "a" * 40
+        merge_base_normalized = "0" * 40
+        write_to_file(cache_path, f"{hash_larger} {hash_smaller} {merge_base_normalized}\n")
+        git = GitContext()
+        git.get_merge_base(master_hash, feature_hash)  # Trigger cache load
+        assert git._merge_base_cached is not None
+        # Should be normalized to (smaller, larger)
+        hash_smaller_norm = FullCommitHash.of(hash_smaller)
+        hash_larger_norm = FullCommitHash.of(hash_larger)
+        assert (hash_smaller_norm, hash_larger_norm) in git._merge_base_cached
+        assert git._merge_base_cached[(hash_smaller_norm, hash_larger_norm)] == FullCommitHash.of(merge_base_normalized)
+
+        # Test 7: Cache saving appends new entries and normalizes hash order
+        initial_size = os.path.getsize(cache_path) if os.path.exists(cache_path) else 0
+        # Compute a new merge-base that's not in cache
+        new_branch("other")
+        commit("other commit")
+        other_hash = FullCommitHash.of(get_current_commit_hash())
+        # Ensure we test with hash1 > hash2 to verify normalization on write
+        if master_hash2 > other_hash:
+            larger_hash, smaller_hash = master_hash2, other_hash
+        else:
+            larger_hash, smaller_hash = other_hash, master_hash2
+        git.get_merge_base(larger_hash, smaller_hash)  # Compute merge-base to trigger cache write
+        # Check that cache file grew
+        assert os.path.exists(cache_path)
+        new_size = os.path.getsize(cache_path)
+        assert new_size > initial_size
+        # Verify the new entry is in the file with normalized order (smaller <= larger)
+        cache_content_after = read_file(cache_path)
+        # The entry should be written as "smaller_hash larger_hash merge_base"
+        # (not "larger_hash smaller_hash merge_base")
+        assert f"{smaller_hash.full_name()} {larger_hash.full_name()}" in cache_content_after
+        # Verify it's NOT written in reverse order
+        assert f"{larger_hash.full_name()} {smaller_hash.full_name()}" not in cache_content_after
+
+        # Test 8: Cache is used when entry exists (no git merge-base call needed)
+        # We'll test this by ensuring the cached value is returned
+        # First, write a cache entry for real commits
+        write_to_file(cache_path, f"{master_hash.full_name()} {feature_hash.full_name()} {merge_base1.full_name()}\n")
+        git2 = GitContext()
+        # Load cache and get merge-base - should use cached value
+        cached_merge_base = git2.get_merge_base(master_hash, feature_hash)
+        # The result should match what we put in cache
+        assert cached_merge_base == merge_base1
+        # Verify it's in the cache dict
+        assert git2._merge_base_cached is not None
+        # Normalize hash order for lookup
+        hash1_norm, hash2_norm = (master_hash, feature_hash) if master_hash < feature_hash else (feature_hash, master_hash)
+        assert git2._merge_base_cached is not None  # Help mypy understand it's not None
+        cached_result = git2._merge_base_cached.get((hash1_norm, hash2_norm))
+        assert cached_result == merge_base1

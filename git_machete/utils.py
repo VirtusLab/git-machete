@@ -161,28 +161,30 @@ def compact_dict(d: Dict[str, Any]) -> Dict[str, str]:
 
 
 def debug(msg: str) -> None:
-    if debug_mode:
-        function_name = bold(inspect.stack()[1].function)
-        args, _, _, values_original = inspect.getargvalues(inspect.stack()[1].frame)
-        # Do not write over the original values!
-        # Since Python 3.13, the result of `getargvalues` keeps a map of local variables
-        # that the Python runtime actually keeps on the stack,
-        # so overwriting a key in values_original changes the local variable.
-        values: Dict[str, Any] = dict(values_original)
+    if not debug_mode:
+        return
 
-        args_to_be_redacted = {'access_token', 'password', 'secret', 'token'}
-        for arg, value in values.items():
-            if arg in args_to_be_redacted or any(value_ in str(value) for value_ in CODE_HOSTING_TOKEN_PREFIXES):
-                values[arg] = '***'
-            elif type(value) is dict:
-                values[arg] = compact_dict(value)
-            values[arg] = textwrap.shorten(str(values[arg]), width=50, placeholder="...")
+    function_name = bold(inspect.stack()[1].function)
+    args, _, _, values_original = inspect.getargvalues(inspect.stack()[1].frame)
+    # Do not write over the original values!
+    # Since Python 3.13, the result of `getargvalues` keeps a map of local variables
+    # that the Python runtime actually keeps on the stack,
+    # so overwriting a key in values_original changes the local variable.
+    values: Dict[str, Any] = dict(values_original)
 
-        args_and_values_list = [arg + '=' + str(values[arg]) for arg in excluding(args, {'self'})]
-        args_and_values_str = ', '.join(args_and_values_list)
-        args_and_values_bold_str = bold(f'({args_and_values_str})')
+    args_to_be_redacted = {'access_token', 'password', 'secret', 'token'}
+    for arg, value in values.items():
+        if arg in args_to_be_redacted or any(value_ in str(value) for value_ in CODE_HOSTING_TOKEN_PREFIXES):
+            values[arg] = '***'
+        elif type(value) is dict:
+            values[arg] = compact_dict(value)
+        values[arg] = textwrap.shorten(str(values[arg]), width=50, placeholder="...")
 
-        print(f"{function_name}{args_and_values_bold_str}: {dim(msg)}", file=sys.stderr)
+    args_and_values_list = [arg + '=' + str(values[arg]) for arg in excluding(args, {'self'})]
+    args_and_values_str = ', '.join(args_and_values_list)
+    args_and_values_bold_str = bold(f'({args_and_values_str})')
+
+    print(f"{function_name}{args_and_values_bold_str}: {dim(msg)}", file=sys.stderr)
 
 
 def _run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> int:

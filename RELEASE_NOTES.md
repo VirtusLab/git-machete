@@ -2,9 +2,10 @@
 
 ## New in git-machete 3.39.1
 
+- changed: whenever git-machete prints a path on Windows, the path is now POSIX-compatible (with `/`)
 - fixed: suggested `update` command in deprecation message for `fork-point --override-to=...` and `--override-to-inferred`
 - fixed: subtle bugs related to relative main/git directory paths when switching worktrees in `traverse`
-- changed: whenever git-machete prints a path on Windows, the path is now POSIX-compatible (with `/`)
+- improved: `git merge-base` results are written into `.git/machete-merge-base-cache` for faster retrieval in large repositories
 
 ## New in git-machete 3.39.0
 

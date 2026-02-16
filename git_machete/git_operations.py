@@ -233,7 +233,7 @@ class GitContext:
         self.__is_equivalent_patch_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
         self.__is_equivalent_tree_reachable_cached: Dict[Tuple[FullCommitHash, FullCommitHash], bool] = {}
         self.__local_branches_cached: Optional[List[LocalBranchShortName]] = None
-        self.__merge_base_cached: Dict[Tuple[FullCommitHash, FullCommitHash], Optional[FullCommitHash]] = {}
+        self._merge_base_cached: Optional[Dict[Tuple[FullCommitHash, FullCommitHash], Optional[FullCommitHash]]] = None
         self.__reflogs_cached: Optional[Dict[AnyBranchName, List[GitReflogEntry]]] = None
         self.__remaining_log_hashes_cached: Dict[FullCommitHash, List[FullCommitHash]] = {}
         self.__remote_branches_cached: Optional[List[RemoteBranchShortName]] = None
@@ -899,28 +899,97 @@ class GitContext:
             raise UnderlyingGitException("Not currently on any branch")
         return result
 
+    def __get_merge_base_cache_path(self) -> str:
+        return os.path.join(self.get_main_worktree_git_dir(), "machete-merge-base-cache")
+
+    def __load_merge_base_cache(self) -> None:
+        """Load merge-base cache from file. Called lazily on first use."""
+        if self._merge_base_cached is not None:
+            return
+
+        self._merge_base_cached = {}
+        cache_path = self.__get_merge_base_cache_path()
+        if not os.path.exists(cache_path):
+            return
+
+        debug(f"reading merge-base cache from {cache_path}")
+        with open(cache_path, 'r') as f:
+            for line_num, line in enumerate(f, start=1):
+                line = line.strip()
+                if not line:
+                    continue
+
+                parts = line.split()
+                if len(parts) < 2 or len(parts) > 3:
+                    debug(f"{cache_path}:{line_num}: invalid number of fields (expected 2 or 3, got {len(parts)}), ignoring")
+                    continue
+
+                hash1_str, hash2_str = parts[0], parts[1]
+                merge_base_str = parts[2] if len(parts) == 3 else None
+
+                # Validate that all hashes are full commit hashes (40 hex chars)
+                if not FullCommitHash.is_valid(hash1_str) or not FullCommitHash.is_valid(hash2_str):
+                    debug(f"{cache_path}:{line_num}: invalid input commit hash format, ignoring")
+                    continue
+
+                if merge_base_str is not None and not FullCommitHash.is_valid(merge_base_str):
+                    debug(f"{cache_path}:{line_num}: invalid merge-base commit hash format, ignoring")
+                    continue
+
+                hash1 = FullCommitHash.of(hash1_str)
+                hash2 = FullCommitHash.of(hash2_str)
+                # Normalize: ensure hash1 <= hash2
+                if hash1 > hash2:
+                    hash1, hash2 = hash2, hash1
+
+                merge_base = FullCommitHash.of(merge_base_str) if merge_base_str else None
+                self._merge_base_cached[(hash1, hash2)] = merge_base
+
+    def __save_merge_base_cache_entry(self, *, hash1: FullCommitHash, hash2: FullCommitHash, merge_base: Optional[FullCommitHash]) -> None:
+        """Append a merge-base cache entry to the cache file."""
+        cache_path = self.__get_merge_base_cache_path()
+        with open(cache_path, 'a') as f:
+            debug(f"writing merge-base cache entry to {cache_path}: {hash1} {hash2} {merge_base or '(no merge-base)'}")
+            if merge_base is not None:
+                f.write(f"{hash1} {hash2}  {merge_base}\n")
+            else:
+                f.write(f"{hash1} {hash2}\n")
+
     def __get_merge_base_for_commit_hashes(self, hash1: FullCommitHash, hash2: FullCommitHash) -> Optional[FullCommitHash]:  # noqa: KW
         # This if statement is not changing the outcome of the later return, but
         # it enhances the efficiency of the script. If both hashes are the same,
         # there is no point running git merge-base.
         if hash1 == hash2:
             return hash1
+        # Load cache lazily on first use
+        self.__load_merge_base_cache()
         if hash1 > hash2:
             hash1, hash2 = hash2, hash1
-        if not (hash1, hash2) in self.__merge_base_cached:
+        # After __load_merge_base_cache(), the cache is guaranteed to be a dict (not None)
+        assert self._merge_base_cached is not None
+        if not (hash1, hash2) in self._merge_base_cached:
             # Note that we don't pass '--all' flag to 'merge-base', so we'll get only one merge-base
             # even if there is more than one (in the rare case of criss-cross histories).
-            # This is still okay from the perspective of is-ancestor checks that are our sole use of merge-base:
+
+            # This is still okay from the perspective of is-ancestor checks:
             # * if any of hash1, hash2 is an ancestor of another,
             #   then there is exactly one merge-base - the ancestor,
             # * if neither of hash1, hash2 is an ancestor of another,
             #   then none of the (possibly more than one) merge-bases is equal to either of hash1/hash2 anyway.
+
+            # If it comes to the other uses (like is_equivalent_patch_reachable),
+            # the results aren't well defined for the case of criss-cross histories anyway,
+            # and such histories are unlikely to emerge among branches managed by git-machete.
+
             # In the rare case when hash1, hash2 have no common commits, the flag: allow_non_zero=True
             # (allows, non zero exit code to be returned by git merge-base command, without raising an exception)
             # is used and the __get_merge_base function returns None.
             merge_base = self._popen_git("merge-base", hash1, hash2, allow_non_zero=True).stdout.strip()
-            self.__merge_base_cached[hash1, hash2] = FullCommitHash.of(merge_base) if merge_base else None
-        return self.__merge_base_cached[hash1, hash2]
+            merge_base_hash = FullCommitHash.of(merge_base) if merge_base else None
+            self._merge_base_cached[hash1, hash2] = merge_base_hash
+            # Save to cache file
+            self.__save_merge_base_cache_entry(hash1=hash1, hash2=hash2, merge_base=merge_base_hash)
+        return self._merge_base_cached[hash1, hash2]
 
     def is_ancestor_or_equal(self, earlier_revision: AnyRevision, later_revision: AnyRevision) -> bool:  # noqa: KW
         earlier_hash = self.get_commit_hash_by_revision(earlier_revision)
