@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.39.1
 
+- fixed: suggested `update` command in deprecation message for `fork-point --override-to=...` and `--override-to-inferred`
+
 ## New in git-machete 3.39.0
 
 - added: `machete.traverse.whenBranchNotCheckedOutInAnyWorktree` git config key to control the behavior

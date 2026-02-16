@@ -186,7 +186,8 @@ class TestForkPoint(BaseTest):
             Warn: git machete fork-point --override-to-inferred may lead to a confusing user experience and is deprecated.
 
             If the commits between master (parent of develop) and inferred commit ad97c34 do NOT belong to develop, consider using:
-                git machete update --fork-point="ad97c343b69296e96858058d8d668cca0132402a" develop
+                git checkout develop
+                git machete update --fork-point="ad97c343b69296e96858058d8d668cca0132402a"
 
             Otherwise, if you're okay with treating these commits as a part of develop's unique history, use instead:
                 git machete fork-point develop --override-to-parent
@@ -229,7 +230,8 @@ class TestForkPoint(BaseTest):
             Warn: git machete fork-point --override-to=... may lead to a confusing user experience and is deprecated.
 
             If the commits between branch-1 (parent of branch-2) and selected commit 5e35f5b do NOT belong to branch-2, consider using:
-                git machete update --fork-point="5e35f5b" branch-2
+                git checkout branch-2
+                git machete update --fork-point="5e35f5b"
 
             Otherwise, if you're okay with treating these commits as a part of branch-2's unique history, use instead:
                 git machete fork-point branch-2 --override-to-parent
