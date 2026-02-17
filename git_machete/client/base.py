@@ -110,13 +110,23 @@ class MacheteClient:
         self.__init_state()
 
     def __get_git_machete_branch_layout_file_path(self) -> str:
-        use_top_level_machete_file = self._git.get_boolean_config_attr(key=git_config_keys.WORKTREE_USE_TOP_LEVEL_MACHETE_FILE,
-                                                                       default_value=True)
+        use_top_level_machete_file = self._git.get_boolean_config_attr(
+            key=git_config_keys.WORKTREE_USE_TOP_LEVEL_MACHETE_FILE,
+            default_value=True
+        )
         if use_top_level_machete_file:
             machete_file_directory = self._git.get_main_worktree_git_dir()
         else:
             machete_file_directory = self._git.get_current_worktree_git_dir()
-        return os.path.join(machete_file_directory, 'machete')
+        abs_path = os.path.join(machete_file_directory, 'machete')
+        # Make the path relative to the current working directory, if possible.
+        # This is more convenient for display purposes, and shouldn't introduce any problems in traverse
+        # (since machete file path is only retrieved at the start, before any potential CWD changes)
+        try:
+            return os.path.relpath(abs_path, start=os.getcwd())
+        except Exception:  # pragma: no cover
+            # If for some reason relpath fails, fall back to absolute path.
+            return abs_path
 
     def __init_state(self) -> None:
         self._state = MacheteState()
@@ -187,7 +197,7 @@ class MacheteClient:
             textwrap.dedent(f"""
                 No branches listed in {self._branch_layout_file_path}. Consider one of:
                 * `git machete discover`
-                * `git machete edit` or edit `machete` file manually
+                * `git machete edit` or edit {self._branch_layout_file_path} manually
                 * `git machete github checkout-prs --mine`
                 * `git machete gitlab checkout-mrs --mine`"""[1:]))
 

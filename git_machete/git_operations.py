@@ -300,7 +300,10 @@ class GitContext:
     def __rev_parse_path(self, flag: str) -> str:
         # Let's use absolute paths for main/git directories.
         # Relative paths can lead to subtle bugs when CWD changes between worktrees in traverse.
-        return os.path.abspath(self._popen_git("rev-parse", flag).stdout.strip())
+        # It needs to be pathlib and not os.path,
+        # since we need to retain forward slashes for compatibility with what git itself returns.
+        from pathlib import Path
+        return Path(self._popen_git("rev-parse", flag).stdout.strip()).resolve().as_posix()
 
     def get_current_worktree_root_dir(self) -> str:
         if not self.__current_worktree_root_dir:

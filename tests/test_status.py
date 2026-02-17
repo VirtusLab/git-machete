@@ -26,7 +26,7 @@ from .mockers_git_repository import (add_file_and_commit, add_remote,
 class TestStatus(BaseTest):
 
     def test_branch_reappears_in_branch_layout(self) -> None:
-        repo_path = normalize_path_for_display(create_repo())
+        create_repo()
         body: str = \
             """
             master
@@ -36,12 +36,12 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        expected_error_message: str = f'{repo_path}/.git/machete, line 6: branch develop re-appears in the branch layout. ' \
+        expected_error_message: str = '.git/machete, line 6: branch develop re-appears in the branch layout. ' \
                                       'Edit the branch layout file manually with git machete edit'
         assert_failure(['status'], expected_error_message)
 
     def test_indent_not_multiply_of_base_indent(self) -> None:
-        repo_path = normalize_path_for_display(create_repo())
+        create_repo()
         body: str = \
             """
             master
@@ -50,12 +50,12 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        expected_error_message: str = f'{repo_path}/.git/machete, line 4: invalid indent <TAB><SPACE>, expected a multiply of <TAB>. ' \
+        expected_error_message: str = '.git/machete, line 4: invalid indent <TAB><SPACE>, expected a multiply of <TAB>. ' \
                                       'Edit the branch layout file manually with git machete edit'
         assert_failure(['status'], expected_error_message)
 
     def test_indent_too_deep(self) -> None:
-        repo_path = normalize_path_for_display(create_repo())
+        create_repo()
         body: str = \
             """
             master
@@ -64,8 +64,7 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        expected_error_message: str = f'{repo_path}/.git/machete, line 4: too much indent ' \
-                                      '(level 3, expected at most 2) for the branch foo. ' \
+        expected_error_message: str = '.git/machete, line 4: too much indent (level 3, expected at most 2) for the branch foo. ' \
                                       'Edit the branch layout file manually with git machete edit'
         assert_failure(['status'], expected_error_message)
 

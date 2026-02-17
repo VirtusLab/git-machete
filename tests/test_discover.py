@@ -4,8 +4,6 @@ import textwrap
 
 from pytest_mock import MockerFixture
 
-from git_machete.utils import normalize_path_for_display
-
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
                       mock_input_returning, overridden_environment, read_file,
@@ -18,8 +16,7 @@ from .mockers_git_repository import (check_out, commit, create_repo,
 class TestDiscover(BaseTest):
 
     def test_discover(self) -> None:
-        local_path, _ = create_repo_with_remote()
-        repo_path = normalize_path_for_display(local_path)
+        create_repo_with_remote()
         assert_failure(['discover'], "No local branches found")
 
         new_branch('master')
@@ -63,7 +60,7 @@ class TestDiscover(BaseTest):
         assert_success(['status'], expected_status_output)
 
         expected_discover_output = (
-            f"""
+            """
             Discovered tree of branch dependencies:
 
               feature1 (untracked)
@@ -76,8 +73,8 @@ class TestDiscover(BaseTest):
                 |
                 o-feature4 * (untracked)
 
-            Saving the above tree to {repo_path}/.git/machete...
-            The existing branch layout file will be backed up as {repo_path}/.git/machete~
+            Saving the above tree to .git/machete...
+            The existing branch layout file will be backed up as .git/machete~
             """
         )
         assert_success(['discover', '--roots=feature1,master', '-y'], expected_discover_output)
@@ -85,7 +82,7 @@ class TestDiscover(BaseTest):
         assert_failure(['discover', '--roots=feature1,lolxd'], "lolxd is not a local branch")
 
     def test_discover_main_branch_and_edit(self, mocker: MockerFixture) -> None:
-        repo_path = normalize_path_for_display(create_repo())
+        create_repo()
         new_branch('feature1')
         commit()
         new_branch('main')
@@ -94,7 +91,7 @@ class TestDiscover(BaseTest):
         commit()
 
         expected_status_output = (
-            f"""
+            """
             Discovered tree of branch dependencies:
 
               main
@@ -103,7 +100,7 @@ class TestDiscover(BaseTest):
 
               feature1
 
-            Save the above tree to {repo_path}/.git/machete? (y, e[dit], N)
+            Save the above tree to .git/machete? (y, e[dit], N)
             """
         )
 
@@ -134,7 +131,7 @@ class TestDiscover(BaseTest):
         )
 
     def test_discover_with_stale_branches(self) -> None:
-        repo_path = normalize_path_for_display(create_repo())
+        create_repo()
         new_branch("develop")
         commit()
         for i in range(20):
@@ -146,7 +143,7 @@ class TestDiscover(BaseTest):
             "only branches checked out at or after ca. YYYY-MM-DD are included.\n"
             "            Use git machete discover --checked-out-since=<date> (where <date> can be e.g. '2 weeks ago' or 2020-06-01) "
             "to change this threshold so that less or more branches are included.\n"
-            f"""
+            """
             Discovered tree of branch dependencies:
 
               develop
@@ -171,12 +168,12 @@ class TestDiscover(BaseTest):
                                 |
                                 o-branch-19 *
 
-            Saving the above tree to {repo_path}/.git/machete...
+            Saving the above tree to .git/machete...
             """
         )
 
     def test_discover_with_merged_branches(self, mocker: MockerFixture) -> None:
-        repo_path = normalize_path_for_display(create_repo())
+        create_repo()
         new_branch("master")
         commit()
         new_branch("feature1")
@@ -197,7 +194,7 @@ class TestDiscover(BaseTest):
         with overridden_environment(GIT_MACHETE_EDITOR='cat'):
             assert_success(
                 ["discover"],
-                f"""
+                """
                 Warn: skipping feature1 since it's merged to another branch and would not have any downstream branches.
 
                 Discovered tree of branch dependencies:
@@ -206,8 +203,8 @@ class TestDiscover(BaseTest):
                   |
                   x-feature2
 
-                Save the above tree to {repo_path}/.git/machete?
-                The existing branch layout file will be backed up as {repo_path}/.git/machete~ (y, e[dit], N)
+                Save the above tree to .git/machete?
+                The existing branch layout file will be backed up as .git/machete~ (y, e[dit], N)
                 """
             )
 

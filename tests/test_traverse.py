@@ -3,7 +3,6 @@ import os
 from pytest_mock import MockerFixture
 
 from git_machete.exceptions import UnderlyingGitException
-from git_machete.utils import normalize_path_for_display
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
@@ -980,12 +979,12 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_managed_branches(self) -> None:
-        repo_path = normalize_path_for_display(create_repo())
+        create_repo()
 
-        expected_error_message = f"""
-          No branches listed in {repo_path}/.git/machete. Consider one of:
+        expected_error_message = """
+          No branches listed in .git/machete. Consider one of:
           * git machete discover
-          * git machete edit or edit machete file manually
+          * git machete edit or edit .git/machete manually
           * git machete github checkout-prs --mine
           * git machete gitlab checkout-mrs --mine"""
         assert_failure(["traverse"], expected_error_message)
