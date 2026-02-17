@@ -297,10 +297,15 @@ class GitContext:
             self.__git_version = (int(raw.group(1)), int(raw.group(2)), int(raw.group(3)))
         return self.__git_version
 
+    def __rev_parse_path(self, flag: str) -> str:
+        # Let's use absolute paths for main/git directories.
+        # Relative paths can lead to subtle bugs when CWD changes between worktrees in traverse.
+        return os.path.abspath(self._popen_git("rev-parse", flag).stdout.strip())
+
     def get_current_worktree_root_dir(self) -> str:
         if not self.__current_worktree_root_dir:
             try:
-                self.__current_worktree_root_dir = self._popen_git("rev-parse", "--show-toplevel").stdout.strip()
+                self.__current_worktree_root_dir = self.__rev_parse_path("--show-toplevel")
             except UnderlyingGitException:
                 raise UnderlyingGitException("Not a git repository")
         return self.__current_worktree_root_dir
@@ -308,7 +313,7 @@ class GitContext:
     def get_current_worktree_git_dir(self) -> str:
         if not self.__current_worktree_git_dir:
             try:
-                self.__current_worktree_git_dir = self._popen_git("rev-parse", "--git-dir").stdout.strip()
+                self.__current_worktree_git_dir = self.__rev_parse_path("--git-dir")
             except UnderlyingGitException:
                 raise UnderlyingGitException("Not a git repository")
         return self.__current_worktree_git_dir
@@ -344,7 +349,7 @@ class GitContext:
     def get_main_worktree_git_dir(self) -> str:
         if not self.__main_worktree_git_dir:
             try:
-                git_dir: str = self._popen_git("rev-parse", "--git-dir").stdout.strip()
+                git_dir: str = self.__rev_parse_path("--git-dir")
                 git_dir_parts = Path(git_dir).parts
                 if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees':
                     self.__main_worktree_git_dir = os.path.join(*git_dir_parts[:-2])

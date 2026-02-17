@@ -3,6 +3,8 @@ import sys
 import pytest
 from pytest_mock import MockerFixture
 
+from git_machete.utils import normalize_path_for_display
+
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
                       overridden_environment, read_file)
@@ -60,11 +62,11 @@ class TestEdit(BaseTest):
 
     def test_edit_no_variant_matches(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, "git_machete.utils.find_executable", lambda _executable: None)
-        create_repo()
+        repo_path = normalize_path_for_display(create_repo())
         set_git_config_key("core.editor", "lolxd-this-doesnt-exist")
 
         with overridden_environment(GIT_MACHETE_EDITOR="  ", GIT_EDITOR="lolxd-this-doesnt-exist", VISUAL="", EDITOR=""):
             assert_failure(
                 ["edit"],
-                "Cannot determine editor. Set GIT_MACHETE_EDITOR environment variable or edit .git/machete directly."
+                f"Cannot determine editor. Set GIT_MACHETE_EDITOR environment variable or edit {repo_path}/.git/machete directly."
             )

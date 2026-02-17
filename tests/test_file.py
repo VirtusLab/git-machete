@@ -3,6 +3,7 @@ from pathlib import Path
 from tempfile import mkdtemp
 
 from git_machete.exceptions import UnderlyingGitException
+from git_machete.utils import normalize_path_for_display
 
 from .base_test import BaseTest
 from .mockers import assert_failure, execute, launch_command
@@ -56,6 +57,6 @@ class TestFile(BaseTest):
         assert_failure(["file", "--debug"], "Not a git repository", expected_type=UnderlyingGitException)
 
     def test_file_when_git_machete_is_a_directory(self) -> None:
-        create_repo()
+        repo_path = normalize_path_for_display(create_repo())
         execute(f"mkdir .git{os.path.sep}machete")
-        assert_failure(["file"], ".git/machete is a directory rather than a regular file, aborting")
+        assert_failure(["file"], f"{repo_path}/.git/machete is a directory rather than a regular file, aborting")

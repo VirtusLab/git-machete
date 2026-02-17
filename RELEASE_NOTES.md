@@ -3,6 +3,7 @@
 ## New in git-machete 3.39.1
 
 - fixed: suggested `update` command in deprecation message for `fork-point --override-to=...` and `--override-to-inferred`
+- fixed: subtle bugs related to relative main/git directory paths when switching worktrees in `traverse`
 
 ## New in git-machete 3.39.0
 

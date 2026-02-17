@@ -187,7 +187,7 @@ class MacheteClient:
             textwrap.dedent(f"""
                 No branches listed in {self._branch_layout_file_path}. Consider one of:
                 * `git machete discover`
-                * `git machete edit` or edit {self._branch_layout_file_path} manually
+                * `git machete edit` or edit `machete` file manually
                 * `git machete github checkout-prs --mine`
                 * `git machete gitlab checkout-mrs --mine`"""[1:]))
 

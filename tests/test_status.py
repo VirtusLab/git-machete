@@ -5,6 +5,8 @@ import textwrap
 import pytest
 from pytest_mock import MockerFixture
 
+from git_machete.utils import normalize_path_for_display
+
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, execute,
                       execute_ignoring_exit_code,
@@ -24,7 +26,7 @@ from .mockers_git_repository import (add_file_and_commit, add_remote,
 class TestStatus(BaseTest):
 
     def test_branch_reappears_in_branch_layout(self) -> None:
-        create_repo()
+        repo_path = normalize_path_for_display(create_repo())
         body: str = \
             """
             master
@@ -34,12 +36,12 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        expected_error_message: str = '.git/machete, line 6: branch develop re-appears in the branch layout. ' \
+        expected_error_message: str = f'{repo_path}/.git/machete, line 6: branch develop re-appears in the branch layout. ' \
                                       'Edit the branch layout file manually with git machete edit'
         assert_failure(['status'], expected_error_message)
 
     def test_indent_not_multiply_of_base_indent(self) -> None:
-        create_repo()
+        repo_path = normalize_path_for_display(create_repo())
         body: str = \
             """
             master
@@ -48,12 +50,12 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        expected_error_message: str = '.git/machete, line 4: invalid indent <TAB><SPACE>, expected a multiply of <TAB>. ' \
+        expected_error_message: str = f'{repo_path}/.git/machete, line 4: invalid indent <TAB><SPACE>, expected a multiply of <TAB>. ' \
                                       'Edit the branch layout file manually with git machete edit'
         assert_failure(['status'], expected_error_message)
 
     def test_indent_too_deep(self) -> None:
-        create_repo()
+        repo_path = normalize_path_for_display(create_repo())
         body: str = \
             """
             master
@@ -62,7 +64,8 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        expected_error_message: str = '.git/machete, line 4: too much indent (level 3, expected at most 2) for the branch foo. ' \
+        expected_error_message: str = f'{repo_path}/.git/machete, line 4: too much indent ' \
+                                      '(level 3, expected at most 2) for the branch foo. ' \
                                       'Edit the branch layout file manually with git machete edit'
         assert_failure(['status'], expected_error_message)
 
@@ -176,7 +179,7 @@ class TestStatus(BaseTest):
 
     @pytest.mark.skipif(sys.platform == "win32", reason="Windows doesn't distinguish between executable and non-executable files")
     def test_status_advice_ignored_non_executable_hook(self) -> None:
-        create_repo()
+        repo_path = normalize_path_for_display(create_repo())
         new_branch('master')
         commit()
         new_branch('develop')
@@ -192,8 +195,8 @@ class TestStatus(BaseTest):
         write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
         assert_success(
             ["status"],
-            """
-            hint: The '.git/hooks/machete-status-branch' hook was ignored because it's not set as executable.
+            f"""
+            hint: The '{repo_path}/.git/hooks/machete-status-branch' hook was ignored because it's not set as executable.
             hint: You can disable this warning with `git config advice.ignoredHook false`.
               master
               |
