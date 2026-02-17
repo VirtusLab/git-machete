@@ -11,8 +11,8 @@ from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
 from . import utils
 from .constants import MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
 from .exceptions import UnderlyingGitException, UnexpectedMacheteException
-from .utils import (AnsiEscapeCodes, CommandResult, colored, debug, fmt,
-                    hex_repr, join_paths_posix, slurp_file)
+from .utils import (AnsiEscapeCodes, CommandResult, abspath_posix, colored,
+                    debug, fmt, hex_repr, join_paths_posix, slurp_file)
 
 
 class AnyRevision(str):
@@ -300,10 +300,7 @@ class GitContext:
     def __rev_parse_path(self, flag: str) -> str:
         # Let's use absolute paths for main/git directories.
         # Relative paths can lead to subtle bugs when CWD changes between worktrees in traverse.
-        # It needs to be pathlib and not os.path,
-        # since we need to retain forward slashes for compatibility with what git itself returns.
-        from pathlib import Path
-        return Path(self._popen_git("rev-parse", flag).stdout.strip()).resolve().as_posix()
+        return abspath_posix(self._popen_git("rev-parse", flag).stdout.strip())
 
     def get_current_worktree_root_dir(self) -> str:
         if not self.__current_worktree_root_dir:
@@ -382,33 +379,33 @@ class GitContext:
         result = self._popen_git("worktree", "list", "--porcelain")
         worktrees: Dict[LocalBranchShortName, str] = {}
 
-        current_worktree_path: Optional[str] = None
-        current_branch: Optional[LocalBranchShortName] = None
+        latest_worktree_path: Optional[str] = None
+        latest_branch: Optional[LocalBranchShortName] = None
         is_detached: bool = False
 
         for line in result.stdout.strip().splitlines():
             if line.startswith('worktree '):
-                current_worktree_path = line[len('worktree '):]
+                latest_worktree_path = line[len('worktree '):]
             elif line.startswith('branch '):
                 # Format: "branch refs/heads/<branch-name>"
                 branch_ref = line[len('branch '):]
-                current_branch = LocalBranchFullName.of(branch_ref).to_short_name()
+                latest_branch = LocalBranchFullName.of(branch_ref).to_short_name()
                 is_detached = False
             elif line.startswith('detached'):
                 is_detached = True
-                current_branch = None
+                latest_branch = None
             elif line == '':
                 # Empty line marks end of worktree entry
                 # Only add worktrees that have a branch (not in detached HEAD state)
-                if current_worktree_path and current_branch is not None and not is_detached:
-                    worktrees[current_branch] = current_worktree_path
-                current_worktree_path = None
-                current_branch = None
+                if latest_worktree_path and latest_branch is not None and not is_detached:
+                    worktrees[latest_branch] = latest_worktree_path
+                latest_worktree_path = None
+                latest_branch = None
                 is_detached = False
 
         # Handle last entry if no trailing newline
-        if current_worktree_path and current_branch is not None and not is_detached:
-            worktrees[current_branch] = current_worktree_path
+        if latest_worktree_path and latest_branch is not None and not is_detached:
+            worktrees[latest_branch] = latest_worktree_path
 
         return worktrees
 
