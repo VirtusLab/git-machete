@@ -25,7 +25,8 @@ from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
                                         SyncToRemoteStatus)
 from git_machete.utils import (AnsiEscapeCodes, PopenResult, bold, colored,
                                debug, dim, excluding, flat_map, fmt,
-                               get_pretty_choices, get_second, tupled,
+                               get_pretty_choices, get_second,
+                               join_paths_posix, relpath_posix, tupled,
                                underline, warn)
 
 
@@ -118,12 +119,12 @@ class MacheteClient:
             machete_file_directory = self._git.get_main_worktree_git_dir()
         else:
             machete_file_directory = self._git.get_current_worktree_git_dir()
-        abs_path = os.path.join(machete_file_directory, 'machete')
+        abs_path = join_paths_posix(machete_file_directory, 'machete')
         # Make the path relative to the current working directory, if possible.
         # This is more convenient for display purposes, and shouldn't introduce any problems in traverse
         # (since machete file path is only retrieved at the start, before any potential CWD changes)
         try:
-            return os.path.relpath(abs_path, start=os.getcwd())
+            return relpath_posix(abs_path)
         except Exception:  # pragma: no cover
             # If for some reason relpath fails, fall back to absolute path.
             return abs_path

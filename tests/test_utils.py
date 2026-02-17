@@ -39,11 +39,11 @@ class TestUtils:
     def test_hex_repr(self) -> None:
         assert utils.hex_repr("Hello, world!") == "48:65:6c:6c:6f:2c:20:77:6f:72:6c:64:21"
 
-    def test_normalize_path_for_display_general(self) -> None:
-        """Test that normalize_path_for_display returns an absolute path with forward slashes."""
+    def test_abspath_posix_general(self) -> None:
+        """Test that abspath_posix returns an absolute path with forward slashes."""
         # Create a temporary directory to ensure we're working with real paths
         with tempfile.TemporaryDirectory() as tmpdir:
-            normalized = utils.normalize_path_for_display(tmpdir)
+            normalized = utils.abspath_posix(tmpdir)
             # Should be absolute
             assert os.path.isabs(normalized)
             # Should use forward slashes (no backslashes)
@@ -52,15 +52,15 @@ class TestUtils:
             assert os.path.exists(normalized)
 
     @pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific test for backslash conversion")
-    def test_normalize_path_for_display_windows_backslashes(self) -> None:
+    def test_abspath_posix_windows_backslashes(self) -> None:
         """Test that backslashes are converted to forward slashes on Windows."""
-        # On Windows, os.path.realpath() returns paths with backslashes
+        # On Windows, Path.resolve() returns paths with backslashes
         with tempfile.TemporaryDirectory() as tmpdir:
             # tmpdir will have backslashes on Windows (e.g., C:\Users\...)
             # Verify it contains backslashes before normalization
             assert '\\' in tmpdir or '/' in tmpdir  # Windows paths have one or the other
 
-            normalized = utils.normalize_path_for_display(tmpdir)
+            normalized = utils.abspath_posix(tmpdir)
 
             # After normalization, should have forward slashes only
             assert '\\' not in normalized
@@ -69,7 +69,7 @@ class TestUtils:
             assert normalized[1:3] == ':/'
 
     @pytest.mark.skipif(sys.platform != "darwin", reason="macOS-specific test for /private prefix")
-    def test_normalize_path_for_display_macos_private_prefix(self) -> None:
+    def test_abspath_posix_macos_private_prefix(self) -> None:
         """Test that /private prefix is consistently added on macOS for /tmp and /var paths."""
         # On macOS, /tmp and /var are symlinks to /private/tmp and /private/var
         # tempfile.mkdtemp() may return paths with or without /private prefix
@@ -77,20 +77,20 @@ class TestUtils:
             # tmpdir is in /tmp or /var on macOS
             # It might be returned as /var/folders/... or /private/var/folders/...
 
-            normalized = utils.normalize_path_for_display(tmpdir)
+            normalized = utils.abspath_posix(tmpdir)
 
-            # After normalization with realpath(), should have /private prefix if in /var or /tmp
-            # (realpath resolves the symlink)
+            # After normalization with resolve(), should have /private prefix if in /var or /tmp
+            # (resolve resolves the symlink)
             if '/tmp' in tmpdir or '/var' in tmpdir:
                 # Should start with /private after normalization
                 assert normalized.startswith('/private/') or normalized.startswith('/nix/'), \
                     f"Expected path to start with /private/ or /nix/ (for Nix builds), got: {normalized}"
 
     @pytest.mark.skipif(sys.platform == "win32", reason="Unix-specific test for absolute paths")
-    def test_normalize_path_for_display_unix_absolute_paths(self) -> None:
+    def test_abspath_posix_unix_absolute_paths(self) -> None:
         """Test that paths start with / on Unix systems."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            normalized = utils.normalize_path_for_display(tmpdir)
+            normalized = utils.abspath_posix(tmpdir)
             # Should start with / on Unix
             assert normalized.startswith('/')
             # Should not contain backslashes

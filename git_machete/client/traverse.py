@@ -12,10 +12,9 @@ from git_machete.git_config_keys import \
     TRAVERSE_WHEN_BRANCH_NOT_CHECKED_OUT_IN_ANY_WORKTREE
 from git_machete.git_operations import (GitContext, LocalBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (bold, flat_map, fmt, get_pretty_choices,
-                               get_right_arrow, green_ok,
-                               normalize_path_for_display, print_no_newline,
-                               warn)
+from git_machete.utils import (abspath_posix, bold, flat_map, fmt,
+                               get_pretty_choices, get_right_arrow, green_ok,
+                               print_no_newline, warn)
 
 
 class TraverseReturnTo(ParsableEnum):
@@ -528,7 +527,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             final_worktree_path = self.__worktree_root_dir_for_branch.get(final_branch)
             if final_worktree_path and initial_worktree_root != final_worktree_path:
                 # Final branch is checked out in a worktree different from where we started
-                normalized_path = normalize_path_for_display(final_worktree_path)
+                normalized_path = abspath_posix(final_worktree_path)
                 warn(
                     f"branch {bold(final_branch)} is checked out in worktree at {bold(normalized_path)}\n"
                     f"You may want to change directory with:\n"

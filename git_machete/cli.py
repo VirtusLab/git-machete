@@ -640,7 +640,7 @@ def launch_internal(orig_args: List[str]) -> None:
         elif cmd == "file":
             # No need to read branch layout file.
             file_client = MacheteClient(git)
-            print(os.path.abspath(file_client.branch_layout_file_path))
+            print(utils.abspath_posix(file_client.branch_layout_file_path))
         elif cmd == "fork-point":
             fork_point_client = ForkPointMacheteClient(git)
             fork_point_client.read_branch_layout_file()
@@ -973,10 +973,10 @@ def launch_internal(orig_args: List[str]) -> None:
         if initial_current_directory and not utils.does_directory_exist(initial_current_directory):
             nearest_existing_parent_directory = initial_current_directory
             while not utils.does_directory_exist(nearest_existing_parent_directory):
-                nearest_existing_parent_directory = os.path.join(
+                nearest_existing_parent_directory = utils.join_paths_posix(
                     nearest_existing_parent_directory, os.path.pardir)
             warn(f"current directory {initial_current_directory} no longer exists, "
-                 f"the nearest existing parent directory is {os.path.abspath(nearest_existing_parent_directory)}")
+                 f"the nearest existing parent directory is {utils.abspath_posix(nearest_existing_parent_directory)}")
 
 
 def main() -> None:

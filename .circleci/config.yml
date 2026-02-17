@@ -61,6 +61,7 @@ jobs:
             pip3 install tox
 
             # For enforce-shell-scripts-pass-shellcheck.sh
+            sudo apt-get update
             sudo apt-get install shellcheck
 
             # For enforce-links-correct.sh

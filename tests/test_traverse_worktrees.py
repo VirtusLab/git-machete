@@ -4,7 +4,7 @@ import subprocess
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils import normalize_path_for_display
+from git_machete.utils import abspath_posix
 
 from .base_test import BaseTest
 from .mockers import (assert_success, launch_command, mock_input_returning,
@@ -68,8 +68,8 @@ class TestTraverseWorktrees(BaseTest):
 
         # Now run traverse - it should cd into the worktrees automatically
         # Using -y flag so no need to mock input
-        normalized_feature_1_worktree = normalize_path_for_display(feature_1_worktree)
-        normalized_feature_2_worktree = normalize_path_for_display(feature_2_worktree)
+        normalized_feature_1_worktree = abspath_posix(feature_1_worktree)
+        normalized_feature_2_worktree = abspath_posix(feature_2_worktree)
 
         # Assert the full output to verify proper messaging:
         # - When branch is not checked out anywhere: "Checking out ... OK"
@@ -171,7 +171,7 @@ class TestTraverseWorktrees(BaseTest):
         # 1. Checkout root (not in any worktree) in main worktree - triggers cache update
         # 2. Visit branch-1 (already in linked worktree, but no action needed so don't cd)
         # 3. Checkout branch-2 (not in any worktree) in main worktree - triggers cache update
-        normalized_local_path = normalize_path_for_display(local_path)
+        normalized_local_path = abspath_posix(local_path)
 
         # This test verifies the worktree cache update logic and cd'ing from linked to main worktree
         assert_success(
@@ -304,7 +304,7 @@ class TestTraverseWorktrees(BaseTest):
 
         # Verify the warning is emitted
         assert "branch branch-2 is checked out in worktree at" in output
-        normalized_branch_2_worktree = normalize_path_for_display(branch_2_worktree)
+        normalized_branch_2_worktree = abspath_posix(branch_2_worktree)
         assert f"You may want to change directory with:\n  cd {normalized_branch_2_worktree}" in output
 
     def test_traverse_no_warn_when_final_branch_in_same_worktree(self) -> None:
@@ -364,7 +364,7 @@ class TestTraverseWorktrees(BaseTest):
         check_out("root")
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
 
-        normalized_branch_1_worktree = normalize_path_for_display(branch_1_worktree)
+        normalized_branch_1_worktree = abspath_posix(branch_1_worktree)
 
         # This corner case tests that when user quits mid-traverse,
         # the final warning is shown if ended in a different worktree
@@ -420,8 +420,8 @@ class TestTraverseWorktrees(BaseTest):
         # cd into root linked worktree to start traverse from there
         os.chdir(root_worktree)
 
-        normalized_local_path = normalize_path_for_display(local_path)
-        normalized_branch_2_worktree = normalize_path_for_display(branch_2_worktree)
+        normalized_local_path = abspath_posix(local_path)
+        normalized_branch_2_worktree = abspath_posix(branch_2_worktree)
 
         # First test: default behavior (without config key set)
         # We're in root linked worktree

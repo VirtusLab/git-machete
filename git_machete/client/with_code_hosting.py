@@ -18,7 +18,8 @@ from git_machete.git_operations import (GitContext, GitFormatPatterns,
                                         SyncToRemoteStatus)
 from git_machete.utils import (bold, colored_yes_no, debug, find_or_none, fmt,
                                get_pretty_choices, get_right_arrow, green_ok,
-                               print_no_newline, slurp_file, warn)
+                               join_paths_posix, print_no_newline, slurp_file,
+                               warn)
 
 
 class PRDescriptionIntroStyle(ParsableEnum):
@@ -353,7 +354,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
             if os.path.isfile(machete_description_path):
                 description = slurp_file(machete_description_path)
             else:
-                code_hosting_description_paths = [os.path.join(self._git.get_current_worktree_root_dir(), *path)
+                code_hosting_description_paths = [join_paths_posix(self._git.get_current_worktree_root_dir(), *path)
                                                   for path in spec.pr_description_paths]
                 existing = find_or_none(os.path.isfile, code_hosting_description_paths)
                 if existing:

@@ -12,7 +12,7 @@ from . import utils
 from .constants import MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
 from .exceptions import UnderlyingGitException, UnexpectedMacheteException
 from .utils import (AnsiEscapeCodes, CommandResult, colored, debug, fmt,
-                    hex_repr, slurp_file)
+                    hex_repr, join_paths_posix, slurp_file)
 
 
 class AnyRevision(str):
@@ -322,7 +322,7 @@ class GitContext:
         return self.__current_worktree_git_dir
 
     def get_current_worktree_git_subpath(self, *fragments: str) -> str:
-        return os.path.join(self.get_current_worktree_git_dir(), *fragments)
+        return join_paths_posix(self.get_current_worktree_git_dir(), *fragments)
 
     def get_main_worktree_root_dir(self) -> str:
         """
@@ -355,7 +355,7 @@ class GitContext:
                 git_dir: str = self.__rev_parse_path("--git-dir")
                 git_dir_parts = Path(git_dir).parts
                 if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees':
-                    self.__main_worktree_git_dir = os.path.join(*git_dir_parts[:-2])
+                    self.__main_worktree_git_dir = join_paths_posix(*git_dir_parts[:-2])
                     debug(f'git dir pointing to {git_dir} - we are in a worktree; '
                           f'using {self.__main_worktree_git_dir} as the effective git dir instead')
                 else:
@@ -365,7 +365,8 @@ class GitContext:
         return self.__main_worktree_git_dir
 
     def get_main_worktree_git_subpath(self, *fragments: str) -> str:
-        return os.path.join(self.get_main_worktree_git_dir(), *fragments)
+        # Let's use /-style paths even on Windows, for consistency with what git itself returns.
+        return join_paths_posix(self.get_main_worktree_git_dir(), *fragments)
 
     def get_worktree_root_dirs_by_branch(self) -> Dict[LocalBranchShortName, str]:
         """
@@ -1073,7 +1074,7 @@ class GitContext:
 
     def get_hook_path(self, hook_name: str) -> str:
         hook_dir: str = self.get_config_attr_or_none("core.hooksPath") or self.get_main_worktree_git_subpath("hooks")
-        return os.path.join(hook_dir, hook_name)
+        return join_paths_posix(hook_dir, hook_name)
 
     def check_hook_executable(self, hook_path: str) -> bool:
         if not os.path.isfile(hook_path):

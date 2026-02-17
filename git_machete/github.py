@@ -18,7 +18,8 @@ from git_machete.code_hosting import (CodeHostingClient,
                                       PullRequest)
 from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import bold, compact_dict, debug, popen_cmd, warn
+from git_machete.utils import (bold, compact_dict, debug, join_paths_posix,
+                               popen_cmd, warn)
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
@@ -122,7 +123,7 @@ class GitHubToken(NamedTuple):
     def __get_token_from_hub(cls, domain: str) -> Optional["GitHubToken"]:
         debug("4. Trying to find token via `hub` GitHub CLI...")
         home_path: str = str(Path.home())
-        config_hub_path: str = os.path.join(home_path, ".config", "hub")
+        config_hub_path: str = join_paths_posix(home_path, ".config", "hub")
         if os.path.isfile(config_hub_path):
             # ~/.config/hub is a yaml file, with a structure similar to:
             #
@@ -213,7 +214,7 @@ class GitHubClient(CodeHostingClient):
                     raise MacheteException(error_reason)
                 elif 'Reviews may only be requested from collaborators.' in error_reason:
                     print()
-                    warn(f"there are some invalid reviewers (non-collaborators) in .git{os.path.sep}info{os.path.sep}reviewers file.\n"
+                    warn("there are some invalid reviewers (non-collaborators) in .git/info/reviewers file.\n"
                          "Skipped adding reviewers to the pull request.")
                 else:
                     raise UnexpectedMacheteException(

@@ -6,6 +6,7 @@ import subprocess
 import sys
 import textwrap
 import time
+from pathlib import Path, PurePosixPath
 from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, Optional,
                     Sequence, Set, Tuple, TypeVar)
 
@@ -45,31 +46,36 @@ def get_terminal_height() -> Optional[int]:
         return None
 
 
-def normalize_path_for_display(path: str) -> str:
+def join_paths_posix(*paths: str) -> str:
     """
-    Normalize a filesystem path for cross-platform display in user messages.
+    Join path components using forward slashes (POSIX-style), regardless of platform.
 
-    This function performs two normalizations:
-    1. Resolves symlinks and relative paths to absolute canonical paths via os.path.realpath()
-    2. Converts backslashes to forward slashes for consistency
-
-    Why os.path.realpath() is needed:
-    - On macOS, common directories like /tmp and /var are symlinks to /private/tmp and /private/var
-    - Git operations (like `git worktree list`) resolve these symlinks and return /private/... paths
-    - Python's tempfile module may return paths with or without /private depending on how they're obtained
-    - Without realpath(), path comparisons fail: /var/folders/... != /private/var/folders/...
-    - realpath() canonicalizes both to /private/var/folders/... ensuring consistent comparisons
-
-    Why forward slashes:
-    - Forward slashes work in all Windows environments (Git Bash, PowerShell, CMD)
-    - Git itself uses forward slashes on Windows
-    - Provides consistent output across all platforms
-    - While Git Bash technically prefers /c/foo/bar, c:/foo/bar also works and is more universal
-
-    Returns:
-        Normalized path with forward slashes that works across all platforms
+    This ensures consistent path representation across all platforms, matching
+    how Git itself represents paths. Forward slashes work in all Windows
+    environments (Git Bash, PowerShell, CMD) and are the standard on Unix-like systems.
     """
-    return os.path.realpath(path).replace('\\', '/')
+    return str(PurePosixPath(*paths))
+
+
+def abspath_posix(path: str) -> str:
+    """
+    Return an absolute path using POSIX-style forward slashes.
+
+    This ensures consistent path representation across all platforms, matching
+    how Git itself represents paths.
+    """
+    return Path(path).resolve().as_posix()
+
+
+def relpath_posix(path: str) -> str:
+    """
+    Return a relative filepath to path from the CWD, using POSIX-style forward slashes.
+
+    This ensures consistent path representation across all platforms, matching
+    how Git itself represents paths.
+    """
+    rel = os.path.relpath(path)
+    return Path(rel).as_posix()
 
 
 def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
@@ -113,7 +119,7 @@ def get_second(pair: Tuple[Any, T]) -> T:
 def does_directory_exist(path: str) -> bool:
     try:
         # Note that os.path.isdir itself (without os.path.abspath) isn't reliable
-        # since it returns a false positive (True) for the current directory when if it doesn't exist
+        # since it returns a false positive (True) for the current directory when it doesn't exist
         return os.path.isdir(os.path.abspath(path))
     except OSError:  # pragma: no cover
         return False

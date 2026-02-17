@@ -46,13 +46,9 @@ def launch_command_capturing_output_and_exception(*cmd_and_args: str) -> Tuple[O
                     utils.displayed_warnings = set()
                     cli.launch(list(cmd_and_args))
                 output = out.getvalue()
-                if sys.platform == 'win32':
-                    output = output.replace('.git\\machete', '.git/machete')
                 return output, None
         except BaseException as e:
             output = out.getvalue()
-            if sys.platform == 'win32':
-                output = output.replace('.git\\machete', '.git/machete')
             return output, e
 
 
@@ -63,8 +59,6 @@ def launch_command(*cmd_and_args: str) -> str:
                 utils.displayed_warnings = set()
                 cli.launch(list(cmd_and_args))
         output = out.getvalue()
-        if sys.platform == 'win32':
-            output = output.replace('.git\\machete', '.git/machete')
         return output
 
 
@@ -87,8 +81,6 @@ def assert_failure(cmd_and_args: Iterable[str], expected_message: str, expected_
         launch_command(*cmd_and_args)
     error_message = ei.value.msg  # type: ignore[attr-defined]
     error_message = re.sub(" +$", "", error_message, flags=re.MULTILINE)
-    if sys.platform == 'win32':
-        error_message = error_message.replace('.git\\machete', '.git/machete')
     assert error_message == expected_message
 
 

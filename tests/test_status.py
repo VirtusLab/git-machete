@@ -5,7 +5,7 @@ import textwrap
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils import normalize_path_for_display
+from git_machete.utils import abspath_posix
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, execute,
@@ -178,7 +178,7 @@ class TestStatus(BaseTest):
 
     @pytest.mark.skipif(sys.platform == "win32", reason="Windows doesn't distinguish between executable and non-executable files")
     def test_status_advice_ignored_non_executable_hook(self) -> None:
-        repo_path = normalize_path_for_display(create_repo())
+        repo_path = abspath_posix(create_repo())
         new_branch('master')
         commit()
         new_branch('develop')
