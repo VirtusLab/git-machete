@@ -6,8 +6,8 @@ from textwrap import dedent, indent
 from typing import List
 
 
-def resolve_includes(rst_: str, docs_source_path_: str) -> str:
-    matches = re.findall(r'(.*)\.\. include:: (.*)\n(.* :(.*): ([0-9]*)\n)?(.* :(.*): ([0-9]*)\n)?', rst_)
+def resolve_includes(rst_content: str, docs_source_dir: str) -> str:
+    matches = re.findall(r'(.*)\.\. include:: (.*)\n(.* :(.*): ([0-9]*)\n)?(.* :(.*): ([0-9]*)\n)?', rst_content)
     # example matches:
     #     .. include:: status_extraSpaceBeforeBranchName_config_key.rst
     #
@@ -17,27 +17,27 @@ def resolve_includes(rst_: str, docs_source_path_: str) -> str:
     #     .. include:: status_extraSpaceBeforeBranchName_config_key.rst
     #         :start-line: 2
     #         :end-line: 6
-    for indent_, included_file, option_1_str, option_1, option_1_value, option_2_str, option_2, option_2_value in matches:
-        with open(f'{docs_source_path_}/{included_file}', 'r') as handle:
+    for include_indent, included_file, opt1_line, opt1_key, opt1_value, opt2_line, opt2_key, opt2_value in matches:
+        with open(f'{docs_source_dir}/{included_file}', 'r') as handle:
             include_text = handle.readlines()
-        replace_from = f'{indent_}.. include:: {included_file}'
+        replace_from = f'{include_indent}.. include:: {included_file}'
 
         start_line, end_line = 0, len(include_text)
-        if option_1 == 'start-line':
-            start_line = int(option_1_value)
-            replace_from += f'\n{option_1_str}'
-            if option_2 == 'end-line':
-                end_line = int(option_2_value)
-                replace_from += option_2_str
-        elif option_1 == 'end-line':
-            end_line = int(option_1_value)
-            replace_from += f'\n{option_1_str}'
+        if opt1_key == 'start-line':
+            start_line = int(opt1_value)
+            replace_from += f'\n{opt1_line}'
+            if opt2_key == 'end-line':
+                end_line = int(opt2_value)
+                replace_from += opt2_line
+        elif opt1_key == 'end-line':
+            end_line = int(opt1_value)
+            replace_from += f'\n{opt1_line}'
 
         include_text = include_text[start_line:end_line]
         include_text = takewhile(lambda line: not line == "..\n", include_text)
-        replace_to = indent(dedent(''.join(include_text)), indent_)
-        rst_ = rst_.replace(replace_from, replace_to, 1)
-    return rst_
+        replace_to = indent(dedent(''.join(include_text)), include_indent)
+        rst_content = rst_content.replace(replace_from, replace_to, 1)
+    return rst_content
 
 
 HEADER = 0
@@ -172,7 +172,7 @@ if __name__ == '__main__':
     for command, file in commands_and_file_paths.items():
         with open(file, 'r') as f:
             rst = f.read()
-        rst = resolve_includes(rst_=rst, docs_source_path_=docs_source_path)
+        rst = resolve_includes(rst_content=rst, docs_source_dir=docs_source_path)
         plain_text = rst2txt(rst).rstrip()
         output_text += f'    "{command}": """\n' + indent(plain_text, '        ') + '\n   """,\n'
         output_text = re.sub('\n{2,}', '\n\n', output_text)  # noqa: FS003

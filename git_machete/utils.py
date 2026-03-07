@@ -174,7 +174,7 @@ def debug(msg: str) -> None:
 
     args_to_be_redacted = {'access_token', 'password', 'secret', 'token'}
     for arg, value in values.items():
-        if arg in args_to_be_redacted or any(value_ in str(value) for value_ in CODE_HOSTING_TOKEN_PREFIXES):
+        if arg in args_to_be_redacted or any(prefix in str(value) for prefix in CODE_HOSTING_TOKEN_PREFIXES):
             values[arg] = '***'
         elif type(value) is dict:
             values[arg] = compact_dict(value)

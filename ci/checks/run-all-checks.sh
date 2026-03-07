@@ -54,6 +54,7 @@ _ prohibit-strings-split-without-delimiter
 _ prohibit-strings-with-backslash-continuation
 _ prohibit-strings-with-useless-interpolations
 _ prohibit-tab-character
+_ prohibit-trailing-underscore-in-identifiers
 _ prohibit-trailing-whitespace
 
 if [[ $failed ]]; then

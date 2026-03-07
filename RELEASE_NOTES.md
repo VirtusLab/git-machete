@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.39.2
+
 ## New in git-machete 3.39.1
 
 - changed: whenever git-machete prints a path on Windows, the path is now POSIX-compatible (with `/`)

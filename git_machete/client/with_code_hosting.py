@@ -107,9 +107,12 @@ class MacheteClientWithCodeHosting(MacheteClient):
         self.save_branch_layout_file()
 
     def __get_url_for_remote(self) -> Dict[str, str]:
-        return {
-            remote: url for remote, url in ((remote_, self._git.get_url_of_remote(remote_)) for remote_ in self._git.get_remotes()) if url
-        }
+        def iter_remote_url_pairs() -> Iterator[Tuple[str, str]]:
+            for remote_name in self._git.get_remotes():
+                url = self._git.get_url_of_remote(remote_name)
+                if url:
+                    yield remote_name, url
+        return dict(iter_remote_url_pairs())
 
     def __get_remote_name_for_org_and_repo(self, domain: str, org_and_repo: OrganizationAndRepository) -> Optional[str]:
         """
@@ -566,7 +569,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
             print(f"Updating descriptions of other {spec.pr_short_name}s...")
             applicable_prs: List[PullRequest] = self._get_applicable_pull_requests(related_to=pr_with_original_base) \
                 + self._get_applicable_pull_requests(related_to=pr)
-            applicable_prs = [pr_ for pr_ in applicable_prs if pr_.number != pr.number]
+            applicable_prs = [other_pr for other_pr in applicable_prs if other_pr.number != pr.number]
 
             for pr in applicable_prs:
                 new_description = self._get_updated_pull_request_description(pr)
@@ -983,7 +986,7 @@ class MacheteClientWithCodeHosting(MacheteClient):
             # Always update the entire stack (both upstream and downstream) when --related is used,
             # regardless of prDescriptionIntroStyle setting.
             result = list(reversed(self.__get_upwards_path_including_pr(related_to)))
-            result += [pr_ for pr_, _ in self.__get_downwards_tree_excluding_pr(related_to)]
+            result += [downstream_pr for downstream_pr, _ in self.__get_downwards_tree_excluding_pr(related_to)]
             return result
 
         raise UnexpectedMacheteException("All params passed to __get_applicable_pull_requests are empty.")

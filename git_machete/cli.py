@@ -793,10 +793,10 @@ def launch_internal(orig_args: List[str]) -> None:
                 interactive_client = GoInteractiveMacheteClient(git)
                 interactive_client.read_branch_layout_file()
                 interactive_client.expect_at_least_one_managed_branch()
-                dest_ = interactive_client.go_interactive(current_branch=current_branch_or_none)
-                if dest_ is not None and dest_ != current_branch_or_none:
-                    print_no_newline(f"Checking out {bold(dest_)}... ")
-                    git.checkout(dest_)
+                selected_branch = interactive_client.go_interactive(current_branch=current_branch_or_none)
+                if selected_branch is not None and selected_branch != current_branch_or_none:
+                    print_no_newline(f"Checking out {bold(selected_branch)}... ")
+                    git.checkout(selected_branch)
                     print(green_ok())
         elif cmd == "is-managed":
             is_managed_client = MacheteClient(git)

@@ -287,25 +287,25 @@ class MacheteClient:
             print(f"Warning: sliding {what} out of the branch layout file", file=sys.stderr)
             ans = 'y'
 
-        def recursive_slide_out_invalid_branches(branch_: LocalBranchShortName) -> List[LocalBranchShortName]:
+        def recursive_slide_out_invalid_branches(branch: LocalBranchShortName) -> List[LocalBranchShortName]:
             new_down_branches = flat_map(
-                recursive_slide_out_invalid_branches, self.down_branches_for(branch_) or [])
-            if branch_ in invalid_branches:
-                if branch_ in self._state.down_branches_for:
-                    del self._state.down_branches_for[branch_]
-                if branch_ in self._state.annotations:
-                    del self._state.annotations[branch_]
-                if branch_ in self._state.up_branch_for:
+                recursive_slide_out_invalid_branches, self.down_branches_for(branch) or [])
+            if branch in invalid_branches:
+                if branch in self._state.down_branches_for:
+                    del self._state.down_branches_for[branch]
+                if branch in self._state.annotations:
+                    del self._state.annotations[branch]
+                if branch in self._state.up_branch_for:
                     for down_branch in new_down_branches:
-                        self._state.up_branch_for[down_branch] = self._state.up_branch_for[branch_]
-                    del self._state.up_branch_for[branch_]
+                        self._state.up_branch_for[down_branch] = self._state.up_branch_for[branch]
+                    del self._state.up_branch_for[branch]
                 else:
                     for down_branch in new_down_branches:
                         del self._state.up_branch_for[down_branch]
                 return new_down_branches
             else:
-                self._state.down_branches_for[branch_] = new_down_branches
-                return [branch_]
+                self._state.down_branches_for[branch] = new_down_branches
+                return [branch]
 
         self._state.roots = flat_map(recursive_slide_out_invalid_branches, self._state.roots)
         self._state.managed_branches = excluding(self.managed_branches, invalid_branches)
@@ -455,32 +455,32 @@ class MacheteClient:
     ) -> None:
         next_sibling_of_ancestor_by_branch: OrderedDict[LocalBranchShortName, List[Optional[LocalBranchShortName]]] = OrderedDict()
 
-        def prefix_dfs(parent: LocalBranchShortName, accumulated_path_: List[Optional[LocalBranchShortName]]) -> None:
-            next_sibling_of_ancestor_by_branch[parent] = accumulated_path_
+        def prefix_dfs(parent: LocalBranchShortName, accumulated_path: List[Optional[LocalBranchShortName]]) -> None:
+            next_sibling_of_ancestor_by_branch[parent] = accumulated_path
             children = self.down_branches_for(parent)
             if children:
                 shifted_children: List[Optional[LocalBranchShortName]] = children[1:]  # type: ignore[assignment]
                 for (v, nv) in zip(children, shifted_children + [None]):
-                    prefix_dfs(v, accumulated_path_ + [nv])
+                    prefix_dfs(v, accumulated_path + [nv])
 
         for root in self._state.roots:
-            prefix_dfs(root, accumulated_path_=[])
+            prefix_dfs(root, accumulated_path=[])
 
         out = io.StringIO()
         sync_to_parent_status: Dict[LocalBranchShortName, SyncToParentStatus] = {}
         fork_point_hash_cached: Dict[LocalBranchShortName, Optional[FullCommitHash]] = {}  # TODO (#110): default dict with None
         fork_point_branches_cached: Dict[LocalBranchShortName, List[BranchPair]] = {}
 
-        def fork_point_hash(branch_: LocalBranchShortName) -> Optional[FullCommitHash]:
-            if branch not in fork_point_hash_cached:
+        def fork_point_hash(for_branch: LocalBranchShortName) -> Optional[FullCommitHash]:
+            if for_branch not in fork_point_hash_cached:
                 try:
                     # We're always using fork point overrides, even when status
                     # is launched from discover().
-                    fork_point_hash_cached[branch_], fork_point_branches_cached[branch_] = \
-                        self.__fork_point_and_containing_branch_pairs(branch_, use_overrides=True)
+                    fork_point_hash_cached[for_branch], fork_point_branches_cached[for_branch] = \
+                        self.__fork_point_and_containing_branch_pairs(for_branch, use_overrides=True)
                 except MacheteException:
-                    fork_point_hash_cached[branch_], fork_point_branches_cached[branch_] = None, []
-            return fork_point_hash_cached[branch_]
+                    fork_point_hash_cached[for_branch], fork_point_branches_cached[for_branch] = None, []
+            return fork_point_hash_cached[for_branch]
 
         # Edge colors need to be precomputed
         # in order to render the leading parts of lines properly.
@@ -511,7 +511,7 @@ class MacheteClient:
         maybe_space_before_branch_name = ' ' if self._git.get_boolean_config_attr(git_config_keys.STATUS_EXTRA_SPACE_BEFORE_BRANCH_NAME,
                                                                                   default_value=False) else ''
 
-        def print_line_prefix(branch_: LocalBranchShortName, suffix: str) -> None:
+        def print_line_prefix(for_branch: LocalBranchShortName, suffix: str) -> None:
             out.write("  " + maybe_space_before_branch_name)
             for sibling in next_sibling_of_ancestor[:-1]:
                 if not sibling:
@@ -519,7 +519,7 @@ class MacheteClient:
                 else:
                     out.write(colored(f"{utils.get_vertical_bar()} " + maybe_space_before_branch_name,
                                       sync_to_parent_status_to_edge_color_map[sync_to_parent_status[sibling]]))
-            out.write(colored(suffix, sync_to_parent_status_to_edge_color_map[sync_to_parent_status[branch_]]))
+            out.write(colored(suffix, sync_to_parent_status_to_edge_color_map[sync_to_parent_status[for_branch]]))
 
         next_sibling_of_ancestor: List[Optional[LocalBranchShortName]]
         for branch, next_sibling_of_ancestor in next_sibling_of_ancestor_by_branch.items():
@@ -1067,20 +1067,20 @@ class MacheteClient:
                 raise MacheteException(f"The machete-post-slide-out hook exited with {exit_code}, aborting.")
 
     def filtered_reflog(self, branch: AnyBranchName) -> List[FullCommitHash]:
-        def is_excluded_reflog_subject(hash_: str, gs_: str) -> bool:
-            is_excluded = (gs_.startswith("branch: Created from") or
-                           gs_ == f"branch: Reset to {branch}" or
-                           gs_ == "branch: Reset to HEAD" or
-                           gs_.startswith("reset: moving to ") or
-                           gs_.startswith("fetch . ") or
+        def is_excluded_reflog_subject(entry_hash: str, reflog_subject: str) -> bool:
+            is_excluded = (reflog_subject.startswith("branch: Created from") or
+                           reflog_subject == f"branch: Reset to {branch}" or
+                           reflog_subject == "branch: Reset to HEAD" or
+                           reflog_subject.startswith("reset: moving to ") or
+                           reflog_subject.startswith("fetch . ") or
                            # The rare case of a no-op rebase, the exact wording
                            # likely depends on git version
-                           gs_ == f"rebase finished: {branch.full_name()} onto {hash_}" or
-                           gs_ == f"rebase -i (finish): {branch.full_name()} onto {hash_}" or
+                           reflog_subject == f"rebase finished: {branch.full_name()} onto {entry_hash}" or
+                           reflog_subject == f"rebase -i (finish): {branch.full_name()} onto {entry_hash}" or
                            # For remote branches, let's NOT include the pushes,
                            # as a branch can be pushed directly after being created,
                            # which might lead to fork point being inferred too *late* in the history
-                           gs_ == "update by push")
+                           reflog_subject == "update by push")
             if is_excluded:
                 debug("skipping reflog entry")
             return is_excluded
@@ -1095,8 +1095,8 @@ class MacheteClient:
             debug(f"skipping any reflog entry with the hash equal to the hash of the earliest (branch creation) entry: {earliest_hash}")
             hashes_to_exclude.add(earliest_hash)
 
-        result = [hash for (hash, gs) in branch_reflog if
-                  hash not in hashes_to_exclude and not is_excluded_reflog_subject(hash, gs)]
+        result = [entry_hash for (entry_hash, reflog_subject) in branch_reflog if
+                  entry_hash not in hashes_to_exclude and not is_excluded_reflog_subject(entry_hash, reflog_subject)]
         reflog = (", ".join(result) or "<empty>")
         debug("computed filtered reflog (= reflog without branch creation "
               f"and branch reset events irrelevant for fork point/upstream inference): {reflog}")
@@ -1108,14 +1108,14 @@ class MacheteClient:
             def generate_entries() -> Iterator[Tuple[FullCommitHash, BranchPair]]:
                 for lb in self._git.get_local_branches():
                     lb_hashes = set()
-                    for hash_ in self.filtered_reflog(lb):
-                        lb_hashes.add(hash_)
-                        yield FullCommitHash.of(hash_), BranchPair(lb, lb)
+                    for commit_hash in self.filtered_reflog(lb):
+                        lb_hashes.add(commit_hash)
+                        yield FullCommitHash.of(commit_hash), BranchPair(lb, lb)
                     remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(lb)
                     if remote_branch:
-                        for hash_ in self.filtered_reflog(remote_branch):
-                            if hash_ not in lb_hashes:
-                                yield FullCommitHash.of(hash_), BranchPair(lb, remote_branch)
+                        for commit_hash in self.filtered_reflog(remote_branch):
+                            if commit_hash not in lb_hashes:
+                                yield FullCommitHash.of(commit_hash), BranchPair(lb, remote_branch)
 
             self.__branch_pairs_by_hash_in_reflog = {}
             for hash, branch_pair in generate_entries():
@@ -1129,15 +1129,15 @@ class MacheteClient:
                     self.__branch_pairs_by_hash_in_reflog[hash] = [branch_pair]
 
             def log_result() -> Iterator[str]:
-                branch_pairs_: List[BranchPair]
-                hash_: FullCommitHash
+                entry_branch_pairs: List[BranchPair]
+                entry_hash: FullCommitHash
                 assert self.__branch_pairs_by_hash_in_reflog is not None
-                for hash_, branch_pairs_ in self.__branch_pairs_by_hash_in_reflog.items():
+                for entry_hash, entry_branch_pairs in self.__branch_pairs_by_hash_in_reflog.items():
                     def branch_pair_to_str(lb: str, lb_or_rb: str) -> str:
                         return lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"
 
-                    joined_branch_pairs = ", ".join(map(tupled(branch_pair_to_str), branch_pairs_))
-                    yield dim(f"{hash_} => {joined_branch_pairs}")
+                    joined_branch_pairs = ", ".join(map(tupled(branch_pair_to_str), entry_branch_pairs))
+                    yield dim(f"{entry_hash} => {joined_branch_pairs}")
 
             branches = "\n".join(log_result())
             debug(f"branches containing the given hash in their filtered reflog: \n{branches}\n")
