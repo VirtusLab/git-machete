@@ -6,7 +6,7 @@ from typing import Dict, Iterator, List, Optional, Set, Tuple
 from git_machete import utils
 from git_machete.annotation import Annotation, Qualifiers
 from git_machete.client.base import ParsableEnum, SquashMergeDetection
-from git_machete.client.status import StatusClient
+from git_machete.client.status import StatusMacheteClient
 from git_machete.code_hosting import (CodeHostingClient, CodeHostingSpec,
                                       OrganizationAndRepository,
                                       OrganizationAndRepositoryAndRemote,
@@ -30,7 +30,7 @@ class PRDescriptionIntroStyle(ParsableEnum):
     NONE = auto()
 
 
-class MacheteClientWithCodeHosting(StatusClient):
+class MacheteClientWithCodeHosting(StatusMacheteClient):
     def __init__(self, git: GitContext, spec: CodeHostingSpec):
         super().__init__(git)
         self.__code_hosting_spec: CodeHostingSpec = spec

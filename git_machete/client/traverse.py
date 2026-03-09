@@ -299,6 +299,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                             self._state.down_branches_for[upstream] or [])
                         if branch in self._state.annotations:
                             del self._state.annotations[branch]
+                        self._state.managed_branches.remove(branch)
                         self.save_branch_layout_file()
                         self._run_post_slide_out_hook(new_upstream=upstream, slid_out_branch=branch, new_downstreams=dbb)
                         if ans == 'yq':

@@ -22,7 +22,7 @@ from git_machete.client.go_show import GoShowMacheteClient
 from git_machete.client.log import LogMacheteClient
 from git_machete.client.slide_out import SlideOutMacheteClient
 from git_machete.client.squash import SquashMacheteClient
-from git_machete.client.status import StatusClient
+from git_machete.client.status import StatusMacheteClient
 from git_machete.client.traverse import (TraverseMacheteClient,
                                          TraverseReturnTo, TraverseStartFrom)
 from git_machete.client.update import UpdateMacheteClient
@@ -796,6 +796,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 interactive_client.expect_at_least_one_managed_branch()
                 selected_branch = interactive_client.go_interactive(current_branch=current_branch_or_none)
                 if selected_branch is not None and selected_branch != current_branch_or_none:
+                    print()
                     print_no_newline(f"Checking out {bold(selected_branch)}... ")
                     git.checkout(selected_branch)
                     print(green_ok())
@@ -919,7 +920,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 )
             squash_client.squash(current_branch=current_branch, opt_fork_point=squash_fork_point)
         elif cmd in {"status", alias_by_command["status"]}:
-            status_client = StatusClient(git)
+            status_client = StatusMacheteClient(git)
             opt_squash_merge_detection = SquashMergeDetection.from_string(
                 cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
 

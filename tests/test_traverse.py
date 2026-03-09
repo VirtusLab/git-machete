@@ -141,7 +141,7 @@ class TestTraverse(BaseTest):
 
               master
 
-            Reached branch feature which has no successor; nothing left to update
+            No successor of feature needs to be slid out or synced with upstream branch or remote; nothing left to update
             """
         )
 

@@ -78,11 +78,12 @@ class StatusData(NamedTuple):
 
     flags: StatusFlags
     branches: Dict[LocalBranchShortName, StatusBranch]
+    branches_in_display_order: List[LocalBranchShortName]
     roots: List[LocalBranchShortName]
     ongoing_operation: StatusOngoingOperation
 
 
-class StatusClient(MacheteClient):
+class StatusMacheteClient(MacheteClient):
     """Client for the status command. Exposes status() and can be used as a mixin for other clients."""
 
     @staticmethod
@@ -92,11 +93,9 @@ class StatusClient(MacheteClient):
         space = data.flags.maybe_space_before_branch_name
 
         next_sibling_of_ancestor_by_branch: Dict[LocalBranchShortName, List[Optional[LocalBranchShortName]]] = {}
-        branches_in_display_order: List[LocalBranchShortName] = []
 
         def prefix_dfs(parent: LocalBranchShortName, accumulated_path: List[Optional[LocalBranchShortName]]) -> None:
             next_sibling_of_ancestor_by_branch[parent] = accumulated_path
-            branches_in_display_order.append(parent)
             children = data.branches[parent].down_branches
             if children:
                 shifted_children: List[Optional[LocalBranchShortName]] = children[1:]  # type: ignore[assignment]
@@ -121,7 +120,7 @@ class StatusClient(MacheteClient):
                         sync_to_parent_status_to_edge_color_map[data.branches[sibling].sync_to_parent_status]))
             out.write(colored(suffix, sync_to_parent_status_to_edge_color_map[data.branches[for_branch].sync_to_parent_status]))
 
-        for branch in branches_in_display_order:
+        for branch in data.branches_in_display_order:
             b = data.branches[branch]
             next_sibling_of_ancestor = next_sibling_of_ancestor_by_branch[branch]
             if b.up_branch is not None:
@@ -177,18 +176,8 @@ class StatusClient(MacheteClient):
     @staticmethod
     def _status_warning_message(data: StatusData) -> Optional[str]:
         """Derives the optional warning message for yellow edges (in-sync but fork point off)."""
-        branches_in_display_order: List[LocalBranchShortName] = []
-
-        def prefix_dfs(parent: LocalBranchShortName) -> None:
-            branches_in_display_order.append(parent)
-            for child in data.branches[parent].down_branches:
-                prefix_dfs(child)
-
-        for root in data.roots:
-            prefix_dfs(root)
-
         branches_in_sync_but_fork_point_off = [
-            b for b in branches_in_display_order
+            b for b in data.branches_in_display_order
             if data.branches[b].sync_to_parent_status == SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF
         ]
         if not branches_in_sync_but_fork_point_off:
@@ -226,15 +215,7 @@ class StatusClient(MacheteClient):
         return f"{first_part}.\n\n{second_part}."
 
     def _compute_status_data(self, *, flags: StatusFlags) -> StatusData:
-        branch_list: List[LocalBranchShortName] = []
-
-        def collect_branches(parent: LocalBranchShortName) -> None:
-            branch_list.append(parent)
-            for child in self.down_branches_for(parent) or []:
-                collect_branches(child)
-
-        for root in self._state.roots:
-            collect_branches(root)
+        managed_branches: List[LocalBranchShortName] = list(self._state.managed_branches)
 
         sync_to_parent_status: Dict[LocalBranchShortName, SyncToParentStatus] = {}
         fork_point_hash_cached: Dict[LocalBranchShortName, Optional[FullCommitHash]] = {}
@@ -334,7 +315,7 @@ class StatusClient(MacheteClient):
             hook_output_by_branch[branch] = hook_output
 
         branches: Dict[LocalBranchShortName, StatusBranch] = {}
-        for branch in branch_list:
+        for branch in managed_branches:
             branches[branch] = StatusBranch(
                 up_branch=self._state.up_branch_for.get(branch),
                 down_branches=self.down_branches_for(branch) or [],
@@ -348,6 +329,7 @@ class StatusClient(MacheteClient):
         return StatusData(
             flags=flags,
             branches=branches,
+            branches_in_display_order=managed_branches,
             roots=self._state.roots,
             ongoing_operation=StatusOngoingOperation(
                 currently_bisected_branch=currently_bisected_branch,
