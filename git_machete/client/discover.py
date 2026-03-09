@@ -72,8 +72,8 @@ class DiscoverMacheteClient(StatusMacheteClient):
                     f"only branches checked out at or after ca. <b>{threshold_date}</b> are included.\n"
                     "Use `git machete discover --checked-out-since=<date>` (where <date> can be e.g. `'2 weeks ago'` or `2020-06-01`) "
                     "to change this threshold so that less or more branches are included.\n")
-        self._state.managed_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
-        if opt_checked_out_since and not self.managed_branches:
+        fresh_branches = excluding(all_local_branches, stale_non_root_fixed_branches)
+        if opt_checked_out_since and not fresh_branches:
             warn(
                 "no branches satisfying the criteria. Try moving the value of "
                 "`--checked-out-since` further to the past.")
@@ -99,7 +99,7 @@ class DiscoverMacheteClient(StatusMacheteClient):
 
         # Let's remove merged branches for which no downstream branch have been found.
         merged_branches_to_skip = []
-        for branch in self.managed_branches:
+        for branch in fresh_branches:
             upstream = self.up_branch_for(branch)
             if upstream and not self.down_branches_for(branch):
                 if self.is_merged_to(
@@ -116,7 +116,6 @@ class DiscoverMacheteClient(StatusMacheteClient):
                 "have any downstream branches.\n"
                 % (", ".join(bold(branch) for branch in merged_branches_to_skip),
                    "it's" if len(merged_branches_to_skip) == 1 else "they're"))
-            self._state.managed_branches = excluding(self.managed_branches, merged_branches_to_skip)
             for branch in merged_branches_to_skip:
                 upstream = self._state.up_branch_for[branch]
                 self._state.down_branches_for[upstream] = excluding(self._state.down_branches_for[upstream], [branch])
@@ -125,6 +124,17 @@ class DiscoverMacheteClient(StatusMacheteClient):
             # so it's theoretically possible that some merged branches became childless
             # after removing the outer layer of childless merged branches.
             # This is rare enough, however, that we can pretty much ignore this corner case.
+
+        # Order managed_branches by DFS from roots (same order as in .git/machete file)
+        self._state.managed_branches = []
+
+        def collect_branches_dfs(parent: LocalBranchShortName) -> None:
+            self._state.managed_branches.append(parent)
+            for child in self.down_branches_for(parent) or []:
+                collect_branches_dfs(child)
+
+        for root in self._state.roots:
+            collect_branches_dfs(root)
 
         print(bold("Discovered tree of branch dependencies:\n"))
         self.status(
