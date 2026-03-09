@@ -3,7 +3,8 @@ import itertools
 import os
 from typing import List, Optional, Tuple
 
-from git_machete.client.base import MacheteClient, SquashMergeDetection
+from git_machete.client.base import SquashMergeDetection
+from git_machete.client.status import StatusClient
 from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import LocalBranchShortName
@@ -11,7 +12,7 @@ from git_machete.utils import (bold, debug, excluding, get_pretty_choices,
                                slurp_file, tupled, warn)
 
 
-class DiscoverMacheteClient(MacheteClient):
+class DiscoverMacheteClient(StatusClient):
     def discover(
             self,
             *,

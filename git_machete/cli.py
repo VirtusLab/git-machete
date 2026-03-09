@@ -22,6 +22,7 @@ from git_machete.client.go_show import GoShowMacheteClient
 from git_machete.client.log import LogMacheteClient
 from git_machete.client.slide_out import SlideOutMacheteClient
 from git_machete.client.squash import SquashMacheteClient
+from git_machete.client.status import StatusClient
 from git_machete.client.traverse import (TraverseMacheteClient,
                                          TraverseReturnTo, TraverseStartFrom)
 from git_machete.client.update import UpdateMacheteClient
@@ -918,7 +919,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 )
             squash_client.squash(current_branch=current_branch, opt_fork_point=squash_fork_point)
         elif cmd in {"status", alias_by_command["status"]}:
-            status_client = MacheteClient(git)
+            status_client = StatusClient(git)
             opt_squash_merge_detection = SquashMergeDetection.from_string(
                 cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
 
