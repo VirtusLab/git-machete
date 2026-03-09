@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.39.2
 
+- improved: interactive `git machete go` displays a branch layout as in `status`
 - fixed: interactive `git machete go` now fails immediately when stdout is not a TTY (e.g. when piped) instead of behaving chaotically
 - improved: user-facing messages in `go`, `show`, `traverse` for the case of single root (contributed by @mvanhorn)
 

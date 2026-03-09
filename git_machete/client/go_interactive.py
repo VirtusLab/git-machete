@@ -1,5 +1,5 @@
 import sys
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 try:
     import termios
@@ -10,20 +10,21 @@ except ImportError:  # pragma: no cover; Windows-specific
     tty = None  # type: ignore[assignment]
 
 from git_machete import utils
-from git_machete.client.base import MacheteClient
+from git_machete.client.status import (StatusData, StatusFlags,
+                                       StatusMacheteClient)
 from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import LocalBranchShortName
 from git_machete.utils import bold, index_or_none, warn
 
 
-class GoInteractiveMacheteClient(MacheteClient):
+class GoInteractiveMacheteClient(StatusMacheteClient):
     """Client for interactive branch selection using curses-style interface (implemented without curses, just using ANSI sequences)."""
 
     MAX_VISIBLE_BRANCHES_DEFAULT = 20
     MAX_VISIBLE_BRANCHES_LOWER = 2
     MAX_VISIBLE_BRANCHES_UPPER = 50
 
-    _managed_branches_with_depths: List[Tuple[LocalBranchShortName, int]]
+    _status_data: StatusData
     _current_branch: Optional[LocalBranchShortName]
     _max_visible_branches: int
 
@@ -37,38 +38,13 @@ class GoInteractiveMacheteClient(MacheteClient):
         max_visible_branches = terminal_height - 2
         return max(self.MAX_VISIBLE_BRANCHES_LOWER, min(max_visible_branches, self.MAX_VISIBLE_BRANCHES_UPPER))
 
-    def _get_branch_list_with_depths(self) -> List[Tuple[LocalBranchShortName, int]]:
-        """Get a flat list of branches with their depths using DFS traversal."""
-        result: List[Tuple[LocalBranchShortName, int]] = []
-
-        def add_branch_and_children(branch: LocalBranchShortName, depth: int) -> None:
-            result.append((branch, depth))
-            for child_branch in self.down_branches_for(branch) or []:
-                add_branch_and_children(child_branch, depth + 1)
-
-        for root in self._state.roots:
-            add_branch_and_children(root, depth=0)
-
-        return result
-
-    def _render_branch_line(self, branch: LocalBranchShortName, depth: int) -> str:
-        """Render a single branch line with indentation."""
-        indent = "  " * depth
-        marker = " " if self._current_branch is None or branch != self._current_branch else "*"
-
-        line = f"{indent}{marker} {branch}"
-        annotation = self.annotations.get(branch)
-        if annotation and annotation.formatted_full_text:
-            line += f"  {annotation.formatted_full_text}"
-
-        return line
-
     def _draw_screen(self, *, selected_idx: int, scroll_offset: int,
-                     num_lines_drawn: int, is_first_draw: bool) -> int:
-        """Draw the branch selection screen using ANSI escape codes."""
+                     num_lines_drawn: int, is_first_draw: bool) -> Tuple[int, int]:
+        """Draw the branch selection screen using status-style output (format_status_output).
+        Returns (scroll_offset, actual_lines_drawn) so the caller can move the cursor up correctly on next redraw."""
         # Move cursor up to the start of our display area (if we've drawn before)
         if not is_first_draw and num_lines_drawn > 0:
-            sys.stdout.write(f'{utils.AE.CSI}{num_lines_drawn}A')
+            sys.stdout.write(utils.AE.cursor_up(num_lines_drawn))
 
         # Clear from cursor to end of screen (only if not first draw)
         if not is_first_draw:
@@ -79,27 +55,30 @@ class GoInteractiveMacheteClient(MacheteClient):
                        "Enter or Space: checkout, q or Ctrl+C: quit)")
         sys.stdout.write(bold(header_text) + '\n')
 
-        # Adjust scroll offset if needed
-        visible_lines = min(self._max_visible_branches, len(self._managed_branches_with_depths))
-        if selected_idx < scroll_offset:
-            scroll_offset = selected_idx
-        elif selected_idx >= scroll_offset + visible_lines:
-            scroll_offset = selected_idx - visible_lines + 1
+        branches = self._status_data.branches_in_display_order
+        selected_branch = branches[selected_idx] if 0 <= selected_idx < len(branches) else None
+        formatted = self.format_status_output(
+            self._status_data,
+            selected_branch=selected_branch,
+        )
+        lines = formatted.result.splitlines()
+        num_lines = len(lines)
+        visible_lines = min(self._max_visible_branches, num_lines)
+        # line_for_branch maps branch -> 0-based line index in result
+        selected_line_idx = formatted.line_for_branch.get(selected_branch, 0) if selected_branch else 0
+        if selected_line_idx < scroll_offset:
+            scroll_offset = selected_line_idx
+        elif selected_line_idx >= scroll_offset + visible_lines:
+            scroll_offset = selected_line_idx - visible_lines + 1
 
-        # Draw branches
-        for i in range(visible_lines):
-            branch_idx = scroll_offset + i
-            branch, depth = self._managed_branches_with_depths[branch_idx]
-            line = self._render_branch_line(branch, depth)
-
-            if branch_idx == selected_idx:
-                # Highlight selected line (inverse video)
-                sys.stdout.write(f'{utils.AE.REVERSE_VIDEO}{line}{utils.AE.ENDC}\n')
-            else:
-                sys.stdout.write(f'{line}\n')
+        lines_drawn = 1  # header
+        end = min(scroll_offset + visible_lines, num_lines)
+        for line_idx in range(scroll_offset, end):
+            sys.stdout.write(lines[line_idx] + '\n')
+            lines_drawn += 1
 
         sys.stdout.flush()
-        return scroll_offset
+        return scroll_offset, lines_drawn
 
     def _get_stdin_fd(self) -> int:  # pragma: no cover; always mocked in tests
         return sys.stdin.fileno()
@@ -136,28 +115,33 @@ class GoInteractiveMacheteClient(MacheteClient):
         """
         Launch interactive branch selection interface.
         Returns the selected branch or None if cancelled.
+        Status data is computed once at start; only rendering (format_status_output) runs on each redraw.
         """
         if termios is None or tty is None:
             raise UnexpectedMacheteException("Interactive mode is not supported on Windows yet")
         if not utils.is_stdout_a_tty():
             raise MacheteException("Interactive `git machete go` requires stdout to be a TTY.")
 
-        # Get flat list of branches with depths from already-parsed state
-        self._managed_branches_with_depths = self._get_branch_list_with_depths()
-
         self._current_branch = current_branch
-
-        # Determine maximum visible branches from terminal height
         self._max_visible_branches = self._get_max_visible_branches()
+
+        # Compute status data once (no list-commits in TUI; config same as status)
+        flags = StatusFlags(
+            maybe_space_before_branch_name=(' ' if self._config.status_extra_space_before_branch_name() else ''),
+            opt_list_commits=False,
+            opt_list_commits_with_hashes=False,
+            opt_squash_merge_detection=self._config.squash_merge_detection(),
+        )
+        self._status_data = self.compute_status_data(flags=flags)
+        branches_ordered = self._status_data.branches_in_display_order
 
         # Find initial selection (current branch or first branch if detached HEAD)
         if current_branch is not None:
-            selected_idx = index_or_none(self.managed_branches, self._current_branch)
+            selected_idx = index_or_none(branches_ordered, self._current_branch)
             if selected_idx is None:
                 selected_idx = 0
                 warn(f"current branch {self._current_branch} is unmanaged\n")
         else:
-            # Detached HEAD - start with first managed branch
             selected_idx = 0
 
         scroll_offset = 0
@@ -168,13 +152,10 @@ class GoInteractiveMacheteClient(MacheteClient):
         sys.stdout.write(utils.AE.HIDE_CURSOR)
         sys.stdout.flush()
 
+        branches = self._status_data.branches_in_display_order
         try:
             while True:
-                # Calculate how many lines we'll draw (header + visible branches)
-                visible_lines = min(self._max_visible_branches, len(self._managed_branches_with_depths))
-                num_lines_drawn = visible_lines + 1  # +1 for header
-
-                scroll_offset = self._draw_screen(
+                scroll_offset, num_lines_drawn = self._draw_screen(
                     selected_idx=selected_idx,
                     scroll_offset=scroll_offset,
                     num_lines_drawn=num_lines_drawn,
@@ -182,36 +163,28 @@ class GoInteractiveMacheteClient(MacheteClient):
                 )
                 is_first_draw = False
 
-                # Read key
                 key = self._getch()
 
                 if key == utils.AE.KEY_UP:
-                    # Wrap around from first to last
-                    selected_idx = (selected_idx - 1) % len(self._managed_branches_with_depths)
+                    selected_idx = (selected_idx - 1) % len(branches)
                 elif key == utils.AE.KEY_DOWN:
-                    # Wrap around from last to first
-                    selected_idx = (selected_idx + 1) % len(self._managed_branches_with_depths)
+                    selected_idx = (selected_idx + 1) % len(branches)
                 elif key == utils.AE.KEY_SHIFT_UP:
-                    # Jump to first branch
                     selected_idx = 0
                 elif key == utils.AE.KEY_SHIFT_DOWN:
-                    # Jump to last branch
-                    selected_idx = len(self._managed_branches_with_depths) - 1
+                    selected_idx = len(branches) - 1
                 elif key == utils.AE.KEY_LEFT:
-                    # Go to parent
-                    selected_branch, _ = self._managed_branches_with_depths[selected_idx]
+                    selected_branch = branches[selected_idx]
                     parent_branch = self.up_branch_for(selected_branch)
-                    if parent_branch:
-                        selected_idx = self.managed_branches.index(parent_branch)
+                    if parent_branch is not None:
+                        selected_idx = branches.index(parent_branch)
                 elif key == utils.AE.KEY_RIGHT:
-                    # Go to first child
-                    selected_branch, _ = self._managed_branches_with_depths[selected_idx]
+                    selected_branch = branches[selected_idx]
                     child_branches = self.down_branches_for(selected_branch)
                     if child_branches:
-                        selected_idx = self.managed_branches.index(child_branches[0])
+                        selected_idx = branches.index(child_branches[0])
                 elif key in utils.AE.KEYS_ENTER or key == utils.AE.KEY_SPACE:
-                    selected_branch, _ = self._managed_branches_with_depths[selected_idx]
-                    return selected_branch
+                    return branches[selected_idx]
                 elif key in ('q', 'Q'):
                     return None
                 elif key == utils.AE.KEY_CTRL_C:

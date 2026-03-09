@@ -401,6 +401,10 @@ class SimpleAnsiEscapeCodes:
     SHOW_CURSOR = '\033[?25h'
     CLEAR_TO_END = '\033[J'  # Clear from cursor to end of screen
 
+    def cursor_up(self, num_lines: int) -> str:
+        """CSI n A — move cursor up by num_lines."""
+        return self.CSI + str(num_lines) + "A"
+
     # Arrow key codes
     KEY_UP = '\033[A'
     KEY_DOWN = '\033[B'

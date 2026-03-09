@@ -69,12 +69,26 @@ class StatusData(NamedTuple):
     ongoing_operation: StatusOngoingOperation
 
 
+class StatusFormatOutput(NamedTuple):
+    """Result of formatting status output. Returned by format_status_output."""
+
+    result: str
+    # Maps each branch to the 0-based index of the line in result (when split by newlines) where it appears.
+    line_for_branch: Dict[LocalBranchShortName, int]
+
+
 class StatusMacheteClient(MacheteClient):
     """Client for the status command. Exposes status() and can be used as a mixin for other clients."""
 
     @staticmethod
-    def _format_status_output(data: StatusData) -> str:
-        """Pure function: given StatusData, returns the formatted status tree string."""
+    def format_status_output(
+        data: StatusData,
+        *,
+        selected_branch: Optional[LocalBranchShortName] = None,
+    ) -> StatusFormatOutput:
+        """Pure function: given StatusData, returns StatusFormatOutput (result string and line_for_branch).
+        When selected_branch is set, that branch's name (not annotation/sync status) is wrapped in reverse video.
+        line_for_branch maps each branch to the 0-based line index in result where it appears."""
 
         # These maps need to be defined in a local scope to avoid for mocking the color palette more easily.
         sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
@@ -89,9 +103,10 @@ class StatusMacheteClient(MacheteClient):
             SyncToParentStatus.OUT_OF_SYNC: "x-",
             SyncToParentStatus.MERGED_TO_PARENT: "m-"
         }
-
         out = io.StringIO()
         space = data.flags.maybe_space_before_branch_name
+        line_for_branch: Dict[LocalBranchShortName, int] = {}
+        line_index = 0
 
         next_sibling_of_ancestor_by_branch: Dict[LocalBranchShortName, List[Optional[LocalBranchShortName]]] = {}
 
@@ -127,12 +142,14 @@ class StatusMacheteClient(MacheteClient):
             next_sibling_of_ancestor = next_sibling_of_ancestor_by_branch[branch]
             if b.up_branch is not None:
                 write_line_prefix(branch, next_sibling_of_ancestor, f"{utils.get_vertical_bar()}\n")
+                line_index += 1
                 for commit, fp_suffix in b.commits:
                     write_line_prefix(branch, next_sibling_of_ancestor, utils.get_vertical_bar())
                     out.write(
                         f' {f"{dim(commit.short_hash)}  " if data.flags.opt_list_commits_with_hashes else ""}'
                         f'{dim(commit.subject)}{fp_suffix}\n'
                     )
+                    line_index += 1
                 if utils.ascii_only:
                     junction = sync_to_parent_status_to_junction_ascii_only_map[b.sync_to_parent_status]
                 else:
@@ -145,8 +162,10 @@ class StatusMacheteClient(MacheteClient):
             else:
                 if branch != data.roots[0]:
                     out.write("\n")
+                    line_index += 1
                 out.write("  " + space)
 
+            line_for_branch[branch] = line_index
             op = data.ongoing_operation
             if branch in (op.currently_checked_out_branch, op.currently_rebased_branch, op.currently_bisected_branch):
                 if branch == op.currently_rebased_branch:
@@ -171,9 +190,14 @@ class StatusMacheteClient(MacheteClient):
             if b.annotation is not None and b.annotation.formatted_full_text:
                 anno = '  ' + b.annotation.formatted_full_text
 
-            out.write(current + anno + b.sync_status + b.hook_output + "\n")
+            if selected_branch is not None and branch == selected_branch:
+                current_part = f"{utils.AE.REVERSE_VIDEO}{current}{utils.AE.ENDC}"
+            else:
+                current_part = current
+            out.write(f"{current_part}{anno}{b.sync_status}{b.hook_output}\n")
+            line_index += 1
 
-        return out.getvalue()
+        return StatusFormatOutput(result=out.getvalue(), line_for_branch=line_for_branch)
 
     @staticmethod
     def _status_warning_message(data: StatusData) -> Optional[str]:
@@ -216,7 +240,7 @@ class StatusMacheteClient(MacheteClient):
             )
         return f"{first_part}.\n\n{second_part}."
 
-    def _compute_status_data(self, *, flags: StatusFlags) -> StatusData:
+    def compute_status_data(self, *, flags: StatusFlags) -> StatusData:
         managed_branches: List[LocalBranchShortName] = list(self._state.managed_branches)
 
         sync_to_parent_status: Dict[LocalBranchShortName, SyncToParentStatus] = {}
@@ -359,9 +383,9 @@ class StatusMacheteClient(MacheteClient):
             opt_list_commits_with_hashes=opt_list_commits_with_hashes,
             opt_squash_merge_detection=opt_squash_merge_detection,
         )
-        data = self._compute_status_data(flags=flags)
-        status_str = self._format_status_output(data)
-        sys.stdout.write(status_str)
+        data = self.compute_status_data(flags=flags)
+        format_out = self.format_status_output(data)
+        sys.stdout.write(format_out.result)
         if warn_when_branch_in_sync_but_fork_point_off:
             warning_msg = self._status_warning_message(data)
             if warning_msg is not None:

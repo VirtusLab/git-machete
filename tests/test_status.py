@@ -68,6 +68,8 @@ class TestStatus(BaseTest):
 
     def test_single_invalid_branch_interactive_slide_out(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, "git_machete.utils.AE", E)
 
         create_repo()
         new_branch('master')
@@ -79,11 +81,13 @@ class TestStatus(BaseTest):
             \t\tfoo
             """
         rewrite_branch_layout_file(body)
-        expected_output = """
-            Skipping foo which is not a local branch (perhaps it has been deleted?).
-            Slide it out from the branch layout file? (y, e[dit], N)
-              master *
-        """
+        expected_output = (
+            "Skipping " + E.BOLD + "foo" + E.ENDC_BOLD_DIM +
+            " which is not a local branch (perhaps it has been deleted?).\n" +
+            "Slide it out from the branch layout file? (" +
+            E.GREEN + "y" + E.ENDC + ", " + E.ORANGE + "e[dit]" + E.ENDC + ", " + E.RED + "N" + E.ENDC + ")\n" +
+            "  " + E.BOLD + E.UNDERLINE + "master" + E.ENDC_UNDERLINE + E.ENDC_BOLD_DIM + "\n"
+        )
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning(""))
         assert_success(["status"], expected_output)
@@ -95,6 +99,8 @@ class TestStatus(BaseTest):
 
     def test_multiple_invalid_branches_interactive_slide_out(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, "git_machete.utils.AE", E)
 
         create_repo()
         new_branch('master')
@@ -115,15 +121,18 @@ class TestStatus(BaseTest):
             \t\tfeature
             """
         rewrite_branch_layout_file(body)
-        expected_output = """
-            Skipping foo, bar, qux, baz which are not local branches (perhaps they have been deleted?).
-            Slide them out from the branch layout file? (y, e[dit], N)
-              master
-              |
-              o-develop
-
-              feature *
-        """
+        expected_output = (
+            "Skipping " + E.BOLD + "foo" + E.ENDC_BOLD_DIM + ", " + E.BOLD + "bar" + E.ENDC_BOLD_DIM +
+            ", " + E.BOLD + "qux" + E.ENDC_BOLD_DIM + ", " + E.BOLD + "baz" + E.ENDC_BOLD_DIM +
+            " which are not local branches (perhaps they have been deleted?).\n" +
+            "Slide them out from the branch layout file? (" +
+            E.GREEN + "y" + E.ENDC + ", " + E.ORANGE + "e[dit]" + E.ENDC + ", " + E.RED + "N" + E.ENDC + ")\n" +
+            "  " + E.BOLD + "master" + E.ENDC_BOLD_DIM + "\n" +
+            "  " + E.GREEN + "│\n" + E.ENDC +
+            "  " + E.GREEN + "└─" + E.ENDC + E.BOLD + "develop" + E.ENDC_BOLD_DIM + "\n" +
+            "\n" +
+            "  " + E.BOLD + E.UNDERLINE + "feature" + E.ENDC_UNDERLINE + E.ENDC_BOLD_DIM + "\n"
+        )
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(["status"], expected_output)
 
