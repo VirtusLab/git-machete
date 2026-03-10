@@ -1,11 +1,9 @@
-import re
 import sys
-import textwrap
 
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils import abspath_posix
+from git_machete.utils import SimpleAnsiEscapeCodes, abspath_posix
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, execute,
@@ -677,35 +675,47 @@ class TestStatus(BaseTest):
         )
         assert_success(['status', '-l'], expected_status_output)
 
-    def test_status_non_ascii_junctions(self) -> None:
+    def test_status_ansi_escapes(self, mocker: MockerFixture) -> None:
+        # Setup: develop (root); feature-in-sync behind develop=RED; feature-merged merged into develop=DIM;
+        # feature-out-of-sync ahead of develop=GREEN (current branch, underlined).
         create_repo()
         new_branch("develop")
         commit()
-        new_branch("feature-1")
+        new_branch("feature-in-sync")  # no commit → in sync with develop
+        check_out("develop")
+        new_branch("feature-merged")
         commit()
         check_out("develop")
-        new_branch("feature-2")
+        execute("git merge feature-merged -m merge")
+        new_branch("feature-out-of-sync")
         commit()
 
         body: str = \
             """
             develop
-                feature-1
-                feature-2
+                feature-in-sync
+                feature-merged
+                feature-out-of-sync
             """
         rewrite_branch_layout_file(body)
 
-        expected_status_output = (
-            """\
-              develop
-              │
-              ├─feature-1
-              │
-              └─feature-2
-            """
-        )
+        # Use the palette of ANSI escape code that does NOT depend on the underlying terminal properties
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, 'git_machete.utils.AE', E)
+
         raw_output = launch_command('status', '--color=always')
-        assert textwrap.dedent(re.sub('\x1b\\[[^m]+m', '', raw_output)) == textwrap.dedent(expected_status_output)
+        # After merge, develop moved forward so feature-in-sync (still at first commit) is behind=RED;
+        # feature-merged is merged into develop=DIM; feature-out-of-sync is ahead but fork-point logic makes it GREEN.
+        expected = (
+            "  " + E.BOLD + "develop" + E.ENDC_BOLD_DIM + "\n" +
+            "  " + E.RED + "│\n" + E.ENDC +
+            "  " + E.RED + "└─" + E.ENDC + E.BOLD + "feature-in-sync" + E.ENDC_BOLD_DIM + "\n" +
+            "  " + E.DIM + "│\n" + E.ENDC +
+            "  " + E.DIM + "└─" + E.ENDC + E.BOLD + "feature-merged" + E.ENDC_BOLD_DIM + "\n" +
+            "  " + E.GREEN + "│\n" + E.ENDC +
+            "  " + E.GREEN + "└─" + E.ENDC + E.BOLD + E.UNDERLINE + "feature-out-of-sync" + E.ENDC_UNDERLINE + E.ENDC_BOLD_DIM + "\n"
+        )
+        assert raw_output == expected
 
     def test_status_during_rebase(self) -> None:
         create_repo()

@@ -13,8 +13,8 @@ from git_machete.exceptions import MacheteException
 from git_machete.git_operations import (BranchPair, FullCommitHash,
                                         GitLogEntry, LocalBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (AnsiEscapeCodes, PopenResult, bold, colored,
-                               debug, dim, underline, warn)
+from git_machete.utils import (PopenResult, bold, colored, debug, dim,
+                               underline, warn)
 
 from .base import MacheteClient
 
@@ -24,21 +24,6 @@ class SyncToParentStatus(Enum):
     IN_SYNC_BUT_FORK_POINT_OFF = auto()
     OUT_OF_SYNC = auto()
     MERGED_TO_PARENT = auto()
-
-
-sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
-    SyncToParentStatus.IN_SYNC: AnsiEscapeCodes.GREEN,
-    SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF: AnsiEscapeCodes.YELLOW,
-    SyncToParentStatus.OUT_OF_SYNC: AnsiEscapeCodes.RED,
-    SyncToParentStatus.MERGED_TO_PARENT: AnsiEscapeCodes.DIM
-}
-
-sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] = {
-    SyncToParentStatus.IN_SYNC: "o-",
-    SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF: "?-",
-    SyncToParentStatus.OUT_OF_SYNC: "x-",
-    SyncToParentStatus.MERGED_TO_PARENT: "m-"
-}
 
 
 class StatusFlags(NamedTuple):
@@ -90,6 +75,21 @@ class StatusMacheteClient(MacheteClient):
     @staticmethod
     def _format_status_output(data: StatusData) -> str:
         """Pure function: given StatusData, returns the formatted status tree string."""
+
+        # These maps need to be defined in a local scope to avoid for mocking the color palette more easily.
+        sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
+            SyncToParentStatus.IN_SYNC: utils.AE.GREEN,
+            SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF: utils.AE.YELLOW,
+            SyncToParentStatus.OUT_OF_SYNC: utils.AE.RED,
+            SyncToParentStatus.MERGED_TO_PARENT: utils.AE.DIM
+        }
+        sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] = {
+            SyncToParentStatus.IN_SYNC: "o-",
+            SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF: "?-",
+            SyncToParentStatus.OUT_OF_SYNC: "x-",
+            SyncToParentStatus.MERGED_TO_PARENT: "m-"
+        }
+
         out = io.StringIO()
         space = data.flags.maybe_space_before_branch_name
 
@@ -111,6 +111,7 @@ class StatusMacheteClient(MacheteClient):
             next_sibling_of_ancestor: List[Optional[LocalBranchShortName]],
             suffix: str,
         ) -> None:
+
             out.write("  " + space)
             for sibling in next_sibling_of_ancestor[:-1]:
                 if not sibling:
@@ -162,7 +163,7 @@ class StatusMacheteClient(MacheteClient):
                     prefix = "REVERTING "
                 else:
                     prefix = ""
-                current = f"{bold(colored(prefix, AnsiEscapeCodes.RED))}{bold(underline(branch, star_if_ascii_only=True))}"
+                current = f"{bold(colored(prefix, utils.AE.RED))}{bold(underline(branch, star_if_ascii_only=True))}"
             else:
                 current = bold(branch)
 
@@ -271,8 +272,8 @@ class StatusMacheteClient(MacheteClient):
                         if commit.hash == fork_point:
                             fp_branches_formatted = " and ".join(
                                 sorted(underline(lb_or_rb) for lb, lb_or_rb in fork_point_branches_cached[branch]))
-                            right_arrow = colored(utils.get_right_arrow(), AnsiEscapeCodes.RED)
-                            fork_point_str = colored("fork point ???", AnsiEscapeCodes.RED)
+                            right_arrow = colored(utils.get_right_arrow(), utils.AE.RED)
+                            fork_point_str = colored("fork point ???", utils.AE.RED)
                             fp_suffix = (
                                 f' {right_arrow} {fork_point_str} ' +
                                 ("this commit" if flags.opt_list_commits_with_hashes else f"commit {commit.short_hash}") +
@@ -292,14 +293,14 @@ class StatusMacheteClient(MacheteClient):
             s, remote = self._git.get_combined_remote_sync_status(branch)
             sync_status_by_branch[branch] = {
                 SyncToRemoteStatus.NO_REMOTES: "",
-                SyncToRemoteStatus.UNTRACKED: colored(" (untracked)", AnsiEscapeCodes.ORANGE),
+                SyncToRemoteStatus.UNTRACKED: colored(" (untracked)", utils.AE.ORANGE),
                 SyncToRemoteStatus.IN_SYNC_WITH_REMOTE: "",
-                SyncToRemoteStatus.BEHIND_REMOTE: colored(f" (behind {bold(remote)})", AnsiEscapeCodes.RED),  # type: ignore[arg-type]
-                SyncToRemoteStatus.AHEAD_OF_REMOTE: colored(f" (ahead of {bold(remote)})", AnsiEscapeCodes.RED),  # type: ignore[arg-type]
+                SyncToRemoteStatus.BEHIND_REMOTE: colored(f" (behind {bold(remote)})", utils.AE.RED),  # type: ignore[arg-type]
+                SyncToRemoteStatus.AHEAD_OF_REMOTE: colored(f" (ahead of {bold(remote)})", utils.AE.RED),  # type: ignore[arg-type]
                 SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(
-                    f" (diverged from & older than {bold(remote)})", AnsiEscapeCodes.RED),  # type: ignore[arg-type]
+                    f" (diverged from & older than {bold(remote)})", utils.AE.RED),  # type: ignore[arg-type]
                 SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(
-                    f" (diverged from {bold(remote)})", AnsiEscapeCodes.RED),  # type: ignore[arg-type]
+                    f" (diverged from {bold(remote)})", utils.AE.RED),  # type: ignore[arg-type]
             }[SyncToRemoteStatus(s)]
 
             hook_output = ""

@@ -5,22 +5,13 @@ from typing import Any, Tuple
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils import AnsiEscapeCodes
+from git_machete.utils import AE
 
 from .base_test import BaseTest
 from .mockers import launch_command, rewrite_branch_layout_file
 from .mockers_git_repository import check_out, commit, create_repo, new_branch
 
-# Key codes for tests
-KEY_UP = AnsiEscapeCodes.KEY_UP
-KEY_DOWN = AnsiEscapeCodes.KEY_DOWN
-KEY_RIGHT = AnsiEscapeCodes.KEY_RIGHT
-KEY_LEFT = AnsiEscapeCodes.KEY_LEFT
-KEY_SHIFT_UP = AnsiEscapeCodes.KEY_SHIFT_UP
-KEY_SHIFT_DOWN = AnsiEscapeCodes.KEY_SHIFT_DOWN
-KEY_SPACE = AnsiEscapeCodes.KEY_SPACE
 KEY_ENTER = '\r'  # Enter key
-KEY_CTRL_C = AnsiEscapeCodes.KEY_CTRL_C
 
 
 def mock_read_stdin_returning(*keys: str) -> Any:
@@ -96,7 +87,7 @@ class TestGoInteractive(BaseTest):
         check_out("develop")
 
         # Navigate: DOWN (to feature-1), UP (back to develop), DOWN (to feature-1 again), SPACE (checkout)
-        output = self.run_interactive_test(mocker, (KEY_DOWN, KEY_UP, KEY_DOWN, KEY_SPACE))
+        output = self.run_interactive_test(mocker, (AE.KEY_DOWN, AE.KEY_UP, AE.KEY_DOWN, AE.KEY_SPACE))
 
         # Verify the branch list is displayed
         assert "Select branch" in output
@@ -114,7 +105,7 @@ class TestGoInteractive(BaseTest):
         check_out("develop")
 
         # Shift+Down to jump to last, Space to checkout
-        self.run_interactive_test(mocker, (KEY_SHIFT_DOWN, KEY_SPACE))
+        self.run_interactive_test(mocker, (AE.KEY_SHIFT_DOWN, AE.KEY_SPACE))
 
         # Verify we checked out feature-2
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
@@ -122,7 +113,7 @@ class TestGoInteractive(BaseTest):
 
         # Now test Shift+Up to jump to first branch, use Enter to checkout
         check_out("develop")
-        self.run_interactive_test(mocker, (KEY_SHIFT_UP, KEY_ENTER))
+        self.run_interactive_test(mocker, (AE.KEY_SHIFT_UP, KEY_ENTER))
 
         # Verify we checked out master
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
@@ -133,7 +124,7 @@ class TestGoInteractive(BaseTest):
         check_out("feature-2")
 
         # Left (to develop), Left (to master), Left (no parent - should stay on master), Space (checkout master)
-        self.run_interactive_test(mocker, (KEY_LEFT, KEY_LEFT, KEY_LEFT, KEY_SPACE))
+        self.run_interactive_test(mocker, (AE.KEY_LEFT, AE.KEY_LEFT, AE.KEY_LEFT, AE.KEY_SPACE))
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "master"
@@ -143,7 +134,7 @@ class TestGoInteractive(BaseTest):
         check_out("develop")
 
         # Right (to feature-1), Right (no child - should stay on feature-1), Space (checkout)
-        self.run_interactive_test(mocker, (KEY_RIGHT, KEY_RIGHT, KEY_SPACE))
+        self.run_interactive_test(mocker, (AE.KEY_RIGHT, AE.KEY_RIGHT, AE.KEY_SPACE))
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "feature-1"
@@ -154,7 +145,7 @@ class TestGoInteractive(BaseTest):
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
 
         # Navigate down, then quit with Ctrl+C
-        self.run_interactive_test(mocker, (KEY_DOWN, KEY_CTRL_C))
+        self.run_interactive_test(mocker, (AE.KEY_DOWN, AE.KEY_CTRL_C))
 
         # Verify we're still on the initial branch
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
@@ -165,14 +156,14 @@ class TestGoInteractive(BaseTest):
         check_out("master")
 
         # Navigate down to develop, checkout with Enter
-        self.run_interactive_test(mocker, (KEY_DOWN, KEY_ENTER))
+        self.run_interactive_test(mocker, (AE.KEY_DOWN, KEY_ENTER))
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "develop"
 
         # Now test Space as well
         check_out("master")
-        self.run_interactive_test(mocker, (KEY_DOWN, KEY_SPACE))
+        self.run_interactive_test(mocker, (AE.KEY_DOWN, AE.KEY_SPACE))
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "develop"
@@ -204,7 +195,7 @@ class TestGoInteractive(BaseTest):
 
         # Down from feature-2 (last) should wrap to master (first)
         # Go to last with Shift+Down, then Down again (wrap to first), then Space
-        self.run_interactive_test(mocker, (KEY_SHIFT_DOWN, KEY_DOWN, KEY_SPACE))
+        self.run_interactive_test(mocker, (AE.KEY_SHIFT_DOWN, AE.KEY_DOWN, AE.KEY_SPACE))
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "master"
@@ -215,13 +206,13 @@ class TestGoInteractive(BaseTest):
         initial_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
 
         # Navigate and quit with 'q'
-        self.run_interactive_test(mocker, (KEY_DOWN, 'q'))
+        self.run_interactive_test(mocker, (AE.KEY_DOWN, 'q'))
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == initial_branch
 
         # Test with 'Q' as well
-        self.run_interactive_test(mocker, (KEY_DOWN, 'Q'))
+        self.run_interactive_test(mocker, (AE.KEY_DOWN, 'Q'))
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == initial_branch
@@ -265,11 +256,11 @@ class TestGoInteractive(BaseTest):
         assert "feature-2" not in output_no_scroll
 
         # Now navigate down to trigger scrolling and verify feature-2 becomes visible
-        output_with_scroll = self.run_interactive_test(mocker, (KEY_DOWN, KEY_DOWN, KEY_DOWN, 'q'))
+        output_with_scroll = self.run_interactive_test(mocker, (AE.KEY_DOWN, AE.KEY_DOWN, AE.KEY_DOWN, 'q'))
         assert "feature-2" in output_with_scroll
 
         # Finally, navigate down and checkout to verify functionality
-        self.run_interactive_test(mocker, (KEY_DOWN, KEY_DOWN, KEY_DOWN, KEY_SPACE))
+        self.run_interactive_test(mocker, (AE.KEY_DOWN, AE.KEY_DOWN, AE.KEY_DOWN, AE.KEY_SPACE))
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "feature-2"
@@ -289,11 +280,11 @@ class TestGoInteractive(BaseTest):
         assert "master" not in output_no_scroll
 
         # Now navigate up to trigger scrolling and verify master becomes visible
-        output_with_scroll = self.run_interactive_test(mocker, (KEY_UP, KEY_UP, KEY_UP, 'q'))
+        output_with_scroll = self.run_interactive_test(mocker, (AE.KEY_UP, AE.KEY_UP, AE.KEY_UP, 'q'))
         assert "master" in output_with_scroll
 
         # Finally, navigate up and checkout to verify functionality
-        self.run_interactive_test(mocker, (KEY_UP, KEY_UP, KEY_UP, KEY_SPACE))
+        self.run_interactive_test(mocker, (AE.KEY_UP, AE.KEY_UP, AE.KEY_UP, AE.KEY_SPACE))
 
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "master"

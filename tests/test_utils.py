@@ -4,11 +4,15 @@ import sys
 import tempfile
 
 import pytest
+from pytest_mock import MockerFixture
 
 from git_machete import utils
+from git_machete.utils import SimpleAnsiEscapeCodes
+
+from .base_test import BaseTest
 
 
-class TestUtils:
+class TestUtils(BaseTest):
 
     def test_debug_doesnt_overwrite_local_vars(self) -> None:
         foo = {"foo": 1}
@@ -19,18 +23,23 @@ class TestUtils:
             utils.debug_mode = False
         assert foo["foo"] == 1  # and not string "1"
 
-    def test_fmt(self) -> None:
-        utils.ascii_only = False
-        utils.AnsiEscapeCodes.UNDERLINE = '\033[4m'
-        utils.AnsiEscapeCodes.RED = '\033[91m'
+    def test_fmt(self, mocker: MockerFixture) -> None:
+        # Force printing ANSI escape sequences even though the terminal is NOT a TTY
+        self.patch_symbol(mocker, 'git_machete.utils.ascii_only', False)
+        # Use the palette of ANSI escape code that does NOT depend on the underlying terminal properties
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, 'git_machete.utils.AE', E)
 
         input_string = '<red> red <yellow>yellow <b>yellow_bold</b> `yellow_underlined` yellow <green>green </green> default' \
                        ' <dim> dimmed </dim></yellow> <green>green `green_underlined`</green> default</red>'
-        expected_ansi_string = r'[91m red [33myellow [1myellow_bold[22m [4myellow_underlined[24m yellow [32mgreen ' \
-                               '[0m default [2m dimmed [22m[0m [32mgreen [4mgreen_underlined[24m[0m default[0m'
 
+        expected_ansi_string = (
+            E.RED + ' red ' + E.YELLOW + 'yellow ' + E.BOLD + 'yellow_bold' + E.ENDC_BOLD_DIM + ' ' +
+            E.UNDERLINE + 'yellow_underlined' + E.ENDC_UNDERLINE + ' yellow ' + E.GREEN + 'green ' + E.ENDC +
+            ' default ' + E.DIM + ' dimmed ' + E.ENDC_BOLD_DIM + E.ENDC + ' ' + E.GREEN + 'green ' +
+            E.UNDERLINE + 'green_underlined' + E.ENDC_UNDERLINE + E.ENDC + ' default' + E.ENDC
+        )
         ansi_string = utils.fmt(input_string)
-
         assert ansi_string == expected_ansi_string
 
     def test_get_current_date(self) -> None:

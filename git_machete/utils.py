@@ -314,7 +314,7 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
 
     if debug_mode:
         if exit_code != 0:
-            print(colored(f"<exit code: {exit_code}>\n", AnsiEscapeCodes.RED), file=sys.stderr)
+            print(colored(f"<exit code: {exit_code}>\n", AE.RED), file=sys.stderr)
         if stdout:
             if hide_debug_output:
                 print(f"{dim('<stdout>:')}\n{dim('<REDACTED>')}", file=sys.stderr)
@@ -324,7 +324,7 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
             if hide_debug_output:
                 print(f"{dim('<stderr>:')}\n{dim('<REDACTED>')}", file=sys.stderr)
             else:
-                print(f"{dim('<stderr>:')}\n{colored(stderr, AnsiEscapeCodes.RED)}", file=sys.stderr)
+                print(f"{dim('<stderr>:')}\n{colored(stderr, AE.RED)}", file=sys.stderr)
 
     return result
 
@@ -343,7 +343,7 @@ def get_cmd_shell_repr(cmd: str, *args: str, env: Optional[Dict[str, str]]) -> s
 
 def warn(msg: str, *, apply_fmt: bool = True, end: str = '\n') -> None:
     if msg not in displayed_warnings:
-        print(colored("Warn: ", AnsiEscapeCodes.ORANGE) + (fmt(msg) if apply_fmt else msg), file=sys.stderr, end=end)
+        print(colored("Warn: ", AE.ORANGE) + (fmt(msg) if apply_fmt else msg), file=sys.stderr, end=end)
         displayed_warnings.add(msg)
 
 
@@ -377,14 +377,7 @@ def hex_repr(input: str) -> str:
     return ':'.join(hex(ord(char))[2:] for char in input)
 
 
-class AnsiEscapeCodes:
-
-    __is_terminal_fully_fledged = is_terminal_fully_fledged()
-
-    # `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
-    # is just needed for animated gifs to render correctly
-    # (`[2m`-style dimmed text is invisible in asciicinema renders).
-    __dim_as_gray = os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true'
+class SimpleAnsiEscapeCodes:
 
     # Basic ANSI sequences
     ESCAPE = '\033'
@@ -395,15 +388,12 @@ class AnsiEscapeCodes:
     ENDC_UNDERLINE = '\033[24m'
     ENDC_BOLD_DIM = '\033[22m'
     BOLD = '\033[1m'
-    DIM = '\033[38;2;128;128;128m' if __dim_as_gray else '\033[2m'
-    # Let's fall back to cyan on 8-color terminals
-    UNDERLINE = '\033[4m' if __is_terminal_fully_fledged else '\033[36m'
+    DIM = '\033[2m'
+    UNDERLINE = '\033[4m'
     GREEN = '\033[32m'
     YELLOW = '\033[33m'
-    # Let's fall back to yellow on 8-color terminals
-    ORANGE = '\033[00;38;5;208m' if __is_terminal_fully_fledged else '\033[33m'
-    # Let's fall back to dark red (which might be similar to yellow :/) on 8-color terminals
-    RED = '\033[91m' if __is_terminal_fully_fledged else '\033[31m'
+    ORANGE = '\033[00;38;5;208m'
+    RED = '\033[91m'
     REVERSE_VIDEO = '\033[7m'
 
     # Cursor control
@@ -425,17 +415,38 @@ class AnsiEscapeCodes:
     KEY_CTRL_C = '\003'
 
 
+class TerminalAwareAnsiEscapeCodes(SimpleAnsiEscapeCodes):
+    # `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
+    # is just needed for animated gifs to render correctly
+    # (`[2m`-style dimmed text is invisible in asciicinema renders).
+    __dim_as_gray = os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true'
+
+    __is_terminal_fully_fledged = is_terminal_fully_fledged()
+
+    DIM = '\033[38;2;128;128;128m' if __dim_as_gray else '\033[2m'
+    # Let's fall back to cyan on 8-color terminals
+    UNDERLINE = '\033[4m' if __is_terminal_fully_fledged else '\033[36m'
+    ENDC_UNDERLINE = '\033[24m' if __is_terminal_fully_fledged else SimpleAnsiEscapeCodes.ENDC
+    # Let's fall back to yellow on 8-color terminals
+    ORANGE = '\033[00;38;5;208m' if __is_terminal_fully_fledged else SimpleAnsiEscapeCodes.YELLOW
+    # Let's fall back to dark red on 8-color terminals
+    RED = '\033[91m' if __is_terminal_fully_fledged else '\033[31m'
+
+
+AE = TerminalAwareAnsiEscapeCodes()
+
+
 def bold(s: str) -> str:
-    return s if ascii_only or not s else AnsiEscapeCodes.BOLD + s + AnsiEscapeCodes.ENDC_BOLD_DIM
+    return s if ascii_only or not s else AE.BOLD + s + AE.ENDC_BOLD_DIM
 
 
 def dim(s: str) -> str:
-    return s if ascii_only or not s else AnsiEscapeCodes.DIM + s + AnsiEscapeCodes.ENDC_BOLD_DIM
+    return s if ascii_only or not s else AE.DIM + s + AE.ENDC_BOLD_DIM
 
 
 def underline(s: str, *, star_if_ascii_only: bool = False) -> str:
     if s and not ascii_only:
-        return AnsiEscapeCodes.UNDERLINE + s + AnsiEscapeCodes.ENDC_UNDERLINE
+        return AE.UNDERLINE + s + AE.ENDC_UNDERLINE
     elif s and star_if_ascii_only:
         return s + " *"
     else:
@@ -443,23 +454,23 @@ def underline(s: str, *, star_if_ascii_only: bool = False) -> str:
 
 
 def colored(s: str, color: str) -> str:  # noqa: KW
-    return s if ascii_only or not s else color + s + AnsiEscapeCodes.ENDC
-
-
-fmt_transformations: List[Callable[[str], str]] = [
-    lambda x: re.sub('`(.*?)`', underline(r"\1"), x),
-    lambda x: re.sub('<b>(.*?)</b>', bold(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<u>(.*?)</u>', underline(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<gray>(.*?)</gray>', dim(r"\1"), x, flags=re.DOTALL),
-    lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", AnsiEscapeCodes.RED), x, flags=re.DOTALL),
-    lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", AnsiEscapeCodes.YELLOW), x, flags=re.DOTALL),
-    lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", AnsiEscapeCodes.GREEN), x, flags=re.DOTALL),
-    lambda x: re.sub('<orange>(.*?)</orange>', colored(r"\1", AnsiEscapeCodes.ORANGE), x, flags=re.DOTALL)
-]
+    return s if ascii_only or not s else color + s + AE.ENDC
 
 
 def fmt(*parts: str) -> str:
+    # This map needs to be defined in a local scope to avoid for mocking the color palette more easily.
+    fmt_transformations: List[Callable[[str], str]] = [
+        lambda x: re.sub('`(.*?)`', underline(r"\1"), x),
+        lambda x: re.sub('<b>(.*?)</b>', bold(r"\1"), x, flags=re.DOTALL),
+        lambda x: re.sub('<u>(.*?)</u>', underline(r"\1"), x, flags=re.DOTALL),
+        lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1"), x, flags=re.DOTALL),
+        lambda x: re.sub('<gray>(.*?)</gray>', dim(r"\1"), x, flags=re.DOTALL),
+        lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", AE.RED), x, flags=re.DOTALL),
+        lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", AE.YELLOW), x, flags=re.DOTALL),
+        lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", AE.GREEN), x, flags=re.DOTALL),
+        lambda x: re.sub('<orange>(.*?)</orange>', colored(r"\1", AE.ORANGE), x, flags=re.DOTALL)
+    ]
+
     result = ''.join(parts)
     for f in fmt_transformations:
         result = f(result)
@@ -479,13 +490,13 @@ def get_pretty_choices(*choices: str) -> str:
         if not c:
             return ''
         elif c.lower() == 'y':
-            return colored(c, AnsiEscapeCodes.GREEN)
+            return colored(c, AE.GREEN)
         elif c.lower() == 'yq':
-            return colored(c[0], AnsiEscapeCodes.GREEN) + colored(c[1], AnsiEscapeCodes.RED)
+            return colored(c[0], AE.GREEN) + colored(c[1], AE.RED)
         elif c.lower() in ('n', 'q'):
-            return colored(c, AnsiEscapeCodes.RED)
+            return colored(c, AE.RED)
         else:
-            return colored(c, AnsiEscapeCodes.ORANGE)
+            return colored(c, AE.ORANGE)
 
     return " (" + (", ".join(map_truthy_only(format_choice, choices))) + ") "
 

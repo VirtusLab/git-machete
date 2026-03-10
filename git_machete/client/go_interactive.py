@@ -13,7 +13,7 @@ from git_machete import utils
 from git_machete.client.base import MacheteClient
 from git_machete.exceptions import UnexpectedMacheteException
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import AnsiEscapeCodes, bold, index_or_none, warn
+from git_machete.utils import bold, index_or_none, warn
 
 
 class GoInteractiveMacheteClient(MacheteClient):
@@ -68,11 +68,11 @@ class GoInteractiveMacheteClient(MacheteClient):
         """Draw the branch selection screen using ANSI escape codes."""
         # Move cursor up to the start of our display area (if we've drawn before)
         if not is_first_draw and num_lines_drawn > 0:
-            sys.stdout.write(f'{AnsiEscapeCodes.CSI}{num_lines_drawn}A')
+            sys.stdout.write(f'{utils.AE.CSI}{num_lines_drawn}A')
 
         # Clear from cursor to end of screen (only if not first draw)
         if not is_first_draw:
-            sys.stdout.write(AnsiEscapeCodes.CLEAR_TO_END)
+            sys.stdout.write(utils.AE.CLEAR_TO_END)
 
         # Header
         header_text = ("Select branch (↑/↓: prev/next, Shift+↑/↓: first/last, ←: parent, →: child, "
@@ -94,7 +94,7 @@ class GoInteractiveMacheteClient(MacheteClient):
 
             if branch_idx == selected_idx:
                 # Highlight selected line (inverse video)
-                sys.stdout.write(f'{AnsiEscapeCodes.REVERSE_VIDEO}{line}{AnsiEscapeCodes.ENDC}\n')
+                sys.stdout.write(f'{utils.AE.REVERSE_VIDEO}{line}{utils.AE.ENDC}\n')
             else:
                 sys.stdout.write(f'{line}\n')
 
@@ -115,7 +115,7 @@ class GoInteractiveMacheteClient(MacheteClient):
             tty.setraw(fd)
             ch = self._read_stdin(1)
             # Handle escape sequences for arrow keys
-            if ch == AnsiEscapeCodes.ESCAPE:
+            if ch == utils.AE.ESCAPE:
                 # Read the next character
                 ch2 = self._read_stdin(1)
                 if ch2 == '[':
@@ -125,8 +125,8 @@ class GoInteractiveMacheteClient(MacheteClient):
                         ch4 = self._read_stdin(1)  # Should be ';'
                         ch5 = self._read_stdin(1)  # Should be '2'
                         ch6 = self._read_stdin(1)  # Should be 'A' or 'B'
-                        return AnsiEscapeCodes.CSI + ch3 + ch4 + ch5 + ch6
-                    return AnsiEscapeCodes.CSI + ch3
+                        return utils.AE.CSI + ch3 + ch4 + ch5 + ch6
+                    return utils.AE.CSI + ch3
                 return ch + ch2
             return ch
         finally:
@@ -163,7 +163,7 @@ class GoInteractiveMacheteClient(MacheteClient):
         is_first_draw = True
 
         # Hide cursor
-        sys.stdout.write(AnsiEscapeCodes.HIDE_CURSOR)
+        sys.stdout.write(utils.AE.HIDE_CURSOR)
         sys.stdout.flush()
 
         try:
@@ -183,38 +183,38 @@ class GoInteractiveMacheteClient(MacheteClient):
                 # Read key
                 key = self._getch()
 
-                if key == AnsiEscapeCodes.KEY_UP:
+                if key == utils.AE.KEY_UP:
                     # Wrap around from first to last
                     selected_idx = (selected_idx - 1) % len(self._managed_branches_with_depths)
-                elif key == AnsiEscapeCodes.KEY_DOWN:
+                elif key == utils.AE.KEY_DOWN:
                     # Wrap around from last to first
                     selected_idx = (selected_idx + 1) % len(self._managed_branches_with_depths)
-                elif key == AnsiEscapeCodes.KEY_SHIFT_UP:
+                elif key == utils.AE.KEY_SHIFT_UP:
                     # Jump to first branch
                     selected_idx = 0
-                elif key == AnsiEscapeCodes.KEY_SHIFT_DOWN:
+                elif key == utils.AE.KEY_SHIFT_DOWN:
                     # Jump to last branch
                     selected_idx = len(self._managed_branches_with_depths) - 1
-                elif key == AnsiEscapeCodes.KEY_LEFT:
+                elif key == utils.AE.KEY_LEFT:
                     # Go to parent
                     selected_branch, _ = self._managed_branches_with_depths[selected_idx]
                     parent_branch = self.up_branch_for(selected_branch)
                     if parent_branch:
                         selected_idx = self.managed_branches.index(parent_branch)
-                elif key == AnsiEscapeCodes.KEY_RIGHT:
+                elif key == utils.AE.KEY_RIGHT:
                     # Go to first child
                     selected_branch, _ = self._managed_branches_with_depths[selected_idx]
                     child_branches = self.down_branches_for(selected_branch)
                     if child_branches:
                         selected_idx = self.managed_branches.index(child_branches[0])
-                elif key in AnsiEscapeCodes.KEYS_ENTER or key == AnsiEscapeCodes.KEY_SPACE:
+                elif key in utils.AE.KEYS_ENTER or key == utils.AE.KEY_SPACE:
                     selected_branch, _ = self._managed_branches_with_depths[selected_idx]
                     return selected_branch
                 elif key in ('q', 'Q'):
                     return None
-                elif key == AnsiEscapeCodes.KEY_CTRL_C:
+                elif key == utils.AE.KEY_CTRL_C:
                     return None
         finally:
             # Show cursor again and move past our interface
-            sys.stdout.write(AnsiEscapeCodes.SHOW_CURSOR)
+            sys.stdout.write(utils.AE.SHOW_CURSOR)
             sys.stdout.flush()
