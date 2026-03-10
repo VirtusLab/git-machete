@@ -3,8 +3,8 @@ import itertools
 import os
 from typing import List, Optional, Tuple
 
-from git_machete.client.base import SquashMergeDetection
 from git_machete.client.status import StatusMacheteClient
+from git_machete.config import SquashMergeDetection
 from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import LocalBranchShortName

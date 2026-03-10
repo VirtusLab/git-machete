@@ -3,18 +3,17 @@ from enum import auto
 from typing import Dict, List, Optional, Type, Union
 
 from git_machete.annotation import Annotation, Qualifiers
-from git_machete.client.base import (ParsableEnum, PickRoot,
-                                     SquashMergeDetection)
+from git_machete.client.base import PickRoot
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.code_hosting import PullRequest
+from git_machete.config import (SquashMergeDetection,
+                                TraverseWhenBranchNotCheckedOutInAnyWorktree)
 from git_machete.exceptions import MacheteException, UnexpectedMacheteException
-from git_machete.git_config_keys import \
-    TRAVERSE_WHEN_BRANCH_NOT_CHECKED_OUT_IN_ANY_WORKTREE
 from git_machete.git_operations import (GitContext, LocalBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (abspath_posix, bold, flat_map, fmt,
-                               get_pretty_choices, get_right_arrow, green_ok,
-                               print_no_newline, warn)
+from git_machete.utils import (ParsableEnum, abspath_posix, bold, flat_map,
+                               fmt, get_pretty_choices, get_right_arrow,
+                               green_ok, print_no_newline, warn)
 
 
 class TraverseReturnTo(ParsableEnum):
@@ -48,11 +47,6 @@ class TraverseStartFrom(ParsableEnum):
             raise MacheteException(f"{bold(value)} is neither a special value ({all_values}), nor a local branch")
 
 
-class TraverseWhenBranchNotCheckedOutInAnyWorktree(ParsableEnum):
-    CD_INTO_MAIN_WORKTREE = auto()
-    STAY_IN_THE_CURRENT_WORKTREE = auto()  # noqa: F841
-
-
 class TraverseMacheteClient(MacheteClientWithCodeHosting):
     def _update_worktrees_cache_after_checkout(self, checked_out_branch: LocalBranchShortName) -> None:
         """
@@ -70,19 +64,6 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 break
 
         self.__worktree_root_dir_for_branch[checked_out_branch] = current_worktree_root_dir
-
-    def _get_when_branch_not_checked_out_in_any_worktree_config(self) -> TraverseWhenBranchNotCheckedOutInAnyWorktree:
-        """
-        Get the configured behavior for when checking out a branch that is not checked out in any worktree.
-        Returns the default value if the config key is not set.
-        """
-        config_value_str = self._git.get_config_attr_or_none(TRAVERSE_WHEN_BRANCH_NOT_CHECKED_OUT_IN_ANY_WORKTREE)
-        if config_value_str is None:
-            return TraverseWhenBranchNotCheckedOutInAnyWorktree.CD_INTO_MAIN_WORKTREE
-        else:
-            return TraverseWhenBranchNotCheckedOutInAnyWorktree.from_string(
-                config_value_str,
-                f"`{TRAVERSE_WHEN_BRANCH_NOT_CHECKED_OUT_IN_ANY_WORKTREE}` git config key")
 
     def _switch_branch(
             self,
@@ -102,7 +83,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
         if target_worktree_root_dir is None:
             # Branch is not checked out anywhere
-            config_value = self._get_when_branch_not_checked_out_in_any_worktree_config()
+            config_value = self._config.traverse_when_branch_not_checked_out_in_any_worktree()
 
             # Default behavior: cd to main worktree if we're in a linked worktree
             # Otherwise (STAY_IN_THE_CURRENT_WORKTREE), stay in the current worktree and checkout the branch there

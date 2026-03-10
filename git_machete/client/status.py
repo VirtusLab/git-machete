@@ -6,8 +6,9 @@ import sys
 from enum import Enum, auto
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
-from git_machete import git_config_keys, utils
+from git_machete import utils
 from git_machete.annotation import Annotation
+from git_machete.config import SquashMergeDetection
 from git_machete.exceptions import MacheteException
 from git_machete.git_operations import (BranchPair, FullCommitHash,
                                         GitLogEntry, LocalBranchShortName,
@@ -15,7 +16,7 @@ from git_machete.git_operations import (BranchPair, FullCommitHash,
 from git_machete.utils import (AnsiEscapeCodes, PopenResult, bold, colored,
                                debug, dim, underline, warn)
 
-from .base import MacheteClient, SquashMergeDetection
+from .base import MacheteClient
 
 
 class SyncToParentStatus(Enum):
@@ -350,10 +351,7 @@ class StatusMacheteClient(MacheteClient):
             opt_list_commits_with_hashes: bool,
             opt_squash_merge_detection: SquashMergeDetection
     ) -> None:
-        maybe_space_before_branch_name = (
-            ' ' if self._git.get_boolean_config_attr(
-                git_config_keys.STATUS_EXTRA_SPACE_BEFORE_BRANCH_NAME, default_value=False) else ''
-        )
+        maybe_space_before_branch_name = ' ' if self._config.status_extra_space_before_branch_name() else ''
         flags = StatusFlags(
             maybe_space_before_branch_name=maybe_space_before_branch_name,
             opt_list_commits=opt_list_commits,

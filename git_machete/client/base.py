@@ -6,11 +6,11 @@ import shutil
 import sys
 import textwrap
 from enum import Enum, auto
-from typing import (Callable, Dict, Iterator, List, NoReturn, Optional, Tuple,
-                    Type, TypeVar)
+from typing import Callable, Dict, Iterator, List, NoReturn, Optional, Tuple
 
-from git_machete import git_config_keys, utils
+from git_machete import utils
 from git_machete.annotation import Annotation
+from git_machete.config import MacheteConfig, SquashMergeDetection
 from git_machete.constants import (INITIAL_COMMIT_COUNT_FOR_LOG,
                                    TOTAL_COMMIT_COUNT_FOR_LOG)
 from git_machete.exceptions import (InteractionStopped, MacheteException,
@@ -25,30 +25,10 @@ from git_machete.utils import (bold, debug, dim, excluding, flat_map, fmt,
                                get_pretty_choices, get_second,
                                join_paths_posix, relpath_posix, tupled, warn)
 
-E = TypeVar('E', bound='Enum')
-
-
-class ParsableEnum(Enum):
-    @classmethod
-    def from_string(cls: Type[E], value: str, from_where: Optional[str]) -> E:
-        try:
-            return cls[value.upper().replace("-", "_")]
-        except KeyError:
-            valid_values = ', '.join('`' + e.name.lower().replace("_", "-") + '`' for e in cls)
-            prefix = f"Invalid value for {from_where}" if from_where else "Invalid value"
-            printed_value = value or '<empty>'
-            raise MacheteException(f"{prefix}: `{printed_value}`. Valid values are {valid_values}")
-
 
 class PickRoot(Enum):
     FIRST = auto()
     LAST = auto()
-
-
-class SquashMergeDetection(ParsableEnum):
-    NONE = auto()
-    SIMPLE = auto()
-    EXACT = auto()
 
 
 class MacheteState:
@@ -64,6 +44,7 @@ class MacheteClient:
 
     def __init__(self, git: GitContext) -> None:
         self._git: GitContext = git
+        self._config: MacheteConfig = MacheteConfig(git)
         git.owner = self
 
         self._branch_layout_file_path: str = self.__get_git_machete_branch_layout_file_path()
@@ -85,11 +66,7 @@ class MacheteClient:
         self.__init_state()
 
     def __get_git_machete_branch_layout_file_path(self) -> str:
-        use_top_level_machete_file = self._git.get_boolean_config_attr(
-            key=git_config_keys.WORKTREE_USE_TOP_LEVEL_MACHETE_FILE,
-            default_value=True
-        )
-        if use_top_level_machete_file:
+        if self._config.worktree_use_top_level_machete_file():
             machete_file_directory = self._git.get_main_worktree_git_dir()
         else:
             machete_file_directory = self._git.get_current_worktree_git_dir()
@@ -528,7 +505,7 @@ class MacheteClient:
         proposed_editor_funs: List[Tuple[str, Callable[[], Optional[str]]]] = [
             ("$" + git_machete_editor_var, lambda: os.environ.get(git_machete_editor_var)),
             ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
-            ("git config core.editor", lambda: self._git.get_config_attr_or_none("core.editor")),
+            ("git config core.editor", lambda: self._config.core_editor()),
             ("$VISUAL", lambda: os.environ.get("VISUAL")),
             ("$EDITOR", lambda: os.environ.get("EDITOR")),
             ("editor", lambda: "editor"),
@@ -556,8 +533,7 @@ class MacheteClient:
                         raise MacheteException(f"<b>{editor_repr}</b> is not available")
                 else:
                     debug(f"'{editor_command}' executable ('{name}') found")
-                    if name != "$" + git_machete_editor_var and \
-                            self._git.get_config_attr_or_none('advice.macheteEditorSelection') != 'false':
+                    if name != "$" + git_machete_editor_var and self._config.advice_machete_editor_selection():
                         sample_alternative = 'nano' if editor_command.startswith('vi') else 'vi'
                         print(fmt(f"Opening <b>{editor_repr}</b>.\n",
                                   f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export "
@@ -935,18 +911,16 @@ class MacheteClient:
         return None
 
     def remote_enabled_for_traverse_fetch(self, remote: str) -> bool:
-        return self._git.get_boolean_config_attr(git_config_keys.traverse_remote_fetch(remote), default_value=True)
+        return self._config.traverse_fetch_for_remote(remote)
 
     # Also includes config that is invalid (corresponding to a non-existent/GCed commit etc.).
     def has_any_fork_point_override_config(self, branch: LocalBranchShortName) -> bool:
-        return (self._git.get_config_attr_or_none(git_config_keys.override_fork_point_to(branch)) or
-                # Note that we still include the now-deprecated `whileDescendantOf` key for this purpose.
-                self._git.get_config_attr_or_none(git_config_keys.override_fork_point_while_descendant_of(branch))) is not None
+        return (self._config.fork_point_override_to_value(branch) or
+                self._config.fork_point_override_while_descendant_of_value(branch)) is not None
 
     def __get_fork_point_override_data(self, branch: LocalBranchShortName) -> Optional[ForkPointOverrideData]:
         # Note that here we ignore the now-deprecated `whileDescendantOf`.
-        to_key = git_config_keys.override_fork_point_to(branch)
-        to_value = self._git.get_config_attr_or_none(to_key)
+        to_value = self._config.fork_point_override_to_value(branch)
         if to_value and FullCommitHash.is_valid(value=to_value):
             return ForkPointOverrideData(FullCommitHash.of(to_value))
         else:

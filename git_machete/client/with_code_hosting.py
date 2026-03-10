@@ -1,16 +1,15 @@
 import itertools
 import os
-from enum import auto
 from typing import Dict, Iterator, List, Optional, Set, Tuple
 
 from git_machete import utils
 from git_machete.annotation import Annotation, Qualifiers
-from git_machete.client.base import ParsableEnum, SquashMergeDetection
 from git_machete.client.status import StatusMacheteClient
 from git_machete.code_hosting import (CodeHostingClient, CodeHostingSpec,
                                       OrganizationAndRepository,
                                       OrganizationAndRepositoryAndRemote,
                                       PullRequest, is_matching_remote_url)
+from git_machete.config import PRDescriptionIntroStyle, SquashMergeDetection
 from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import (GitContext, GitFormatPatterns,
                                         GitLogEntry, LocalBranchShortName,
@@ -20,14 +19,6 @@ from git_machete.utils import (bold, colored_yes_no, debug, find_or_none, fmt,
                                get_pretty_choices, get_right_arrow, green_ok,
                                join_paths_posix, print_no_newline, slurp_file,
                                warn)
-
-
-class PRDescriptionIntroStyle(ParsableEnum):
-    FULL = auto()
-    FULL_NO_BRANCHES = auto()
-    UP_ONLY = auto()
-    UP_ONLY_NO_BRANCHES = auto()
-    NONE = auto()
 
 
 class MacheteClientWithCodeHosting(StatusMacheteClient):
@@ -63,8 +54,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         anno = pr.display_text(fmt=False)
         if current_user != pr.user:
             anno += f" ({pr.user})"
-        config_key = self.code_hosting_spec.git_config_keys.annotate_with_urls
-        if include_url or self._git.get_boolean_config_attr(key=config_key, default_value=False):
+        if include_url or self._config.code_hosting_annotate_with_urls(self.code_hosting_spec.git_config_keys):
             anno += f" {pr.html_url}"
         return anno
 
@@ -348,9 +338,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             # Let's use branch name as a fallback for PR title in such case.
             title = commits[0].subject if commits else head
 
-        force_description_from_commit_message = self._git.get_boolean_config_attr(
-            key=spec.git_config_keys.force_description_from_commit_message, default_value=False)
-        if force_description_from_commit_message:
+        if self._config.code_hosting_force_description_from_commit_message(spec.git_config_keys):
             description = self._git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
         else:
             machete_description_path = self._git.get_main_worktree_git_subpath('info', 'description')
@@ -374,7 +362,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             title=title, description=description, draft=opt_draft)
         print(fmt(green_ok() + f', see `{pr.html_url}`'))
 
-        style = self.__get_pr_description_into_style_from_config()
+        style = self._config.code_hosting_pr_description_intro_style(self.code_hosting_spec.git_config_keys)
         # If base branch has NOT originally been found on the remote,
         # we can be sure that a longer chain of PRs above the newly-created PR does NOT exist.
         # So in the default UP_ONLY mode, we can skip generating the intro completely.
@@ -512,7 +500,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         original_trailing_newlines = ''.join(itertools.takewhile(lambda c: c == '\n', reversed(pr.description or '')))
         lines = pr.description.strip().splitlines() if pr.description else []
-        style = self.__get_pr_description_into_style_from_config()
+        style = self._config.code_hosting_pr_description_intro_style(self.code_hosting_spec.git_config_keys)
         text_to_prepend = self.__generate_pr_description_intro(pr, style)
         lines_to_prepend = text_to_prepend.splitlines() if text_to_prepend else []
         if self.START_GIT_MACHETE_GENERATED_COMMENT in lines and self.END_GIT_MACHETE_GENERATED_COMMENT in lines:
@@ -580,7 +568,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
     def __derive_code_hosting_domain(self) -> str:
         spec = self.code_hosting_spec
-        return self._git.get_config_attr_or_none(key=spec.git_config_keys.domain) or spec.default_domain
+        return self._config.code_hosting_domain(spec.git_config_keys) or spec.default_domain
 
     def __derive_org_repo_and_remote(
             self,
@@ -588,29 +576,26 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             branch_used_for_tracking_data: Optional[LocalBranchShortName] = None
     ) -> OrganizationAndRepositoryAndRemote:
         spec = self.code_hosting_spec
-        remote_config_key = spec.git_config_keys.remote
-        organization_config_key = spec.git_config_keys.organization
-        repository_config_key = spec.git_config_keys.repository
-
-        remote_from_config = self._git.get_config_attr_or_none(key=remote_config_key)
-        org_from_config = self._git.get_config_attr_or_none(key=organization_config_key)
-        repo_from_config = self._git.get_config_attr_or_none(key=repository_config_key)
+        keys = spec.git_config_keys
+        remote_from_config = self._config.code_hosting_remote(keys)
+        org_from_config = self._config.code_hosting_organization(keys)
+        repo_from_config = self._config.code_hosting_repository(keys)
 
         url_for_remote: Dict[str, str] = self.__get_url_for_remote()
         if not url_for_remote:
             raise MacheteException('No remotes defined for this repository (see `git remote`)')
 
         if org_from_config and not repo_from_config:
-            raise MacheteException(f'`{organization_config_key}` git config key is present, '
-                                   f'but `{repository_config_key}` is missing. Both keys must be present to take effect')
+            raise MacheteException(f'`{keys.organization}` git config key is present, '
+                                   f'but `{keys.repository}` is missing. Both keys must be present to take effect')
 
         if not org_from_config and repo_from_config:
-            raise MacheteException(f'`{repository_config_key}` git config key is present, '
-                                   f'but `{organization_config_key}` is missing. Both keys must be present to take effect')
+            raise MacheteException(f'`{keys.repository}` git config key is present, '
+                                   f'but `{keys.organization}` is missing. Both keys must be present to take effect')
 
         if remote_from_config:
             if remote_from_config not in url_for_remote:
-                raise MacheteException(f'`{remote_config_key}` git config key points to `{remote_from_config}` remote, '
+                raise MacheteException(f'`{keys.remote}` git config key points to `{remote_from_config}` remote, '
                                        'but such remote does not exist')
 
         if remote_from_config and org_from_config and repo_from_config:
@@ -620,7 +605,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             url = url_for_remote[remote_from_config]
             org_and_repo = OrganizationAndRepository.from_url(domain, url)
             if not org_and_repo:
-                raise MacheteException(f'`{remote_config_key}` git config key points to `{remote_from_config}` remote, '
+                raise MacheteException(f'`{keys.remote}` git config key points to `{remote_from_config}` remote, '
                                        f'but its URL `{url}` does not correspond to a valid {spec.display_name} {spec.repository_name}')
             return OrganizationAndRepositoryAndRemote(org_and_repo.organization, org_and_repo.repository, remote_from_config)
 
@@ -631,10 +616,10 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                         OrganizationAndRepository(org_from_config, repo_from_config):
                     return OrganizationAndRepositoryAndRemote(org_from_config, repo_from_config, remote)
             raise MacheteException(
-                f'Both `{organization_config_key}` and `{repository_config_key}` git config keys are defined, '
+                f'Both `{keys.organization}` and `{keys.repository}` git config keys are defined, '
                 f'but no remote seems to correspond to `{org_from_config}/{repo_from_config}` '
                 f'({spec.organization_name}/{spec.repository_name}) on {spec.display_name}.\n'
-                f'Consider pointing to the remote via `{remote_config_key}` config key')
+                f'Consider pointing to the remote via `{keys.remote}` config key')
 
         remote_and_organization_and_repository_from_urls: Dict[str, OrganizationAndRepositoryAndRemote] = {
             remote: OrganizationAndRepositoryAndRemote(oar.organization, oar.repository, remote) for remote, oar in (
@@ -710,13 +695,6 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         pr = prs[0]
         debug(f'found {pr}')
         return pr
-
-    def __get_pr_description_into_style_from_config(self) -> PRDescriptionIntroStyle:
-        config_key = self.code_hosting_spec.git_config_keys.pr_description_intro_style
-        return PRDescriptionIntroStyle.from_string(
-            value=self._git.get_config_attr(key=config_key, default_value="up-only"),
-            from_where=f"`{config_key}` git config key"
-        )
 
     def __generate_pr_description_intro(self, pr: PullRequest, style: PRDescriptionIntroStyle) -> str:
         if style == PRDescriptionIntroStyle.NONE:

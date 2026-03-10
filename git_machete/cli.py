@@ -10,10 +10,10 @@ from typing import (Any, Dict, Iterable, List, NoReturn, Optional, Sequence,
                     Tuple, TypeVar, Union)
 
 import git_machete.options
-from git_machete import __version__, git_config_keys, utils
+from git_machete import __version__, utils
 from git_machete.client.advance import AdvanceMacheteClient
 from git_machete.client.anno import AnnoMacheteClient
-from git_machete.client.base import MacheteClient, SquashMergeDetection
+from git_machete.client.base import MacheteClient
 from git_machete.client.diff import DiffMacheteClient
 from git_machete.client.discover import DiscoverMacheteClient
 from git_machete.client.fork_point import ForkPointMacheteClient
@@ -27,6 +27,7 @@ from git_machete.client.traverse import (TraverseMacheteClient,
                                          TraverseReturnTo, TraverseStartFrom)
 from git_machete.client.update import UpdateMacheteClient
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
+from git_machete.config import MacheteConfig, SquashMergeDetection
 from git_machete.github import GITHUB_CLIENT_SPEC
 from git_machete.gitlab import GITLAB_CLIENT_SPEC
 
@@ -402,6 +403,7 @@ def update_cli_options_using_parsed_args(
         elif opt == "no_detect_squash_merges":
             warn("`--no-detect-squash-merges` is deprecated, use `--squash-merge-detection=none` instead", end="\n\n")
             cli_opts.opt_squash_merge_detection_string = "none"
+            cli_opts.opt_squash_merge_detection_origin = "`--no-detect-squash-merges` flag"
         elif opt == "no_edit_merge":
             cli_opts.opt_no_edit_merge = True
         elif opt == "no_interactive_rebase":
@@ -480,19 +482,9 @@ def update_cli_options_using_config_keys(
         cli_opts: git_machete.options.CommandLineOptions,
         git: GitContext
 ) -> None:
-    machete_traverse_push_config_key = git.get_boolean_config_attr_or_none(key=git_config_keys.TRAVERSE_PUSH)
-    if machete_traverse_push_config_key is not None:
-        if machete_traverse_push_config_key:
-            cli_opts.opt_push_tracked, cli_opts.opt_push_untracked = True, True
-        else:
-            cli_opts.opt_push_tracked, cli_opts.opt_push_untracked = False, False
-
-    squash_merge_detection = git.get_config_attr_or_none(key=git_config_keys.SQUASH_MERGE_DETECTION)
-    if squash_merge_detection is not None:
-        # Let's defer the validation until the value is actually used in `status` or `traverse`.
-        # Otherwise, if an invalid value ends up in git config, `git machete help` will instantly fail.
-        cli_opts.opt_squash_merge_detection_string = squash_merge_detection
-        cli_opts.opt_squash_merge_detection_origin = f"`{git_config_keys.SQUASH_MERGE_DETECTION}` git config key"
+    traverse_push = MacheteConfig(git).traverse_push()
+    if traverse_push is not None:
+        cli_opts.opt_push_tracked = cli_opts.opt_push_untracked = traverse_push
 
 
 def set_utils_global_variables(parsed_args: argparse.Namespace) -> None:
@@ -549,6 +541,12 @@ def launch_internal(orig_args: List[str]) -> None:
             sys.exit(ExitCode.ARGUMENT_ERROR)
         if pass_through_args and pass_through_args[0] == "--":
             pass_through_args = pass_through_args[1:]
+
+        def squash_merge_detection() -> SquashMergeDetection:
+            if cli_opts.opt_squash_merge_detection_origin is not None:
+                return SquashMergeDetection.from_string(
+                    cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
+            return MacheteConfig(git).squash_merge_detection()
 
         if cmd == "completion":
             completion_shell = parsed_cli.shell
@@ -619,9 +617,9 @@ def launch_internal(orig_args: List[str]) -> None:
         elif cmd == "delete-unmanaged":
             delete_unmanaged_client = MacheteClient(git)
             delete_unmanaged_client.read_branch_layout_file()
-            opt_squash_merge_detection = SquashMergeDetection.from_string(
-                cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
-            delete_unmanaged_client.delete_unmanaged(opt_squash_merge_detection=opt_squash_merge_detection, opt_yes=cli_opts.opt_yes)
+            delete_unmanaged_client.delete_unmanaged(
+                opt_squash_merge_detection=MacheteConfig(git).squash_merge_detection(),
+                opt_yes=cli_opts.opt_yes)
         elif cmd in {"diff", alias_by_command["diff"]}:
             diff_client = DiffMacheteClient(git)
             diff_client.read_branch_layout_file()
@@ -920,10 +918,8 @@ def launch_internal(orig_args: List[str]) -> None:
                 )
             squash_client.squash(current_branch=current_branch, opt_fork_point=squash_fork_point)
         elif cmd in {"status", alias_by_command["status"]}:
+            opt_squash_merge_detection = squash_merge_detection()
             status_client = StatusMacheteClient(git)
-            opt_squash_merge_detection = SquashMergeDetection.from_string(
-                cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
-
             status_client.read_branch_layout_file(interactively_slide_out_invalid_branches=utils.is_stdout_a_tty())
             status_client.expect_at_least_one_managed_branch()
             status_client.status(
@@ -932,9 +928,8 @@ def launch_internal(orig_args: List[str]) -> None:
                 opt_list_commits_with_hashes=cli_opts.opt_list_commits_with_hashes,
                 opt_squash_merge_detection=opt_squash_merge_detection)
         elif cmd in {"traverse", alias_by_command["traverse"]}:
+            opt_squash_merge_detection = squash_merge_detection()
             opt_return_to = TraverseReturnTo.from_string(cli_opts.opt_return_to, "`--return-to` flag")
-            opt_squash_merge_detection = SquashMergeDetection.from_string(
-                cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
             opt_start_from = TraverseStartFrom.from_string_or_branch(cli_opts.opt_start_from, git)
 
             spec = GITHUB_CLIENT_SPEC if cli_opts.opt_sync_github_prs else GITLAB_CLIENT_SPEC
