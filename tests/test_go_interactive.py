@@ -8,7 +8,7 @@ from pytest_mock import MockerFixture
 from git_machete.utils import AE
 
 from .base_test import BaseTest
-from .mockers import launch_command, rewrite_branch_layout_file
+from .mockers import assert_failure, launch_command, rewrite_branch_layout_file
 from .mockers_git_repository import check_out, commit, create_repo, new_branch
 
 KEY_ENTER = '\r'  # Enter key
@@ -66,6 +66,9 @@ class TestGoInteractive(BaseTest):
         Helper to run an interactive test by mocking stdin and terminal methods.
         Returns the captured stdout.
         """
+        # Mock is_stdout_a_tty so interactive go runs (tests redirect stdout)
+        self.patch_symbol(mocker, 'git_machete.utils.is_stdout_a_tty', lambda: True)
+
         # Mock _get_stdin_fd to return a fake file descriptor
         self.patch_symbol(mocker, 'git_machete.client.go_interactive.GoInteractiveMacheteClient._get_stdin_fd',
                           lambda self: 0)
@@ -301,3 +304,11 @@ class TestGoInteractive(BaseTest):
         # Verify we checked out master (the first branch in the layout)
         current_branch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
         assert current_branch == "master"
+
+    def test_go_interactive_requires_tty(self, mocker: MockerFixture) -> None:
+        """Interactive `go` fails immediately when stdout is not a TTY (e.g. piped to cat)."""
+        self.patch_symbol(mocker, 'git_machete.utils.is_stdout_a_tty', lambda: False)
+        assert_failure(
+            ['go'],
+            "Interactive git machete go requires stdout to be a TTY.",
+        )

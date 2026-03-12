@@ -11,7 +11,7 @@ except ImportError:  # pragma: no cover; Windows-specific
 
 from git_machete import utils
 from git_machete.client.base import MacheteClient
-from git_machete.exceptions import UnexpectedMacheteException
+from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import LocalBranchShortName
 from git_machete.utils import bold, index_or_none, warn
 
@@ -139,6 +139,8 @@ class GoInteractiveMacheteClient(MacheteClient):
         """
         if termios is None or tty is None:
             raise UnexpectedMacheteException("Interactive mode is not supported on Windows yet")
+        if not utils.is_stdout_a_tty():
+            raise MacheteException("Interactive `git machete go` requires stdout to be a TTY.")
 
         # Get flat list of branches with depths from already-parsed state
         self._managed_branches_with_depths = self._get_branch_list_with_depths()

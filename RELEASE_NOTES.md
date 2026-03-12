@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.39.2
 
+- fixed: interactive `git machete go` now fails immediately when stdout is not a TTY (e.g. when piped) instead of behaving chaotically
+
 ## New in git-machete 3.39.1
 
 - changed: whenever git-machete prints a path on Windows, the path is now POSIX-compatible (with `/`)
