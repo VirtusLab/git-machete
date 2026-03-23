@@ -1883,7 +1883,7 @@ class TestTraverse(BaseTest):
         assert_success(
             ["traverse", "-w"],
             """
-            Checking out the first root branch (master)... OK
+            Checking out the root branch (master)... OK
 
             Checking out feature-1... OK
 

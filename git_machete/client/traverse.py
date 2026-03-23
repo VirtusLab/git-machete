@@ -162,7 +162,8 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 # Note that we already ensured that there is at least one managed branch.
                 dest = self.managed_branches[0]
                 self._print_new_line(False)
-                self._switch_branch(dest, custom_checkout_message=f"Checking out the first root branch ({bold(dest)})")
+                root_qualifier = "first root" if len(self._state.roots) > 1 else "root"
+                self._switch_branch(dest, custom_checkout_message=f"Checking out the {root_qualifier} branch ({bold(dest)})")
                 current_branch = dest
             elif opt_start_from == TraverseStartFrom.HERE:
                 current_branch = self._git.get_current_branch()

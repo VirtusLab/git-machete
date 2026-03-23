@@ -178,7 +178,7 @@ class TestTraverseWorktrees(BaseTest):
             ["traverse", "-y", "--start-from=first-root"],
             f"""
             Changing directory to main worktree at {normalized_local_path}
-            Checking out the first root branch (root)... OK
+            Checking out the root branch (root)... OK
 
             Checking out branch-2... OK
 

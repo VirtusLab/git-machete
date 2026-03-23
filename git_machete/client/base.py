@@ -706,7 +706,7 @@ class MacheteClient:
                 if if_unmanaged == PickRoot.FIRST:
                     warn(
                         f"{bold(branch)} is not a managed branch, assuming "
-                        f"{self._state.roots[0]} (the first root) instead as root")
+                        f"{self._state.roots[0]} ({'the first root' if len(self._state.roots) > 1 else 'root'}) instead as root")
                     return self._state.roots[0]
                 else:  # if_unmanaged == PickRoot.LAST
                     warn(
