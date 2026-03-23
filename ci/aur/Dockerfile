@@ -1,5 +1,5 @@
 
-# bump base image: 1
+# bump base image: 2
 
 FROM archlinux:base-devel
 # https://wiki.archlinux.org/title/System_maintenance#Partial_upgrades_are_unsupported
