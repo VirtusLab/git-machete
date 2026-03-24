@@ -121,7 +121,7 @@ class TestTraverseGitHub(BaseTest):
             """
             Fetching origin...
 
-            Checking out the first root branch (develop)... OK
+            Checking out the root branch (develop)... OK
             Checking for open GitHub PRs... OK
 
             Checking out build-chain... OK
@@ -202,7 +202,7 @@ class TestTraverseGitHub(BaseTest):
             """
             Fetching origin...
 
-            Checking out the first root branch (develop)... OK
+            Checking out the root branch (develop)... OK
             Checking for open GitHub PRs... OK
 
             Checking out build-chain... OK

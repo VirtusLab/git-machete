@@ -121,7 +121,7 @@ class TestTraverseGitLab(BaseTest):
             """
             Fetching origin...
 
-            Checking out the first root branch (develop)... OK
+            Checking out the root branch (develop)... OK
             Checking for open GitLab MRs... OK
 
             Checking out build-chain... OK
@@ -203,7 +203,7 @@ class TestTraverseGitLab(BaseTest):
             """
             Fetching origin...
 
-            Checking out the first root branch (develop)... OK
+            Checking out the root branch (develop)... OK
             Checking for open GitLab MRs... OK
 
             Checking out build-chain... OK
