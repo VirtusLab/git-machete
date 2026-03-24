@@ -159,17 +159,28 @@ class TestGo(BaseTest):
         rewrite_branch_layout_file(body)
 
         check_out("level-3b-branch")
-        launch_command("go", "first")
+        assert_success(
+            ["go", "first"],
+            "Warn: level-3b-branch is not a managed branch, assuming "
+            "level-0-branch (the first root) instead as root\n"
+            "Checking out level-1a-branch... OK\n",
+        )
         assert 'level-1a-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go first' performs 'git checkout' to "
              "the first downstream branch of a root branch if root branch "
              "has any downstream branches.")
 
         check_out("level-3b-branch")
-        launch_command("g", "f")
+        assert_success(
+            ["g", "f"],
+            "Warn: level-3b-branch is not a managed branch, assuming "
+            "level-0-branch (the first root) instead as root\n"
+            "Checking out level-1a-branch... OK\n",
+        )
         assert 'level-1a-branch' == launch_command("show", "current").strip(), \
-            ("Verify that 'git machete g d' performs 'git checkout' to "
-             "the child/downstream branch of the current branch.")
+            ("Verify that 'git machete g f' performs 'git checkout' to "
+             "the first downstream branch of a root branch if root branch "
+             "has any downstream branches.")
 
     def test_go_first_root_without_downstream(self) -> None:
         """Verify behaviour of a 'git machete go first' command.
@@ -249,7 +260,12 @@ class TestGo(BaseTest):
              "has any downstream branches.")
 
         check_out("level-2b-branch")
-        launch_command("g", "l")
+        assert_success(
+            ["g", "l"],
+            "Warn: level-2b-branch is not a managed branch, assuming "
+            "x-additional-root (the last root) instead as root\n"
+            "Checking out branch-from-x-additional-root... OK\n",
+        )
         assert 'branch-from-x-additional-root' == launch_command("show", "current").strip()
 
     def test_go_next_successor_exists(self) -> None:
@@ -457,6 +473,17 @@ class TestGo(BaseTest):
         assert 'level-0-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete g r' performs 'git checkout' to "
              "the root of the current branch.")
+
+        new_branch("not-in-machete-layout")
+        commit()
+        check_out("not-in-machete-layout")
+        assert_success(
+            ["go", "root"],
+            "Warn: not-in-machete-layout is not a managed branch, assuming "
+            "level-0-branch (the first root) instead as root\n"
+            "Checking out level-0-branch... OK\n",
+        )
+        assert 'level-0-branch' == launch_command("show", "current").strip()
 
     def test_go_root_no_branches(self) -> None:
         create_repo()

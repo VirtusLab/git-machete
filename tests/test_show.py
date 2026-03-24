@@ -222,20 +222,23 @@ class TestShow(BaseTest):
                     level-2a-branch
                 level-1b-branch
                     level-2b-branch
-                        level-3b-branch
             a-additional-root
                 branch-from-a-additional-root
             """
         rewrite_branch_layout_file(body)
 
-        assert 'level-1a-branch' == launch_command("show", "first").strip(), \
-            ("Verify that 'git machete show first' displays name of the first downstream "
-             "branch of a root branch of the current branch in the config file if root "
-             "branch has any downstream branches.")
-        assert 'level-1a-branch' == launch_command("show", "f").strip(), \
-            ("Verify that 'git machete show f' displays name of the first downstream "
-             "branch of a root branch of the current branch in the config file if root "
-             "branch has any downstream branches.")
+        assert_success(
+            ["show", "first"],
+            "Warn: level-3b-branch is not a managed branch, assuming "
+            "level-0-branch (the first root) instead as root\n"
+            "level-1a-branch\n",
+        )
+        assert_success(
+            ["show", "f"],
+            "Warn: level-3b-branch is not a managed branch, assuming "
+            "level-0-branch (the first root) instead as root\n"
+            "level-1a-branch\n",
+        )
 
     def test_show_last(self) -> None:
         """Verify behaviour of a 'git machete show last' command.
@@ -255,12 +258,14 @@ class TestShow(BaseTest):
         check_out("level-0-branch")
         new_branch("level-1b-branch")
         commit()
+        new_branch("level-2b-branch")
+        commit()
         # x added so root will be placed in the config file after the level-0-branch
         new_orphan_branch("x-additional-root")
         commit()
         new_branch("branch-from-x-additional-root")
         commit()
-        check_out("level-1a-branch")
+        check_out("level-2b-branch")
 
         body: str = \
             """
@@ -273,14 +278,18 @@ class TestShow(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        assert 'level-1b-branch' == launch_command("show", "last").strip(), \
-            ("Verify that 'git machete show last' displays name of the last downstream "
-             "branch of a root branch of the current branch in the config file if root "
-             "branch has any downstream branches.")
-        assert 'level-1b-branch' == launch_command("show", "l").strip(), \
-            ("Verify that 'git machete show l' displays name of the last downstream "
-             "branch of a root branch of the current branch in the config file if root "
-             "branch has any downstream branches.")
+        assert_success(
+            ["show", "last"],
+            "Warn: level-2b-branch is not a managed branch, assuming "
+            "x-additional-root (the last root) instead as root\n"
+            "branch-from-x-additional-root\n",
+        )
+        assert_success(
+            ["show", "l"],
+            "Warn: level-2b-branch is not a managed branch, assuming "
+            "x-additional-root (the last root) instead as root\n"
+            "branch-from-x-additional-root\n",
+        )
 
     def test_show_next(self) -> None:
         """Verify behaviour of a 'git machete show next' command.
@@ -386,6 +395,22 @@ class TestShow(BaseTest):
         assert 'level-0-branch' == launch_command("show", "r").strip(), \
             ("Verify that 'git machete show r' displays name of the root of "
              "the current branch.")
+
+        new_branch("not-in-machete-layout")
+        commit()
+        check_out("not-in-machete-layout")
+        assert_success(
+            ["show", "root"],
+            "Warn: not-in-machete-layout is not a managed branch, assuming "
+            "level-0-branch (the first root) instead as root\n"
+            "level-0-branch\n",
+        )
+        assert_success(
+            ["show", "r"],
+            "Warn: not-in-machete-layout is not a managed branch, assuming "
+            "level-0-branch (the first root) instead as root\n"
+            "level-0-branch\n",
+        )
 
     def test_show_missing_direction(self) -> None:
         output, e = launch_command_capturing_output_and_exception("show")
