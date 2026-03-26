@@ -90,7 +90,7 @@ class StatusMacheteClient(MacheteClient):
         When selected_branch is set, that branch's name (not annotation/sync status) is wrapped in reverse video.
         line_for_branch maps each branch to the 0-based line index in result where it appears."""
 
-        # These maps need to be defined in a local scope to avoid for mocking the color palette more easily.
+        # These maps need to be defined in a local scope to allow for mocking the color palette more easily.
         sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
             SyncToParentStatus.IN_SYNC: utils.AE.GREEN,
             SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF: utils.AE.YELLOW,

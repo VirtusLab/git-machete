@@ -4,7 +4,6 @@ set -e -o pipefail -u
 
 # Match whole words that end with a single trailing underscore (e.g. branch_, hash_).
 # -w ensures visit_FunctionDef and _member_names_ do not match (same word continues after _).
-# Such names are error-prone ().
 matches=$(git grep -n -E -w '[a-z][a-z0-9]*_' -- '*.py' ':!tests/' ':!flake8/' | grep -v 'CODE_HOSTING_TOKEN_PREFIXES' || true)
 if [[ -n $matches ]]; then
   echo "$matches"

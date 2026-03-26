@@ -7,7 +7,7 @@ from git_machete.utils import bold, fmt
 class ForkPointMacheteClient(MacheteClient):
     def unset_fork_point_override(self, branch: LocalBranchShortName) -> None:
         self._config.unset_fork_point_override_to(branch)
-        # We still unset the now-deprecated whileDescendantOf key.
+        # We still unset the now-deprecated `whileDescendantOf` key.
         self._config.unset_fork_point_override_while_descendant_of(branch)
 
     def set_fork_point_override(self, branch: LocalBranchShortName, to_revision: AnyRevision) -> None:  # noqa: KW
@@ -19,7 +19,7 @@ class ForkPointMacheteClient(MacheteClient):
                 f"Cannot override fork point: {bold(self._get_revision_repr(to_revision))} is not an ancestor of {bold(branch)}")
 
         self._config.set_fork_point_override_to(branch, value=to_hash)
-        # We still set the now-deprecated whileDescendantOf key to maintain compatibility with older git-machete clients.
+        # We still set the now-deprecated `whileDescendantOf` key to maintain compatibility with older git-machete clients.
         self._config.set_fork_point_override_while_descendant_of(branch, value=to_hash)
 
         short_hash = self._git.get_short_commit_hash_by_revision(to_hash)

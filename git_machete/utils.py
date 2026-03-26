@@ -462,7 +462,7 @@ def colored(s: str, color: str) -> str:  # noqa: KW
 
 
 def fmt(*parts: str) -> str:
-    # This map needs to be defined in a local scope to avoid for mocking the color palette more easily.
+    # This map needs to be defined in a local scope to allow for mocking the color palette more easily.
     fmt_transformations: List[Callable[[str], str]] = [
         lambda x: re.sub('`(.*?)`', underline(r"\1"), x),
         lambda x: re.sub('<b>(.*?)</b>', bold(r"\1"), x, flags=re.DOTALL),

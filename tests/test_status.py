@@ -1,4 +1,6 @@
+# flake8: noqa: E501
 import sys
+import textwrap
 
 import pytest
 from pytest_mock import MockerFixture
@@ -81,13 +83,11 @@ class TestStatus(BaseTest):
             \t\tfoo
             """
         rewrite_branch_layout_file(body)
-        expected_output = (
-            "Skipping " + E.BOLD + "foo" + E.ENDC_BOLD_DIM +
-            " which is not a local branch (perhaps it has been deleted?).\n" +
-            "Slide it out from the branch layout file? (" +
-            E.GREEN + "y" + E.ENDC + ", " + E.ORANGE + "e[dit]" + E.ENDC + ", " + E.RED + "N" + E.ENDC + ")\n" +
-            "  " + E.BOLD + E.UNDERLINE + "master" + E.ENDC_UNDERLINE + E.ENDC_BOLD_DIM + "\n"
-        )
+        expected_output = textwrap.dedent(f"""\
+            Skipping {E.BOLD}foo{E.ENDC_BOLD_DIM} which is not a local branch (perhaps it has been deleted?).
+            Slide it out from the branch layout file? ({E.GREEN}y{E.ENDC}, {E.ORANGE}e[dit]{E.ENDC}, {E.RED}N{E.ENDC})
+              {E.BOLD}{E.UNDERLINE}master{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
+        """)
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning(""))
         assert_success(["status"], expected_output)
@@ -121,18 +121,15 @@ class TestStatus(BaseTest):
             \t\tfeature
             """
         rewrite_branch_layout_file(body)
-        expected_output = (
-            "Skipping " + E.BOLD + "foo" + E.ENDC_BOLD_DIM + ", " + E.BOLD + "bar" + E.ENDC_BOLD_DIM +
-            ", " + E.BOLD + "qux" + E.ENDC_BOLD_DIM + ", " + E.BOLD + "baz" + E.ENDC_BOLD_DIM +
-            " which are not local branches (perhaps they have been deleted?).\n" +
-            "Slide them out from the branch layout file? (" +
-            E.GREEN + "y" + E.ENDC + ", " + E.ORANGE + "e[dit]" + E.ENDC + ", " + E.RED + "N" + E.ENDC + ")\n" +
-            "  " + E.BOLD + "master" + E.ENDC_BOLD_DIM + "\n" +
-            "  " + E.GREEN + "│\n" + E.ENDC +
-            "  " + E.GREEN + "└─" + E.ENDC + E.BOLD + "develop" + E.ENDC_BOLD_DIM + "\n" +
-            "\n" +
-            "  " + E.BOLD + E.UNDERLINE + "feature" + E.ENDC_UNDERLINE + E.ENDC_BOLD_DIM + "\n"
-        )
+        expected_output = textwrap.dedent(f"""\
+            Skipping {E.BOLD}foo{E.ENDC_BOLD_DIM}, {E.BOLD}bar{E.ENDC_BOLD_DIM}, {E.BOLD}qux{E.ENDC_BOLD_DIM}, {E.BOLD}baz{E.ENDC_BOLD_DIM} which are not local branches (perhaps they have been deleted?).
+            Slide them out from the branch layout file? ({E.GREEN}y{E.ENDC}, {E.ORANGE}e[dit]{E.ENDC}, {E.RED}N{E.ENDC})
+              {E.BOLD}master{E.ENDC_BOLD_DIM}
+              {E.GREEN}│
+            {E.ENDC}  {E.GREEN}└─{E.ENDC}{E.BOLD}develop{E.ENDC_BOLD_DIM}
+
+              {E.BOLD}{E.UNDERLINE}feature{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
+        """)
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(["status"], expected_output)
 
@@ -715,15 +712,15 @@ class TestStatus(BaseTest):
         raw_output = launch_command('status', '--color=always')
         # After merge, develop moved forward so feature-in-sync (still at first commit) is behind=RED;
         # feature-merged is merged into develop=DIM; feature-out-of-sync is ahead but fork-point logic makes it GREEN.
-        expected = (
-            "  " + E.BOLD + "develop" + E.ENDC_BOLD_DIM + "\n" +
-            "  " + E.RED + "│\n" + E.ENDC +
-            "  " + E.RED + "└─" + E.ENDC + E.BOLD + "feature-in-sync" + E.ENDC_BOLD_DIM + "\n" +
-            "  " + E.DIM + "│\n" + E.ENDC +
-            "  " + E.DIM + "└─" + E.ENDC + E.BOLD + "feature-merged" + E.ENDC_BOLD_DIM + "\n" +
-            "  " + E.GREEN + "│\n" + E.ENDC +
-            "  " + E.GREEN + "└─" + E.ENDC + E.BOLD + E.UNDERLINE + "feature-out-of-sync" + E.ENDC_UNDERLINE + E.ENDC_BOLD_DIM + "\n"
-        )
+        expected = textwrap.dedent(f"""\
+              {E.BOLD}develop{E.ENDC_BOLD_DIM}
+              {E.RED}│
+            {E.ENDC}  {E.RED}└─{E.ENDC}{E.BOLD}feature-in-sync{E.ENDC_BOLD_DIM}
+              {E.DIM}│
+            {E.ENDC}  {E.DIM}└─{E.ENDC}{E.BOLD}feature-merged{E.ENDC_BOLD_DIM}
+              {E.GREEN}│
+            {E.ENDC}  {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-out-of-sync{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
+        """)
         assert raw_output == expected
 
     def test_status_during_rebase(self) -> None:
