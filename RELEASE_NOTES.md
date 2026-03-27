@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.39.3
+
 ## New in git-machete 3.39.2
 
 - improved: interactive `git machete go` displays a branch layout as in `status`

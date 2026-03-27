@@ -153,7 +153,7 @@ git machete go
 ```
 
 [//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
-<img src="graphics/go-interactive.gif"
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/go-interactive.gif"
      alt="PR chain on GitHub"
      width="75%" />
 
