@@ -92,7 +92,9 @@ and provide command as *Parameters*.
 Run [`graphics/setup-sandbox`](graphics/setup-sandbox) script to set up a test repo under `~/machete-sandbox` with a remote in `~/machete-sandbox-remote`.
 
 
-## Regenerate the GIF in README.md
+## Regenerate the GIFs in README.md
+
+For [`discover-status-traverse.gif`](graphics/discover-status-traverse.gif):
 
 1. Install [asciinema](https://github.com/asciinema/asciinema),
    [agg (at least v1.4.1)](https://github.com/asciinema/agg),
@@ -100,6 +102,14 @@ Run [`graphics/setup-sandbox`](graphics/setup-sandbox) script to set up a test r
    On macOS, just `brew install asciinema agg sponge` should be enough.
 1. Run [`./graphics/generate-asciinema-gif graphics/discover-status-traverse.gif`](graphics/generate-asciinema-gif).
 
+For [`go-interactive.gif`](graphics/go-interactive.gif) `&mdash;` on macOS:
+
+1. Install `ffmpeg` and `gifsicle` (`brew install ffmpeg gifsicle`)
+1. Press Cmd+Shift+5 and select the portion of the screen to record.
+1. Press the _Capture screen portion_ button.
+1. When done, finish with Cmd+Ctrl+Esc.
+1. Find the screencast in `~/Desktop`.
+1. Run `ffmpeg -i ~/Desktop/"Screen Recording <DATE>.mov" -pix_fmt rgb8 -r 10 output.gif && gifsicle -O3 output.gif -o output.gif`
 
 ## Command properties/classification
 
