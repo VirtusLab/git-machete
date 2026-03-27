@@ -2,7 +2,7 @@
 
 set -l __machete_help_topics config format hooks
 set -l __machete_commands_long add advance anno completion delete-unmanaged diff discover edit file fork-point \
-  github gitlab go help is-managed list log reapply show slide-out squash status traverse update version
+  github gitlab go help is-managed list log mcp reapply show slide-out squash status traverse update version
 set -l __machete_commands_short d e g l s t
 set -l __machete_commands $__machete_commands_long $__machete_commands_short
 
@@ -175,6 +175,9 @@ complete -c git-machete -n "__fish_seen_subcommand_from list; and not __fish_see
 # git machete log
 complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands" -f -a log                           -d 'Log the part of history specific to the given branch'
 complete -c git-machete -n "__fish_seen_subcommand_from log l"                   -f -a '(__fish_git_local_branches)'
+
+# git machete mcp
+complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands" -f -a mcp -d 'Run a Model Context Protocol server on stdin/stdout for MCP clients'
 
 # git machete reapply
 complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands" -f                    -a reapply             -d 'Rebase the current branch onto its computed fork point'

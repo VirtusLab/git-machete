@@ -12,7 +12,7 @@ from tests.mockers_git_repository import (check_out, commit, create_repo,
 test_cases: Dict[str, str] = {
     "git machete ":
         "add advance anno completion delete-unmanaged diff discover edit file fork-point github gitlab "
-        "go help is-managed list log reapply show slide-out squash status traverse update version",
+        "go help is-managed list log mcp reapply show slide-out squash status traverse update version",
     "git machete -":
         "--debug -h --help -v --verbose --version",
     "git machete a":
@@ -99,7 +99,7 @@ test_cases: Dict[str, str] = {
         "down first last next prev root up",
     "git machete help ":
         "add advance anno completion config delete-unmanaged diff discover edit file fork-point format github gitlab "
-        "go help hooks is-managed list log reapply show slide-out squash status traverse update version",
+        "go help hooks is-managed list log mcp reapply show slide-out squash status traverse update version",
     "git machete is-managed ":
         "develop feature master",
     "git machete list ":
@@ -108,6 +108,10 @@ test_cases: Dict[str, str] = {
         "develop feature master",
     "git machete log ":
         "develop feature master",
+    "git machete m":
+        "mcp",
+    "git machete mcp -":
+        "--debug -h --help -v --verbose",
     "git machete reapply -":
         "--debug -f --fork-point -h --help -v --verbose",
     "git machete reapply --fork-point ":

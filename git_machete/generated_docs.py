@@ -26,6 +26,7 @@ short_docs: Dict[str, str] = {
     "is-managed": "Check if the current branch is managed by git machete (mostly for scripts)",
     "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
     "log": "Log the part of history specific to the given branch",
+    "mcp": "Run a Model Context Protocol server over stdin/stdout for MCP clients (for example, AI-assisted editors)",
     "reapply": "Rebase the current branch onto its computed fork point",
     "show": "Show name(s) of the branch(es) relative to the position of a branch",
     "slide-out": "Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge",
@@ -1152,6 +1153,18 @@ long_docs: Dict[str, str] = {
 
            <b>-- <pass-through-arguments></b>
               Arguments to pass directly to the underlying `git log`, for example `git machete log -- --patch`.
+   """,
+    "mcp": """
+        <b>Usage:</b><b>
+           git machete mcp</b>
+
+        Run a <b>Model Context Protocol</b> (MCP) server on standard input and standard output.
+
+        The server uses JSON-RPC 2.0 with newline-delimited messages.
+        It exposes git-machete operations as MCP tools so that clients such as <b>Claude Code</b>, Cursor, or other MCP-aware assistants can query branch layout, status, and related history using structured tool calls instead of ad hoc shell commands.
+
+        The server is implemented with only the Python standard library (no extra pip packages).
+        Point your MCP client at `git machete mcp` as the command to run, typically with the working directory set to the git repository you want the assistant to operate on.
    """,
     "reapply": """
         <b>Usage:</b><b>

@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.41.0
 
+- added: `git machete mcp` command that starts an MCP (Model Context Protocol) server over stdio,
+  enabling AI assistants like Cursor or Claude Code to interact with git-machete programmatically
 - fixed: ASCII-only mode is now applied separately for stdout and stderr so that stderr retains formatting when stdout is redirected (contributed by @tmchow)
 
 ## New in git-machete 3.40.0

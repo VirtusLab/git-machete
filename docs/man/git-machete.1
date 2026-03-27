@@ -28,7 +28,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Apr 13, 2026" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Apr 16, 2026" "" "git-machete"
 .SH NAME
 git-machete \- git-machete 3.41.0
 .sp
@@ -97,6 +97,8 @@ is\-managed       \-\- Check if the current branch is managed by git machete (mo
 list             \-\- List all branches that fall into one of pre\-defined categories (mostly for internal use)
 .IP \(bu 2
 log              \-\- Log the part of history specific to the given branch
+.IP \(bu 2
+mcp              \-\- Run a Model Context Protocol server over stdin/stdout for MCP clients (for example, AI\-assisted editors)
 .IP \(bu 2
 reapply          \-\- Rebase the current branch onto its computed fork point
 .IP \(bu 2
@@ -1690,6 +1692,25 @@ Note: the branch in question does not need to occur in the branch layout file.
 \fBOptions:\fP
 .sp
 \-\- <pass\-through\-arguments>    Arguments to pass directly to the underlying \fBgit log\fP, for example \fBgit machete log \-\- \-\-patch\fP\&.
+.SH MCP
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+git machete mcp
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+Run a \fBModel Context Protocol\fP (MCP) server on standard input and standard output.
+.sp
+The server uses JSON\-RPC 2.0 with newline\-delimited messages.
+It exposes git\-machete operations as MCP tools so that clients such as \fBClaude Code\fP, Cursor, or other MCP\-aware assistants can query branch layout, status, and related history using structured tool calls instead of ad hoc shell commands.
+.sp
+The server is implemented with only the Python standard library (no extra pip packages).
+Point your MCP client at \fBgit machete mcp\fP as the command to run, typically with the working directory set to the git repository you want the assistant to operate on.
 .SH REAPPLY
 .sp
 \fBUsage:\fP

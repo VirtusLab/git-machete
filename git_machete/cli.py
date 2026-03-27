@@ -36,7 +36,7 @@ command_by_alias: Dict[str, str] = {v: k for k, v in alias_by_command.items()}
 
 command_groups: List[Tuple[str, List[str]]] = [
     ("General topics",
-     ["completion", "config", "file", "format", "help", "hooks", "version"]),
+     ["completion", "config", "file", "format", "help", "hooks", "mcp", "version"]),
     ("Build, display and modify the tree of branch dependencies",
      ["add", "anno", "discover", "edit", "status"]),
     ("List, check out and delete branches",
@@ -265,6 +265,8 @@ def create_cli_parser() -> argparse.ArgumentParser:
 
     log_parser = create_subparser('log', alias='l')
     log_parser.add_argument('branch', nargs='?')
+
+    create_subparser('mcp')
 
     reapply_parser = create_subparser('reapply')
     reapply_parser.add_argument('-f', '--fork-point')
@@ -715,6 +717,9 @@ def launch_internal(orig_args: List[str]) -> None:
                 git,
                 branch=cli_opts.opt_branch or git.get_current_branch(),
                 extra_args=pass_through_args)
+        elif cmd == "mcp":
+            from git_machete.mcp_server import serve
+            serve()
         elif cmd == "reapply":
             dispatch.reapply(
                 git,
@@ -820,7 +825,7 @@ def launch_internal(orig_args: List[str]) -> None:
 def main() -> None:
     try:
         launch(sys.argv[1:])
-    except EOFError:  # pragma: no cover
+    except EOFError:
         sys.exit(ExitCode.END_OF_FILE_SIGNAL)
     except KeyboardInterrupt:
         sys.exit(ExitCode.KEYBOARD_INTERRUPT)

@@ -60,6 +60,7 @@ Commands & help topics
 .. include:: cli/is-managed.rst
 .. include:: cli/list.rst
 .. include:: cli/log.rst
+.. include:: cli/mcp.rst
 .. include:: cli/reapply.rst
 .. include:: cli/show.rst
 .. include:: cli/slide-out.rst
