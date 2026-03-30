@@ -2,6 +2,9 @@
 
 ## New in git-machete 3.39.3
 
+- fixed: when `git machete traverse` failed on a rebase within a worktree,
+  in certain cases the warning message about changed directory didn't show up (reported by @lsierant)
+
 ## New in git-machete 3.39.2
 
 - improved: interactive `git machete go` displays a branch layout as in `status`

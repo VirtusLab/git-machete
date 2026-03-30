@@ -1,5 +1,6 @@
 import os
 
+import pytest
 from pytest_mock import MockerFixture
 
 from git_machete.utils import UnderlyingGitException
@@ -1920,5 +1921,30 @@ class TestTraverse(BaseTest):
 
             Reached branch feature-2 which has no successor; nothing left to update
             Returned to the initial branch feature-2
+            """
+        )
+
+    # The expected error message includes `--empty=drop` which is only passed on git >= 2.26.0.
+    @pytest.mark.skipif(get_git_version() < (2, 26, 0), reason="--empty=drop is only passed to git rebase since git 2.26.0")
+    def test_traverse_rebase_conflict(self) -> None:
+        create_repo()
+        with fixed_author_and_committer_date_in_past():
+            new_branch("master")
+            add_file_and_commit("file.txt", "base content\n", "Base commit")
+            new_branch("feature")
+            add_file_and_commit("file.txt", "feature content\n", "Feature commit")
+            check_out("master")
+            add_file_and_commit("file.txt", "master content\n", "Master commit")
+        check_out("feature")
+
+        rewrite_branch_layout_file("master\n\tfeature")
+
+        assert_failure(
+            ["traverse", "-y"],
+            "git -c log.showSignature=false rebase --empty=drop"
+            " --onto refs/heads/master 77b81e64de792099dad58d67756b66cda9e80aa7 feature returned 1",
+            expected_type=UnderlyingGitException,
+            expected_output="""
+            Rebasing feature onto master...
             """
         )

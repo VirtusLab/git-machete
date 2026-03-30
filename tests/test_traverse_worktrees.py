@@ -4,12 +4,14 @@ import subprocess
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils import abspath_posix
+from git_machete.utils import UnderlyingGitException, abspath_posix
 
 from .base_test import BaseTest
-from .mockers import (assert_success, launch_command, mock_input_returning,
-                      rewrite_branch_layout_file)
-from .mockers_git_repository import (add_worktree, check_out, commit,
+from .mockers import (assert_failure, assert_success,
+                      fixed_author_and_committer_date_in_past, launch_command,
+                      mock_input_returning, rewrite_branch_layout_file)
+from .mockers_git_repository import (add_file_and_commit, add_worktree,
+                                     check_out, commit,
                                      create_repo_with_remote, get_git_version,
                                      new_branch, push, set_git_config_key)
 
@@ -515,5 +517,54 @@ class TestTraverseWorktrees(BaseTest):
             Warn: branch branch-2 is checked out in worktree at {normalized_branch_2_worktree}
             You may want to change directory with:
               cd {normalized_branch_2_worktree}
+            """
+        )
+
+    # The expected error message includes `--empty=drop` which is only passed on git >= 2.26.0.
+    @pytest.mark.skipif(get_git_version() < (2, 26, 0), reason="--empty=drop is only passed to git rebase since git 2.26.0")
+    def test_traverse_rebase_conflict_in_worktree(self) -> None:
+        create_repo_with_remote()
+        with fixed_author_and_committer_date_in_past():
+            new_branch("base")
+            add_file_and_commit("file.txt", "base content\n", "Base commit")
+            push()
+            new_branch("feature")
+            add_file_and_commit("file.txt", "feature content\n", "Feature commit")
+            push()
+
+        body: str = \
+            """
+            base
+                feature
+            """
+        rewrite_branch_layout_file(body)
+
+        # Create a worktree for feature
+        check_out("base")
+        feature_worktree = add_worktree("feature")
+        normalized_feature_worktree = abspath_posix(feature_worktree)
+
+        # Make a conflicting change on base
+        check_out("base")
+        with fixed_author_and_committer_date_in_past():
+            add_file_and_commit("file.txt", "conflicting base content\n", "Conflicting base commit")
+            push()
+
+        assert_failure(
+            ["traverse", "-y"],
+            "git -c log.showSignature=false rebase --empty=drop"
+            " --onto refs/heads/base 77b81e64de792099dad58d67756b66cda9e80aa7 feature returned 1",
+            expected_type=UnderlyingGitException,
+            expected_output=f"""
+            Changing directory to {normalized_feature_worktree} worktree where feature is checked out
+
+              base
+              |
+              x-feature *
+
+            Rebasing feature onto base...
+            Warn: branch feature is checked out in worktree at {normalized_feature_worktree}
+            You may want to change directory with:
+              cd {normalized_feature_worktree}
             """
         )

@@ -262,8 +262,9 @@ class GitContext:
         self.__flush_current_worktree_caches()
 
     def __flush_current_worktree_caches(self) -> None:
+        # No point in clearing main worktree paths as they are not affected by chdir between worktrees
         self.__current_worktree_root_dir = None
-        self.__main_worktree_root_dir = None
+        self.__current_worktree_git_dir = None
 
     def _run_git(self, git_cmd: str, *args: str, flush_caches: bool, allow_non_zero: bool = False) -> int:
         exit_code = utils.run_cmd(*GIT_EXEC, git_cmd, *args)
