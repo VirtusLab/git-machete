@@ -1,1 +1,1 @@
-vulture==2.15
+vulture==2.16
