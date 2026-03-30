@@ -13,17 +13,17 @@ from git_machete.annotation import Annotation
 from git_machete.config import MacheteConfig, SquashMergeDetection
 from git_machete.constants import (INITIAL_COMMIT_COUNT_FOR_LOG,
                                    TOTAL_COMMIT_COUNT_FOR_LOG)
-from git_machete.exceptions import (InteractionStopped, MacheteException,
-                                    UnexpectedMacheteException)
 from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
                                         BranchPair, ForkPointOverrideData,
                                         FullCommitHash, GitContext,
                                         LocalBranchShortName,
                                         RemoteBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (bold, debug, dim, excluding, flat_map, fmt,
-                               get_pretty_choices, get_second,
-                               join_paths_posix, relpath_posix, tupled, warn)
+from git_machete.utils import (InteractionStopped, MacheteException,
+                               UnexpectedMacheteException, bold, debug, dim,
+                               excluding, flat_map, fmt, get_pretty_choices,
+                               get_second, join_paths_posix, relpath_posix,
+                               tupled, warn)
 
 
 class PickRoot(Enum):

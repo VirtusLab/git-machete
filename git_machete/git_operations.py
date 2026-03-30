@@ -10,9 +10,9 @@ from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
 
 from . import utils
 from .constants import MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
-from .exceptions import UnderlyingGitException, UnexpectedMacheteException
-from .utils import (CommandResult, abspath_posix, colored, debug, fmt,
-                    hex_repr, join_paths_posix, slurp_file)
+from .utils import (CommandResult, UnderlyingGitException,
+                    UnexpectedMacheteException, abspath_posix, colored, debug,
+                    fmt, hex_repr, join_paths_posix, slurp_file)
 
 
 class AnyRevision(str):

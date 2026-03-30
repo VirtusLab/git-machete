@@ -8,12 +8,13 @@ from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.code_hosting import PullRequest
 from git_machete.config import (SquashMergeDetection,
                                 TraverseWhenBranchNotCheckedOutInAnyWorktree)
-from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import (GitContext, LocalBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (ParsableEnum, abspath_posix, bold, flat_map,
-                               fmt, get_pretty_choices, get_right_arrow,
-                               green_ok, print_no_newline, warn)
+from git_machete.utils import (MacheteException, ParsableEnum,
+                               UnexpectedMacheteException, abspath_posix, bold,
+                               flat_map, fmt, get_pretty_choices,
+                               get_right_arrow, green_ok, print_no_newline,
+                               warn)
 
 
 class TraverseReturnTo(ParsableEnum):

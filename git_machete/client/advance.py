@@ -1,9 +1,9 @@
 from git_machete.client.base import MacheteClient
 from git_machete.config import SquashMergeDetection
-from git_machete.exceptions import MacheteException
 from git_machete.git_operations import (GitContext, LocalBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import bold, flat_map, get_pretty_choices, warn
+from git_machete.utils import (MacheteException, bold, flat_map,
+                               get_pretty_choices, warn)
 
 
 class AdvanceMacheteClient(MacheteClient):

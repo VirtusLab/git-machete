@@ -12,9 +12,9 @@ except ImportError:  # pragma: no cover; Windows-specific
 from git_machete import utils
 from git_machete.client.status import (StatusData, StatusFlags,
                                        StatusMacheteClient)
-from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import bold, index_or_none, warn
+from git_machete.utils import (MacheteException, UnexpectedMacheteException,
+                               bold, index_or_none, warn)
 
 
 class GoInteractiveMacheteClient(StatusMacheteClient):

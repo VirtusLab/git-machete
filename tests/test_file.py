@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from tempfile import mkdtemp
 
-from git_machete.exceptions import UnderlyingGitException
+from git_machete.utils import UnderlyingGitException
 
 from .base_test import BaseTest
 from .mockers import assert_failure, execute, launch_command

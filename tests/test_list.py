@@ -1,6 +1,6 @@
 
 
-from git_machete.exceptions import ExitCode
+from git_machete.utils import ExitCode
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,

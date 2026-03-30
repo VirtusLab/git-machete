@@ -6,10 +6,9 @@ from typing import List, Optional, Tuple
 from git_machete.client.status import StatusMacheteClient
 from git_machete.config import SquashMergeDetection
 from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
-from git_machete.exceptions import MacheteException
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import (bold, debug, excluding, get_pretty_choices,
-                               slurp_file, tupled, warn)
+from git_machete.utils import (MacheteException, bold, debug, excluding,
+                               get_pretty_choices, slurp_file, tupled, warn)
 
 
 class DiscoverMacheteClient(StatusMacheteClient):

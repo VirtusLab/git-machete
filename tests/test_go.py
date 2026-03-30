@@ -2,7 +2,7 @@ import os
 
 from pytest_mock import MockerFixture
 
-from git_machete.exceptions import ExitCode
+from git_machete.utils import ExitCode
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
@@ -530,7 +530,7 @@ class TestGo(BaseTest):
         # Verify that `go` command fails when trying to checkout a branch in a worktree
         # Git checkout fails with exit code 128 and stderr: "fatal: 'feature-1' is already used by worktree..."
         assert exception is not None, "Expected go command to fail when target branch is in a worktree"
-        from git_machete.exceptions import UnderlyingGitException
+        from git_machete.utils import UnderlyingGitException
         assert isinstance(exception, UnderlyingGitException)
         assert "returned 128" in str(exception)  # Git checkout failure
         assert "checkout" in str(exception).lower()

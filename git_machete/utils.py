@@ -6,28 +6,14 @@ import subprocess
 import sys
 import textwrap
 import time
-from enum import Enum
+from enum import Enum, IntEnum
 from pathlib import Path, PurePosixPath
 from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, Optional,
                     Sequence, Set, Tuple, Type, TypeVar)
 
-from git_machete.exceptions import MacheteException
-
 T = TypeVar('T')
 U = TypeVar('U')
 E = TypeVar('E', bound=Enum)
-
-
-class ParsableEnum(Enum):
-    @classmethod
-    def from_string(cls: Type[E], value: str, from_where: Optional[str]) -> E:
-        try:
-            return cls[value.upper().replace("-", "_")]
-        except KeyError:
-            valid_values = ', '.join('`' + e.name.lower().replace("_", "-") + '`' for e in cls)
-            prefix = f"Invalid value for {from_where}" if from_where else "Invalid value"
-            printed_value = value or '<empty>'
-            raise MacheteException(f"{prefix}: `{printed_value}`. Valid values are {valid_values}")
 
 
 # To avoid displaying the same warning multiple times during a single run.
@@ -479,6 +465,55 @@ def fmt(*parts: str) -> str:
     for f in fmt_transformations:
         result = f(result)
     return result
+
+
+NEW_ISSUE_LINK = "https://github.com/VirtusLab/git-machete/issues/new"
+
+
+class InteractionStopped(Exception):
+    def __init__(self) -> None:
+        pass
+
+
+class UnderlyingGitException(Exception):
+    def __init__(self, msg: str, *, apply_fmt: bool = True) -> None:
+        self.msg: str = fmt(msg) if apply_fmt else msg
+
+    def __str__(self) -> str:
+        return str(self.msg)
+
+
+class MacheteException(Exception):
+    def __init__(self, msg: str, *, apply_fmt: bool = True) -> None:
+        self.msg: str = fmt(msg) if apply_fmt else msg
+
+    def __str__(self) -> str:
+        return str(self.msg)
+
+
+class UnexpectedMacheteException(MacheteException):
+    def __init__(self, msg: str, *, apply_fmt: bool = True) -> None:
+        super().__init__(f"{msg}\n\nConsider posting an issue at `{NEW_ISSUE_LINK}`", apply_fmt=apply_fmt)
+
+
+class ExitCode(IntEnum):
+    SUCCESS = 0
+    MACHETE_EXCEPTION = 1
+    ARGUMENT_ERROR = 2
+    KEYBOARD_INTERRUPT = 3
+    END_OF_FILE_SIGNAL = 4
+
+
+class ParsableEnum(Enum):
+    @classmethod
+    def from_string(cls: Type[E], value: str, from_where: Optional[str]) -> E:
+        try:
+            return cls[value.upper().replace("-", "_")]
+        except KeyError:
+            valid_values = ', '.join('`' + e.name.lower().replace("_", "-") + '`' for e in cls)
+            prefix = f"Invalid value for {from_where}" if from_where else "Invalid value"
+            printed_value = value or '<empty>'
+            raise MacheteException(f"{prefix}: `{printed_value}`. Valid values are {valid_values}")
 
 
 def get_vertical_bar() -> str:

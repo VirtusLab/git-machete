@@ -16,9 +16,9 @@ from git_machete.code_hosting import (CodeHostingClient,
                                       OrganizationAndRepository,
                                       OrganizationAndRepositoryAndGitUrl,
                                       PullRequest)
-from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import (bold, compact_dict, debug, join_paths_posix,
+from git_machete.utils import (MacheteException, UnexpectedMacheteException,
+                               bold, compact_dict, debug, join_paths_posix,
                                popen_cmd, warn)
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'

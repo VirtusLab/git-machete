@@ -31,11 +31,11 @@ from git_machete.config import MacheteConfig, SquashMergeDetection
 from git_machete.github import GITHUB_CLIENT_SPEC
 from git_machete.gitlab import GITLAB_CLIENT_SPEC
 
-from .exceptions import (ExitCode, InteractionStopped, MacheteException,
-                         UnderlyingGitException, UnexpectedMacheteException)
 from .generated_docs import long_docs, short_docs
 from .git_operations import AnyRevision, GitContext, LocalBranchShortName
-from .utils import bold, fmt, green_ok, print_no_newline, underline, warn
+from .utils import (ExitCode, InteractionStopped, MacheteException,
+                    UnderlyingGitException, UnexpectedMacheteException, bold,
+                    fmt, green_ok, print_no_newline, underline, warn)
 
 T = TypeVar('T')
 

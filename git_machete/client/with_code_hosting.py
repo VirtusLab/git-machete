@@ -10,12 +10,12 @@ from git_machete.code_hosting import (CodeHostingClient, CodeHostingSpec,
                                       OrganizationAndRepositoryAndRemote,
                                       PullRequest, is_matching_remote_url)
 from git_machete.config import PRDescriptionIntroStyle, SquashMergeDetection
-from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import (GitContext, GitFormatPatterns,
                                         GitLogEntry, LocalBranchShortName,
                                         RemoteBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (bold, colored_yes_no, debug, find_or_none, fmt,
+from git_machete.utils import (MacheteException, UnexpectedMacheteException,
+                               bold, colored_yes_no, debug, find_or_none, fmt,
                                get_pretty_choices, get_right_arrow, green_ok,
                                join_paths_posix, print_no_newline, slurp_file,
                                warn)

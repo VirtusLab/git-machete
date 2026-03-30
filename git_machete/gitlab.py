@@ -16,9 +16,9 @@ from git_machete.code_hosting import (CodeHostingClient,
                                       OrganizationAndRepository,
                                       OrganizationAndRepositoryAndGitUrl,
                                       PullRequest)
-from git_machete.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import compact_dict, debug, map_truthy_only, popen_cmd
+from git_machete.utils import (MacheteException, UnexpectedMacheteException,
+                               compact_dict, debug, map_truthy_only, popen_cmd)
 
 GITLAB_TOKEN_ENV_VAR = 'GITLAB_TOKEN'
 

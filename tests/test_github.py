@@ -6,8 +6,8 @@ from typing import Iterator
 from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
-from git_machete.exceptions import ExitCode
 from git_machete.github import GitHubClient, GitHubToken
+from git_machete.utils import ExitCode
 from tests.base_test import BaseTest
 from tests.mockers import (assert_failure, assert_success, launch_command,
                            launch_command_capturing_output_and_exception,

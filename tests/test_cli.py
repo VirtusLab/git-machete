@@ -5,7 +5,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from git_machete.cli import alias_by_command, main
-from git_machete.exceptions import ExitCode
+from git_machete.utils import ExitCode
 
 from .base_test import BaseTest
 from .mockers import launch_command_capturing_output_and_exception

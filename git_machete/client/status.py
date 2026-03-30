@@ -9,12 +9,11 @@ from typing import Dict, List, NamedTuple, Optional, Tuple
 from git_machete import utils
 from git_machete.annotation import Annotation
 from git_machete.config import SquashMergeDetection
-from git_machete.exceptions import MacheteException
 from git_machete.git_operations import (BranchPair, FullCommitHash,
                                         GitLogEntry, LocalBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (PopenResult, bold, colored, debug, dim,
-                               underline, warn)
+from git_machete.utils import (MacheteException, PopenResult, bold, colored,
+                               debug, dim, underline, warn)
 
 from .base import MacheteClient
 

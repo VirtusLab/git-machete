@@ -1,6 +1,6 @@
 from pytest_mock import MockerFixture
 
-from git_machete.exceptions import UnderlyingGitException
+from git_machete.utils import UnderlyingGitException
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, execute,

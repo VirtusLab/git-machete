@@ -12,8 +12,7 @@ from typing import Any, Callable, Iterable, Iterator, Optional, Tuple, Type
 import pytest
 
 from git_machete import cli, utils
-from git_machete.exceptions import MacheteException
-from git_machete.utils import PopenResult
+from git_machete.utils import MacheteException, PopenResult
 
 
 @contextmanager
