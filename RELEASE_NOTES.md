@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.39.3
 
+- changed: when a branch is behind remote (needs a pull), `git machete traverse` now skips rebase,
+  just as it did already when branch is diverged from & older than remote (suggested by @lsierant)
 - fixed: when `git machete traverse` failed on a rebase within a worktree,
   in certain cases the warning message about changed directory didn't show up (reported by @lsierant)
 

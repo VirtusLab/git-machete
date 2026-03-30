@@ -1,3 +1,4 @@
+# flake8: noqa: E501
 import os
 
 import pytest
@@ -1070,6 +1071,8 @@ class TestTraverse(BaseTest):
                 |
                 o-ignore-trailing * (diverged from & older than origin)
 
+            Skipping sync of ignore-trailing with hotfix/add-trigger; ignore-trailing is diverged from (and has older commits than) its remote counterpart
+
             Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
             Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
 
@@ -1230,6 +1233,8 @@ class TestTraverse(BaseTest):
                 |
                 o-ignore-trailing * (diverged from & older than origin)
 
+            Skipping sync of ignore-trailing with hotfix/add-trigger; ignore-trailing is diverged from (and has older commits than) its remote counterpart
+
             Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
             Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
             Checking out call-ws... OK
@@ -1331,6 +1336,8 @@ class TestTraverse(BaseTest):
               o-hotfix/add-trigger
                 |
                 o-ignore-trailing * (diverged from & older than origin)
+
+            Skipping sync of ignore-trailing with hotfix/add-trigger; ignore-trailing is diverged from (and has older commits than) its remote counterpart
 
             Branch ignore-trailing diverged from (and has older commits than) its remote counterpart origin/ignore-trailing.
             Resetting branch ignore-trailing to the commit pointed by origin/ignore-trailing...
@@ -1946,5 +1953,69 @@ class TestTraverse(BaseTest):
             expected_type=UnderlyingGitException,
             expected_output="""
             Rebasing feature onto master...
+            """
+        )
+
+    def test_traverse_behind_remote_with_red_edge(self) -> None:
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch("feature")
+        commit()
+        commit()
+        push()
+        reset_to("HEAD~")
+        check_out("master")
+        commit()
+        push()
+        check_out("feature")
+
+        rewrite_branch_layout_file("master\n\tfeature")
+
+        assert_success(
+            ["traverse", "-y"],
+            """
+            Skipping sync of feature with master; feature is behind its remote counterpart
+
+            Branch feature is behind its remote counterpart origin/feature.
+            Pulling feature (fast-forward only) from origin...
+
+              master
+              |
+              x-feature *
+
+            Reached branch feature which has no successor; nothing left to update
+            """
+        )
+
+    def test_traverse_diverged_from_and_older_with_red_edge(self) -> None:
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        new_branch("feature")
+        commit()
+        push()
+        with fixed_author_and_committer_date_in_past():
+            amend_commit()
+        check_out("master")
+        commit()
+        push()
+        check_out("feature")
+
+        rewrite_branch_layout_file("master\n\tfeature")
+
+        assert_success(
+            ["traverse", "-y"],
+            """
+            Skipping sync of feature with master; feature is diverged from (and has older commits than) its remote counterpart
+
+            Branch feature diverged from (and has older commits than) its remote counterpart origin/feature.
+            Resetting branch feature to the commit pointed by origin/feature...
+
+              master
+              |
+              x-feature *
+
+            Reached branch feature which has no successor; nothing left to update
             """
         )

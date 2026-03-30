@@ -223,16 +223,16 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
                 use_merge = opt_merge or (branch in self.annotations and self.annotations[branch].qualifiers.update_with_merge)
 
+                skipping_parent_sync = False
+
                 if needs_slide_out:
                     # Avoid unnecessary fork point check if we already know that the
                     # branch qualifies for slide out;
                     # neither rebase nor merge will be suggested in such case anyway.
                     needs_parent_sync: bool = False
-                elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                    # Avoid unnecessary fork point check if we already know that the
-                    # branch qualifies for resetting to remote counterpart;
-                    # neither rebase nor merge will be suggested in such case anyway.
+                elif s in (SyncToRemoteStatus.BEHIND_REMOTE, SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
                     needs_parent_sync = False
+                    skipping_parent_sync = bool(upstream)
                 elif use_merge:
                     needs_parent_sync = bool(
                         upstream and not self._git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()))
@@ -368,6 +368,15 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
                     elif ans in ('q', 'quit'):
                         return
+
+                if skipping_parent_sync:
+                    assert upstream is not None
+                    self._print_new_line(False)
+                    if s == SyncToRemoteStatus.BEHIND_REMOTE:
+                        reason = "behind its remote counterpart"
+                    else:
+                        reason = "diverged from (and has older commits than) its remote counterpart"
+                    print(f"Skipping sync of {bold(branch)} with {bold(upstream)}; {bold(branch)} is {reason}")
 
                 if needs_retarget_pr:
                     any_action_suggested = True

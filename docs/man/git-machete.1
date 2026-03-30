@@ -2085,9 +2085,11 @@ git machete t[raverse] [\-F|\-\-fetch] [\-l|\-\-list\-commits] [\-M|\-\-merge]
 .sp
 Walk the branches in the order as they occur in branch layout file.
 By default, \fBtraverse\fP starts from the current branch.
-This behavior can, however, be customized using options: \fB\-\-start\-from=\fP, \fB\-\-whole\fP or \fB\-w\fP, \fB\-W\fP\&.
+This behavior can, however, be customized using options: \fB\-\-start\-from=...\fP, \fB\-\-whole\fP (\fB\-w\fP) or \fB\-W\fP\&.
 .sp
-For each branch, the command:
+For each branch, the command performs the following actions:
+.sp
+\fBSync to parent\fP
 .INDENT 0.0
 .IP \(bu 2
 detects if the branch is merged (gray edge) to its parent (aka upstream):
@@ -2102,6 +2104,10 @@ otherwise, if the branch has a red or yellow edge to its parent/upstream (see he
 asks the user whether to \fBrebase\fP (default) or merge (if \fB\-\-merge\fP passed) the branch onto into its upstream branch
 \-\-\- equivalent to \fBgit machete update\fP;
 .UNINDENT
+.UNINDENT
+.sp
+\fBSync to remote\fP
+.INDENT 0.0
 .IP \(bu 2
 if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart &
 has newer head commit than the counterpart:
@@ -2114,13 +2120,19 @@ otherwise, if the branch diverged from the remote counterpart & has older head c
 .INDENT 2.0
 .IP \(bu 2
 asks the user whether to \fBreset\fP (\fBgit reset \-\-keep\fP) the branch to its remote counterpart
+\-\-\- note that rebase/merge isn\(aqt suggested in that case;
 .UNINDENT
 .IP \(bu 2
 otherwise, if the branch is behind its remote counterpart:
 .INDENT 2.0
 .IP \(bu 2
-asks the user whether to \fBpull\fP the branch;
+asks the user whether to \fBpull\fP the branch
+\-\-\- note that rebase/merge isn\(aqt suggested in that case;
 .UNINDENT
+.UNINDENT
+.sp
+\fBSync to GitHub/GitLab\fP
+.INDENT 0.0
 .IP \(bu 2
 if \fB\-H\fP/\fB\-\-sync\-github\-prs\fP or \fB\-L\fP/\fB\-\-sync\-gitlab\-mrs\fP option is present:
 .INDENT 2.0
@@ -2131,17 +2143,17 @@ asks the user whether to \fBretarget\fP the PR/MR if it exists for the given bra
 and its base/target branch in GitHub/GitLab is different than the upstream in machete file
 (just as \fBgit machete github retarget\-pr\fP and \fBgit machete gitlab retarget\-mr\fP would do);
 .UNINDENT
+.UNINDENT
+.sp
+\fBStatus\fP
+.INDENT 0.0
 .IP \(bu 2
-and finally, if any of the above operations has been successfully completed:
+finally, if any of the above operations has been successfully completed:
 .INDENT 2.0
 .IP \(bu 2
 prints the updated \fBstatus\fP\&.
 .UNINDENT
 .UNINDENT
-.sp
-By default \fBtraverse\fP asks if the branch should be pushed. This behavior can, however, be changed with the \fBmachete.traverse.push\fP configuration key.
-It can also be customized using options: \fB\-\-[no\-]push\fP or \fB\-\-[no\-]push\-untracked\fP \-\-\- the order of the flags defines their precedence over each other
-(the one on the right overriding the ones on the left). More on them in the \fBOptions\fP section below.
 .sp
 If the traverse flow is stopped (typically due to merge/rebase conflicts), just run \fBgit machete traverse\fP after the merge/rebase is finished.
 It will pick up the walk from the current branch.

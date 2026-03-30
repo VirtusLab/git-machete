@@ -26,9 +26,11 @@ traverse
 
 Walk the branches in the order as they occur in branch layout file.
 By default, ``traverse`` starts from the current branch.
-This behavior can, however, be customized using options: ``--start-from=``, ``--whole`` or ``-w``, ``-W``.
+This behavior can, however, be customized using options: ``--start-from=...``, ``--whole`` (``-w``) or ``-W``.
 
-For each branch, the command:
+For each branch, the command performs the following actions:
+
+**Sync to parent**
 
 * detects if the branch is merged (:gray:`gray` edge) to its parent (aka upstream):
 
@@ -39,6 +41,8 @@ For each branch, the command:
   - asks the user whether to **rebase** (default) or merge (if ``--merge`` passed) the branch onto into its upstream branch
     --- equivalent to ``git machete update``;
 
+**Sync to remote**
+
 * if the branch is not tracked on a remote, is ahead of its remote counterpart, or diverged from the counterpart &
   has newer head commit than the counterpart:
 
@@ -47,10 +51,14 @@ For each branch, the command:
 * otherwise, if the branch diverged from the remote counterpart & has older head commit than the counterpart:
 
   - asks the user whether to **reset** (``git reset --keep``) the branch to its remote counterpart
+    --- note that rebase/merge isn't suggested in that case;
 
 * otherwise, if the branch is behind its remote counterpart:
 
-  - asks the user whether to **pull** the branch;
+  - asks the user whether to **pull** the branch
+    --- note that rebase/merge isn't suggested in that case;
+
+**Sync to GitHub/GitLab**
 
 * if ``-H``/``--sync-github-prs`` or ``-L``/``--sync-gitlab-mrs`` option is present:
 
@@ -60,13 +68,11 @@ For each branch, the command:
     and its base/target branch in GitHub/GitLab is different than the upstream in machete file
     (just as ``git machete github retarget-pr`` and ``git machete gitlab retarget-mr`` would do);
 
-* and finally, if any of the above operations has been successfully completed:
+**Status**
+
+* finally, if any of the above operations has been successfully completed:
 
   - prints the updated ``status``.
-
-By default ``traverse`` asks if the branch should be pushed. This behavior can, however, be changed with the ``machete.traverse.push`` configuration key.
-It can also be customized using options: ``--[no-]push`` or ``--[no-]push-untracked`` --- the order of the flags defines their precedence over each other
-(the one on the right overriding the ones on the left). More on them in the **Options** section below.
 
 If the traverse flow is stopped (typically due to merge/rebase conflicts), just run ``git machete traverse`` after the merge/rebase is finished.
 It will pick up the walk from the current branch.
