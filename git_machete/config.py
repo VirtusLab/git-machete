@@ -23,6 +23,7 @@ def _traverse_remote_fetch_key(remote: str) -> str:
 
 class TraverseWhenBranchNotCheckedOutInAnyWorktree(ParsableEnum):
     CD_INTO_MAIN_WORKTREE = auto()
+    CD_INTO_TEMPORARY_WORKTREE = auto()
     STAY_IN_THE_CURRENT_WORKTREE = auto()  # noqa: F841
 
 

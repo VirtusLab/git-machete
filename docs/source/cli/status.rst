@@ -97,6 +97,6 @@ When colors are disabled, relation between branches is represented in the follow
 ``machete.squashMergeDetection``:
     .. include:: git-config-keys/squashMergeDetection.rst
 
-``machete.status.extraSpaceBeforeBranchName``
+``machete.status.extraSpaceBeforeBranchName``:
     .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
       :end-line: 3

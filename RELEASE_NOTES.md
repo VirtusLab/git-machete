@@ -1,7 +1,8 @@
 # Release notes
 
-## New in git-machete 3.39.3
+## New in git-machete 3.40.0
 
+- added: `cd-into-temporary-worktree` value for `machete.traverse.whenBranchNotCheckedOutInAnyWorktree` git config key (suggested by @andrii0lomakin)
 - changed: when a branch is behind remote (needs a pull), `git machete traverse` now skips rebase,
   just as it did already when branch is diverged from & older than remote (suggested by @lsierant)
 - fixed: when `git machete traverse` failed on a rebase within a worktree,

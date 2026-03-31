@@ -28,9 +28,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "Mar 30, 2026" "" "git-machete"
+.TH "GIT-MACHETE" "1" "Mar 31, 2026" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.39.3
+git-machete \- git-machete 3.40.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -494,13 +494,20 @@ The default value of this key is \fBtrue\fP\&.
 Configuration key value can be overridden by the presence of the \fB\-\-push\fP or \fB\-\-push\-untracked\fP flags.
 .TP
 .B \fBmachete.traverse.whenBranchNotCheckedOutInAnyWorktree\fP:
-Controls the behavior of \fBgit machete traverse\fP when checking out a branch that is not currently checked out in any worktree.
+Controls the behavior of \fBgit machete traverse\fP when it needs to act on a branch that is not currently checked out in any worktree.
 .sp
-The default value is \fBcd\-into\-main\-worktree\fP, which means that \fBtraverse\fP will change directory to the main worktree before checking out the branch.
-.sp
-Set to \fBstay\-in\-the\-current\-worktree\fP to make \fBtraverse\fP stay in whatever worktree has already been reached by that point,
-and check out the branch there instead.
-Note that this worktree might be different then the initial working directory where \fBtraverse\fP started.
+Allowed values:
+.INDENT 7.0
+.IP \(bu 2
+\fBcd\-into\-main\-worktree\fP (default): change directory to the main worktree and check out the branch there.
+.IP \(bu 2
+\fBstay\-in\-the\-current\-worktree\fP: check out the branch in whichever worktree \fBtraverse\fP is currently operating in,
+without changing directory. Note that this worktree might differ from the one where \fBtraverse\fP originally started.
+.IP \(bu 2
+\fBcd\-into\-temporary\-worktree\fP: create a new worktree in a temporary directory, check out the branch there,
+and remove this temporary worktree once \fBtraverse\fP moves on to the next branch (or finishes).
+This ensures that no existing (non\-temporary) worktree has its checked\-out branch changed by \fBtraverse\fP\&.
+.UNINDENT
 .TP
 .B \fBmachete.worktree.useTopLevelMacheteFile\fP:
 The default value of this key is \fBtrue\fP, which means that the path to branch layout file will be \fB\&.git/machete\fP
@@ -2062,7 +2069,7 @@ whether a gray edge is displayed in \fBstatus\fP,
 whether \fBtraverse\fP suggests to slide out the branch.
 .UNINDENT
 .TP
-.B \fBmachete.status.extraSpaceBeforeBranchName\fP
+.B \fBmachete.status.extraSpaceBeforeBranchName\fP:
 To make it easier to select branch name from the \fBstatus\fP output on certain terminals
 (like Alacritty \%<https://\:github\:.com/\:alacritty/\:alacritty>), you can add an extra space between └─ and branch name
 by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
@@ -2303,19 +2310,26 @@ If set to \fBfalse\fP, this remote will not be fetched before the traversal.
 The default value of this key is \fBtrue\fP\&.
 This is useful for excluding remotes that are temporarily offline, or take a long time to respond.
 .TP
-.B \fBmachete.traverse.push\fP
+.B \fBmachete.traverse.push\fP:
 Set to \fBfalse\fP to change the behavior of \fBgit machete traverse\fP so that it doesn\(aqt push branches by default.
 The default value of this key is \fBtrue\fP\&.
 Configuration key value can be overridden by the presence of the \fB\-\-push\fP or \fB\-\-push\-untracked\fP flags.
 .TP
-.B \fBmachete.traverse.whenBranchNotCheckedOutInAnyWorktree\fP
-Controls the behavior of \fBgit machete traverse\fP when checking out a branch that is not currently checked out in any worktree.
+.B \fBmachete.traverse.whenBranchNotCheckedOutInAnyWorktree\fP:
+Controls the behavior of \fBgit machete traverse\fP when it needs to act on a branch that is not currently checked out in any worktree.
 .sp
-The default value is \fBcd\-into\-main\-worktree\fP, which means that \fBtraverse\fP will change directory to the main worktree before checking out the branch.
-.sp
-Set to \fBstay\-in\-the\-current\-worktree\fP to make \fBtraverse\fP stay in whatever worktree has already been reached by that point,
-and check out the branch there instead.
-Note that this worktree might be different then the initial working directory where \fBtraverse\fP started.
+Allowed values:
+.INDENT 7.0
+.IP \(bu 2
+\fBcd\-into\-main\-worktree\fP (default): change directory to the main worktree and check out the branch there.
+.IP \(bu 2
+\fBstay\-in\-the\-current\-worktree\fP: check out the branch in whichever worktree \fBtraverse\fP is currently operating in,
+without changing directory. Note that this worktree might differ from the one where \fBtraverse\fP originally started.
+.IP \(bu 2
+\fBcd\-into\-temporary\-worktree\fP: create a new worktree in a temporary directory, check out the branch there,
+and remove this temporary worktree once \fBtraverse\fP moves on to the next branch (or finishes).
+This ensures that no existing (non\-temporary) worktree has its checked\-out branch changed by \fBtraverse\fP\&.
+.UNINDENT
 .UNINDENT
 .sp
 \fBEnvironment variables:\fP

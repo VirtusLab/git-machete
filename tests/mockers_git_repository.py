@@ -163,3 +163,8 @@ def add_worktree(branch: str) -> str:
     worktree_path = mkdtemp()
     execute(f"git worktree add -f {worktree_path} {branch}")
     return worktree_path
+
+
+def get_worktree_dirs() -> List[str]:
+    lines = popen("git worktree list --porcelain").splitlines()
+    return [line[len("worktree "):] for line in lines if line.startswith("worktree ")]

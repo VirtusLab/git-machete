@@ -367,13 +367,18 @@ long_docs: Dict[str, str] = {
               Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
 
            `machete.traverse.whenBranchNotCheckedOutInAnyWorktree`:
-              Controls the behavior of `git machete traverse` when checking out a branch that is not currently checked out in any worktree.
+              Controls the behavior of `git machete traverse` when it needs to act on a branch that is not currently checked out in any worktree.
 
-              The default value is `cd-into-main-worktree`, which means that `traverse` will change directory to the main worktree before checking out the branch.
+              Allowed values:
 
-              Set to `stay-in-the-current-worktree` to make `traverse` stay in whatever worktree has already been reached by that point,
-              and check out the branch there instead.
-              Note that this worktree might be different then the initial working directory where `traverse` started.
+              * `cd-into-main-worktree` (default): change directory to the main worktree and check out the branch there.
+
+              * `stay-in-the-current-worktree`: check out the branch in whichever worktree `traverse` is currently operating in,
+                without changing directory. Note that this worktree might differ from the one where `traverse` originally started.
+
+              * `cd-into-temporary-worktree`: create a new worktree in a temporary directory, check out the branch there,
+                and remove this temporary worktree once `traverse` moves on to the next branch (or finishes).
+                This ensures that no existing (non-temporary) worktree has its checked-out branch changed by `traverse`.
 
            `machete.worktree.useTopLevelMacheteFile`:
               The default value of this key is `true`, which means that the path to branch layout file will be `.git/machete`
@@ -1432,7 +1437,7 @@ long_docs: Dict[str, str] = {
               * whether a gray edge is displayed in `status`,
               * whether `traverse` suggests to slide out the branch.
 
-           `machete.status.extraSpaceBeforeBranchName`
+           `machete.status.extraSpaceBeforeBranchName`:
               To make it easier to select branch name from the `status` output on certain terminals
               (like Alacritty), you can add an extra space between └─ and branch name
               by setting `git config machete.status.extraSpaceBeforeBranchName true`.
@@ -1629,19 +1634,24 @@ long_docs: Dict[str, str] = {
               The default value of this key is `true`.
               This is useful for excluding remotes that are temporarily offline, or take a long time to respond.
 
-           `machete.traverse.push`
+           `machete.traverse.push`:
               Set to `false` to change the behavior of `git machete traverse` so that it doesn't push branches by default.
               The default value of this key is `true`.
               Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
 
-           `machete.traverse.whenBranchNotCheckedOutInAnyWorktree`
-              Controls the behavior of `git machete traverse` when checking out a branch that is not currently checked out in any worktree.
+           `machete.traverse.whenBranchNotCheckedOutInAnyWorktree`:
+              Controls the behavior of `git machete traverse` when it needs to act on a branch that is not currently checked out in any worktree.
 
-              The default value is `cd-into-main-worktree`, which means that `traverse` will change directory to the main worktree before checking out the branch.
+              Allowed values:
 
-              Set to `stay-in-the-current-worktree` to make `traverse` stay in whatever worktree has already been reached by that point,
-              and check out the branch there instead.
-              Note that this worktree might be different then the initial working directory where `traverse` started.
+              * `cd-into-main-worktree` (default): change directory to the main worktree and check out the branch there.
+
+              * `stay-in-the-current-worktree`: check out the branch in whichever worktree `traverse` is currently operating in,
+                without changing directory. Note that this worktree might differ from the one where `traverse` originally started.
+
+              * `cd-into-temporary-worktree`: create a new worktree in a temporary directory, check out the branch there,
+                and remove this temporary worktree once `traverse` moves on to the next branch (or finishes).
+                This ensures that no existing (non-temporary) worktree has its checked-out branch changed by `traverse`.
 
         <b>Environment variables:</b>
 

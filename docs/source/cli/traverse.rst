@@ -173,10 +173,10 @@ This behavior can be customized using ``machete.traverse.whenBranchNotCheckedOut
 ``machete.traverse.fetch.<remote>``:
     .. include:: git-config-keys/traverse_fetch_remote.rst
 
-``machete.traverse.push``
+``machete.traverse.push``:
     .. include:: git-config-keys/traverse_push.rst
 
-``machete.traverse.whenBranchNotCheckedOutInAnyWorktree``
+``machete.traverse.whenBranchNotCheckedOutInAnyWorktree``:
     .. include:: git-config-keys/traverse_whenBranchNotCheckedOutInAnyWorktree.rst
 
 **Environment variables:**

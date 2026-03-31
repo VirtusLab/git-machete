@@ -12,8 +12,10 @@ from .mockers import (assert_failure, assert_success,
                       mock_input_returning, rewrite_branch_layout_file)
 from .mockers_git_repository import (add_file_and_commit, add_worktree,
                                      check_out, commit,
-                                     create_repo_with_remote, get_git_version,
-                                     new_branch, push, set_git_config_key)
+                                     create_repo_with_remote,
+                                     get_current_branch, get_git_version,
+                                     get_worktree_dirs, new_branch, push,
+                                     set_git_config_key)
 
 # pytestmark is a special variable that pytest recognizes automatically.
 # It applies the specified marks to all test functions in this module.
@@ -519,6 +521,215 @@ class TestTraverseWorktrees(BaseTest):
               cd {normalized_branch_2_worktree}
             """
         )
+
+    def test_traverse_cd_into_temporary_worktree_when_branch_not_checked_out(self, mocker: MockerFixture) -> None:
+        """Test that traverse creates a temporary worktree for branches not checked out anywhere."""
+        (local_path, _) = create_repo_with_remote()
+        new_branch("root")
+        commit()
+
+        new_branch("branch-1")
+        commit()
+        push()
+
+        check_out("root")
+        new_branch("branch-2")
+        commit()
+        push()
+
+        # Modify root so both branch-1 and branch-2 need rebase
+        check_out("root")
+        commit("root additional commit")
+
+        body = """
+        root
+          branch-1
+          branch-2
+        """
+        rewrite_branch_layout_file(body)
+
+        # Setup: Main worktree on root, linked worktree also for root.
+        # branch-1 and branch-2 are NOT checked out anywhere.
+        check_out("root")
+        root_worktree = add_worktree("root")
+
+        os.chdir(root_worktree)
+
+        set_git_config_key("machete.traverse.whenBranchNotCheckedOutInAnyWorktree", "cd-into-temporary-worktree")
+
+        normalized_root_worktree = abspath_posix(root_worktree)
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n", "n", "n"))
+        assert_success(
+            ["traverse"],
+            f"""
+            Push untracked branch root to origin? (y, N, q, yq)
+
+            Creating a temporary worktree to check out branch-1... OK
+
+              root (untracked)
+              |
+              x-branch-1 *
+              |
+              x-branch-2
+
+            Rebase branch-1 onto root? (y, N, q, yq)
+
+            Removing the temporary worktree; changing directory back to {normalized_root_worktree}
+            Creating a temporary worktree to check out branch-2... OK
+
+              root (untracked)
+              |
+              x-branch-1
+              |
+              x-branch-2 *
+
+            Rebase branch-2 onto root? (y, N, q, yq)
+
+              root (untracked)
+              |
+              x-branch-1
+              |
+              x-branch-2 *
+
+            Reached branch branch-2 which has no successor; nothing left to update
+            Removing the temporary worktree; changing directory back to {normalized_root_worktree}
+            """
+        )
+
+        # Verify the checked-out branch in existing worktrees hasn't changed
+        os.chdir(local_path)
+        assert get_current_branch() == "root"
+        os.chdir(root_worktree)
+        assert get_current_branch() == "root"
+
+        # Verify no temporary worktree lingers after traverse
+        assert len(get_worktree_dirs()) == 2
+        assert "git-machete-" not in " ".join(get_worktree_dirs())
+
+    def test_traverse_cd_into_temporary_worktree_with_rebase(self) -> None:
+        """Test that traverse with temporary worktrees correctly performs rebase operations."""
+        (local_path, _) = create_repo_with_remote()
+        new_branch("root")
+        commit()
+        push()
+        new_branch("feature")
+        commit()
+        push()
+
+        body = """
+        root
+          feature
+        """
+        rewrite_branch_layout_file(body)
+
+        check_out("root")
+        commit("root additional commit")
+        push()
+
+        set_git_config_key("machete.traverse.whenBranchNotCheckedOutInAnyWorktree", "cd-into-temporary-worktree")
+
+        normalized_local_path = abspath_posix(local_path)
+
+        assert_success(
+            ["traverse", "-y"],
+            f"""
+            Creating a temporary worktree to check out feature... OK
+
+              root
+              |
+              x-feature *
+
+            Rebasing feature onto root...
+
+            Branch feature diverged from (and has newer commits than) its remote counterpart origin/feature.
+            Pushing feature with force-with-lease to origin...
+
+              root
+              |
+              o-feature *
+
+            Reached branch feature which has no successor; nothing left to update
+            Removing the temporary worktree; changing directory back to {normalized_local_path}
+            """
+        )
+
+        assert get_current_branch() == "root"
+
+        # Verify no temporary worktree lingers after traverse
+        assert len(get_worktree_dirs()) == 1
+        assert "git-machete-" not in " ".join(get_worktree_dirs())
+
+    def test_traverse_cd_into_temporary_worktree_warns_when_started_from_linked_worktree(self) -> None:
+        """Test that the end-of-traverse warning fires when temp worktree cleanup lands us in main worktree,
+        which is different from the linked worktree where traverse started."""
+        (local_path, _) = create_repo_with_remote()
+        new_branch("root")
+        commit()
+        push()
+        new_branch("feature")
+        commit()
+        push()
+
+        body = """
+        root
+          feature
+        """
+        rewrite_branch_layout_file(body)
+
+        check_out("root")
+        commit("root additional commit")
+        push()
+
+        # Create a linked worktree on a separate (unmanaged) branch.
+        # Main worktree stays on root, linked worktree gets `other`.
+        new_branch("other")
+        check_out("root")
+        other_worktree = add_worktree("other")
+
+        set_git_config_key("machete.traverse.whenBranchNotCheckedOutInAnyWorktree", "cd-into-temporary-worktree")
+
+        # Start traverse from the linked worktree (on `other`).
+        os.chdir(other_worktree)
+
+        normalized_local_path = abspath_posix(local_path)
+
+        # Traverse visits:
+        # - root: already checked out in main worktree -> cd there
+        # - feature: not checked out anywhere -> temp worktree
+        # After traverse, temp worktree is removed and we end up in main worktree,
+        # which differs from the linked worktree where we started -> warning fires.
+        assert_success(
+            ["traverse", "-y", "--start-from=first-root"],
+            f"""
+            Changing directory to {normalized_local_path} worktree where root is checked out
+
+            Creating a temporary worktree to check out feature... OK
+
+              root
+              |
+              x-feature *
+
+            Rebasing feature onto root...
+
+            Branch feature diverged from (and has newer commits than) its remote counterpart origin/feature.
+            Pushing feature with force-with-lease to origin...
+
+              root
+              |
+              o-feature *
+
+            Reached branch feature which has no successor; nothing left to update
+            Removing the temporary worktree; changing directory back to {normalized_local_path}
+            Warn: branch root is checked out in worktree at {normalized_local_path}
+            You may want to change directory with:
+              cd {normalized_local_path}
+            """
+        )
+
+        # Verify no temporary worktree lingers after traverse
+        assert len(get_worktree_dirs()) == 2
+        assert "git-machete-" not in " ".join(get_worktree_dirs())
 
     # The expected error message includes `--empty=drop` which is only passed on git >= 2.26.0.
     @pytest.mark.skipif(get_git_version() < (2, 26, 0), reason="--empty=drop is only passed to git rebase since git 2.26.0")

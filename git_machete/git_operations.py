@@ -410,6 +410,17 @@ class GitContext:
 
         return worktrees
 
+    def worktree_add(self, path: str, branch: 'LocalBranchShortName') -> None:
+        self._run_git("worktree", "add", path, branch, flush_caches=False)
+
+    def worktree_remove(self, path: str) -> None:
+        if self.get_git_version() >= (2, 17):
+            self._run_git("worktree", "remove", "-f", path, flush_caches=False)
+        else:
+            import shutil
+            shutil.rmtree(path)
+            self._run_git("worktree", "prune", flush_caches=False)
+
     def get_git_timespec_parsed_to_unix_timestamp(self, date: str) -> int:
         try:
             return int(self._popen_git("rev-parse", "--since=" + date).stdout.replace("--max-age=", "").strip())
