@@ -113,7 +113,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             config_value = self._config.traverse_when_branch_not_checked_out_in_any_worktree()
 
             if config_value == TraverseWhenBranchNotCheckedOutInAnyWorktree.CD_INTO_TEMPORARY_WORKTREE:
-                temp_worktree_path = tempfile.mkdtemp(prefix="git-machete-")
+                temp_worktree_path = tempfile.mkdtemp(prefix="git-machete-worktree-")
                 print_no_newline(f"Creating a temporary worktree to check out {bold(target_branch)}... ")
                 self._git.worktree_add(temp_worktree_path, target_branch)
                 print(green_ok())

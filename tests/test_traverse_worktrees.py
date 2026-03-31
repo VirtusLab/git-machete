@@ -605,7 +605,7 @@ class TestTraverseWorktrees(BaseTest):
 
         # Verify no temporary worktree lingers after traverse
         assert len(get_worktree_dirs()) == 2
-        assert "git-machete-" not in " ".join(get_worktree_dirs())
+        assert "git-machete-worktree-" not in " ".join(get_worktree_dirs())
 
     def test_traverse_cd_into_temporary_worktree_with_rebase(self) -> None:
         """Test that traverse with temporary worktrees correctly performs rebase operations."""
@@ -658,7 +658,7 @@ class TestTraverseWorktrees(BaseTest):
 
         # Verify no temporary worktree lingers after traverse
         assert len(get_worktree_dirs()) == 1
-        assert "git-machete-" not in " ".join(get_worktree_dirs())
+        assert "git-machete-worktree-" not in " ".join(get_worktree_dirs())
 
     def test_traverse_cd_into_temporary_worktree_warns_when_started_from_linked_worktree(self) -> None:
         """Test that the end-of-traverse warning fires when temp worktree cleanup lands us in main worktree,
@@ -729,7 +729,7 @@ class TestTraverseWorktrees(BaseTest):
 
         # Verify no temporary worktree lingers after traverse
         assert len(get_worktree_dirs()) == 2
-        assert "git-machete-" not in " ".join(get_worktree_dirs())
+        assert "git-machete-worktree-" not in " ".join(get_worktree_dirs())
 
     # The expected error message includes `--empty=drop` which is only passed on git >= 2.26.0.
     @pytest.mark.skipif(get_git_version() < (2, 26, 0), reason="--empty=drop is only passed to git rebase since git 2.26.0")
