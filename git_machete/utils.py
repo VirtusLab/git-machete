@@ -434,10 +434,10 @@ AE = TerminalAwareAnsiEscapeCodes()
 def _effective_ascii_only(file: Optional[Any] = None) -> bool:
     """Return the ascii_only flag appropriate for the given output stream.
 
-    When ``file`` is ``sys.stderr``, uses ``ascii_only_stderr`` so that
+    When `file` is `sys.stderr`, uses `ascii_only_stderr` so that
     stderr retains formatting when it still goes to a terminal even if
     stdout is redirected.  For all other cases (stdout or unspecified),
-    falls back to ``ascii_only``.
+    falls back to `ascii_only`.
     """
     if file is sys.stderr:
         return ascii_only_stderr
