@@ -24,6 +24,7 @@ displayed_warnings: Set[str] = set()
 current_directory_confirmed_to_exist: bool = False
 
 ascii_only: bool = not sys.stdout.isatty()
+ascii_only_stderr: bool = not sys.stderr.isatty()
 debug_mode: bool = False
 measure_command_time: bool = os.environ.get('GIT_MACHETE_MEASURE_COMMAND_TIME') == 'true'  # undocumented, internal
 verbose_mode: bool = False
@@ -36,6 +37,10 @@ CODE_HOSTING_TOKEN_PREFIX_REGEX = '(' + '|'.join(CODE_HOSTING_TOKEN_PREFIXES) + 
 
 def is_stdout_a_tty() -> bool:
     return sys.stdout.isatty()
+
+
+def is_stderr_a_tty() -> bool:
+    return sys.stderr.isatty()
 
 
 def get_terminal_height() -> Optional[int]:
@@ -167,7 +172,7 @@ def debug(msg: str) -> None:
     if not debug_mode:
         return
 
-    function_name = bold(inspect.stack()[1].function)
+    function_name = bold(inspect.stack()[1].function, file=sys.stderr)
     args, _, _, values_original = inspect.getargvalues(inspect.stack()[1].frame)
     # Do not write over the original values!
     # Since Python 3.13, the result of `getargvalues` keeps a map of local variables
@@ -185,9 +190,9 @@ def debug(msg: str) -> None:
 
     args_and_values_list = [arg + '=' + str(values[arg]) for arg in excluding(args, {'self'})]
     args_and_values_str = ', '.join(args_and_values_list)
-    args_and_values_bold_str = bold(f'({args_and_values_str})')
+    args_and_values_bold_str = bold(f'({args_and_values_str})', file=sys.stderr)
 
-    print(f"{function_name}{args_and_values_bold_str}: {dim(msg)}", file=sys.stderr)
+    print(f"{function_name}{args_and_values_bold_str}: {dim(msg, file=sys.stderr)}", file=sys.stderr)
 
 
 def _run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> int:
@@ -207,7 +212,7 @@ def run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[
             print(cmd, file=sys.stderr)
 
     if debug_mode:
-        print_command(bold(f">>> {flat_cmd}"))
+        print_command(bold(f">>> {flat_cmd}", file=sys.stderr))
     elif verbose_mode or measure_command_time:
         print_command(flat_cmd)
 
@@ -224,7 +229,7 @@ def run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[
     mark_current_directory_as_possibly_non_existent()
 
     if debug_mode and exit_code != 0:
-        print(dim(f"<exit code: {exit_code}>\n"), file=sys.stderr)
+        print(dim(f"<exit code: {exit_code}>\n", file=sys.stderr), file=sys.stderr)
     return exit_code
 
 
@@ -280,7 +285,7 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
             print(cmd, file=sys.stderr)
 
     if debug_mode:
-        print_command(bold(f">>> {flat_cmd}"))
+        print_command(bold(f">>> {flat_cmd}", file=sys.stderr))
     elif verbose_mode or measure_command_time:
         print_command(flat_cmd)
 
@@ -300,17 +305,17 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
 
     if debug_mode:
         if exit_code != 0:
-            print(colored(f"<exit code: {exit_code}>\n", AE.RED), file=sys.stderr)
+            print(colored(f"<exit code: {exit_code}>\n", AE.RED, file=sys.stderr), file=sys.stderr)
         if stdout:
             if hide_debug_output:
-                print(f"{dim('<stdout>:')}\n{dim('<REDACTED>')}", file=sys.stderr)
+                print(f"{dim('<stdout>:', file=sys.stderr)}\n{dim('<REDACTED>', file=sys.stderr)}", file=sys.stderr)
             else:
-                print(f"{dim('<stdout>:')}\n{dim(stdout)}", file=sys.stderr)
+                print(f"{dim('<stdout>:', file=sys.stderr)}\n{dim(stdout, file=sys.stderr)}", file=sys.stderr)
         if stderr:
             if hide_debug_output:
-                print(f"{dim('<stderr>:')}\n{dim('<REDACTED>')}", file=sys.stderr)
+                print(f"{dim('<stderr>:', file=sys.stderr)}\n{dim('<REDACTED>', file=sys.stderr)}", file=sys.stderr)
             else:
-                print(f"{dim('<stderr>:')}\n{colored(stderr, AE.RED)}", file=sys.stderr)
+                print(f"{dim('<stderr>:', file=sys.stderr)}\n{colored(stderr, AE.RED, file=sys.stderr)}", file=sys.stderr)
 
     return result
 
@@ -329,7 +334,7 @@ def get_cmd_shell_repr(cmd: str, *args: str, env: Optional[Dict[str, str]]) -> s
 
 def warn(msg: str, *, apply_fmt: bool = True, end: str = '\n') -> None:
     if msg not in displayed_warnings:
-        print(colored("Warn: ", AE.ORANGE) + (fmt(msg) if apply_fmt else msg), file=sys.stderr, end=end)
+        print(colored("Warn: ", AE.ORANGE, file=sys.stderr) + (fmt(msg, file=sys.stderr) if apply_fmt else msg), file=sys.stderr, end=end)
         displayed_warnings.add(msg)
 
 
@@ -426,16 +431,29 @@ class TerminalAwareAnsiEscapeCodes(SimpleAnsiEscapeCodes):
 AE = TerminalAwareAnsiEscapeCodes()
 
 
-def bold(s: str) -> str:
-    return s if ascii_only or not s else AE.BOLD + s + AE.ENDC_BOLD_DIM
+def _effective_ascii_only(file: Optional[Any] = None) -> bool:
+    """Return the ascii_only flag appropriate for the given output stream.
+
+    When ``file`` is ``sys.stderr``, uses ``ascii_only_stderr`` so that
+    stderr retains formatting when it still goes to a terminal even if
+    stdout is redirected.  For all other cases (stdout or unspecified),
+    falls back to ``ascii_only``.
+    """
+    if file is sys.stderr:
+        return ascii_only_stderr
+    return ascii_only
 
 
-def dim(s: str) -> str:
-    return s if ascii_only or not s else AE.DIM + s + AE.ENDC_BOLD_DIM
+def bold(s: str, *, file: Optional[Any] = None) -> str:
+    return s if _effective_ascii_only(file) or not s else AE.BOLD + s + AE.ENDC_BOLD_DIM
 
 
-def underline(s: str, *, star_if_ascii_only: bool = False) -> str:
-    if s and not ascii_only:
+def dim(s: str, *, file: Optional[Any] = None) -> str:
+    return s if _effective_ascii_only(file) or not s else AE.DIM + s + AE.ENDC_BOLD_DIM
+
+
+def underline(s: str, *, star_if_ascii_only: bool = False, file: Optional[Any] = None) -> str:
+    if s and not _effective_ascii_only(file):
         return AE.UNDERLINE + s + AE.ENDC_UNDERLINE
     elif s and star_if_ascii_only:
         return s + " *"
@@ -443,22 +461,22 @@ def underline(s: str, *, star_if_ascii_only: bool = False) -> str:
         return s
 
 
-def colored(s: str, color: str) -> str:  # noqa: KW
-    return s if ascii_only or not s else color + s + AE.ENDC
+def colored(s: str, color: str, *, file: Optional[Any] = None) -> str:  # noqa: KW
+    return s if _effective_ascii_only(file) or not s else color + s + AE.ENDC
 
 
-def fmt(*parts: str) -> str:
+def fmt(*parts: str, file: Optional[Any] = None) -> str:
     # This map needs to be defined in a local scope to allow for mocking the color palette more easily.
     fmt_transformations: List[Callable[[str], str]] = [
-        lambda x: re.sub('`(.*?)`', underline(r"\1"), x),
-        lambda x: re.sub('<b>(.*?)</b>', bold(r"\1"), x, flags=re.DOTALL),
-        lambda x: re.sub('<u>(.*?)</u>', underline(r"\1"), x, flags=re.DOTALL),
-        lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1"), x, flags=re.DOTALL),
-        lambda x: re.sub('<gray>(.*?)</gray>', dim(r"\1"), x, flags=re.DOTALL),
-        lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", AE.RED), x, flags=re.DOTALL),
-        lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", AE.YELLOW), x, flags=re.DOTALL),
-        lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", AE.GREEN), x, flags=re.DOTALL),
-        lambda x: re.sub('<orange>(.*?)</orange>', colored(r"\1", AE.ORANGE), x, flags=re.DOTALL)
+        lambda x: re.sub('`(.*?)`', underline(r"\1", file=file), x),
+        lambda x: re.sub('<b>(.*?)</b>', bold(r"\1", file=file), x, flags=re.DOTALL),
+        lambda x: re.sub('<u>(.*?)</u>', underline(r"\1", file=file), x, flags=re.DOTALL),
+        lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1", file=file), x, flags=re.DOTALL),
+        lambda x: re.sub('<gray>(.*?)</gray>', dim(r"\1", file=file), x, flags=re.DOTALL),
+        lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", AE.RED, file=file), x, flags=re.DOTALL),
+        lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", AE.YELLOW, file=file), x, flags=re.DOTALL),
+        lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", AE.GREEN, file=file), x, flags=re.DOTALL),
+        lambda x: re.sub('<orange>(.*?)</orange>', colored(r"\1", AE.ORANGE, file=file), x, flags=re.DOTALL)
     ]
 
     result = ''.join(parts)

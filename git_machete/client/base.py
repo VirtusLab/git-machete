@@ -232,9 +232,9 @@ class MacheteClient:
                     msg_if_opt_yes=None, opt_yes=False)
         else:
             if len(invalid_branches) == 1:
-                what = f"invalid branch {bold(invalid_branches[0])}"
+                what = f"invalid branch {bold(invalid_branches[0], file=sys.stderr)}"
             else:
-                what = f"invalid branches {', '.join(bold(branch) for branch in invalid_branches)}"
+                what = f"invalid branches {', '.join(bold(branch, file=sys.stderr) for branch in invalid_branches)}"
             print(f"Warning: sliding {what} out of the branch layout file", file=sys.stderr)
             ans = 'y'
 
@@ -539,7 +539,8 @@ class MacheteClient:
                                   f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export "
                                   f"{git_machete_editor_var}={sample_alternative}`.\n\n",
                                   "See `git machete help edit` and `git machete edit --debug` for more details.\n\n"
-                                  "Use `git config --global advice.macheteEditorSelection false` to suppress this message."),
+                                  "Use `git config --global advice.macheteEditorSelection false` to suppress this message.",
+                                  file=sys.stderr),
                               file=sys.stderr)
                     return editor_parsed
 

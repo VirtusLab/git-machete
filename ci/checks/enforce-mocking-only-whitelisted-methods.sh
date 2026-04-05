@@ -23,6 +23,7 @@ git_machete.utils.ascii_only
 git_machete.utils.find_executable
 git_machete.utils.get_current_date
 git_machete.utils.get_terminal_height
+git_machete.utils.is_stderr_a_tty
 git_machete.utils.is_stdout_a_tty
 git_machete.utils.slurp_file
 os.path.isfile

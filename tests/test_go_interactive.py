@@ -82,6 +82,7 @@ class TestGoInteractive(BaseTest):
         """
         # Force printing ANSI escape sequences even though the terminal is NOT a TTY
         self.patch_symbol(mocker, 'git_machete.utils.is_stdout_a_tty', lambda: True)
+        self.patch_symbol(mocker, 'git_machete.utils.is_stderr_a_tty', lambda: True)
         # Use the palette of ANSI escape code that does NOT depend on the underlying terminal properties
         self.patch_symbol(mocker, 'git_machete.utils.AE', E)
 
