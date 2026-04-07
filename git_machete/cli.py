@@ -490,6 +490,7 @@ def update_cli_options_using_config_keys(
 def set_utils_global_variables(parsed_args: argparse.Namespace) -> None:
     args = vars(parsed_args)
     utils.ascii_only = args.get("color") == "never" or (args.get("color") in {None, "auto"} and not utils.is_stdout_a_tty())
+    utils.ascii_only_stderr = args.get("color") == "never" or (args.get("color") in {None, "auto"} and not utils.is_stderr_a_tty())
     utils.debug_mode = "debug" in args
     utils.verbose_mode = "verbose" in args
 

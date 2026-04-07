@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.40.1
 
+- fixed: `ascii_only` mode is now applied separately for stdout and stderr so that stderr retains formatting when stdout is redirected
+
 ## New in git-machete 3.40.0
 
 - added: `cd-into-temporary-worktree` value for `machete.traverse.whenBranchNotCheckedOutInAnyWorktree` git config key (suggested by @andrii0lomakin)
