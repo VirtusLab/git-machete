@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.40.1
+
 ## New in git-machete 3.40.0
 
 - added: `cd-into-temporary-worktree` value for `machete.traverse.whenBranchNotCheckedOutInAnyWorktree` git config key (suggested by @andrii0lomakin)
