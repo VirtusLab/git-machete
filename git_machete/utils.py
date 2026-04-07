@@ -23,7 +23,7 @@ displayed_warnings: Set[str] = set()
 # every time any command is being popened or run.
 current_directory_confirmed_to_exist: bool = False
 
-ascii_only: bool = not sys.stdout.isatty()
+ascii_only_stdout: bool = not sys.stdout.isatty()
 ascii_only_stderr: bool = not sys.stderr.isatty()
 debug_mode: bool = False
 measure_command_time: bool = os.environ.get('GIT_MACHETE_MEASURE_COMMAND_TIME') == 'true'  # undocumented, internal
@@ -432,16 +432,16 @@ AE = TerminalAwareAnsiEscapeCodes()
 
 
 def _effective_ascii_only(file: Optional[Any] = None) -> bool:
-    """Return the ascii_only flag appropriate for the given output stream.
+    """Return the ASCII-only flag appropriate for the given output stream.
 
     When `file` is `sys.stderr`, uses `ascii_only_stderr` so that
     stderr retains formatting when it still goes to a terminal even if
     stdout is redirected.  For all other cases (stdout or unspecified),
-    falls back to `ascii_only`.
+    falls back to `ascii_only_stdout`.
     """
     if file is sys.stderr:
         return ascii_only_stderr
-    return ascii_only
+    return ascii_only_stdout
 
 
 def bold(s: str, *, file: Optional[Any] = None) -> str:
@@ -535,11 +535,11 @@ class ParsableEnum(Enum):
 
 
 def get_vertical_bar() -> str:
-    return "|" if ascii_only else "│"
+    return "|" if ascii_only_stdout else "│"
 
 
 def get_right_arrow() -> str:
-    return "->" if ascii_only else "➔"
+    return "->" if ascii_only_stdout else "➔"
 
 
 def get_pretty_choices(*choices: str) -> str:

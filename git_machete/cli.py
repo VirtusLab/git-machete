@@ -86,7 +86,7 @@ def get_help_description(*, display_help_topics: bool, command: Optional[str] = 
             usage_str += underline(hdr) + '\n\n'
             for cm in cmds:
                 alias = f", {alias_by_command[cm]}" if cm in alias_by_command else ""
-                usage_str += f'    {bold(cm + alias): <{18 if utils.ascii_only else 27}}{short_docs[cm]}'
+                usage_str += f'    {bold(cm + alias): <{18 if utils.ascii_only_stdout else 27}}{short_docs[cm]}'
                 usage_str += '\n'
             usage_str += '\n'
         usage_str += fmt(textwrap.dedent("""
@@ -489,7 +489,7 @@ def update_cli_options_using_config_keys(
 
 def set_utils_global_variables(parsed_args: argparse.Namespace) -> None:
     args = vars(parsed_args)
-    utils.ascii_only = args.get("color") == "never" or (args.get("color") in {None, "auto"} and not utils.is_stdout_a_tty())
+    utils.ascii_only_stdout = args.get("color") == "never" or (args.get("color") in {None, "auto"} and not utils.is_stdout_a_tty())
     utils.ascii_only_stderr = args.get("color") == "never" or (args.get("color") in {None, "auto"} and not utils.is_stderr_a_tty())
     utils.debug_mode = "debug" in args
     utils.verbose_mode = "verbose" in args

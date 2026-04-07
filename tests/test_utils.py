@@ -25,7 +25,7 @@ class TestUtils(BaseTest):
 
     def test_fmt(self, mocker: MockerFixture) -> None:
         # Force printing ANSI escape sequences even though the terminal is NOT a TTY
-        self.patch_symbol(mocker, 'git_machete.utils.ascii_only', False)
+        self.patch_symbol(mocker, 'git_machete.utils.ascii_only_stdout', False)
         # Use the palette of ANSI escape code that does NOT depend on the underlying terminal properties
         E = SimpleAnsiEscapeCodes()
         self.patch_symbol(mocker, 'git_machete.utils.AE', E)

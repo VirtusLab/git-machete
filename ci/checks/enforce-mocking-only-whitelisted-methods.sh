@@ -19,7 +19,7 @@ git_machete.gitlab.GitLabToken.for_domain
 git_machete.utils.AE
 git_machete.utils._popen_cmd
 git_machete.utils._run_cmd
-git_machete.utils.ascii_only
+git_machete.utils.ascii_only_stdout
 git_machete.utils.find_executable
 git_machete.utils.get_current_date
 git_machete.utils.get_terminal_height
