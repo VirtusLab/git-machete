@@ -96,7 +96,7 @@ class StatusMacheteClient(MacheteClient):
             SyncToParentStatus.OUT_OF_SYNC: utils.AE.RED,
             SyncToParentStatus.MERGED_TO_PARENT: utils.AE.DIM
         }
-        sync_to_parent_status_to_junction_ascii_only_stdout_map: Dict[SyncToParentStatus, str] = {
+        sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] = {
             SyncToParentStatus.IN_SYNC: "o-",
             SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF: "?-",
             SyncToParentStatus.OUT_OF_SYNC: "x-",
@@ -150,7 +150,7 @@ class StatusMacheteClient(MacheteClient):
                     )
                     line_index += 1
                 if utils.ascii_only_stdout:
-                    junction = sync_to_parent_status_to_junction_ascii_only_stdout_map[b.sync_to_parent_status]
+                    junction = sync_to_parent_status_to_junction_ascii_only_map[b.sync_to_parent_status]
                 else:
                     next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor[-1]
                     if next_sibling_of_branch and data.branches[next_sibling_of_branch].sync_to_parent_status == b.sync_to_parent_status:
