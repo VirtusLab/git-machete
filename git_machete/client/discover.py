@@ -7,8 +7,9 @@ from git_machete.client.status import StatusMacheteClient
 from git_machete.config import SquashMergeDetection
 from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import (MacheteException, bold, debug, excluding,
-                               get_pretty_choices, slurp_file, tupled, warn)
+from git_machete.utils import (MacheteException, debug, excluding,
+                               pretty_choices, print_fmt, slurp_file, tupled,
+                               warn)
 
 
 class DiscoverMacheteClient(StatusMacheteClient):
@@ -113,7 +114,7 @@ class DiscoverMacheteClient(StatusMacheteClient):
             warn(
                 "skipping %s since %s merged to another branch and would not "
                 "have any downstream branches.\n"
-                % (", ".join(bold(branch) for branch in merged_branches_to_skip),
+                % (", ".join(f"<b>{branch}</b>" for branch in merged_branches_to_skip),
                    "it's" if len(merged_branches_to_skip) == 1 else "they're"))
             for branch in merged_branches_to_skip:
                 upstream = self._state.up_branch_for[branch]
@@ -135,7 +136,7 @@ class DiscoverMacheteClient(StatusMacheteClient):
         for root in self._state.roots:
             collect_branches_dfs(root)
 
-        print(bold("Discovered tree of branch dependencies:\n"))
+        print_fmt("<b>Discovered tree of branch dependencies:</b>\n")
         self.status(
             warn_when_branch_in_sync_but_fork_point_off=False,
             opt_list_commits=opt_list_commits,
@@ -146,7 +147,7 @@ class DiscoverMacheteClient(StatusMacheteClient):
         backup_msg = (
             f"\nThe existing branch layout file will be backed up as {self._branch_layout_file_path}~"
             if do_backup else "")
-        msg = f"Save the above tree to {self._branch_layout_file_path}?{backup_msg}" + get_pretty_choices('y', 'e[dit]', 'N')
+        msg = f"Save the above tree to {self._branch_layout_file_path}?{backup_msg}" + pretty_choices('y', 'e[dit]', 'N')
         opt_yes_msg = f"Saving the above tree to {self._branch_layout_file_path}...{backup_msg}"
         ans = self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes)
         if ans in ('y', 'yes'):

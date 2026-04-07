@@ -202,13 +202,13 @@ class TestGitHub(BaseTest):
         delete_branch("snickers")
 
         expected_output = ["__get_token_from_env(cls=<class 'git_machete.github.GitHubToken'>): "
-                           "1. Trying to find token in `GITHUB_TOKEN` environment variable...",
+                           "1. Trying to find token in GITHUB_TOKEN environment variable...",
                            "__get_token_from_file_in_home_directory(cls=<class 'git_machete.github.GitHubToken'>, domain=github.com): "
-                           "2. Trying to find token in `~/.github-token`...",
+                           "2. Trying to find token in ~/.github-token...",
                            "__get_token_from_gh(cls=<class 'git_machete.github.GitHubToken'>, domain=github.com): "
-                           "3. Trying to find token via `gh` GitHub CLI...",
+                           "3. Trying to find token via gh GitHub CLI...",
                            "__get_token_from_hub(cls=<class 'git_machete.github.GitHubToken'>, domain=github.com): "
-                           "4. Trying to find token via `hub` GitHub CLI..."]
+                           "4. Trying to find token via hub GitHub CLI..."]
 
         assert list(itertools.dropwhile(
             lambda line: '__get_token_from_env' not in line,

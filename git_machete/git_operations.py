@@ -11,8 +11,9 @@ from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
 from . import utils
 from .constants import MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
 from .utils import (CommandResult, UnderlyingGitException,
-                    UnexpectedMacheteException, abspath_posix, colored, debug,
-                    fmt, hex_repr, join_paths_posix, slurp_file)
+                    UnexpectedMacheteException, abspath_posix, debug,
+                    escape_markup, hex_repr, join_paths_posix, print_fmt,
+                    slurp_file)
 
 
 class AnyRevision(str):
@@ -279,11 +280,11 @@ class GitContext:
                    allow_non_zero: bool = False, env: Optional[Dict[str, str]] = None, input: Optional[str] = None) -> CommandResult:
         exit_code, stdout, stderr = utils.popen_cmd(*GIT_EXEC, git_cmd, *args, env=env, input=input)
         if not allow_non_zero and exit_code != 0:
-            exit_code_msg: str = fmt(f"`{utils.get_cmd_shell_repr(*GIT_EXEC, git_cmd, *args, env=env)}` returned {exit_code}\n")
-            stdout_msg: str = f"\n{utils.bold('stdout')}:\n{utils.dim(stdout)}" if stdout else ""
-            stderr_msg: str = f"\n{utils.bold('stderr')}:\n{utils.dim(stderr)}" if stderr else ""
-            # Not applying the formatter to avoid transforming whatever characters might be in the output of the command.
-            raise UnderlyingGitException(exit_code_msg + stdout_msg + stderr_msg, apply_fmt=False)
+            cmd_repr = escape_markup(utils.get_cmd_shell_repr(*GIT_EXEC, git_cmd, *args, env=env))
+            exit_code_msg: str = f"`{cmd_repr}` returned {exit_code}\n"
+            stdout_msg: str = f"\n<b>stdout</b>:\n<dim>{escape_markup(stdout)}</dim>" if stdout else ""
+            stderr_msg: str = f"\n<b>stderr</b>:\n<dim>{escape_markup(stderr)}</dim>" if stderr else ""
+            raise UnderlyingGitException(exit_code_msg + stdout_msg + stderr_msg)
         return CommandResult(stdout, stderr, exit_code)
 
     def get_git_version(self) -> Tuple[int, int, int]:
@@ -884,7 +885,7 @@ class GitContext:
         rebased_branch = self.get_currently_rebased_branch_or_none()
         if rebased_branch:
             raise UnderlyingGitException(
-                f"Rebase of {utils.bold(rebased_branch)} in progress. "
+                f"Rebase of <b>{rebased_branch}</b> in progress. "
                 f"Conclude the rebase first with `git rebase --continue` or `git rebase --abort`.")
         if self.is_am_in_progress():
             raise UnderlyingGitException(
@@ -1160,13 +1161,13 @@ class GitContext:
         elif not utils.is_executable(hook_path):
             advice_ignored_hook = self.get_config_attr_or_none("advice.ignoredHook")
             if advice_ignored_hook != 'false':  # both empty and "true" is okay
-                # The [33m color must be used to keep consistent with how git colors this advice for its built-in hooks.
-                print(colored(f"hint: The '{hook_path}' hook was ignored because it's not set as executable.",
-                              utils.AE.YELLOW, file=sys.stderr),
-                      file=sys.stderr)
-                print(colored("hint: You can disable this warning with `git config advice.ignoredHook false`.",
-                              utils.AE.YELLOW, file=sys.stderr),
-                      file=sys.stderr)
+                # Yellow to match how git colors this advice for its built-in hooks.
+                print_fmt(
+                    f"<yellow>hint: The '{hook_path}' hook was ignored because it's not set as executable.</yellow>",
+                    file=sys.stderr)
+                print_fmt(
+                    "<yellow>hint: You can disable this warning with `git config advice.ignoredHook false`.</yellow>",
+                    file=sys.stderr)
             return False
         else:
             return True

@@ -5,7 +5,7 @@ import textwrap
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils import SimpleAnsiEscapeCodes, abspath_posix
+from git_machete.utils import FullTerminalAnsiOutputCodes, abspath_posix
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, execute,
@@ -69,9 +69,10 @@ class TestStatus(BaseTest):
         assert_failure(['status'], expected_error_message)
 
     def test_single_invalid_branch_interactive_slide_out(self, mocker: MockerFixture) -> None:
+        E = FullTerminalAnsiOutputCodes()
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo()
         new_branch('master')
@@ -98,9 +99,10 @@ class TestStatus(BaseTest):
             assert_success(["status"], expected_output)
 
     def test_multiple_invalid_branches_interactive_slide_out(self, mocker: MockerFixture) -> None:
+        E = FullTerminalAnsiOutputCodes()
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo()
         new_branch('master')
@@ -125,19 +127,15 @@ class TestStatus(BaseTest):
             Skipping {E.BOLD}foo{E.ENDC_BOLD_DIM}, {E.BOLD}bar{E.ENDC_BOLD_DIM}, {E.BOLD}qux{E.ENDC_BOLD_DIM}, {E.BOLD}baz{E.ENDC_BOLD_DIM} which are not local branches (perhaps they have been deleted?).
             Slide them out from the branch layout file? ({E.GREEN}y{E.ENDC}, {E.ORANGE}e[dit]{E.ENDC}, {E.RED}N{E.ENDC})
               {E.BOLD}master{E.ENDC_BOLD_DIM}
-              {E.GREEN}│
-            {E.ENDC}  {E.GREEN}└─{E.ENDC}{E.BOLD}develop{E.ENDC_BOLD_DIM}
+              {E.GREEN}│{E.ENDC}
+              {E.GREEN}└─{E.ENDC}{E.BOLD}develop{E.ENDC_BOLD_DIM}
 
               {E.BOLD}{E.UNDERLINE}feature{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
         """)
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(["status"], expected_output)
 
-    def test_single_invalid_branch_non_interactive_slide_out(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
-
+    def test_single_invalid_branch_non_interactive_slide_out(self) -> None:
         create_repo()
         new_branch('master')
         commit()
@@ -148,17 +146,12 @@ class TestStatus(BaseTest):
             \t\tfoo
             """
         rewrite_branch_layout_file(body)
-        expected_output = textwrap.dedent(f"""\
-            Warning: sliding invalid branch {E.BOLD}foo{E.ENDC_BOLD_DIM} out of the branch layout file
+        assert_success(["status"], """
+            Warning: sliding invalid branch foo out of the branch layout file
               master *
         """)
-        assert_success(["status"], expected_output)
 
-    def test_multiple_invalid_branches_non_interactive_slide_out(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
-
+    def test_multiple_invalid_branches_non_interactive_slide_out(self) -> None:
         create_repo()
         new_branch('master')
         commit()
@@ -178,22 +171,17 @@ class TestStatus(BaseTest):
             \t\tfeature
             """
         rewrite_branch_layout_file(body)
-        expected_output = textwrap.dedent(f"""\
-            Warning: sliding invalid branches {E.BOLD}foo{E.ENDC_BOLD_DIM}, {E.BOLD}bar{E.ENDC_BOLD_DIM}, {E.BOLD}qux{E.ENDC_BOLD_DIM}, {E.BOLD}baz{E.ENDC_BOLD_DIM} out of the branch layout file
+        assert_success(["status"], """
+            Warning: sliding invalid branches foo, bar, qux, baz out of the branch layout file
               master
               |
               o-develop
 
               feature *
         """)
-        assert_success(["status"], expected_output)
 
     @pytest.mark.skipif(sys.platform == "win32", reason="Windows doesn't distinguish between executable and non-executable files")
-    def test_status_advice_ignored_non_executable_hook(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
-
+    def test_status_advice_ignored_non_executable_hook(self) -> None:
         repo_path = abspath_posix(create_repo())
         new_branch('master')
         commit()
@@ -210,13 +198,13 @@ class TestStatus(BaseTest):
         write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
         assert_success(
             ["status"],
-            textwrap.dedent(f"""\
-            {E.YELLOW}hint: The '{repo_path}/.git/hooks/machete-status-branch' hook was ignored because it's not set as executable.{E.ENDC}
-            {E.YELLOW}hint: You can disable this warning with `git config advice.ignoredHook false`.{E.ENDC}
+            f"""\
+            hint: The '{repo_path}/.git/hooks/machete-status-branch' hook was ignored because it's not set as executable.
+            hint: You can disable this warning with git config advice.ignoredHook false.
               master
               |
               o-develop *
-            """)
+            """
         )
 
         set_git_config_key("advice.ignoredHook", "false")
@@ -532,8 +520,8 @@ class TestStatus(BaseTest):
                        "Invalid value for --squash-merge-detection flag: invalid. Valid values are none, simple, exact")
 
     def test_status_inferring_counterpart_for_fetching_of_branch(self, mocker: MockerFixture) -> None:
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        E = FullTerminalAnsiOutputCodes()
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         origin_1_remote_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
@@ -581,22 +569,22 @@ class TestStatus(BaseTest):
         assert_success(['status'], expected_status_output)
 
         raw_output = launch_command('status', '--color=always')
-        expected_ansi = textwrap.dedent(f"""\
-              {E.BOLD}master{E.ENDC_BOLD_DIM}
-              {E.GREEN}│
-            {E.ENDC}  {E.GREEN}└─{E.ENDC}{E.BOLD}bar{E.ENDC_BOLD_DIM}
-                {E.GREEN}│
-            {E.ENDC}    {E.GREEN}└─{E.ENDC}{E.BOLD}foo{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
-                  {E.GREEN}│
-            {E.ENDC}      {E.GREEN}└─{E.ENDC}{E.BOLD}snickers{E.ENDC_BOLD_DIM}
-                    {E.GREEN}│
-            {E.ENDC}        {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}mars{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
-        """)
+        expected_ansi = (
+            f"  {E.BOLD}master{E.ENDC_BOLD_DIM}\n"
+            f"  {E.GREEN}│{E.ENDC}\n"
+            f"  {E.GREEN}└─{E.ENDC}{E.BOLD}bar{E.ENDC_BOLD_DIM}\n"
+            f"    {E.GREEN}│{E.ENDC}\n"
+            f"    {E.GREEN}└─{E.ENDC}{E.BOLD}foo{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}\n"
+            f"      {E.GREEN}│{E.ENDC}\n"
+            f"      {E.GREEN}└─{E.ENDC}{E.BOLD}snickers{E.ENDC_BOLD_DIM}\n"
+            f"        {E.GREEN}│{E.ENDC}\n"
+            f"        {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}mars{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}\n"
+        )
         assert raw_output == expected_ansi
 
     def test_status_when_child_branch_is_pushed_immediately_after_creation(self, mocker: MockerFixture) -> None:
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        E = FullTerminalAnsiOutputCodes()
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         new_branch("master")
@@ -627,13 +615,13 @@ class TestStatus(BaseTest):
         assert_success(['status'], expected_status_output)
 
         raw_output = launch_command('status', '--color=always')
-        expected_ansi = textwrap.dedent(f"""\
-              {E.BOLD}master{E.ENDC_BOLD_DIM}
-              {E.GREEN}│
-            {E.ENDC}  {E.GREEN}└─{E.ENDC}{E.BOLD}foo{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
-                {E.GREEN}│
-            {E.ENDC}    {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}bar{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}{E.RED} (ahead of {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}
-        """)
+        expected_ansi = (
+            f"  {E.BOLD}master{E.ENDC_BOLD_DIM}\n"
+            f"  {E.GREEN}│{E.ENDC}\n"
+            f"  {E.GREEN}└─{E.ENDC}{E.BOLD}foo{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}\n"
+            f"    {E.GREEN}│{E.ENDC}\n"
+            f"    {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}bar{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}{E.RED} (ahead of {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}\n"
+        )
         assert raw_output == expected_ansi
 
     def test_status_fork_point_without_reflogs(self) -> None:
@@ -665,8 +653,8 @@ class TestStatus(BaseTest):
         assert_success(['status', '-l'], expected_status_output)
 
     def test_status_yellow_edges(self, mocker: MockerFixture) -> None:
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        E = FullTerminalAnsiOutputCodes()
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         with fixed_author_and_committer_date_in_past():
             create_repo()
@@ -726,19 +714,24 @@ class TestStatus(BaseTest):
         )
         assert_success(['status', '-l'], expected_status_output)
 
-        # Verify ANSI escape codes with --color=always
-        raw_output = launch_command('status', '--color=always')
+        raw_output = launch_command('status', '-l', '--color=always')
         expected_ansi = textwrap.dedent(f"""\
               {E.BOLD}master{E.ENDC_BOLD_DIM}
-              {E.YELLOW}│
-            {E.ENDC}  {E.YELLOW}├─{E.ENDC}{E.BOLD}feature-1{E.ENDC_BOLD_DIM}
-              {E.YELLOW}│
-            {E.ENDC}  {E.YELLOW}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-2{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
+              {E.YELLOW}│{E.ENDC}
+              {E.YELLOW}│{E.ENDC} {E.DIM}develop commit{E.ENDC_BOLD_DIM} {E.RED}➔ fork point ???{E.ENDC} commit 9c47c46 seems to be a part of the unique history of {E.UNDERLINE}develop{E.ENDC_UNDERLINE}
+              {E.YELLOW}│{E.ENDC} {E.DIM}feature-1 commit{E.ENDC_BOLD_DIM}
+              {E.YELLOW}├─{E.ENDC}{E.BOLD}feature-1{E.ENDC_BOLD_DIM}
+              {E.YELLOW}│{E.ENDC}
+              {E.YELLOW}│{E.ENDC} {E.DIM}develop commit{E.ENDC_BOLD_DIM} {E.RED}➔ fork point ???{E.ENDC} commit 9c47c46 seems to be a part of the unique history of {E.UNDERLINE}develop{E.ENDC_UNDERLINE}
+              {E.YELLOW}│{E.ENDC} {E.DIM}feature-2 commit{E.ENDC_BOLD_DIM}
+              {E.YELLOW}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-2{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
 
             {E.ORANGE}Warn: {E.ENDC}yellow edges indicate that fork points for {E.BOLD}feature-1{E.ENDC_BOLD_DIM}, {E.BOLD}feature-2{E.ENDC_BOLD_DIM} are probably incorrectly inferred,
             or that some extra branch should be added between each of these branches and its parent.
 
-            Run {E.UNDERLINE}git machete status --list-commits{E.ENDC_UNDERLINE} or {E.UNDERLINE}git machete status --list-commits-with-hashes{E.ENDC_UNDERLINE} to see more details.
+            Consider using {E.UNDERLINE}git machete fork-point <branch> --override-to-parent{E.ENDC_UNDERLINE} for each affected branch,
+            rebasing each branch onto its parent with {E.UNDERLINE}git machete update{E.ENDC_UNDERLINE},
+            or reattaching the affected branches under different parent branches.
         """)
         assert raw_output == expected_ansi
 
@@ -766,22 +759,21 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        # Use the palette of ANSI escape code that does NOT depend on the underlying terminal properties
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, 'git_machete.utils.AE', E)
+        E = FullTerminalAnsiOutputCodes()
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         raw_output = launch_command('status', '--color=always')
         # After merge, develop moved forward so feature-in-sync (still at first commit) is behind=RED;
         # feature-merged is merged into develop=DIM; feature-out-of-sync is ahead but fork-point logic makes it GREEN.
-        expected = textwrap.dedent(f"""\
-              {E.BOLD}develop{E.ENDC_BOLD_DIM}
-              {E.RED}│
-            {E.ENDC}  {E.RED}└─{E.ENDC}{E.BOLD}feature-in-sync{E.ENDC_BOLD_DIM}
-              {E.DIM}│
-            {E.ENDC}  {E.DIM}└─{E.ENDC}{E.BOLD}feature-merged{E.ENDC_BOLD_DIM}
-              {E.GREEN}│
-            {E.ENDC}  {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-out-of-sync{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
-        """)
+        expected = (
+            f"  {E.BOLD}develop{E.ENDC_BOLD_DIM}\n"
+            f"  {E.RED}│{E.ENDC}\n"
+            f"  {E.RED}└─{E.ENDC}{E.BOLD}feature-in-sync{E.ENDC_BOLD_DIM}\n"
+            f"  {E.DIM}│{E.ENDC_BOLD_DIM}\n"
+            f"  {E.DIM}└─{E.ENDC_BOLD_DIM}{E.BOLD}feature-merged{E.ENDC_BOLD_DIM}\n"
+            f"  {E.GREEN}│{E.ENDC}\n"
+            f"  {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-out-of-sync{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}\n"
+        )
         assert raw_output == expected
 
     def test_status_during_rebase(self) -> None:
@@ -942,8 +934,8 @@ class TestStatus(BaseTest):
         )
 
     def test_status_removed_from_remote(self, mocker: MockerFixture) -> None:
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        E = FullTerminalAnsiOutputCodes()
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         new_branch('main')

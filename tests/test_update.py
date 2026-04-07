@@ -1,6 +1,7 @@
 from pytest_mock import MockerFixture
 
-from git_machete.utils import SimpleAnsiEscapeCodes, UnderlyingGitException
+from git_machete.utils import (FullTerminalAnsiOutputCodes,
+                               UnderlyingGitException)
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, execute,
@@ -258,10 +259,10 @@ class TestUpdate(BaseTest):
         assert_failure(["update", "--no-interactive-rebase"], "Aborting.")
         assert get_commit_hash("branch-1") == original_branch_1_hash
 
+        E = FullTerminalAnsiOutputCodes()
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         pc_yn = f"({E.GREEN}y{E.ENDC}, {E.RED}N{E.ENDC})"
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)

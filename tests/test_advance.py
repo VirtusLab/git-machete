@@ -3,7 +3,7 @@ import textwrap
 
 from pytest_mock import MockerFixture
 
-from git_machete.utils import (ExitCode, SimpleAnsiEscapeCodes,
+from git_machete.utils import (ExitCode, FullTerminalAnsiOutputCodes,
                                UnderlyingGitException)
 
 from .base_test import BaseTest
@@ -185,10 +185,10 @@ class TestAdvance(BaseTest):
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("3"))
         assert_failure(["advance"], "Invalid index: 3")
 
+        E = FullTerminalAnsiOutputCodes()
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         pc_yn = f"({E.GREEN}y{E.ENDC}, {E.RED}N{E.ENDC})"
 
@@ -210,10 +210,10 @@ class TestAdvance(BaseTest):
             ["status"],
             textwrap.dedent(f"""\
               {E.BOLD}{E.UNDERLINE}root{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}{E.RED} (ahead of {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}
-              {E.DIM}│
-            {E.ENDC}  {E.DIM}└─{E.ENDC}{E.BOLD}level-1a-branch{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
-              {E.RED}│
-            {E.ENDC}  {E.RED}└─{E.ENDC}{E.BOLD}level-1b-branch{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
+              {E.DIM}│{E.ENDC_BOLD_DIM}
+              {E.DIM}└─{E.ENDC_BOLD_DIM}{E.BOLD}level-1a-branch{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
+              {E.RED}│{E.ENDC}
+              {E.RED}└─{E.ENDC}{E.BOLD}level-1b-branch{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
             """)
         )
 

@@ -4,7 +4,6 @@ from abc import ABCMeta, abstractmethod
 from typing import Dict, List, NamedTuple, Optional
 
 from git_machete.git_operations import GitContext, LocalBranchShortName
-from git_machete.utils import bold
 
 
 class PullRequest:
@@ -88,7 +87,7 @@ class PullRequest:
 
     def display_text(self, fmt: bool = True) -> str:
         number = str(self.number)
-        return f"{self.display_prefix}{bold(number) if fmt else number}"
+        return f"{self.display_prefix}{f'<b>{number}</b>' if fmt else number}"
 
     def __repr__(self) -> str:
         # repr is used in debug messages, let's turn off formatting

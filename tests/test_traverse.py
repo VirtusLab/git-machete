@@ -5,7 +5,8 @@ import textwrap
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils import SimpleAnsiEscapeCodes, UnderlyingGitException
+from git_machete.utils import (FullTerminalAnsiOutputCodes,
+                               UnderlyingGitException)
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success,
@@ -78,10 +79,10 @@ class TestTraverse(BaseTest):
         rewrite_branch_layout_file(body)
 
     def test_traverse_slide_out(self, mocker: MockerFixture) -> None:
+        E = FullTerminalAnsiOutputCodes()
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo()
         new_branch("master")
@@ -112,10 +113,10 @@ class TestTraverse(BaseTest):
             {slide_msg}
 
               {E.BOLD}master{E.ENDC_BOLD_DIM}
-              {E.DIM}│
-            {E.ENDC}  {E.DIM}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}develop{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}  {E.DIM}PR #123{E.ENDC_BOLD_DIM}
-                {E.GREEN}│
-            {E.ENDC}    {E.GREEN}└─{E.ENDC}{E.BOLD}feature{E.ENDC_BOLD_DIM}
+              {E.DIM}│{E.ENDC_BOLD_DIM}
+              {E.DIM}└─{E.ENDC_BOLD_DIM}{E.BOLD}{E.UNDERLINE}develop{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}  {E.DIM}PR #123{E.ENDC_BOLD_DIM}
+                {E.GREEN}│{E.ENDC}
+                {E.GREEN}└─{E.ENDC}{E.BOLD}feature{E.ENDC_BOLD_DIM}
 
             No successor of {E.BOLD}develop{E.ENDC_BOLD_DIM} needs to be slid out or synced with upstream branch or remote; nothing left to update
             """)
@@ -128,8 +129,8 @@ class TestTraverse(BaseTest):
             ["status", "-l"],
             textwrap.dedent(f"""\
               {E.BOLD}master{E.ENDC_BOLD_DIM}
-              {E.GREEN}│
-            {E.ENDC}  {E.GREEN}│{E.ENDC} {E.DIM}feature commit{E.ENDC_BOLD_DIM}
+              {E.GREEN}│{E.ENDC}
+              {E.GREEN}│{E.ENDC} {E.DIM}feature commit{E.ENDC_BOLD_DIM}
               {E.GREEN}└─{E.ENDC}{E.BOLD}feature{E.ENDC_BOLD_DIM}
             """)
         )
@@ -323,10 +324,10 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_ahead_of_remote_responses(self, mocker: MockerFixture) -> None:
+        E = FullTerminalAnsiOutputCodes()
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         new_branch("master")
@@ -357,10 +358,10 @@ class TestTraverse(BaseTest):
         assert_success(["traverse"], f"Push {E.BOLD}master{E.ENDC_BOLD_DIM} to {E.BOLD}origin{E.ENDC_BOLD_DIM}? {pc}\n")
 
     def test_traverse_behind_remote_responses(self, mocker: MockerFixture) -> None:
+        E = FullTerminalAnsiOutputCodes()
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         new_branch("master")
@@ -554,10 +555,10 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_no_push_no_checkout(self, mocker: MockerFixture) -> None:
+        E = FullTerminalAnsiOutputCodes()
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         new_branch("root")
@@ -597,14 +598,14 @@ class TestTraverse(BaseTest):
             ["status"],
             textwrap.dedent(f"""\
               {E.BOLD}develop{E.ENDC_BOLD_DIM}
-              {E.GREEN}│
-            {E.ENDC}  {E.GREEN}└─{E.ENDC}{E.BOLD}allow-ownership-link{E.ENDC_BOLD_DIM}{E.RED} (ahead of {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}
-                {E.GREEN}│
-            {E.ENDC}    {E.GREEN}└─{E.ENDC}{E.BOLD}build-chain{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
+              {E.GREEN}│{E.ENDC}
+              {E.GREEN}└─{E.ENDC}{E.BOLD}allow-ownership-link{E.ENDC_BOLD_DIM}{E.RED} (ahead of {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}
+                {E.GREEN}│{E.ENDC}
+                {E.GREEN}└─{E.ENDC}{E.BOLD}build-chain{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
 
               {E.BOLD}master{E.ENDC_BOLD_DIM}
-              {E.GREEN}│
-            {E.ENDC}  {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}hotfix/add-trigger{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}{E.RED} (diverged from {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}
+              {E.GREEN}│{E.ENDC}
+              {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}hotfix/add-trigger{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}{E.RED} (diverged from {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}
             """)
         )
 
@@ -615,14 +616,14 @@ class TestTraverse(BaseTest):
         Checking out {E.BOLD}hotfix/add-trigger{E.ENDC_BOLD_DIM}... {ok}
 
           {E.BOLD}develop{E.ENDC_BOLD_DIM}
-          {E.GREEN}│
-        {E.ENDC}  {E.GREEN}└─{E.ENDC}{E.BOLD}allow-ownership-link{E.ENDC_BOLD_DIM}{E.RED} (ahead of {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}
-            {E.GREEN}│
-        {E.ENDC}    {E.GREEN}└─{E.ENDC}{E.BOLD}build-chain{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
+          {E.GREEN}│{E.ENDC}
+          {E.GREEN}└─{E.ENDC}{E.BOLD}allow-ownership-link{E.ENDC_BOLD_DIM}{E.RED} (ahead of {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}
+            {E.GREEN}│{E.ENDC}
+            {E.GREEN}└─{E.ENDC}{E.BOLD}build-chain{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
 
           {E.BOLD}master{E.ENDC_BOLD_DIM}
-          {E.GREEN}│
-        {E.ENDC}  {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}hotfix/add-trigger{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}{E.RED} (diverged from {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}
+          {E.GREEN}│{E.ENDC}
+          {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}hotfix/add-trigger{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}{E.RED} (diverged from {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}
 
         No successor of {E.BOLD}develop{E.ENDC_BOLD_DIM} needs to be slid out or synced with upstream branch or remote; nothing left to update
         Tip: {E.UNDERLINE}traverse{E.ENDC_UNDERLINE} by default starts from the current branch, use flags ({E.UNDERLINE}--start-from={E.ENDC_UNDERLINE}, {E.UNDERLINE}--whole{E.ENDC_UNDERLINE} or {E.UNDERLINE}-w{E.ENDC_UNDERLINE}, {E.UNDERLINE}-W{E.ENDC_UNDERLINE}) to change this behavior.
@@ -1893,10 +1894,10 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_yellow_edges(self, mocker: MockerFixture) -> None:
+        E = FullTerminalAnsiOutputCodes()
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo()
         new_branch("master")
@@ -1929,10 +1930,10 @@ class TestTraverse(BaseTest):
             Checking out {E.BOLD}feature-1{E.ENDC_BOLD_DIM}... {ok}
 
               {E.BOLD}master{E.ENDC_BOLD_DIM}
-              {E.YELLOW}│
-            {E.ENDC}  {E.YELLOW}├─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-1{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
-              {E.YELLOW}│
-            {E.ENDC}  {E.YELLOW}└─{E.ENDC}{E.BOLD}feature-2{E.ENDC_BOLD_DIM}
+              {E.YELLOW}│{E.ENDC}
+              {E.YELLOW}├─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-1{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
+              {E.YELLOW}│{E.ENDC}
+              {E.YELLOW}└─{E.ENDC}{E.BOLD}feature-2{E.ENDC_BOLD_DIM}
 
             {E.ORANGE}Warn: {E.ENDC}yellow edges indicate that fork points for {E.BOLD}feature-1{E.ENDC_BOLD_DIM}, {E.BOLD}feature-2{E.ENDC_BOLD_DIM} are probably incorrectly inferred,
             or that some extra branch should be added between each of these branches and its parent.
@@ -1944,19 +1945,19 @@ class TestTraverse(BaseTest):
             Checking out {E.BOLD}feature-2{E.ENDC_BOLD_DIM}... {ok}
 
               {E.BOLD}master{E.ENDC_BOLD_DIM}
-              {E.YELLOW}│
-            {E.ENDC}  {E.YELLOW}├─{E.ENDC}{E.BOLD}feature-1{E.ENDC_BOLD_DIM}
-              {E.YELLOW}│
-            {E.ENDC}  {E.YELLOW}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-2{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
+              {E.YELLOW}│{E.ENDC}
+              {E.YELLOW}├─{E.ENDC}{E.BOLD}feature-1{E.ENDC_BOLD_DIM}
+              {E.YELLOW}│{E.ENDC}
+              {E.YELLOW}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-2{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
 
 
             Rebase {E.BOLD}feature-2{E.ENDC_BOLD_DIM} onto {E.BOLD}master{E.ENDC_BOLD_DIM}? {pc}
 
               {E.BOLD}master{E.ENDC_BOLD_DIM}
-              {E.YELLOW}│
-            {E.ENDC}  {E.YELLOW}├─{E.ENDC}{E.BOLD}feature-1{E.ENDC_BOLD_DIM}
-              {E.YELLOW}│
-            {E.ENDC}  {E.YELLOW}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-2{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
+              {E.YELLOW}│{E.ENDC}
+              {E.YELLOW}├─{E.ENDC}{E.BOLD}feature-1{E.ENDC_BOLD_DIM}
+              {E.YELLOW}│{E.ENDC}
+              {E.YELLOW}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-2{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
 
 
             Reached branch {E.BOLD}feature-2{E.ENDC_BOLD_DIM} which has no successor; nothing left to update
@@ -1990,10 +1991,10 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_behind_remote_with_red_edge(self, mocker: MockerFixture) -> None:
+        E = FullTerminalAnsiOutputCodes()
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         new_branch("master")
@@ -2019,18 +2020,18 @@ class TestTraverse(BaseTest):
             Pulling {E.BOLD}feature{E.ENDC_BOLD_DIM} (fast-forward only) from {E.BOLD}origin{E.ENDC_BOLD_DIM}...
 
               {E.BOLD}master{E.ENDC_BOLD_DIM}
-              {E.RED}│
-            {E.ENDC}  {E.RED}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
+              {E.RED}│{E.ENDC}
+              {E.RED}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
 
             Reached branch {E.BOLD}feature{E.ENDC_BOLD_DIM} which has no successor; nothing left to update
             """)
         )
 
     def test_traverse_diverged_from_and_older_with_red_edge(self, mocker: MockerFixture) -> None:
+        E = FullTerminalAnsiOutputCodes()
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         new_branch("master")
@@ -2056,8 +2057,8 @@ class TestTraverse(BaseTest):
             Resetting branch {E.BOLD}feature{E.ENDC_BOLD_DIM} to the commit pointed by {E.BOLD}origin/feature{E.ENDC_BOLD_DIM}...
 
               {E.BOLD}master{E.ENDC_BOLD_DIM}
-              {E.RED}│
-            {E.ENDC}  {E.RED}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
+              {E.RED}│{E.ENDC}
+              {E.RED}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
 
             Reached branch {E.BOLD}feature{E.ENDC_BOLD_DIM} which has no successor; nothing left to update
             """)

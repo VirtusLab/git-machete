@@ -5,7 +5,7 @@ from git_machete.client.base import MacheteClient
 from git_machete.git_operations import (AnyRevision, FullCommitHash,
                                         GitFormatPatterns, GitLogEntry,
                                         LocalBranchShortName)
-from git_machete.utils import MacheteException, bold, fmt
+from git_machete.utils import MacheteException, print_fmt
 
 
 class SquashMacheteClient(MacheteClient):
@@ -18,8 +18,8 @@ class SquashMacheteClient(MacheteClient):
                 "No commits to squash. Use `-f` or `--fork-point` to specify the "
                 "start of range of commits to squash.")
         if len(commits) == 1:
-            print(f"Exactly one commit ({bold(commits[0].short_hash)}) to squash, ignoring.")
-            print(fmt("Tip: use `-f` or `--fork-point` to specify where the range of commits to squash starts."))
+            print_fmt(f"Exactly one commit (<b>{commits[0].short_hash}</b>) to squash, ignoring.")
+            print_fmt("Tip: use `-f` or `--fork-point` to specify where the range of commits to squash starts.")
             return
 
         earliest_commit = commits[0]
@@ -60,4 +60,4 @@ class SquashMacheteClient(MacheteClient):
         print()
         print("To restore the original pre-squash commit, run:")
         print()
-        print(fmt(f"    `git reset {commits[-1].hash}`"))
+        print_fmt(f"    `git reset {commits[-1].hash}`")

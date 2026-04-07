@@ -20,10 +20,10 @@ from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
                                         RemoteBranchShortName,
                                         SyncToRemoteStatus)
 from git_machete.utils import (InteractionStopped, MacheteException,
-                               UnexpectedMacheteException, bold, debug, dim,
-                               excluding, flat_map, fmt, get_pretty_choices,
-                               get_second, join_paths_posix, relpath_posix,
-                               tupled, warn)
+                               UnexpectedMacheteException, debug, excluding,
+                               flat_map, get_second, input_fmt,
+                               join_paths_posix, pretty_choices, print_fmt,
+                               relpath_posix, tupled, warn)
 
 
 class PickRoot(Enum):
@@ -133,12 +133,12 @@ class MacheteClient:
     def expect_in_managed_branches(self, branch: LocalBranchShortName) -> None:
         if branch not in self.managed_branches:
             raise MacheteException(
-                f"Branch {bold(branch)} not found in the tree of branch dependencies.\n"
+                f"Branch <b>{branch}</b> not found in the tree of branch dependencies.\n"
                 f"Use `git machete add {branch}` or `git machete edit`.")
 
     def expect_in_local_branches(self, branch: LocalBranchShortName) -> None:
         if branch not in self._git.get_local_branches():
-            raise MacheteException(f"{bold(branch)} is not a local branch")
+            raise MacheteException(f"<b>{branch}</b> is not a local branch")
 
     def expect_at_least_one_managed_branch(self) -> None:
         if not self._state.roots:
@@ -177,7 +177,7 @@ class MacheteClient:
             if branch in self.managed_branches:
                 raise MacheteException(
                     f"{self._branch_layout_file_path}, line {index + 1}: branch "
-                    f"{bold(branch)} re-appears in the branch layout. {hint}")
+                    f"<b>{branch}</b> re-appears in the branch layout. {hint}")
             if verify_branches and branch not in self._git.get_local_branches():
                 invalid_branches += [branch]
             self._state.managed_branches += [branch]
@@ -191,8 +191,8 @@ class MacheteClient:
                     indent_expanded: str = "".join(mapping[c] for c in self.__indent)
                     raise MacheteException(
                         f"{self._branch_layout_file_path}, line {index + 1}: "
-                        f"invalid indent {bold(prefix_expanded)}, expected a multiply"
-                        f" of {bold(indent_expanded)}. {hint}")
+                        f"invalid indent <b>{prefix_expanded}</b>, expected a multiply"
+                        f" of <b>{indent_expanded}</b>. {hint}")
             else:
                 depth = 0
 
@@ -200,7 +200,7 @@ class MacheteClient:
                 raise MacheteException(
                     f"{self._branch_layout_file_path}, line {index + 1}: too much "
                     f"indent (level {depth}, expected at most {last_depth + 1}) "
-                    f"for the branch {bold(branch)}. {hint}")
+                    f"for the branch <b>{branch}</b>. {hint}")
             last_depth = depth
 
             at_depth[depth] = branch
@@ -220,22 +220,22 @@ class MacheteClient:
         if interactively_slide_out_invalid_branches:
             if len(invalid_branches) == 1:
                 ans: str = self.ask_if(
-                    f"Skipping {bold(invalid_branches[0])} " +
+                    f"Skipping <b>{invalid_branches[0]}</b> " +
                     "which is not a local branch (perhaps it has been deleted?).\n" +
                     "Slide it out from the branch layout file?" +
-                    get_pretty_choices("y", "e[dit]", "N"), msg_if_opt_yes=None, opt_yes=False)
+                    pretty_choices("y", "e[dit]", "N"), msg_if_opt_yes=None, opt_yes=False)
             else:
                 ans = self.ask_if(
-                    f"Skipping {', '.join(bold(branch) for branch in invalid_branches)}"
+                    f"Skipping {', '.join(f'<b>{branch}</b>' for branch in invalid_branches)}"
                     " which are not local branches (perhaps they have been deleted?).\n"
-                    "Slide them out from the branch layout file?" + get_pretty_choices("y", "e[dit]", "N"),
+                    "Slide them out from the branch layout file?" + pretty_choices("y", "e[dit]", "N"),
                     msg_if_opt_yes=None, opt_yes=False)
         else:
             if len(invalid_branches) == 1:
-                what = f"invalid branch {bold(invalid_branches[0], file=sys.stderr)}"
+                what = f"invalid branch <b>{invalid_branches[0]}</b>"
             else:
-                what = f"invalid branches {', '.join(bold(branch, file=sys.stderr) for branch in invalid_branches)}"
-            print(f"Warning: sliding {what} out of the branch layout file", file=sys.stderr)
+                what = f"invalid branches {', '.join(f'<b>{branch}</b>' for branch in invalid_branches)}"
+            print_fmt(f"Warning: sliding {what} out of the branch layout file", file=sys.stderr)
             ans = 'y'
 
         def recursive_slide_out_invalid_branches(branch: LocalBranchShortName) -> List[LocalBranchShortName]:
@@ -298,7 +298,7 @@ class MacheteClient:
             switch_head_if_new_branch: bool
             ) -> None:
         if branch in self.managed_branches:
-            raise MacheteException(f"Branch {bold(branch)} already exists in the tree of branch dependencies")
+            raise MacheteException(f"Branch <b>{branch}</b> already exists in the tree of branch dependencies")
 
         if opt_onto:
             self.expect_in_managed_branches(opt_onto)
@@ -307,10 +307,10 @@ class MacheteClient:
             remote_branch: Optional[RemoteBranchShortName] = self._git.get_sole_remote_branch(branch)
             if remote_branch:
                 common_line = (
-                    f"A local branch {bold(branch)} does not exist, but a remote "
-                    f"branch {bold(remote_branch)} exists.\n")
-                msg = common_line + f"Check out {bold(branch)} locally?" + get_pretty_choices('y', 'N')
-                opt_yes_msg = common_line + f"Checking out {bold(branch)} locally..."
+                    f"A local branch <b>{branch}</b> does not exist, but a remote "
+                    f"branch <b>{remote_branch}</b> exists.\n")
+                msg = common_line + f"Check out <b>{branch}</b> locally?" + pretty_choices('y', 'N')
+                opt_yes_msg = common_line + f"Checking out <b>{branch}</b> locally..."
                 if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                     self._git.create_branch(branch, remote_branch.full_name(), switch_head=switch_head_if_new_branch)
                 else:
@@ -319,10 +319,10 @@ class MacheteClient:
                 # specified via `--onto`, we'll try to infer it now.
             else:
                 out_of = LocalBranchShortName.of(opt_onto).full_name() if opt_onto else HEAD
-                out_of_str = bold(opt_onto) if opt_onto else "the current HEAD"
-                msg = (f"A local branch {bold(branch)} does not exist. Create out "
-                       f"of {out_of_str}?" + get_pretty_choices('y', 'N'))
-                opt_yes_msg = (f"A local branch {bold(branch)} does not exist. "
+                out_of_str = f"<b>{opt_onto}</b>" if opt_onto else "the current HEAD"
+                msg = (f"A local branch <b>{branch}</b> does not exist. Create out "
+                       f"of {out_of_str}?" + pretty_choices('y', 'N'))
+                opt_yes_msg = (f"A local branch <b>{branch}</b> does not exist. "
                                f"Creating out of {out_of_str}")
                 if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                     # If `--onto` hasn't been explicitly specified, let's try to
@@ -341,7 +341,7 @@ class MacheteClient:
                                 self._state.managed_branches = [current_branch]
                                 # This section of code is only ever executed in verbose mode, but let's leave the `if` for consistency
                                 if verbose:  # pragma: no branch
-                                    print(fmt(f"Added branch {bold(current_branch)} as a new root"))
+                                    print_fmt(f"Added branch <b>{current_branch}</b> as a new root")
                                 opt_onto = current_branch
                     self._git.create_branch(branch, out_of, switch_head=switch_head_if_new_branch)
                 else:
@@ -350,7 +350,7 @@ class MacheteClient:
         if opt_as_root or not self._state.roots:
             self._state.roots += [branch]
             if verbose:
-                print(fmt(f"Added branch {bold(branch)} as a new root"))
+                print_fmt(f"Added branch <b>{branch}</b> as a new root")
         else:
             if not opt_onto:
                 upstream = self._infer_upstream(
@@ -359,16 +359,16 @@ class MacheteClient:
                     reject_reason_message="this candidate is not a managed branch")
                 if not upstream:
                     raise MacheteException(
-                        f"Could not automatically infer upstream (parent) branch for {bold(branch)}.\n"
+                        f"Could not automatically infer upstream (parent) branch for <b>{branch}</b>.\n"
                         "You can either:\n"
                         "1) specify the desired upstream branch with `--onto` or\n"
-                        f"2) pass `--as-root` to attach {bold(branch)} as a new root or\n"
+                        f"2) pass `--as-root` to attach <b>{branch}</b> as a new root or\n"
                         "3) edit the branch layout file manually with `git machete edit`")
                 else:
-                    msg = (f"Add {bold(branch)} onto the inferred upstream (parent) "
-                           f"branch {bold(upstream)}?" + get_pretty_choices('y', 'N'))
-                    opt_yes_msg = (f"Adding {bold(branch)} onto the inferred upstream"
-                                   f" (parent) branch {bold(upstream)}")
+                    msg = (f"Add <b>{branch}</b> onto the inferred upstream (parent) "
+                           f"branch <b>{upstream}</b>?" + pretty_choices('y', 'N'))
+                    opt_yes_msg = (f"Adding <b>{branch}</b> onto the inferred upstream"
+                                   f" (parent) branch <b>{upstream}</b>")
                     if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                         opt_onto = upstream
                     else:
@@ -383,7 +383,7 @@ class MacheteClient:
                 down_branches = existing_down_branches + [branch]
             self._state.down_branches_for[opt_onto] = down_branches
             if verbose:
-                print(fmt(f"Added branch {bold(branch)} onto {bold(opt_onto)}"))
+                print_fmt(f"Added branch <b>{branch}</b> onto <b>{opt_onto}</b>")
 
         self._state.managed_branches += [branch]
         self.save_branch_layout_file()
@@ -414,7 +414,7 @@ class MacheteClient:
 
         anno = self.annotations.get(branch)
         if anno and not anno.qualifiers.rebase:
-            raise MacheteException(f"Branch {bold(branch)} is annotated with `rebase=no` qualifier, aborting.\n"
+            raise MacheteException(f"Branch <b>{branch}</b> is annotated with `rebase=no` qualifier, aborting.\n"
                                    f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
         # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
         extra_rebase_opts = os.environ.get('GIT_MACHETE_REBASE_OPTS', '').split()
@@ -453,14 +453,14 @@ class MacheteClient:
         current_branch = self._git.get_current_branch_or_none()
         if current_branch and current_branch in branches_to_delete:
             branches_to_delete = excluding(branches_to_delete, [current_branch])
-            print(f"Skipping current branch {bold(current_branch)}")
+            print_fmt(f"Skipping current branch <b>{current_branch}</b>")
         if not branches_to_delete:
             print("No branches to delete")
             return
 
         if opt_yes:
             for branch in branches_to_delete:
-                print(f"Deleting branch {bold(branch)}...")
+                print_fmt(f"Deleting branch <b>{branch}</b>...")
                 self._git.delete_branch(branch, force=True)
         else:
             for branch in branches_to_delete:
@@ -476,11 +476,11 @@ class MacheteClient:
                     if is_merged_to_remote:
                         msg_core_suffix = ''
                     else:
-                        msg_core_suffix = f', but not merged to {bold(str(remote_branch))}'
-                    msg_core = f"{bold(branch)} (merged to HEAD{msg_core_suffix})"
+                        msg_core_suffix = f', but not merged to <b>{remote_branch}</b>'
+                    msg_core = f"<b>{branch}</b> (merged to HEAD{msg_core_suffix})"
                 else:
-                    msg_core = f"{bold(branch)} (unmerged to HEAD)"
-                msg = f"Delete branch {msg_core}?" + get_pretty_choices('y', 'N', 'q')
+                    msg_core = f"<b>{branch}</b> (unmerged to HEAD)"
+                msg = f"Delete branch {msg_core}?" + pretty_choices('y', 'N', 'q')
                 ans = self.ask_if(msg, msg_if_opt_yes=None, opt_yes=False)
                 if ans in ('y', 'yes'):
                     self._git.delete_branch(branch, force=True)
@@ -535,13 +535,12 @@ class MacheteClient:
                     debug(f"'{editor_command}' executable ('{name}') found")
                     if name != "$" + git_machete_editor_var and self._config.advice_machete_editor_selection():
                         sample_alternative = 'nano' if editor_command.startswith('vi') else 'vi'
-                        print(fmt(f"Opening <b>{editor_repr}</b>.\n",
+                        print_fmt(f"Opening <b>{editor_repr}</b>.\n"
                                   f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export "
-                                  f"{git_machete_editor_var}={sample_alternative}`.\n\n",
+                                  f"{git_machete_editor_var}={sample_alternative}`.\n\n"
                                   "See `git machete help edit` and `git machete edit --debug` for more details.\n\n"
                                   "Use `git config --global advice.macheteEditorSelection false` to suppress this message.",
-                                  file=sys.stderr),
-                              file=sys.stderr)
+                                  file=sys.stderr)
                     return editor_parsed
 
         # This case is extremely unlikely on a modern Unix-like system.
@@ -656,7 +655,7 @@ class MacheteClient:
         self.expect_in_managed_branches(branch)
         dbs = self.down_branches_for(branch)
         if not dbs:
-            raise MacheteException(f"Branch {bold(branch)} has no downstream branch")
+            raise MacheteException(f"Branch <b>{branch}</b> has no downstream branch")
         elif len(dbs) == 1:
             return [dbs[0]]
         elif pick_if_multiple:
@@ -679,14 +678,14 @@ class MacheteClient:
         self.expect_in_managed_branches(branch)
         index: int = self.managed_branches.index(branch) + 1
         if index == len(self.managed_branches):
-            raise MacheteException(f"Branch {bold(branch)} has no successor")
+            raise MacheteException(f"Branch <b>{branch}</b> has no successor")
         return self.managed_branches[index]
 
     def prev_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
         self.expect_in_managed_branches(branch)
         index: int = self.managed_branches.index(branch) - 1
         if index == -1:
-            raise MacheteException(f"Branch {bold(branch)} has no predecessor")
+            raise MacheteException(f"Branch <b>{branch}</b> has no predecessor")
         return self.managed_branches[index]
 
     def first_root_branch(self) -> LocalBranchShortName:
@@ -706,12 +705,12 @@ class MacheteClient:
             if self._state.roots:
                 if if_unmanaged == PickRoot.FIRST:
                     warn(
-                        f"{bold(branch)} is not a managed branch, assuming "
+                        f"<b>{branch}</b> is not a managed branch, assuming "
                         f"{self._state.roots[0]}{' (the first root)' if len(self._state.roots) > 1 else ''} instead as root")
                     return self._state.roots[0]
                 else:  # if_unmanaged == PickRoot.LAST
                     warn(
-                        f"{bold(branch)} is not a managed branch, assuming "
+                        f"<b>{branch}</b> is not a managed branch, assuming "
                         f"{self._state.roots[-1]}{' (the last root)' if len(self._state.roots) > 1 else ''} instead as root")
                     return self._state.roots[-1]
             else:
@@ -731,7 +730,7 @@ class MacheteClient:
             if upstream:
                 return upstream
             else:
-                raise MacheteException(f"Branch {bold(branch)} has no upstream branch")
+                raise MacheteException(f"Branch <b>{branch}</b> has no upstream branch")
         else:
             upstream = self._infer_upstream(branch)
             if upstream:
@@ -745,12 +744,12 @@ class MacheteClient:
                     raise MacheteException("Aborting.")
                 else:
                     warn(
-                        f"branch {bold(branch)} not found in the tree of branch "
-                        f"dependencies; the upstream has been inferred to {bold(upstream)}")
+                        f"branch <b>{branch}</b> not found in the tree of branch "
+                        f"dependencies; the upstream has been inferred to <b>{upstream}</b>")
                     return upstream
             else:
                 raise MacheteException(
-                    f"Branch {bold(branch)} not found in the tree of branch "
+                    f"Branch <b>{branch}</b> not found in the tree of branch "
                     f"dependencies and its upstream could not be inferred")
 
     @property
@@ -861,7 +860,7 @@ class MacheteClient:
                         return lb if lb == lb_or_rb else f"{lb_or_rb} (remote counterpart of {lb})"
 
                     joined_branch_pairs = ", ".join(map(tupled(branch_pair_to_str), entry_branch_pairs))
-                    yield dim(f"{entry_hash} => {joined_branch_pairs}")
+                    yield f"<dim>{entry_hash} => {joined_branch_pairs}</dim>"
 
             branches = "\n".join(log_result())
             debug(f"branches containing the given hash in their filtered reflog: \n{branches}\n")
@@ -935,10 +934,10 @@ class MacheteClient:
         to = override_data.to_hash
         # Checks if the override still applies to wherever the given branch currently points.
         if not self._git.is_ancestor_or_equal(to.full_name(), branch.full_name()):
-            warn(fmt(
-                f"since branch {bold(branch)} is no longer a descendant of commit {bold(to)}, ",
-                "the fork point override to this commit no longer applies.\n",
-                f"Consider running:\n  `git machete fork-point --unset-override {branch}`\n"))
+            warn(
+                f"since branch <b>{branch}</b> is no longer a descendant of commit <b>{to}</b>, "
+                "the fork point override to this commit no longer applies.\n"
+                f"Consider running:\n  `git machete fork-point --unset-override {branch}`\n")
             return None
         debug(f"since branch {branch} is descendant of {to}, fork point of {branch} is overridden to {to}")
         return to
@@ -998,10 +997,10 @@ class MacheteClient:
         other_remote_choice = "o[ther-remote]" if can_pick_other_remote else ""
         remote_branch = RemoteBranchShortName.of(f"{new_remote}/{branch}")
         if not self._git.get_commit_hash_by_revision(remote_branch):
-            choices = get_pretty_choices(
+            choices = pretty_choices(
                 *('y', 'N', 'q', 'yq', other_remote_choice) if is_called_from_traverse else ('y', 'Q'))
-            ask_message = f"Push untracked branch {bold(branch)} to {bold(new_remote)}?" + choices
-            ask_opt_yes_message = f"Pushing untracked branch {bold(branch)} to {bold(new_remote)}..."
+            ask_message = f"Push untracked branch <b>{branch}</b> to <b>{new_remote}</b>?" + choices
+            ask_opt_yes_message = f"Pushing untracked branch <b>{branch}</b> to <b>{new_remote}</b>..."
             ans = self.ask_if(
                 ask_message,
                 ask_opt_yes_message,
@@ -1034,46 +1033,46 @@ class MacheteClient:
 
         message: str = {
             SyncToRemoteStatus.IN_SYNC_WITH_REMOTE:
-                f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} "
+                f"Branch <b>{branch}</b> is untracked, but its remote counterpart candidate <b>{remote_branch}</b> "
                 f"already exists and both branches point to the same commit.",
             SyncToRemoteStatus.BEHIND_REMOTE:
-                f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} "
-                f"already exists and is ahead of {bold(branch)}.",
+                f"Branch <b>{branch}</b> is untracked, but its remote counterpart candidate <b>{remote_branch}</b> "
+                f"already exists and is ahead of <b>{branch}</b>.",
             SyncToRemoteStatus.AHEAD_OF_REMOTE:
-                f"Branch {bold(branch)} is untracked, but its remote counterpart candidate {bold(remote_branch)} "
-                f"already exists and is behind {bold(branch)}.",
+                f"Branch <b>{branch}</b> is untracked, but its remote counterpart candidate <b>{remote_branch}</b> "
+                f"already exists and is behind <b>{branch}</b>.",
             SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                f"Branch {bold(branch)} is untracked, it diverged from its remote counterpart candidate {bold(remote_branch)}, "
-                f"and has {bold('older')} commits than {bold(remote_branch)}.",
+                f"Branch <b>{branch}</b> is untracked, it diverged from its remote counterpart candidate <b>{remote_branch}</b>, "
+                f"and has <b>older</b> commits than <b>{remote_branch}</b>.",
             SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                f"Branch {bold(branch)} is untracked, it diverged from its remote counterpart candidate {bold(remote_branch)}, "
-                f"and has {bold('newer')} commits than {bold(remote_branch)}."
+                f"Branch <b>{branch}</b> is untracked, it diverged from its remote counterpart candidate <b>{remote_branch}</b>, "
+                f"and has <b>newer</b> commits than <b>{remote_branch}</b>."
         }[SyncToRemoteStatus(relation)]
 
         ask_message, ask_opt_yes_message = {
             SyncToRemoteStatus.IN_SYNC_WITH_REMOTE: (
-                f"Set the remote of {bold(branch)} to {bold(new_remote)} without pushing or pulling?" +
-                get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
-                f"Setting the remote of {bold(branch)} to {bold(new_remote)}..."
+                f"Set the remote of <b>{branch}</b> to <b>{new_remote}</b> without pushing or pulling?" +
+                pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
+                f"Setting the remote of <b>{branch}</b> to <b>{new_remote}</b>..."
             ),
             SyncToRemoteStatus.BEHIND_REMOTE: (
-                f"Pull {bold(branch)} (fast-forward only) from {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq',
-                                                                                                         other_remote_choice),
-                f"Pulling {bold(branch)} (fast-forward only) from {bold(new_remote)}..."
+                f"Pull <b>{branch}</b> (fast-forward only) from <b>{new_remote}</b>?" +
+                pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
+                f"Pulling <b>{branch}</b> (fast-forward only) from <b>{new_remote}</b>..."
             ),
             SyncToRemoteStatus.AHEAD_OF_REMOTE: (
-                f"Push branch {bold(branch)} to {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
-                f"Pushing branch {bold(branch)} to {bold(new_remote)}..."
+                f"Push branch <b>{branch}</b> to <b>{new_remote}</b>?" + pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
+                f"Pushing branch <b>{branch}</b> to <b>{new_remote}</b>..."
             ),
             SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: (
-                f"Reset branch {bold(branch)} to the commit pointed by {bold(remote_branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq',
-                                                                                                                    other_remote_choice),
-                f"Resetting branch {bold(branch)} to the commit pointed by {bold(remote_branch)}..."
+                f"Reset branch <b>{branch}</b> to the commit pointed by <b>{remote_branch}</b>?" +
+                pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
+                f"Resetting branch <b>{branch}</b> to the commit pointed by <b>{remote_branch}</b>..."
             ),
             SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: (
-                f"Push branch {bold(branch)} with force-with-lease to {bold(new_remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq',
-                                                                                                                other_remote_choice),
-                f"Pushing branch {bold(branch)} with force-with-lease to {bold(new_remote)}..."
+                f"Push branch <b>{branch}</b> with force-with-lease to <b>{new_remote}</b>?" +
+                pretty_choices('y', 'N', 'q', 'yq', other_remote_choice),
+                f"Pushing branch <b>{branch}</b> with force-with-lease to <b>{new_remote}</b>..."
             )
         }[SyncToRemoteStatus(relation)]
 
@@ -1094,7 +1093,7 @@ class MacheteClient:
                 new_remote, branch, force_with_lease=True)
         }[SyncToRemoteStatus(relation)]
 
-        print(message)
+        print_fmt(message)
         ans = self.ask_if(ask_message, ask_opt_yes_message, override_answer=override_answer, opt_yes=opt_yes)
         if ans in ('y', 'yes', 'yq'):
             yes_action()
@@ -1140,27 +1139,26 @@ class MacheteClient:
             *,
             opt_yes: bool,
             override_answer: Optional[str] = None,
-            apply_fmt: bool = True,
             verbose: bool = True
     ) -> str:
         if override_answer:
             return override_answer
         if opt_yes and msg_if_opt_yes:
             if verbose:
-                print(fmt(msg_if_opt_yes) if apply_fmt else msg_if_opt_yes)
+                print_fmt(msg_if_opt_yes)
             return 'y'
         try:
-            ans: str = input(fmt(msg) if apply_fmt else msg).lower().strip()
+            ans: str = input_fmt(msg).lower().strip()
         except InterruptedError:
             sys.exit(1)
         return ans
 
     @staticmethod
-    def pick(choices: List[LocalBranchShortName], name: str, *, apply_fmt: bool = True) -> LocalBranchShortName:
+    def pick(choices: List[LocalBranchShortName], name: str) -> LocalBranchShortName:
         xs: str = "".join(f"[{index + 1}] {x}\n" for index, x in enumerate(choices))
         msg: str = xs + f"Specify {name} or hit <return> to skip: "
         try:
-            ans: str = input(fmt(msg) if apply_fmt else msg)
+            ans: str = input_fmt(msg)
             if not ans:
                 sys.exit(0)
             index: int = int(ans) - 1
@@ -1179,8 +1177,8 @@ class MacheteClient:
                 earlier_revision=fork_point.full_name(),
                 later_revision=branch.full_name()):
             raise MacheteException(
-                f"Fork point {bold(fork_point)} is not ancestor of or the tip "
-                f"of the {bold(branch)} branch.")
+                f"Fork point <b>{fork_point}</b> is not ancestor of or the tip "
+                f"of the <b>{branch}</b> branch.")
 
     def _handle_diverged_and_newer_state(
             self,
@@ -1194,12 +1192,12 @@ class MacheteClient:
         self._print_new_line(False)
         remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(current_branch)
         assert remote_branch is not None
-        choices = get_pretty_choices(*('y', 'N', 'q', 'yq') if is_called_from_traverse else ('y', 'N', 'q'))
+        choices = pretty_choices(*('y', 'N', 'q', 'yq') if is_called_from_traverse else ('y', 'N', 'q'))
         ans = self.ask_if(
-            f"Branch {bold(current_branch)} diverged from (and has newer commits than) its remote counterpart {bold(remote_branch)}.\n"
-            f"Push {bold(current_branch)} with force-with-lease to {bold(remote)}?" + choices,
-            f"Branch {bold(current_branch)} diverged from (and has newer commits than) its remote counterpart {bold(remote_branch)}.\n"
-            f"Pushing {bold(current_branch)} with force-with-lease to {bold(remote)}...",
+            f"Branch <b>{current_branch}</b> diverged from (and has newer commits than) its remote counterpart <b>{remote_branch}</b>.\n"
+            f"Push <b>{current_branch}</b> with force-with-lease to <b>{remote}</b>?" + choices,
+            f"Branch <b>{current_branch}</b> diverged from (and has newer commits than) its remote counterpart <b>{remote_branch}</b>.\n"
+            f"Pushing <b>{current_branch}</b> with force-with-lease to <b>{remote}</b>...",
             override_answer=None if opt_push_tracked else "N", opt_yes=opt_yes)
         if ans in ('y', 'yes', 'yq'):
             self._git.push(remote, current_branch, force_with_lease=True)
@@ -1240,7 +1238,7 @@ class MacheteClient:
                 opt_yes=opt_yes)
         else:
             # We know that there is at least 1 remote, otherwise sync-to-remote state would be NO_REMOTES and not UNTRACKED
-            print(f"Branch {bold(branch)} is untracked and there's no {bold('origin')} remote.")
+            print_fmt(f"Branch <b>{branch}</b> is untracked and there's no <b>origin</b> remote.")
             self.__pick_remote(
                 branch=branch,
                 is_called_from_traverse=is_called_from_traverse,
@@ -1259,10 +1257,10 @@ class MacheteClient:
             opt_yes: bool
     ) -> None:
         self._print_new_line(False)
-        choices = get_pretty_choices(*('y', 'N', 'q', 'yq') if is_called_from_traverse else ('y', 'N', 'q'))
+        choices = pretty_choices(*('y', 'N', 'q', 'yq') if is_called_from_traverse else ('y', 'N', 'q'))
         ans = self.ask_if(
-            f"Push {bold(current_branch)} to {bold(remote)}?" + choices,
-            f"Pushing {bold(current_branch)} to {bold(remote)}...",
+            f"Push <b>{current_branch}</b> to <b>{remote}</b>?" + choices,
+            f"Pushing <b>{current_branch}</b> to <b>{remote}</b>...",
             override_answer=None if opt_push_tracked else "N",
             opt_yes=opt_yes
         )
@@ -1278,10 +1276,10 @@ class MacheteClient:
         remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(branch)
         assert remote_branch is not None
         ans = self.ask_if(
-            f"Branch {bold(branch)} diverged from (and has older commits than) its remote counterpart {bold(remote_branch)}.\n"
-            f"Reset branch {bold(branch)} to the commit pointed by {bold(remote_branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-            f"Branch {bold(branch)} diverged from (and has older commits than) its remote counterpart {bold(remote_branch)}.\n"
-            f"Resetting branch {bold(branch)} to the commit pointed by {bold(remote_branch)}...",
+            f"Branch <b>{branch}</b> diverged from (and has older commits than) its remote counterpart <b>{remote_branch}</b>.\n"
+            f"Reset branch <b>{branch}</b> to the commit pointed by <b>{remote_branch}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
+            f"Branch <b>{branch}</b> diverged from (and has older commits than) its remote counterpart <b>{remote_branch}</b>.\n"
+            f"Resetting branch <b>{branch}</b> to the commit pointed by <b>{remote_branch}</b>...",
             opt_yes=opt_yes)
         if ans in ('y', 'yes', 'yq'):
             self._git.reset_keep(remote_branch)
@@ -1295,10 +1293,10 @@ class MacheteClient:
         remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(branch)
         assert remote_branch is not None
         ans = self.ask_if(
-            f"Branch {bold(branch)} is behind its remote counterpart {bold(remote_branch)}.\n"
-            f"Pull {bold(branch)} (fast-forward only) from {bold(remote)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-            f"Branch {bold(branch)} is behind its remote counterpart {bold(remote_branch)}.\n"
-            f"Pulling {bold(branch)} (fast-forward only) from {bold(remote)}...",
+            f"Branch <b>{branch}</b> is behind its remote counterpart <b>{remote_branch}</b>.\n"
+            f"Pull <b>{branch}</b> (fast-forward only) from <b>{remote}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
+            f"Branch <b>{branch}</b> is behind its remote counterpart <b>{remote_branch}</b>.\n"
+            f"Pulling <b>{branch}</b> (fast-forward only) from <b>{remote}</b>...",
             opt_yes=opt_yes)
         if ans in ('y', 'yes', 'yq'):
             self._git.pull_ff_only(remote, remote_branch)
@@ -1308,7 +1306,7 @@ class MacheteClient:
             raise InteractionStopped
 
     def delete_untracked(self, *, opt_yes: bool) -> None:
-        print(bold('Checking for untracked managed branches with no downstream...'))
+        print_fmt("<b>Checking for untracked managed branches with no downstream...</b>")
         branches_to_delete: List[LocalBranchShortName] = []
         for branch in self.managed_branches.copy():
             status, _ = self._git.get_combined_remote_sync_status(branch)

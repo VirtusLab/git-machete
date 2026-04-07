@@ -12,9 +12,8 @@ from git_machete.config import (SquashMergeDetection,
 from git_machete.git_operations import (GitContext, LocalBranchShortName,
                                         SyncToRemoteStatus)
 from git_machete.utils import (MacheteException, ParsableEnum,
-                               UnexpectedMacheteException, abspath_posix, bold,
-                               flat_map, fmt, get_pretty_choices,
-                               get_right_arrow, green_ok, print_no_newline,
+                               UnexpectedMacheteException, abspath_posix,
+                               flat_map, green_ok, pretty_choices, print_fmt,
                                warn)
 
 
@@ -46,7 +45,7 @@ class TraverseStartFrom(ParsableEnum):
             return cls[value.upper().replace("-", "_")]
         except KeyError:
             all_values = ', '.join(e.name.lower().replace('_', '-') for e in cls)
-            raise MacheteException(f"{bold(value)} is neither a special value ({all_values}), nor a local branch")
+            raise MacheteException(f"<b>{value}</b> is neither a special value ({all_values}), nor a local branch")
 
 
 class TraverseMacheteClient(MacheteClientWithCodeHosting):
@@ -85,7 +84,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     del self.__worktree_root_dir_for_branch[branch]
                     break
             assert prev_dir is not None
-            print(f"Removing the temporary worktree; changing directory back to {bold(prev_dir)}")
+            print_fmt(f"Removing the temporary worktree; changing directory back to <b>{prev_dir}</b>")
             self._git.chdir(prev_dir)
             self._git.worktree_remove(temp_path)
 
@@ -114,9 +113,10 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
             if config_value == TraverseWhenBranchNotCheckedOutInAnyWorktree.CD_INTO_TEMPORARY_WORKTREE:
                 temp_worktree_path = tempfile.mkdtemp(prefix="git-machete-worktree-")
-                print_no_newline(f"Creating a temporary worktree to check out {bold(target_branch)}... ")
+                print_fmt(f"Creating a temporary worktree to check out <b>{target_branch}</b>... ",
+                          newline=False)
                 self._git.worktree_add(temp_worktree_path, target_branch)
-                print(green_ok())
+                print_fmt(green_ok())
                 self.__dir_before_temporary_worktree = current_worktree_root_dir
                 self._git.chdir(temp_worktree_path)
                 self.__temporary_worktree_path = temp_worktree_path
@@ -125,19 +125,21 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 if config_value == TraverseWhenBranchNotCheckedOutInAnyWorktree.CD_INTO_MAIN_WORKTREE:
                     main_worktree_root_dir = self._git.get_main_worktree_root_dir()
                     if current_worktree_root_dir != main_worktree_root_dir:
-                        print(f"Changing directory to main worktree at {bold(main_worktree_root_dir)}")
+                        print_fmt(f"Changing directory to main worktree at <b>{main_worktree_root_dir}</b>")
                         self._git.chdir(main_worktree_root_dir)
 
-                checkout_msg = custom_checkout_message if custom_checkout_message else f"Checking out {bold(target_branch)}"
-                print_no_newline(f"{checkout_msg}... ")
+                checkout_msg = custom_checkout_message or f"Checking out <b>{target_branch}</b>"
+                print_fmt(f"{checkout_msg}... ", newline=False)
                 self._git.checkout(target_branch)
-                print(green_ok())
+                print_fmt(green_ok())
                 self._update_worktrees_cache_after_checkout(target_branch)
         else:
             # Branch is already checked out in a worktree - no need to checkout, just cd there
             if current_worktree_root_dir != target_worktree_root_dir:
                 # Directory changes don't print "OK"
-                print(f"Changing directory to {bold(target_worktree_root_dir)} worktree where {bold(target_branch)} is checked out")
+                print_fmt(
+                    f"Changing directory to <b>{target_worktree_root_dir}</b> worktree "
+                    f"where <b>{target_branch}</b> is checked out")
                 self._git.chdir(target_worktree_root_dir)
 
     def traverse(
@@ -170,7 +172,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
         if opt_fetch:
             for rem in self._git.get_remotes():
                 if self.remote_enabled_for_traverse_fetch(rem):
-                    print(f"Fetching {bold(rem)}...")
+                    print_fmt(f"Fetching <b>{rem}</b>...")
                     self._git.fetch_remote(rem)
             if self._git.get_remotes():
                 print("")
@@ -192,14 +194,14 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             if opt_start_from == TraverseStartFrom.ROOT:
                 dest = self.root_branch_for(self._git.get_current_branch(), if_unmanaged=PickRoot.FIRST)
                 self._print_new_line(False)
-                self._switch_branch(dest, custom_checkout_message=f"Checking out the root branch ({bold(dest)})")
+                self._switch_branch(dest, custom_checkout_message=f"Checking out the root branch (<b>{dest}</b>)")
                 current_branch = dest
             elif opt_start_from == TraverseStartFrom.FIRST_ROOT:
                 # Note that we already ensured that there is at least one managed branch.
                 dest = self.managed_branches[0]
                 self._print_new_line(False)
                 root_qualifier = "first root" if len(self._state.roots) > 1 else "root"
-                self._switch_branch(dest, custom_checkout_message=f"Checking out the {root_qualifier} branch ({bold(dest)})")
+                self._switch_branch(dest, custom_checkout_message=f"Checking out the {root_qualifier} branch (<b>{dest}</b>)")
                 current_branch = dest
             elif opt_start_from == TraverseStartFrom.HERE:
                 current_branch = self._git.get_current_branch()
@@ -297,11 +299,11 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     any_action_suggested = True
                     self._print_new_line(False)
                     assert upstream is not None
-                    ans: str = self.ask_if(f"Branch {bold(branch)} is merged into {bold(upstream)}. "
-                                           f"Slide {bold(branch)} out of the tree of branch dependencies?" +
-                                           get_pretty_choices('y', 'N', 'q', 'yq'),
-                                           f"Branch {bold(branch)} is merged into {bold(upstream)}. "
-                                           f"Sliding {bold(branch)} out of the tree of branch dependencies...",
+                    ans: str = self.ask_if(f"Branch <b>{branch}</b> is merged into <b>{upstream}</b>. "
+                                           f"Slide <b>{branch}</b> out of the tree of branch dependencies?" +
+                                           pretty_choices('y', 'N', 'q', 'yq'),
+                                           f"Branch <b>{branch}</b> is merged into <b>{upstream}</b>. "
+                                           f"Sliding <b>{branch}</b> out of the tree of branch dependencies...",
                                            opt_yes=opt_yes)
                     if ans in ('y', 'yes', 'yq'):
                         dbb = self.down_branches_for(branch) or []
@@ -337,11 +339,11 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     self._print_new_line(False)
                     assert upstream is not None
                     if use_merge:
-                        ans = self.ask_if(f"Merge {bold(upstream)} into {bold(branch)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-                                          f"Merging {bold(upstream)} into {bold(branch)}...", opt_yes=opt_yes)
+                        ans = self.ask_if(f"Merge <b>{upstream}</b> into <b>{branch}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                          f"Merging <b>{upstream}</b> into <b>{branch}</b>...", opt_yes=opt_yes)
                     else:
-                        ans = self.ask_if(f"Rebase {bold(branch)} onto {bold(upstream)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-                                          f"Rebasing {bold(branch)} onto {bold(upstream)}...", opt_yes=opt_yes)
+                        ans = self.ask_if(f"Rebase <b>{branch}</b> onto <b>{upstream}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                          f"Rebasing <b>{branch}</b> onto <b>{upstream}</b>...", opt_yes=opt_yes)
                     if ans in ('y', 'yes', 'yq'):
                         if use_merge:
                             self._git.merge(branch=upstream, into=branch, opt_no_edit_merge=opt_no_edit_merge)
@@ -372,7 +374,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                             # will be still in progress, waiting for user edits and a subsequent 'git rebase --continue'.
                             rebased_branch = self._git.get_currently_rebased_branch_or_none()
                             if rebased_branch:  # 'rebased_branch' should be equal to 'branch' at this point anyway
-                                print(fmt(f"\nRebase of {bold(rebased_branch)} in progress; stopping the traversal"))
+                                print_fmt(f"\nRebase of <b>{rebased_branch}</b> in progress; stopping the traversal")
                                 return
                         if ans == 'yq':
                             return
@@ -411,7 +413,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                         reason = "behind its remote counterpart"
                     else:
                         reason = "diverged from (and has older commits than) its remote counterpart"
-                    print(f"Skipping sync of {bold(branch)} with {bold(upstream)}; {bold(branch)} is {reason}")
+                    print_fmt(f"Skipping sync of <b>{branch}</b> with <b>{upstream}</b>; <b>{branch}</b> is {reason}")
 
                 if needs_retarget_pr:
                     any_action_suggested = True
@@ -419,15 +421,17 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     assert upstream is not None
                     spec = self.code_hosting_spec
                     self._print_new_line(False)
-                    ans_intro = f"Branch {bold(branch)} has a different {spec.pr_short_name} {spec.base_branch_name} ({bold(pr.base)}) " \
-                        f"in {spec.display_name} than in machete file ({bold(upstream)}).\n"
+                    ans_intro = f"Branch <b>{branch}</b> has a different {spec.pr_short_name} {spec.base_branch_name} (<b>{pr.base}</b>) " \
+                        f"in {spec.display_name} than in machete file (<b>{upstream}</b>).\n"
                     ans = self.ask_if(
-                        ans_intro + f"Retarget {pr.display_text()} to {bold(upstream)}?" + get_pretty_choices('y', 'N', 'q', 'yq'),
-                        ans_intro + f"Retargeting {pr.display_text()} to {bold(upstream)}...",
+                        ans_intro + f"Retarget {pr.display_text()} to <b>{upstream}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
+                        ans_intro + f"Retargeting {pr.display_text()} to <b>{upstream}</b>...",
                         opt_yes=opt_yes)
                     if ans in ('y', 'yes', 'yq'):
                         self.code_hosting_client.set_base_of_pull_request(pr.number, base=upstream)
-                        print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(upstream)}')
+                        print_fmt(
+                            f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} '
+                            f'has been switched to <b>{upstream}</b>')
                         pr.base = upstream
 
                         anno = self._state.annotations.get(branch)
@@ -438,7 +442,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                         new_description = self._get_updated_pull_request_description(pr)
                         if pr.description != new_description:
                             self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
-                            print(f'Description of {pr.display_text()} has been updated')
+                            print_fmt(f'Description of {pr.display_text()} has been updated')
                             pr.description = new_description
 
                         applicable_prs: List[PullRequest] = self._get_applicable_pull_requests(related_to=pr)
@@ -447,8 +451,8 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                             if pr.description != new_description:
                                 self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
                                 pr.description = new_description
-                                print(fmt(f'Description of {pr.display_text()} '
-                                          f'(<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
+                                print_fmt(f'Description of {pr.display_text()} '
+                                          f'(<b>{pr.head} <rarrow/> {pr.base}</b>) has been updated')
 
                         if ans == 'yq':
                             return
@@ -493,13 +497,13 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     assert upstream is not None
                     spec = self.code_hosting_spec
                     self._print_new_line(False)
-                    ans_intro = f"Branch {bold(branch)} does not have {spec.pr_short_name_article} {spec.pr_short_name}" \
+                    ans_intro = f"Branch <b>{branch}</b> does not have {spec.pr_short_name_article} {spec.pr_short_name}" \
                         f" in {spec.display_name}.\n"
                     ans = self.ask_if(
                         ans_intro + f"Create {spec.pr_short_name_article} {spec.pr_short_name} "
-                        f"from {bold(branch)} to {bold(upstream)}?" + get_pretty_choices('y', 'd[raft]', 'N', 'q', 'yq'),
+                        f"from <b>{branch}</b> to <b>{upstream}</b>?" + pretty_choices('y', 'd[raft]', 'N', 'q', 'yq'),
                         ans_intro + f"Creating {spec.pr_short_name_article} {spec.pr_short_name} "
-                        f"from {bold(branch)} to {bold(upstream)}...",
+                        f"from <b>{branch}</b> to <b>{upstream}</b>...",
                         opt_yes=opt_yes)
                     if ans in ('y', 'yes', 'yq', 'd', 'draft'):
                         self.create_pull_request(
@@ -534,21 +538,23 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 opt_squash_merge_detection=opt_squash_merge_detection)
             print("")
             if current_branch == self.managed_branches[-1]:
-                msg: str = f"Reached branch {bold(current_branch)} which has no successor"
+                msg = f"Reached branch <b>{current_branch}</b> which has no successor"
             else:
-                msg = f"No successor of {bold(current_branch)} needs to be slid out or synced with upstream branch or remote"
-            print(f"{msg}; nothing left to update")
+                msg = (
+                    f"No successor of <b>{current_branch}</b> needs to be slid out or synced "
+                    "with upstream branch or remote")
+            print_fmt(f"{msg}; nothing left to update")
             if not any_action_suggested and initial_branch not in self._state.roots:
-                print(fmt("Tip: `traverse` by default starts from the current branch, "
+                print_fmt("Tip: `traverse` by default starts from the current branch, "
                           "use flags (`--start-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
-                          "Further info under `git machete traverse --help`."))
+                          "Further info under `git machete traverse --help`.")
             if opt_return_to == TraverseReturnTo.HERE or (
                     opt_return_to == TraverseReturnTo.NEAREST_REMAINING and nearest_remaining_branch == initial_branch):
-                print(f"Returned to the initial branch {bold(initial_branch)}")
+                print_fmt(f"Returned to the initial branch <b>{initial_branch}</b>")
             elif opt_return_to == TraverseReturnTo.NEAREST_REMAINING and nearest_remaining_branch != initial_branch:
-                print(
-                    f"The initial branch {bold(initial_branch)} has been slid out. "
-                    f"Returned to nearest remaining managed branch {bold(nearest_remaining_branch)}")
+                print_fmt(
+                    f"The initial branch <b>{initial_branch}</b> has been slid out. "
+                    f"Returned to nearest remaining managed branch <b>{nearest_remaining_branch}</b>")
         finally:
             self._remove_temporary_worktree()
 
@@ -559,6 +565,6 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 # Final branch is checked out in a worktree different from where we started
                 normalized_path = abspath_posix(final_worktree_path)
                 warn(
-                    f"branch {bold(final_branch)} is checked out in worktree at {bold(normalized_path)}\n"
+                    f"branch <b>{final_branch}</b> is checked out in worktree at <b>{normalized_path}</b>\n"
                     f"You may want to change directory with:\n"
                     f"  `cd {normalized_path}`")

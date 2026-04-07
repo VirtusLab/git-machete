@@ -18,7 +18,7 @@ from git_machete.code_hosting import (CodeHostingClient,
                                       PullRequest)
 from git_machete.git_operations import LocalBranchShortName
 from git_machete.utils import (MacheteException, UnexpectedMacheteException,
-                               bold, compact_dict, debug, join_paths_posix,
+                               compact_dict, debug, join_paths_posix,
                                popen_cmd, warn)
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
@@ -264,7 +264,7 @@ class GitHubClient(CodeHostingClient):
                 result = self.__fire_github_api_request(method=method, path=new_path, request_body=request_body)
                 warn(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`.\n'
                      'It looks like the organization or repository name got changed recently and is outdated.\n'
-                     f'New organization is {bold(new_org)} and new repository is {bold(new_repo)}.\n'
+                     f'New organization is <b>{new_org}</b> and new repository is <b>{new_repo}</b>.\n'
                      'You can update your remote repository via: `git remote set-url <remote_name> <new_repository_url>`.')
                 return result
             elif err.code >= 500:

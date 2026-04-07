@@ -3,8 +3,7 @@ from typing import List, Optional
 from git_machete.client.base import MacheteClient
 from git_machete.config import SquashMergeDetection
 from git_machete.git_operations import AnyRevision, LocalBranchShortName
-from git_machete.utils import (MacheteException, bold, fmt, green_ok,
-                               print_no_newline)
+from git_machete.utils import MacheteException, green_ok, print_fmt
 
 
 class SlideOutMacheteClient(MacheteClient):
@@ -25,7 +24,7 @@ class SlideOutMacheteClient(MacheteClient):
             self.expect_in_managed_branches(branch)
             anno = self.annotations.get(branch)
             if anno and not anno.qualifiers.slide_out:
-                raise MacheteException(f"Branch {bold(branch)} is annotated with `slide-out=no` qualifier, aborting.\n"
+                raise MacheteException(f"Branch <b>{branch}</b> is annotated with `slide-out=no` qualifier, aborting.\n"
                                        f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
 
         if opt_down_fork_point:
@@ -48,13 +47,13 @@ class SlideOutMacheteClient(MacheteClient):
         for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
             dbs = self.down_branches_for(bu)
             if not dbs or len(dbs) == 0:
-                raise MacheteException(f"No downstream branch defined for {bold(bu)}, cannot slide out")
+                raise MacheteException(f"No downstream branch defined for <b>{bu}</b>, cannot slide out")
             elif len(dbs) > 1:
-                flat_dbs = ", ".join(bold(x) for x in dbs)
+                flat_dbs = ", ".join(f"<b>{x}</b>" for x in dbs)
                 raise MacheteException(
-                    f"Multiple downstream branches defined for {bold(bu)}: {flat_dbs}; cannot slide out")
+                    f"Multiple downstream branches defined for <b>{bu}</b>: {flat_dbs}; cannot slide out")
             elif dbs != [bd]:
-                raise MacheteException(f"{bold(bd)} is not downstream of {bold(bu)}, cannot slide out")
+                raise MacheteException(f"<b>{bd}</b> is not downstream of <b>{bu}</b>, cannot slide out")
 
         # Get new branches
         new_upstream = self._state.up_branch_for.get(branches_to_slide_out[0])
@@ -100,14 +99,14 @@ class SlideOutMacheteClient(MacheteClient):
         # Check out new upstream if we were on a slid-out branch, but only if there is an upstream
         if self._git.get_current_branch_or_none() in branches_to_slide_out:
             if new_upstream is not None:
-                print_no_newline(f"Checking out {bold(new_upstream)}... ")
+                print_fmt(f"Checking out <b>{new_upstream}</b>... ", newline=False)
                 self._git.checkout(new_upstream)
-                print(green_ok())
+                print_fmt(green_ok())
             elif new_downstreams:
                 # If no upstream and there are downstreams, check out the first downstream
-                print_no_newline(f"Checking out {bold(new_downstreams[0])}... ")
+                print_fmt(f"Checking out <b>{new_downstreams[0]}</b>... ", newline=False)
                 self._git.checkout(new_downstreams[0])
-                print(green_ok())
+                print_fmt(green_ok())
             # Otherwise, stay on the current (slid-out) branch
 
         # Only perform rebase/merge if there is a new upstream
@@ -117,17 +116,17 @@ class SlideOutMacheteClient(MacheteClient):
                 use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
                 use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
                 if use_merge or use_rebase:
-                    print_no_newline(f"Checking out {bold(new_downstream)}... ")
+                    print_fmt(f"Checking out <b>{new_downstream}</b>... ", newline=False)
                     self._git.checkout(new_downstream)
-                    print(green_ok())
+                    print_fmt(green_ok())
                 if use_merge:
-                    print(f"Merging {bold(new_upstream)} into {bold(new_downstream)}...")
+                    print_fmt(f"Merging <b>{new_upstream}</b> into <b>{new_downstream}</b>...")
                     self._git.merge(
                         branch=new_upstream,
                         into=new_downstream,
                         opt_no_edit_merge=opt_no_edit_merge)
                 elif use_rebase:
-                    print(f"Rebasing {bold(new_downstream)} onto {bold(new_upstream)}...")
+                    print_fmt(f"Rebasing <b>{new_downstream}</b> onto <b>{new_upstream}</b>...")
                     down_fork_point = opt_down_fork_point or self.fork_point(new_downstream, use_overrides=True)
                     self.rebase(
                         onto=new_upstream.full_name(),
@@ -147,9 +146,9 @@ class SlideOutMacheteClient(MacheteClient):
             if self._git.is_removed_from_remote(branch) and not self.down_branches_for(branch):
                 anno = self.annotations.get(branch)
                 if anno and not anno.qualifiers.slide_out:
-                    print(fmt(f"Skipping <b>{branch}</b> as it's marked as `slide-out=no`"))
+                    print_fmt(f"Skipping <b>{branch}</b> as it's marked as `slide-out=no`")
                 else:
-                    print(fmt(f"Sliding out <b>{branch}</b>"))
+                    print_fmt(f"Sliding out <b>{branch}</b>")
                     slid_out_branches.append(branch)
 
         self._remove_branches_from_layout(slid_out_branches)

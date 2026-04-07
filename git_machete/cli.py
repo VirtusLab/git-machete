@@ -34,8 +34,8 @@ from git_machete.gitlab import GITLAB_CLIENT_SPEC
 from .generated_docs import long_docs, short_docs
 from .git_operations import AnyRevision, GitContext, LocalBranchShortName
 from .utils import (ExitCode, InteractionStopped, MacheteException,
-                    UnderlyingGitException, UnexpectedMacheteException, bold,
-                    fmt, green_ok, print_no_newline, underline, warn)
+                    UnderlyingGitException, UnexpectedMacheteException,
+                    green_ok, print_fmt, warn)
 
 T = TypeVar('T')
 
@@ -69,39 +69,40 @@ commands_and_aliases = list(long_docs.keys()) + list(command_by_alias.keys())
 
 
 def get_help_description(*, display_help_topics: bool, command: Optional[str] = None) -> str:
+    """Return a help/usage string in markup (to be resolved by `print_fmt`)."""
     usage_str = ''
     if command in long_docs:
-        usage_str += fmt(textwrap.dedent(long_docs[command]))
+        usage_str += textwrap.dedent(long_docs[command])
     elif command in command_by_alias:
-        usage_str += fmt(textwrap.dedent(long_docs[command_by_alias[command]]))
+        usage_str += textwrap.dedent(long_docs[command_by_alias[command]])
     else:
-        usage_str += get_short_general_usage() + '\n' + fmt(
-            "\n<u>Quick start tip</u>\n\n"
-            "    Get familiar with the help for <b>format</b>, <b>edit</b>,"
-            " <b>status</b> and <b>update</b>, in this order.\n\n")
+        usage_str += get_short_general_usage() + '\n'
+        usage_str += ("\n<u>Quick start tip</u>\n\n"
+                      "    Get familiar with the help for <b>format</b>, <b>edit</b>,"
+                      " <b>status</b> and <b>update</b>, in this order.\n\n")
         for hdr, cmds in command_groups:
             if not display_help_topics:
                 if hdr == 'General topics':
                     cmds = [topic for topic in cmds if topic not in ['config', 'format', 'hooks']]
-            usage_str += underline(hdr) + '\n\n'
+            usage_str += f'<u>{hdr}</u>\n\n'
             for cm in cmds:
                 alias = f", {alias_by_command[cm]}" if cm in alias_by_command else ""
-                usage_str += f'    {bold(cm + alias): <{18 if utils.ascii_only_stdout else 27}}{short_docs[cm]}'
-                usage_str += '\n'
+                label = cm + alias
+                usage_str += f'    <b>{label}</b>{" " * max(0, 18 - len(label))}{short_docs[cm]}\n'
             usage_str += '\n'
-        usage_str += fmt(textwrap.dedent("""
+        usage_str += textwrap.dedent("""
             <u>General options</u>\n
                 <b>--debug</b>           Log detailed diagnostic info, including outputs of the executed git commands.
                 <b>-h, --help</b>        Print help and exit.
                 <b>-v, --verbose</b>     Log the executed git commands.
                 <b>--version</b>         Print version and exit.
-        """[1:]))
+        """[1:])
     return usage_str
 
 
 def get_short_general_usage() -> str:
-    return (fmt("<b>Usage: git machete [--debug] [-h] [-v|--verbose] [--version] "
-                "<command> [command-specific options] [command-specific argument]</b>"))
+    return ("<b>Usage: git machete [--debug] [-h] [-v|--verbose] [--version] "
+            "<command> [command-specific options] [command-specific argument]</b>")
 
 
 def version() -> None:
@@ -132,7 +133,7 @@ class MacheteHelpAction(argparse.Action):
     ) -> None:
         # parser name (prog) is expected to be `git machete` or `git machete <command>`
         command_name = parser.prog.replace('git machete', '').strip()
-        print(get_help_description(display_help_topics=True, command=command_name))
+        print_fmt(get_help_description(display_help_topics=True, command=command_name))
         parser.exit(status=ExitCode.SUCCESS)
 
 
@@ -401,7 +402,8 @@ def update_cli_options_using_parsed_args(
         elif opt == "n":
             cli_opts.opt_n = True
         elif opt == "no_detect_squash_merges":
-            warn("`--no-detect-squash-merges` is deprecated, use `--squash-merge-detection=none` instead", end="\n\n")
+            warn("`--no-detect-squash-merges` is deprecated, use `--squash-merge-detection=none` instead",
+                 extra_newline=True)
             cli_opts.opt_squash_merge_detection_string = "none"
             cli_opts.opt_squash_merge_detection_origin = "`--no-detect-squash-merges` flag"
         elif opt == "no_edit_merge":
@@ -489,8 +491,9 @@ def update_cli_options_using_config_keys(
 
 def set_utils_global_variables(parsed_args: argparse.Namespace) -> None:
     args = vars(parsed_args)
-    utils.ascii_only_stdout = args.get("color") == "never" or (args.get("color") in {None, "auto"} and not utils.is_stdout_a_tty())
-    utils.ascii_only_stderr = args.get("color") == "never" or (args.get("color") in {None, "auto"} and not utils.is_stderr_a_tty())
+    color = args.get("color")
+    utils.use_ansi_escapes_in_stdout = color == "always" or (color in {None, "auto"} and utils.is_stdout_a_tty())
+    utils.use_ansi_escapes_in_stderr = color == "always" or (color in {None, "auto"} and utils.is_stderr_a_tty())
     utils.debug_mode = "debug" in args
     utils.verbose_mode = "verbose" in args
 
@@ -534,11 +537,11 @@ def launch_internal(orig_args: List[str]) -> None:
 
         cmd = parsed_cli.command
         if not cmd:
-            print(get_help_description(display_help_topics=False))
+            print_fmt(get_help_description(display_help_topics=False))
             sys.exit(ExitCode.ARGUMENT_ERROR)
 
         if cmd not in ("d", "diff", "l", "log") and pass_through_args:
-            print(fmt("Extra arguments after `--` are only allowed after `diff` and `log`"))
+            print_fmt("Extra arguments after `--` are only allowed after `diff` and `log`")
             sys.exit(ExitCode.ARGUMENT_ERROR)
         if pass_through_args and pass_through_args[0] == "--":
             pass_through_args = pass_through_args[1:]
@@ -569,7 +572,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 raise UnexpectedMacheteException(f"Unknown shell: `{completion_shell}`")
             return
         elif cmd == "help":
-            print(get_help_description(display_help_topics=True, command=parsed_cli.topic_or_cmd))
+            print_fmt(get_help_description(display_help_topics=True, command=parsed_cli.topic_or_cmd))
             return
         elif cmd == "version":
             version()
@@ -687,7 +690,7 @@ def launch_internal(orig_args: List[str]) -> None:
                     fork_point_client.set_fork_point_override(branch, upstream)
                 else:
                     raise MacheteException(
-                        f"Branch {bold(branch)} does not have upstream (parent) branch")
+                        f"Branch <b>{branch}</b> does not have upstream (parent) branch")
             elif cli_opts.opt_unset_override:
                 fork_point_client.unset_fork_point_override(branch)
             else:
@@ -786,9 +789,9 @@ def launch_internal(orig_args: List[str]) -> None:
                     parsed_cli.direction, branch=current_branch_or_none,
                     allow_current=False, pick_if_multiple=True)[0]
                 if dest != current_branch_or_none:
-                    print_no_newline(f"Checking out {bold(dest)}... ")
+                    print_fmt(f"Checking out <b>{dest}</b>... ", newline=False)
                     git.checkout(dest)
-                    print(green_ok())
+                    print_fmt(green_ok())
             else:
                 interactive_client = GoInteractiveMacheteClient(git)
                 interactive_client.read_branch_layout_file()
@@ -796,9 +799,9 @@ def launch_internal(orig_args: List[str]) -> None:
                 selected_branch = interactive_client.go_interactive(current_branch=current_branch_or_none)
                 if selected_branch is not None and selected_branch != current_branch_or_none:
                     print()
-                    print_no_newline(f"Checking out {bold(selected_branch)}... ")
+                    print_fmt(f"Checking out <b>{selected_branch}</b>... ", newline=False)
                     git.checkout(selected_branch)
-                    print(green_ok())
+                    print_fmt(green_ok())
         elif cmd == "is-managed":
             is_managed_client = MacheteClient(git)
             is_managed_client.read_branch_layout_file()

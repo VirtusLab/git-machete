@@ -7,7 +7,8 @@ import pytest
 from pytest_mock import MockerFixture
 
 from git_machete import utils
-from git_machete.utils import SimpleAnsiEscapeCodes
+from git_machete.utils import (BasicTerminalAnsiOutputCodes,
+                               FullTerminalAnsiOutputCodes)
 
 from .base_test import BaseTest
 
@@ -24,23 +25,32 @@ class TestUtils(BaseTest):
         assert foo["foo"] == 1  # and not string "1"
 
     def test_fmt(self, mocker: MockerFixture) -> None:
-        # Force printing ANSI escape sequences even though the terminal is NOT a TTY
-        self.patch_symbol(mocker, 'git_machete.utils.ascii_only_stdout', False)
-        # Use the palette of ANSI escape code that does NOT depend on the underlying terminal properties
-        E = SimpleAnsiEscapeCodes()
-        self.patch_symbol(mocker, 'git_machete.utils.AE', E)
+        F = FullTerminalAnsiOutputCodes()
+        B = BasicTerminalAnsiOutputCodes()
 
         input_string = '<red> red <yellow>yellow <b>yellow_bold</b> `yellow_underlined` yellow <green>green </green> default' \
                        ' <dim> dimmed </dim></yellow> <green>green `green_underlined`</green> default</red>'
 
-        expected_ansi_string = (
-            E.RED + ' red ' + E.YELLOW + 'yellow ' + E.BOLD + 'yellow_bold' + E.ENDC_BOLD_DIM + ' ' +
-            E.UNDERLINE + 'yellow_underlined' + E.ENDC_UNDERLINE + ' yellow ' + E.GREEN + 'green ' + E.ENDC +
-            ' default ' + E.DIM + ' dimmed ' + E.ENDC_BOLD_DIM + E.ENDC + ' ' + E.GREEN + 'green ' +
-            E.UNDERLINE + 'green_underlined' + E.ENDC_UNDERLINE + E.ENDC + ' default' + E.ENDC
+        expected_full_terminal = (
+            F.RED + ' red ' + F.YELLOW + 'yellow ' + F.BOLD + 'yellow_bold' + F.ENDC_BOLD_DIM + ' ' +
+            F.UNDERLINE + 'yellow_underlined' + F.ENDC_UNDERLINE + ' yellow ' + F.GREEN + 'green ' + F.ENDC +
+            ' default ' + F.DIM + ' dimmed ' + F.ENDC_BOLD_DIM + F.ENDC + ' ' + F.GREEN + 'green ' +
+            F.UNDERLINE + 'green_underlined' + F.ENDC_UNDERLINE + F.ENDC + ' default' + F.ENDC
         )
-        ansi_string = utils.fmt(input_string)
-        assert ansi_string == expected_ansi_string
+        self.patch_symbol(mocker, 'git_machete.utils.is_terminal_fully_fledged', lambda: True)
+        assert utils._fmt(input_string, use_ansi_escapes=True) == expected_full_terminal
+
+        expected_basic_terminal = (
+            B.RED + ' red ' + B.YELLOW + 'yellow ' + B.BOLD + 'yellow_bold' + B.ENDC_BOLD_DIM + ' ' +
+            B.UNDERLINE + 'yellow_underlined' + B.ENDC_UNDERLINE + ' yellow ' + B.GREEN + 'green ' + B.ENDC +
+            ' default ' + B.DIM + ' dimmed ' + B.ENDC_BOLD_DIM + B.ENDC + ' ' + B.GREEN + 'green ' +
+            B.UNDERLINE + 'green_underlined' + B.ENDC_UNDERLINE + B.ENDC + ' default' + B.ENDC
+        )
+        self.patch_symbol(mocker, 'git_machete.utils.is_terminal_fully_fledged', lambda: False)
+        assert utils._fmt(input_string, use_ansi_escapes=True) == expected_basic_terminal
+
+        expected_ascii = ' red yellow yellow_bold yellow_underlined yellow green  default  dimmed  green green_underlined default'
+        assert utils._fmt(input_string, use_ansi_escapes=False) == expected_ascii
 
     def test_get_current_date(self) -> None:
         assert re.fullmatch("20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]", utils.get_current_date())

@@ -23,8 +23,8 @@ displayed_warnings: Set[str] = set()
 # every time any command is being popened or run.
 current_directory_confirmed_to_exist: bool = False
 
-ascii_only_stdout: bool = not sys.stdout.isatty()
-ascii_only_stderr: bool = not sys.stderr.isatty()
+use_ansi_escapes_in_stdout: bool = sys.stdout.isatty()
+use_ansi_escapes_in_stderr: bool = sys.stderr.isatty()
 debug_mode: bool = False
 measure_command_time: bool = os.environ.get('GIT_MACHETE_MEASURE_COMMAND_TIME') == 'true'  # undocumented, internal
 verbose_mode: bool = False
@@ -34,6 +34,8 @@ verbose_mode: bool = False
 CODE_HOSTING_TOKEN_PREFIXES = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_', 'glpat-']
 CODE_HOSTING_TOKEN_PREFIX_REGEX = '(' + '|'.join(CODE_HOSTING_TOKEN_PREFIXES) + ')'
 
+
+# === TTY / terminal detection ===
 
 def is_stdout_a_tty() -> bool:
     return sys.stdout.isatty()
@@ -53,6 +55,191 @@ def get_terminal_height() -> Optional[int]:
     except (OSError, AttributeError):
         return None
 
+
+_terminal_fully_fledged: Optional[bool] = None
+
+
+def is_terminal_fully_fledged() -> bool:
+    global _terminal_fully_fledged
+    if _terminal_fully_fledged is None:
+        try:
+            stdout = popen_cmd('tput', 'colors')[1]
+            # In CI, this line is only covered by tests on macOS, which don't run on PRs by default.
+            # Let's skip to keep coverage results consistent between develop/master and PRs.
+            number_of_supported_colors = int(stdout)  # pragma: no cover
+        except Exception:
+            # If we cannot retrieve the number of supported colors, let's defensively assume it's low.
+            number_of_supported_colors = 8
+        _terminal_fully_fledged = number_of_supported_colors >= 256
+    return _terminal_fully_fledged
+
+
+def hex_repr(input: str) -> str:
+    # Skip the first two `0x` characters.
+    return ':'.join(hex(ord(char))[2:] for char in input)
+
+
+# === ANSI escape code classes ===
+
+class AnsiInputCodes:
+    """Fixed escape sequences for reading keyboard input.
+
+    These are standard VT100/xterm codes and are not affected by terminal
+    capabilities (color depth, etc.).
+    """
+    ESCAPE = '\033'
+    CSI = '\033['  # Control Sequence Introducer
+
+    KEY_UP = '\033[A'
+    KEY_DOWN = '\033[B'
+    KEY_RIGHT = '\033[C'
+    KEY_LEFT = '\033[D'
+    KEY_SHIFT_UP = '\033[1;2A'
+    KEY_SHIFT_DOWN = '\033[1;2B'
+
+    KEYS_ENTER = ('\r', '\n')
+    KEY_SPACE = ' '
+    KEY_CTRL_C = '\003'
+
+
+class FullTerminalAnsiOutputCodes:
+    CSI = '\033['  # Control Sequence Introducer
+
+    # Text styling
+    ENDC = '\033[0m'
+    ENDC_UNDERLINE = '\033[24m'
+    ENDC_BOLD_DIM = '\033[22m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    UNDERLINE = '\033[4m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    ORANGE = '\033[00;38;5;208m'
+    RED = '\033[91m'
+    REVERSE_VIDEO = '\033[7m'
+
+    # Cursor control
+    HIDE_CURSOR = '\033[?25l'
+    SHOW_CURSOR = '\033[?25h'
+    CLEAR_TO_END = '\033[J'
+
+    def cursor_up(self, num_lines: int) -> str:
+        """CSI n A — move cursor up by num_lines."""
+        return self.CSI + str(num_lines) + "A"
+
+
+class BasicTerminalAnsiOutputCodes(FullTerminalAnsiOutputCodes):
+    """Output codes adapted to the 8-bit terminal's capabilities."""
+
+    UNDERLINE = '\033[36m'  # cyan
+    ENDC_UNDERLINE = FullTerminalAnsiOutputCodes.ENDC
+    ORANGE = FullTerminalAnsiOutputCodes.YELLOW
+    RED = '\033[31m'  # dark red
+
+
+# === Markup formatting ===
+
+def escape_markup(s: str) -> str:
+    """Escape characters that `_fmt` would interpret as markup.
+
+    Use on user-provided content (annotation text, commit subjects, hook
+    output) before embedding it into markup strings.
+    """
+    return s.replace('&', '&amp;').replace('`', '&backtick;').replace('<', '&lt;')
+
+
+def _fmt(s: str, *, use_ansi_escapes: bool) -> str:
+
+    # `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
+    # is just needed for animated gifs to render correctly
+    # (`[2m`-style dimmed text is invisible in asciicinema renders).
+    __dim_as_gray = os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true'
+    dim = '\033[38;2;128;128;128m' if __dim_as_gray else '\033[2m'
+
+    ao = FullTerminalAnsiOutputCodes() if is_terminal_fully_fledged() else BasicTerminalAnsiOutputCodes()
+
+    # pattern                                ansi replacement                            ascii replacement
+    rules: List[Tuple[str, str, str]] = [
+        ('`(.*?)`',                         f'{ao.UNDERLINE}\\1{ao.ENDC_UNDERLINE}',    r'\1'),              # noqa: E241
+        ('<b>(.*?)</b>',                    f'{ao.BOLD}\\1{ao.ENDC_BOLD_DIM}',          r'\1'),              # noqa: E241
+        ('<u>(.*?)</u>',                    f'{ao.UNDERLINE}\\1{ao.ENDC_UNDERLINE}',    r'\1'),              # noqa: E241
+        ('<dim>(.*?)</dim>',                f'{dim}\\1{ao.ENDC_BOLD_DIM}',              r'\1'),              # noqa: E241
+        ('<gray>(.*?)</gray>',              f'{dim}\\1{ao.ENDC_BOLD_DIM}',              r'\1'),              # noqa: E241
+        ('<red>(.*?)</red>',                f'{ao.RED}\\1{ao.ENDC}',                    r'\1'),              # noqa: E241
+        ('<yellow>(.*?)</yellow>',          f'{ao.YELLOW}\\1{ao.ENDC}',                 r'\1'),              # noqa: E241
+        ('<green>(.*?)</green>',            f'{ao.GREEN}\\1{ao.ENDC}',                  r'\1'),              # noqa: E241
+        ('<orange>(.*?)</orange>',          f'{ao.ORANGE}\\1{ao.ENDC}',                 r'\1'),              # noqa: E241
+        ('<reverse>(.*?)</reverse>',        f'{ao.REVERSE_VIDEO}\\1{ao.ENDC}',          r'\1'),              # noqa: E241
+        ('<vbar/>',                          '│',                                        '|'),               # noqa: E241
+        ('<rarrow/>',                        '➔',                                        '->'),              # noqa: E241
+        (r'<ifansi:([^:]*):([^/]*)/>',      r'\1',                                      r'\2'),              # noqa: E241
+        ('&backtick;',                       '`',                                        '`'),               # noqa: E241
+        ('&lt;',                             '<',                                        '<'),               # noqa: E241
+        ('&amp;',                            '&',                                        '&'),               # noqa: E241
+    ]
+
+    result = s
+    for pattern, ansi_repl, ascii_repl in rules:
+        result = re.sub(pattern, ansi_repl if use_ansi_escapes else ascii_repl, result, flags=re.DOTALL)
+    return result
+
+
+def print_fmt(s: str, *, file: Optional[Any] = None, newline: bool = True) -> None:
+    """Format `s` with `_fmt` for the stream `file`, then print.
+
+    ANSI / Unicode styling follows the same rules as for direct writes to `file`
+    (stdout vs stderr, TTY detection, `--color`, etc.).
+
+    When newline=False, output is flushed immediately so that a
+    subsequent print_fmt (e.g. "OK") appears on the same line
+    without delay.
+    """
+    use_ansi = use_ansi_escapes_in_stderr if file is sys.stderr else use_ansi_escapes_in_stdout
+    # Defaults to stdout at call time so that contextlib.redirect_stdout is respected.
+    if file is None:
+        file = sys.stdout
+    content = _fmt(s, use_ansi_escapes=use_ansi)
+    print(content, file=file, end='\n' if newline else '', flush=not newline)
+
+
+def input_fmt(prompt: str) -> str:
+    return input(_fmt(prompt, use_ansi_escapes=use_ansi_escapes_in_stdout))
+
+
+def warn(msg: str, *, extra_newline: bool = False) -> None:
+    if msg not in displayed_warnings:
+        line = f"<orange>Warn: </orange>{msg}"
+        if extra_newline:
+            line += "\n"
+        print_fmt(line, file=sys.stderr)
+        displayed_warnings.add(msg)
+
+
+def green_ok() -> str:
+    return '<green><b>OK</b></green>'
+
+
+def pretty_choices(*choices: str) -> str:
+    def format_choice(c: str) -> str:
+        if not c:
+            return ''
+        elif c.lower() == 'y':
+            return f'<green>{c}</green>'
+        elif c.lower() == 'yq':
+            return f'<green>{c[0]}</green><red>{c[1]}</red>'
+        elif c.lower() in ('n', 'q'):
+            return f'<red>{c}</red>'
+        else:
+            return f'<orange>{c}</orange>'
+
+    return " (" + (", ".join(map_truthy_only(format_choice, choices))) + ") "
+
+
+def colored_yes_no(value: bool) -> str:  # noqa: KW
+    return '<green><b>YES</b></green>' if value else '<red><b>NO</b></red>'
+
+
+# === Path utilities ===
 
 def join_paths_posix(*paths: str) -> str:
     """
@@ -85,6 +272,8 @@ def relpath_posix(path: str) -> str:
     rel = os.path.relpath(path)
     return Path(rel).as_posix()
 
+
+# === Generic collection / iteration utilities ===
 
 def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
     return list(filter(lambda x: x not in s, iterable))
@@ -123,6 +312,8 @@ def get_second(pair: Tuple[Any, T]) -> T:
     _, b = pair
     return b
 
+
+# === File system utilities ===
 
 def does_directory_exist(path: str) -> bool:
     try:
@@ -164,6 +355,17 @@ def find_executable(executable: str) -> Optional[str]:
     return None
 
 
+def slurp_file(path: str) -> str:
+    with open(path, 'r') as file:
+        return file.read()
+
+
+def get_current_date() -> str:
+    return datetime.datetime.now().strftime("%Y-%m-%d")
+
+
+# === Debug / logging ===
+
 def compact_dict(d: Dict[str, Any]) -> Dict[str, str]:
     return {k: re.sub('\n +', ' ', str(v)) for k, v in d.items()}
 
@@ -172,7 +374,7 @@ def debug(msg: str) -> None:
     if not debug_mode:
         return
 
-    function_name = bold(inspect.stack()[1].function, file=sys.stderr)
+    func = inspect.stack()[1].function
     args, _, _, values_original = inspect.getargvalues(inspect.stack()[1].frame)
     # Do not write over the original values!
     # Since Python 3.13, the result of `getargvalues` keeps a map of local variables
@@ -190,10 +392,12 @@ def debug(msg: str) -> None:
 
     args_and_values_list = [arg + '=' + str(values[arg]) for arg in excluding(args, {'self'})]
     args_and_values_str = ', '.join(args_and_values_list)
-    args_and_values_bold_str = bold(f'({args_and_values_str})', file=sys.stderr)
 
-    print(f"{function_name}{args_and_values_bold_str}: {dim(msg, file=sys.stderr)}", file=sys.stderr)
+    escaped_args = escape_markup(args_and_values_str)
+    print_fmt(f"<b>{func}</b><b>({escaped_args})</b>: <dim>{msg}</dim>", file=sys.stderr)
 
+
+# === Command execution ===
 
 def _run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> int:
     # capture_output argument is only supported since Python 3.7
@@ -204,17 +408,18 @@ def run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[
     chdir_upwards_until_current_directory_exists()
 
     flat_cmd: str = get_cmd_shell_repr(cmd, *args, env=env)
+    escaped_flat_cmd = escape_markup(flat_cmd)
 
-    def print_command(cmd: str) -> None:
+    def print_command(markup: str) -> None:
         if measure_command_time:  # pragma: no cover
-            print(cmd + " ... ", file=sys.stderr, end='', flush=True)
+            print_fmt(markup + " ... ", file=sys.stderr, newline=False)
         else:
-            print(cmd, file=sys.stderr)
+            print_fmt(markup, file=sys.stderr)
 
     if debug_mode:
-        print_command(bold(f">>> {flat_cmd}", file=sys.stderr))
+        print_command(f"<b>>>> {escaped_flat_cmd}</b>")
     elif verbose_mode or measure_command_time:
-        print_command(flat_cmd)
+        print_command(escaped_flat_cmd)
 
     start = time.time()
     exit_code: int = _run_cmd(cmd, *args, cwd=cwd, env=env)
@@ -229,7 +434,7 @@ def run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[
     mark_current_directory_as_possibly_non_existent()
 
     if debug_mode and exit_code != 0:
-        print(dim(f"<exit code: {exit_code}>\n", file=sys.stderr), file=sys.stderr)
+        print_fmt(f"<dim>&lt;exit code: {exit_code}>\n</dim>", file=sys.stderr)
     return exit_code
 
 
@@ -277,17 +482,18 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
     chdir_upwards_until_current_directory_exists()
 
     flat_cmd = get_cmd_shell_repr(cmd, *args, env=env)
+    escaped_flat_cmd = escape_markup(flat_cmd)
 
-    def print_command(cmd: str) -> None:
+    def print_command(markup: str) -> None:
         if measure_command_time:  # pragma: no cover
-            print(cmd + " ... ", file=sys.stderr, end='', flush=True)
+            print_fmt(markup + " ... ", file=sys.stderr, newline=False)
         else:
-            print(cmd, file=sys.stderr)
+            print_fmt(markup, file=sys.stderr)
 
     if debug_mode:
-        print_command(bold(f">>> {flat_cmd}", file=sys.stderr))
+        print_command(f"<b>>>> {escaped_flat_cmd}</b>")
     elif verbose_mode or measure_command_time:
-        print_command(flat_cmd)
+        print_command(escaped_flat_cmd)
 
     start = time.time()
     exit_code, stdout, stderr = result = _popen_cmd(cmd, *args, cwd=cwd, env=env, input=input)
@@ -305,17 +511,17 @@ def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
 
     if debug_mode:
         if exit_code != 0:
-            print(colored(f"<exit code: {exit_code}>\n", AE.RED, file=sys.stderr), file=sys.stderr)
+            print_fmt(f"<red>&lt;exit code: {exit_code}>\n</red>", file=sys.stderr)
         if stdout:
             if hide_debug_output:
-                print(f"{dim('<stdout>:', file=sys.stderr)}\n{dim('<REDACTED>', file=sys.stderr)}", file=sys.stderr)
+                print_fmt("<dim>&lt;stdout>:</dim>\n<dim>&lt;REDACTED></dim>", file=sys.stderr)
             else:
-                print(f"{dim('<stdout>:', file=sys.stderr)}\n{dim(stdout, file=sys.stderr)}", file=sys.stderr)
+                print_fmt(f"<dim>&lt;stdout>:</dim>\n<dim>{escape_markup(stdout)}</dim>", file=sys.stderr)
         if stderr:
             if hide_debug_output:
-                print(f"{dim('<stderr>:', file=sys.stderr)}\n{dim('<REDACTED>', file=sys.stderr)}", file=sys.stderr)
+                print_fmt("<dim>&lt;stderr>:</dim>\n<dim>&lt;REDACTED></dim>", file=sys.stderr)
             else:
-                print(f"{dim('<stderr>:', file=sys.stderr)}\n{colored(stderr, AE.RED, file=sys.stderr)}", file=sys.stderr)
+                print_fmt(f"<dim>&lt;stderr>:</dim>\n<red>{escape_markup(stderr)}</red>", file=sys.stderr)
 
     return result
 
@@ -332,158 +538,7 @@ def get_cmd_shell_repr(cmd: str, *args: str, env: Optional[Dict[str, str]]) -> s
     return " ".join(env_repr + [cmd] + [shell_escape(arg) for arg in args])
 
 
-def warn(msg: str, *, apply_fmt: bool = True, end: str = '\n') -> None:
-    if msg not in displayed_warnings:
-        print(colored("Warn: ", AE.ORANGE, file=sys.stderr) + (fmt(msg, file=sys.stderr) if apply_fmt else msg), file=sys.stderr, end=end)
-        displayed_warnings.add(msg)
-
-
-def print_no_newline(msg: str) -> None:
-    print(msg, end='', flush=True)
-
-
-def green_ok() -> str:
-    return fmt('<green><b>OK</b></green>')
-
-
-def slurp_file(path: str) -> str:
-    with open(path, 'r') as file:
-        return file.read()
-
-
-def is_terminal_fully_fledged() -> bool:
-    try:
-        stdout = popen_cmd('tput', 'colors')[1]
-        # In CI, this line is only covered by tests on macOS, which don't run on PRs by default.
-        # Let's skip to keep coverage results consistent between develop/master and PRs.
-        number_of_supported_colors = int(stdout)  # pragma: no cover
-    except Exception:
-        # If we cannot retrieve the number of supported colors, let's defensively assume it's low.
-        number_of_supported_colors = 8
-    return number_of_supported_colors >= 256
-
-
-def hex_repr(input: str) -> str:
-    # Skip the first two `0x` characters.
-    return ':'.join(hex(ord(char))[2:] for char in input)
-
-
-class SimpleAnsiEscapeCodes:
-
-    # Basic ANSI sequences
-    ESCAPE = '\033'
-    CSI = '\033['  # Control Sequence Introducer
-
-    # Text styling
-    ENDC = '\033[0m'
-    ENDC_UNDERLINE = '\033[24m'
-    ENDC_BOLD_DIM = '\033[22m'
-    BOLD = '\033[1m'
-    DIM = '\033[2m'
-    UNDERLINE = '\033[4m'
-    GREEN = '\033[32m'
-    YELLOW = '\033[33m'
-    ORANGE = '\033[00;38;5;208m'
-    RED = '\033[91m'
-    REVERSE_VIDEO = '\033[7m'
-
-    # Cursor control
-    HIDE_CURSOR = '\033[?25l'
-    SHOW_CURSOR = '\033[?25h'
-    CLEAR_TO_END = '\033[J'  # Clear from cursor to end of screen
-
-    def cursor_up(self, num_lines: int) -> str:
-        """CSI n A — move cursor up by num_lines."""
-        return self.CSI + str(num_lines) + "A"
-
-    # Arrow key codes
-    KEY_UP = '\033[A'
-    KEY_DOWN = '\033[B'
-    KEY_RIGHT = '\033[C'
-    KEY_LEFT = '\033[D'
-    KEY_SHIFT_UP = '\033[1;2A'
-    KEY_SHIFT_DOWN = '\033[1;2B'
-
-    # Other keys
-    KEYS_ENTER = ('\r', '\n')
-    KEY_SPACE = ' '
-    KEY_CTRL_C = '\003'
-
-
-class TerminalAwareAnsiEscapeCodes(SimpleAnsiEscapeCodes):
-    # `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
-    # is just needed for animated gifs to render correctly
-    # (`[2m`-style dimmed text is invisible in asciicinema renders).
-    __dim_as_gray = os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true'
-
-    __is_terminal_fully_fledged = is_terminal_fully_fledged()
-
-    DIM = '\033[38;2;128;128;128m' if __dim_as_gray else '\033[2m'
-    # Let's fall back to cyan on 8-color terminals
-    UNDERLINE = '\033[4m' if __is_terminal_fully_fledged else '\033[36m'
-    ENDC_UNDERLINE = '\033[24m' if __is_terminal_fully_fledged else SimpleAnsiEscapeCodes.ENDC
-    # Let's fall back to yellow on 8-color terminals
-    ORANGE = '\033[00;38;5;208m' if __is_terminal_fully_fledged else SimpleAnsiEscapeCodes.YELLOW
-    # Let's fall back to dark red on 8-color terminals
-    RED = '\033[91m' if __is_terminal_fully_fledged else '\033[31m'
-
-
-AE = TerminalAwareAnsiEscapeCodes()
-
-
-def _effective_ascii_only(file: Optional[Any] = None) -> bool:
-    """Return the ASCII-only flag appropriate for the given output stream.
-
-    When `file` is `sys.stderr`, uses `ascii_only_stderr` so that
-    stderr retains formatting when it still goes to a terminal even if
-    stdout is redirected.  For all other cases (stdout or unspecified),
-    falls back to `ascii_only_stdout`.
-    """
-    if file is sys.stderr:
-        return ascii_only_stderr
-    return ascii_only_stdout
-
-
-def bold(s: str, *, file: Optional[Any] = None) -> str:
-    return s if _effective_ascii_only(file) or not s else AE.BOLD + s + AE.ENDC_BOLD_DIM
-
-
-def dim(s: str, *, file: Optional[Any] = None) -> str:
-    return s if _effective_ascii_only(file) or not s else AE.DIM + s + AE.ENDC_BOLD_DIM
-
-
-def underline(s: str, *, star_if_ascii_only: bool = False, file: Optional[Any] = None) -> str:
-    if s and not _effective_ascii_only(file):
-        return AE.UNDERLINE + s + AE.ENDC_UNDERLINE
-    elif s and star_if_ascii_only:
-        return s + " *"
-    else:
-        return s
-
-
-def colored(s: str, color: str, *, file: Optional[Any] = None) -> str:  # noqa: KW
-    return s if _effective_ascii_only(file) or not s else color + s + AE.ENDC
-
-
-def fmt(*parts: str, file: Optional[Any] = None) -> str:
-    # This map needs to be defined in a local scope to allow for mocking the color palette more easily.
-    fmt_transformations: List[Callable[[str], str]] = [
-        lambda x: re.sub('`(.*?)`', underline(r"\1", file=file), x),
-        lambda x: re.sub('<b>(.*?)</b>', bold(r"\1", file=file), x, flags=re.DOTALL),
-        lambda x: re.sub('<u>(.*?)</u>', underline(r"\1", file=file), x, flags=re.DOTALL),
-        lambda x: re.sub('<dim>(.*?)</dim>', dim(r"\1", file=file), x, flags=re.DOTALL),
-        lambda x: re.sub('<gray>(.*?)</gray>', dim(r"\1", file=file), x, flags=re.DOTALL),
-        lambda x: re.sub('<red>(.*?)</red>', colored(r"\1", AE.RED, file=file), x, flags=re.DOTALL),
-        lambda x: re.sub('<yellow>(.*?)</yellow>', colored(r"\1", AE.YELLOW, file=file), x, flags=re.DOTALL),
-        lambda x: re.sub('<green>(.*?)</green>', colored(r"\1", AE.GREEN, file=file), x, flags=re.DOTALL),
-        lambda x: re.sub('<orange>(.*?)</orange>', colored(r"\1", AE.ORANGE, file=file), x, flags=re.DOTALL)
-    ]
-
-    result = ''.join(parts)
-    for f in fmt_transformations:
-        result = f(result)
-    return result
-
+# === Exceptions and enums ===
 
 NEW_ISSUE_LINK = "https://github.com/VirtusLab/git-machete/issues/new"
 
@@ -494,24 +549,24 @@ class InteractionStopped(Exception):
 
 
 class UnderlyingGitException(Exception):
-    def __init__(self, msg: str, *, apply_fmt: bool = True) -> None:
-        self.msg: str = fmt(msg) if apply_fmt else msg
+    def __init__(self, msg: str) -> None:
+        self.msg: str = _fmt(msg, use_ansi_escapes=use_ansi_escapes_in_stdout)
 
     def __str__(self) -> str:
         return str(self.msg)
 
 
 class MacheteException(Exception):
-    def __init__(self, msg: str, *, apply_fmt: bool = True) -> None:
-        self.msg: str = fmt(msg) if apply_fmt else msg
+    def __init__(self, msg: str) -> None:
+        self.msg: str = _fmt(msg, use_ansi_escapes=use_ansi_escapes_in_stdout)
 
     def __str__(self) -> str:
         return str(self.msg)
 
 
 class UnexpectedMacheteException(MacheteException):
-    def __init__(self, msg: str, *, apply_fmt: bool = True) -> None:
-        super().__init__(f"{msg}\n\nConsider posting an issue at `{NEW_ISSUE_LINK}`", apply_fmt=apply_fmt)
+    def __init__(self, msg: str) -> None:
+        super().__init__(f"{msg}\n\nConsider posting an issue at `{NEW_ISSUE_LINK}`")
 
 
 class ExitCode(IntEnum):
@@ -532,38 +587,6 @@ class ParsableEnum(Enum):
             prefix = f"Invalid value for {from_where}" if from_where else "Invalid value"
             printed_value = value or '<empty>'
             raise MacheteException(f"{prefix}: `{printed_value}`. Valid values are {valid_values}")
-
-
-def get_vertical_bar() -> str:
-    return "|" if ascii_only_stdout else "│"
-
-
-def get_right_arrow() -> str:
-    return "->" if ascii_only_stdout else "➔"
-
-
-def get_pretty_choices(*choices: str) -> str:
-    def format_choice(c: str) -> str:
-        if not c:
-            return ''
-        elif c.lower() == 'y':
-            return colored(c, AE.GREEN)
-        elif c.lower() == 'yq':
-            return colored(c[0], AE.GREEN) + colored(c[1], AE.RED)
-        elif c.lower() in ('n', 'q'):
-            return colored(c, AE.RED)
-        else:
-            return colored(c, AE.ORANGE)
-
-    return " (" + (", ".join(map_truthy_only(format_choice, choices))) + ") "
-
-
-def colored_yes_no(value: bool) -> str:  # noqa: KW
-    return '<green><b>YES</b></green>' if value else '<red><b>NO</b></red>'
-
-
-def get_current_date() -> str:
-    return datetime.datetime.now().strftime("%Y-%m-%d")
 
 
 class CommandResult(NamedTuple):

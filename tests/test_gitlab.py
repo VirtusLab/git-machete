@@ -204,11 +204,11 @@ class TestGitLab(BaseTest):
         delete_branch("snickers")
 
         expected_output = ["__get_token_from_env(cls=<class 'git_machete.gitlab.GitLabToken'>): "
-                           "1. Trying to find token in `GITLAB_TOKEN` environment variable...",
+                           "1. Trying to find token in GITLAB_TOKEN environment variable...",
                            "__get_token_from_file_in_home_directory(cls=<class 'git_machete.gitlab.GitLabToken'>, domain=gitlab.com): "
-                           "2. Trying to find token in `~/.gitlab-token`...",
+                           "2. Trying to find token in ~/.gitlab-token...",
                            "__get_token_from_glab(cls=<class 'git_machete.gitlab.GitLabToken'>, domain=gitlab.com): "
-                           "3. Trying to find token via `glab` GitLab CLI..."]
+                           "3. Trying to find token via glab GitLab CLI..."]
 
         assert list(itertools.dropwhile(
             lambda line: '__get_token_from_env' not in line,

@@ -15,10 +15,9 @@ from git_machete.git_operations import (GitContext, GitFormatPatterns,
                                         RemoteBranchShortName,
                                         SyncToRemoteStatus)
 from git_machete.utils import (MacheteException, UnexpectedMacheteException,
-                               bold, colored_yes_no, debug, find_or_none, fmt,
-                               get_pretty_choices, get_right_arrow, green_ok,
-                               join_paths_posix, print_no_newline, slurp_file,
-                               warn)
+                               colored_yes_no, debug, find_or_none, green_ok,
+                               join_paths_posix, pretty_choices, print_fmt,
+                               slurp_file, warn)
 
 
 class MacheteClientWithCodeHosting(StatusMacheteClient):
@@ -45,9 +44,10 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
     def _get_all_open_prs(self) -> List[PullRequest]:
         if self.__all_open_prs is None:
             spec = self.code_hosting_spec
-            print_no_newline(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ')
+            print_fmt(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ',
+                      newline=False)
             self.__all_open_prs = self.code_hosting_client.get_open_pull_requests()
-            print(green_ok())
+            print_fmt(green_ok())
         return self.__all_open_prs
 
     def _pull_request_annotation(self, pr: PullRequest, current_user: Optional[str], *, include_url: bool = False) -> str:
@@ -73,8 +73,9 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 upstream_tracking_branch = upstream if counterpart is None else '/'.join(counterpart.split('/')[1:])
 
                 if pr.base != upstream_tracking_branch:
-                    warn(f'branch {bold(pr.head)} has a different base in {pr.display_text()} ({bold(pr.base)}) '
-                         f'than in machete file ({bold(upstream) if upstream else "<none, is a root>"})')
+                    warn(
+                        f'branch <b>{pr.head}</b> has a different base in {pr.display_text()} (<b>{pr.base}</b>) '
+                        f'than in machete file ({f"<b>{upstream}</b>" if upstream else "<none, is a root>"})')
                     anno += (f" WRONG {spec.pr_short_name} {spec.base_branch_name.upper()} or MACHETE PARENT? "
                              f"{spec.pr_short_name} has {pr.base}")
                 old_annotation_text = ''
@@ -86,11 +87,11 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
                 if pr.user != current_user and old_annotation_qualifiers.is_default():
                     if verbose:
-                        print(fmt(f'Annotating {bold(pr.head)} as `{anno} rebase=no push=no`'))
+                        print_fmt(f'Annotating <b>{pr.head}</b> as `{anno} rebase=no push=no`')
                     self._state.annotations[LocalBranchShortName.of(pr.head)] = Annotation(anno, Qualifiers(rebase=False, push=False))
                 elif old_annotation_text != anno:
                     if verbose:
-                        print(fmt(f'Annotating {bold(pr.head)} as `{anno}`'))
+                        print_fmt(f'Annotating <b>{pr.head}</b> as `{anno}`')
                     self._state.annotations[LocalBranchShortName.of(pr.head)] = Annotation(anno, old_annotation_qualifiers)
             else:
                 debug(f'{pr} does NOT correspond to a managed branch')
@@ -141,12 +142,12 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         up_branch: Optional[LocalBranchShortName] = self.up_branch_for(current_branch)
         if not up_branch:
             raise MacheteException(
-                f'Branch {bold(current_branch)} does not have a parent branch (it is a root), '
+                f'Branch <b>{current_branch}</b> does not have a parent branch (it is a root), '
                 f'{spec.base_branch_name} branch for the {spec.pr_short_name} cannot be established.')
 
         if self._git.is_ancestor_or_equal(current_branch.full_name(), up_branch.full_name()):
             raise MacheteException(
-                f'All commits in {bold(current_branch)} branch are already included in {bold(up_branch)} branch.\n'
+                f'All commits in <b>{current_branch}</b> branch are already included in <b>{up_branch}</b> branch.\n'
                 f'Cannot create {spec.pr_full_name}.')
 
         s, remote = self._git.get_combined_remote_sync_status(current_branch)
@@ -193,15 +194,15 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         else:
             if s == SyncToRemoteStatus.BEHIND_REMOTE:
-                warn(f"branch {bold(current_branch)} is behind its remote counterpart. Consider using `git pull`.")
+                warn(f"branch <b>{current_branch}</b> is behind its remote counterpart. Consider using `git pull`.")
                 self._print_new_line(False)
-                ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + get_pretty_choices('y', 'Q'),
+                ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + pretty_choices('y', 'Q'),
                                   f"Proceeding with {spec.pr_full_name} creation...", opt_yes=opt_yes)
             elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                warn(f"branch {bold(current_branch)} is diverged from and older than its remote counterpart. "
+                warn(f"branch <b>{current_branch}</b> is diverged from and older than its remote counterpart. "
                      "Consider using `git reset --keep`.")
                 self._print_new_line(False)
-                ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + get_pretty_choices('y', 'Q'),
+                ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + pretty_choices('y', 'Q'),
                                   f"Proceeding with {spec.pr_full_name} creation...", opt_yes=opt_yes)
             elif s == SyncToRemoteStatus.NO_REMOTES:
                 raise MacheteException(
@@ -216,7 +217,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
     def sync_annotations_to_prs(self, *, include_urls: bool) -> None:
         self._init_code_hosting_client()
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
-        debug(f'Current {self.code_hosting_spec.display_name} user is ' + (bold(current_user or '<none>')))
+        debug(f'Current {self.code_hosting_spec.display_name} user is <b>{current_user or "<none>"}</b>')
         all_open_prs = self._get_all_open_prs()
         self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user, include_urls=include_urls, verbose=True)
 
@@ -235,7 +236,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         spec = self.code_hosting_spec
         if not base:
             raise UnexpectedMacheteException(f'could not determine {spec.base_branch_name} branch for {spec.pr_short_name}. '
-                                             f'Branch {bold(head)} is a root branch.')
+                                             f'Branch <b>{head}</b> is a root branch.')
 
         domain = self.__derive_code_hosting_domain()
         head_org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=head)
@@ -245,14 +246,13 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         base_org_repo = base_org_repo_remote.extract_org_and_repo()
         head_org_repo = head_org_repo_remote.extract_org_and_repo()
         if base_org_repo != head_org_repo:
-            arrow = get_right_arrow()
             warn(f"{spec.base_branch_name} branch <b>{base}</b> lives in <b>{base_org_repo}</b> {spec.repository_name},\n"
                  f"while {spec.head_branch_name} branch <b>{head}</b> lives in <b>{head_org_repo}</b> {spec.repository_name}.\n"
                  f"git-machete will now attempt to create {spec.pr_short_name_article} {spec.pr_short_name} in <b>{base_org_repo}</b>.\n"
                  "\n"
                  f"Note that due to the limitations of {spec.display_name}'s {spec.pr_short_name} model, "
                  f"it is <b>not</b> possible to cleanly create stacked {spec.pr_short_name}s from forks.\n"
-                 f"For example, in a hypothetical chain <b>some-other-branch</b> {arrow} <b>{head}</b> {arrow} <b>{base}</b>, "
+                 f"For example, in a hypothetical chain <b>some-other-branch</b> <rarrow/> <b>{head}</b> <rarrow/> <b>{base}</b>, "
                  f"{spec.pr_short_name_article} {spec.pr_short_name} from <b>some-other-branch</b> to <b>{head}</b>\n"
                  f"could <b>not</b> be created in <b>{base_org_repo}</b>, "
                  f"since its {spec.head_branch_name} branch <b>{head}</b> lives in <b>{head_org_repo}</b>.\n"
@@ -266,44 +266,48 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         # Check both base and head branches in a single git ls-remote call if they use the same remote
         if base_org_repo_remote.remote == head_org_repo_remote.remote:
-            print_no_newline(f"Checking if {spec.head_branch_name} branch {bold(head)} "
-                             f"exists in {bold(head_org_repo_remote.remote)} remote... ")
+            print_fmt(f"Checking if {spec.head_branch_name} branch <b>{head}</b> "
+                      f"exists in <b>{head_org_repo_remote.remote}</b> remote... ",
+                      newline=False)
 
             branches_existence = self._git.do_remote_branches_exist(base_org_repo_remote.remote, base, head)
             base_branch_found_on_remote = branches_existence[base]
             head_branch_found_on_remote = branches_existence[head]
 
-            print(fmt(colored_yes_no(head_branch_found_on_remote)))
+            print_fmt(colored_yes_no(head_branch_found_on_remote))
 
-            print_no_newline(f"Checking if {spec.base_branch_name} branch {bold(base)} "
-                             f"exists in {bold(base_org_repo_remote.remote)} remote... ")
-            print(fmt(colored_yes_no(base_branch_found_on_remote)))
+            print_fmt(f"Checking if {spec.base_branch_name} branch <b>{base}</b> "
+                      f"exists in <b>{base_org_repo_remote.remote}</b> remote... ",
+                      newline=False)
+            print_fmt(colored_yes_no(base_branch_found_on_remote))
         else:
             # Different remotes, check separately (head first, then base)
-            print_no_newline(f"Checking if {spec.head_branch_name} branch {bold(head)} "
-                             f"exists in {bold(head_org_repo_remote.remote)} remote... ")
+            print_fmt(f"Checking if {spec.head_branch_name} branch <b>{head}</b> "
+                      f"exists in <b>{head_org_repo_remote.remote}</b> remote... ",
+                      newline=False)
             head_branch_found_on_remote = self._git.does_remote_branch_exist(head_org_repo_remote.remote, head)
-            print(fmt(colored_yes_no(head_branch_found_on_remote)))
+            print_fmt(colored_yes_no(head_branch_found_on_remote))
 
-            print_no_newline(f"Checking if {spec.base_branch_name} branch {bold(base)} "
-                             f"exists in {bold(base_org_repo_remote.remote)} remote... ")
+            print_fmt(f"Checking if {spec.base_branch_name} branch <b>{base}</b> "
+                      f"exists in <b>{base_org_repo_remote.remote}</b> remote... ",
+                      newline=False)
             base_branch_found_on_remote = self._git.does_remote_branch_exist(base_org_repo_remote.remote, base)
-            print(fmt(colored_yes_no(base_branch_found_on_remote)))
+            print_fmt(colored_yes_no(base_branch_found_on_remote))
 
         # Check head branch first - fail fast if it was removed from remote
         # Branch was pushed before but has been removed from remote
         # (sync_before_creating_pull_request ensures the branch is pushed, so if it's missing here, it must have been removed)
         if not head_branch_found_on_remote and remote_head_branch_exists_locally:
             raise MacheteException(
-                f"{spec.head_branch_name.capitalize()} branch {bold(head)} "
-                f"has been removed from {bold(head_org_repo_remote.remote)} remote since the last fetch/push.\n"
+                f"{spec.head_branch_name.capitalize()} branch <b>{head}</b> "
+                f"has been removed from <b>{head_org_repo_remote.remote}</b> remote since the last fetch/push.\n"
                 f"Do you really want to create {spec.pr_short_name_article} {spec.pr_short_name} for this branch?")
 
         # Check base branch - fail fast if it was removed from remote
         if not base_branch_found_on_remote and remote_base_branch_exists_locally:
             raise MacheteException(
-                f"{spec.base_branch_name.capitalize()} branch {bold(base)} "
-                f"has been removed from {bold(base_org_repo_remote.remote)} remote since the last fetch/push.\n"
+                f"{spec.base_branch_name.capitalize()} branch <b>{base}</b> "
+                f"has been removed from <b>{base_org_repo_remote.remote}</b> remote since the last fetch/push.\n"
                 f"Do you really want to create {spec.pr_short_name_article} {spec.pr_short_name} to this branch?")
 
         # Handle missing base branch (push it if necessary)
@@ -354,13 +358,14 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                     description = self._git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
 
         article = "a" if opt_draft else spec.pr_short_name_article
-        print_no_newline(f'Creating {article} {"draft " if opt_draft else ""}{spec.pr_short_name} '
-                         f'from {bold(head)} to {bold(base)}... ')
+        print_fmt(f'Creating {article} {"draft " if opt_draft else ""}{spec.pr_short_name} '
+                  f'from <b>{head}</b> to <b>{base}</b>... ',
+                  newline=False)
 
         pr: PullRequest = self.code_hosting_client.create_pull_request(
             head=head, head_org_repo=head_org_repo, base=base,
             title=title, description=description, draft=opt_draft)
-        print(fmt(green_ok() + f', see `{pr.html_url}`'))
+        print_fmt(green_ok() + f', see `{pr.html_url}`')
 
         style = self._config.code_hosting_pr_description_intro_style(self.code_hosting_spec.git_config_keys)
         # If base branch has NOT originally been found on the remote,
@@ -371,10 +376,11 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             # let's update the PR description after it's already created (so that we know the current PR's number).
             new_description = self._get_updated_pull_request_description(pr)
             if new_description.strip() != description.strip():
-                print_no_newline(f'Updating description of {pr.display_text()} to include '
-                                 f'the chain of {spec.pr_short_name}s... ')
+                print_fmt(f'Updating description of {pr.display_text()} to include '
+                          f'the chain of {spec.pr_short_name}s... ',
+                          newline=False)
                 self.code_hosting_client.set_description_of_pull_request(pr.number, new_description)
-                print(green_ok())
+                print_fmt(green_ok())
 
         milestone_path: str = self._git.get_main_worktree_git_subpath('info', 'milestone')
         if os.path.isfile(milestone_path):
@@ -382,14 +388,16 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         else:
             milestone = None
         if milestone:
-            print_no_newline(f'Setting milestone of {pr.display_text()} to {bold(milestone)}... ')
+            print_fmt(f'Setting milestone of {pr.display_text()} to <b>{milestone}</b>... ',
+                      newline=False)
             self.code_hosting_client.set_milestone_of_pull_request(pr.number, milestone=milestone)
-            print(green_ok())
+            print_fmt(green_ok())
 
         if current_user:
-            print_no_newline(f'Adding {bold(current_user)} as assignee to {pr.display_text()}... ')
+            print_fmt(f'Adding <b>{current_user}</b> as assignee to {pr.display_text()}... ',
+                      newline=False)
             self.code_hosting_client.add_assignees_to_pull_request(pr.number, [current_user])
-            print(green_ok())
+            print_fmt(green_ok())
 
         reviewers_path = self._git.get_main_worktree_git_subpath('info', 'reviewers')
         if os.path.isfile(reviewers_path):
@@ -397,10 +405,11 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         else:
             reviewers = []
         if reviewers:
-            print_no_newline(f'Adding {", ".join(bold(reviewer) for reviewer in reviewers)} '
-                             f'as reviewer{"s" if len(reviewers) > 1 else ""} to {pr.display_text()}... ')
+            print_fmt(f'Adding {", ".join(f"<b>{reviewer}</b>" for reviewer in reviewers)} '
+                      f'as reviewer{"s" if len(reviewers) > 1 else ""} to {pr.display_text()}... ',
+                      newline=False)
             self.code_hosting_client.add_reviewers_to_pull_request(pr.number, reviewers)
-            print(green_ok())
+            print_fmt(green_ok())
 
         self._state.annotations[head] = Annotation(self._pull_request_annotation(pr, current_user), qualifiers=Qualifiers())
         self.save_branch_layout_file()
@@ -435,7 +444,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
             converted_to_draft = self.code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=True)
             if converted_to_draft:
-                print(f'{pr.display_text()} has been temporarily marked as draft')
+                print_fmt(f'{pr.display_text()} has been temporarily marked as draft')
 
             # Note that retarget should happen BEFORE push, see issue #1222
             self.retarget_pull_request(head, opt_ignore_if_missing=False,
@@ -478,13 +487,13 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
             if converted_to_draft:
                 self.code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=False)
-                print(f'{pr.display_text()} has been marked as ready for review again')
+                print_fmt(f'{pr.display_text()} has been marked as ready for review again')
 
         else:
             if s == SyncToRemoteStatus.BEHIND_REMOTE:
-                warn(f"branch {bold(current_branch)} is behind its remote counterpart. Consider using `git pull`.\n")
+                warn(f"branch <b>{current_branch}</b> is behind its remote counterpart. Consider using `git pull`.\n")
             elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                warn(f"branch {bold(current_branch)} is diverged from and older than its remote counterpart. "
+                warn(f"branch <b>{current_branch}</b> is diverged from and older than its remote counterpart. "
                      "Consider using `git reset --keep`.\n")
             elif s == SyncToRemoteStatus.IN_SYNC_WITH_REMOTE:
                 pass
@@ -529,23 +538,25 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         new_base: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(head))
         if not new_base:
             raise MacheteException(
-                f'Branch {bold(head)} does not have a parent branch (it is a root) '
-                f'even though there is an open {pr.display_text()} to {bold(pr.base)}.\n'
+                f'Branch <b>{head}</b> does not have a parent branch (it is a root) '
+                f'even though there is an open {pr.display_text()} to <b>{pr.base}</b>.\n'
                 'Consider modifying the branch layout file (`git machete edit`)'
-                f' so that {bold(head)} is a child of {bold(pr.base)}.')
+                f' so that <b>{head}</b> is a child of <b>{pr.base}</b>.')
 
         pr_with_original_base = pr.copy()
         if pr.base != new_base:
             self.code_hosting_client.set_base_of_pull_request(pr.number, base=new_base)
-            print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to {bold(new_base)}')
+            print_fmt(
+                f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to <b>{new_base}</b>')
             pr.base = new_base
         else:
-            print(f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} is already {bold(new_base)}')
+            print_fmt(
+                f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} is already <b>{new_base}</b>')
 
         new_description = self._get_updated_pull_request_description(pr)
         if pr.description != new_description:
             self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
-            print(f'Description of {pr.display_text()} has been updated')
+            print_fmt(f'Description of {pr.display_text()} has been updated')
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         anno = self._state.annotations.get(head)
@@ -564,7 +575,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 if (pr.description or '').rstrip() != new_description.rstrip():
                     self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
                     pr.description = new_description
-                    print(fmt(f'Description of {pr.display_text()} (<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
+                    print_fmt(f'Description of {pr.display_text()} (<b>{pr.head} <rarrow/> {pr.base}</b>) has been updated')
 
     def __derive_code_hosting_domain(self) -> str:
         spec = self.code_hosting_spec
@@ -795,7 +806,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             if pr.description != new_description:
                 self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
                 pr.description = new_description
-                print(fmt(f'Description of {pr.display_text()} (<b>{pr.head} {get_right_arrow()} {pr.base}</b>) has been updated'))
+                print_fmt(f'Description of {pr.display_text()} (<b>{pr.head} <rarrow/> {pr.base}</b>) has been updated')
 
     def checkout_pull_requests(
         self,
@@ -848,10 +859,10 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                     if '/'.join([remote_to_fetch, pr.head]) not in self._git.get_remote_branches():
                         raise MacheteException(
                             f"Could not check out {pr.display_text()} "
-                            f"because branch {bold(pr.head)} is already deleted from {bold(remote_to_fetch)}.")
+                            f"because branch <b>{pr.head}</b> is already deleted from <b>{remote_to_fetch}</b>.")
             else:
                 warn(f'{pr.display_text()} comes from fork and its {spec.repository_name} is already deleted. '
-                     f'No remote tracking data will be set up for {bold(pr.head)} branch.')
+                     f'No remote tracking data will be set up for <b>{pr.head}</b> branch.')
                 refspec = f'{self.code_hosting_client.get_ref_name_for_pull_request(pr.number)}:{pr.head}'
                 self._git.fetch_refspec(org_repo_remote.remote, refspec)
                 self._git.checkout(LocalBranchShortName.of(pr.head))
@@ -881,7 +892,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                         opt_yes=True,
                         verbose=False,
                         switch_head_if_new_branch=False)
-                    print(fmt(f"{pr_on_path.display_text()} checked out at local branch {bold(pr_on_path.head)}"))
+                    print_fmt(f"{pr_on_path.display_text()} checked out at local branch <b>{pr_on_path.head}</b>")
 
         debug(f'Current {spec.display_name} user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_branch_layout_file(list(prs_to_annotate), current_user=current_user, include_urls=False, verbose=False)
@@ -934,7 +945,8 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         result: List[PullRequest] = []
         spec = self.code_hosting_spec
         all_open_prs = self._get_all_open_prs()
-        repo_pretty = f"{spec.repository_name} {bold(self.code_hosting_client.organization)}/{bold(self.code_hosting_client.repository)}"
+        repo_pretty = (
+            f"{spec.repository_name} <b>{self.code_hosting_client.organization}</b>/<b>{self.code_hosting_client.repository}</b>")
         if pr_numbers:
             for pr_number in pr_numbers:
                 pr: Optional[PullRequest] = utils.find_or_none(lambda x: x.number == pr_number, all_open_prs)
@@ -947,7 +959,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                     else:
 
                         raise MacheteException(
-                            f"{spec.pr_short_name} {spec.pr_ordinal_char}{bold(str(pr_number))} is not found in {repo_pretty}")
+                            f"{spec.pr_short_name} {spec.pr_ordinal_char}<b>{pr_number}</b> is not found in {repo_pretty}")
             return result
         if all:
             if not all_open_prs:
@@ -957,7 +969,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         elif by:
             result = [pr for pr in all_open_prs if pr.user == by]
             if not result:
-                warn(f"user {bold(by)} has no open {spec.pr_full_name} in {repo_pretty}")
+                warn(f"user <b>{by}</b> has no open {spec.pr_full_name} in {repo_pretty}")
                 return []
             return result
         elif related_to:

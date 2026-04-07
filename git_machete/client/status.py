@@ -12,8 +12,8 @@ from git_machete.config import SquashMergeDetection
 from git_machete.git_operations import (BranchPair, FullCommitHash,
                                         GitLogEntry, LocalBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (MacheteException, PopenResult, bold, colored,
-                               debug, dim, underline, warn)
+from git_machete.utils import (MacheteException, PopenResult, debug,
+                               escape_markup, print_fmt, warn)
 
 from .base import MacheteClient
 
@@ -89,18 +89,17 @@ class StatusMacheteClient(MacheteClient):
         When selected_branch is set, that branch's name (not annotation/sync status) is wrapped in reverse video.
         line_for_branch maps each branch to the 0-based line index in result where it appears."""
 
-        # These maps need to be defined in a local scope to allow for mocking the color palette more easily.
-        sync_to_parent_status_to_edge_color_map: Dict[SyncToParentStatus, str] = {
-            SyncToParentStatus.IN_SYNC: utils.AE.GREEN,
-            SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF: utils.AE.YELLOW,
-            SyncToParentStatus.OUT_OF_SYNC: utils.AE.RED,
-            SyncToParentStatus.MERGED_TO_PARENT: utils.AE.DIM
+        edge_color_tag: Dict[SyncToParentStatus, str] = {
+            SyncToParentStatus.IN_SYNC: "green",
+            SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF: "yellow",
+            SyncToParentStatus.OUT_OF_SYNC: "red",
+            SyncToParentStatus.MERGED_TO_PARENT: "dim"
         }
-        sync_to_parent_status_to_junction_ascii_only_map: Dict[SyncToParentStatus, str] = {
-            SyncToParentStatus.IN_SYNC: "o-",
-            SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF: "?-",
-            SyncToParentStatus.OUT_OF_SYNC: "x-",
-            SyncToParentStatus.MERGED_TO_PARENT: "m-"
+        edge_junction_char: Dict[SyncToParentStatus, str] = {
+            SyncToParentStatus.IN_SYNC: "o",
+            SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF: "?",
+            SyncToParentStatus.OUT_OF_SYNC: "x",
+            SyncToParentStatus.MERGED_TO_PARENT: "m"
         }
         out = io.StringIO()
         space = data.flags.maybe_space_before_branch_name
@@ -131,32 +130,33 @@ class StatusMacheteClient(MacheteClient):
                 if not sibling:
                     out.write("  " + space)
                 else:
-                    out.write(colored(
-                        f"{utils.get_vertical_bar()} " + space,
-                        sync_to_parent_status_to_edge_color_map[data.branches[sibling].sync_to_parent_status]))
-            out.write(colored(suffix, sync_to_parent_status_to_edge_color_map[data.branches[for_branch].sync_to_parent_status]))
+                    tag = edge_color_tag[data.branches[sibling].sync_to_parent_status]
+                    out.write(f"<{tag}><vbar/> {space}</{tag}>")
+            tag = edge_color_tag[data.branches[for_branch].sync_to_parent_status]
+            out.write(f"<{tag}>{suffix}</{tag}>")
 
         for branch in data.branches_in_display_order:
             b = data.branches[branch]
             next_sibling_of_ancestor = next_sibling_of_ancestor_by_branch[branch]
             if b.up_branch is not None:
-                write_line_prefix(branch, next_sibling_of_ancestor, f"{utils.get_vertical_bar()}\n")
+                write_line_prefix(branch, next_sibling_of_ancestor, "<vbar/>")
+                out.write("\n")
                 line_index += 1
                 for commit, fp_suffix in b.commits:
-                    write_line_prefix(branch, next_sibling_of_ancestor, utils.get_vertical_bar())
+                    write_line_prefix(branch, next_sibling_of_ancestor, "<vbar/>")
+                    subj = escape_markup(commit.subject)
                     out.write(
-                        f' {f"{dim(commit.short_hash)}  " if data.flags.opt_list_commits_with_hashes else ""}'
-                        f'{dim(commit.subject)}{fp_suffix}\n'
+                        f' {f"<dim>{commit.short_hash}</dim>  " if data.flags.opt_list_commits_with_hashes else ""}'
+                        f'<dim>{subj}</dim>{fp_suffix}\n'
                     )
                     line_index += 1
-                if utils.ascii_only_stdout:
-                    junction = sync_to_parent_status_to_junction_ascii_only_map[b.sync_to_parent_status]
+                junc_char = edge_junction_char[b.sync_to_parent_status]
+                next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor[-1]
+                if next_sibling_of_branch and data.branches[next_sibling_of_branch].sync_to_parent_status == b.sync_to_parent_status:
+                    unicode_junc = "├─"
                 else:
-                    next_sibling_of_branch: Optional[LocalBranchShortName] = next_sibling_of_ancestor[-1]
-                    if next_sibling_of_branch and data.branches[next_sibling_of_branch].sync_to_parent_status == b.sync_to_parent_status:
-                        junction = "├─"
-                    else:
-                        junction = "└─"
+                    unicode_junc = "└─"
+                junction = f"<ifansi:{unicode_junc}:{junc_char}-/>"
                 write_line_prefix(branch, next_sibling_of_ancestor, junction + space)
             else:
                 if branch != data.roots[0]:
@@ -181,16 +181,19 @@ class StatusMacheteClient(MacheteClient):
                     prefix = "REVERTING "
                 else:
                     prefix = ""
-                current = f"{bold(colored(prefix, utils.AE.RED))}{bold(underline(branch, star_if_ascii_only=True))}"
+                if prefix:
+                    current = f"<b><red>{prefix}</red></b><b><u>{branch}</u><ifansi:: */></b>"
+                else:
+                    current = f"<b><u>{branch}</u><ifansi:: */></b>"
             else:
-                current = bold(branch)
+                current = f"<b>{branch}</b>"
 
             anno = ''
             if b.annotation is not None and b.annotation.formatted_full_text:
                 anno = '  ' + b.annotation.formatted_full_text
 
             if selected_branch is not None and branch == selected_branch:
-                current_part = f"{utils.AE.REVERSE_VIDEO}{current}{utils.AE.ENDC}"
+                current_part = f"<reverse>{current}</reverse>"
             else:
                 current_part = current
             out.write(f"{current_part}{anno}{b.sync_status}{b.hook_output}\n")
@@ -210,12 +213,12 @@ class StatusMacheteClient(MacheteClient):
         yellow_edge_branch = branches_in_sync_but_fork_point_off[0]
         if len(branches_in_sync_but_fork_point_off) == 1:
             first_part = (
-                f"yellow edge indicates that fork point for {bold(yellow_edge_branch)} "
+                f"yellow edge indicates that fork point for <b>{yellow_edge_branch}</b> "
                 f"is probably incorrectly inferred,\nor that some extra branch should be between "
-                f"{bold(str(data.branches[yellow_edge_branch].up_branch))} and {bold(yellow_edge_branch)}"
+                f"<b>{data.branches[yellow_edge_branch].up_branch}</b> and <b>{yellow_edge_branch}</b>"
             )
         else:
-            affected_branches = ", ".join(map(bold, branches_in_sync_but_fork_point_off))
+            affected_branches = ", ".join(f"<b>{b}</b>" for b in branches_in_sync_but_fork_point_off)
             first_part = (
                 f"yellow edges indicate that fork points for {affected_branches} are probably incorrectly inferred,\n"
                 "or that some extra branch should be added between each of these branches and its parent"
@@ -228,8 +231,8 @@ class StatusMacheteClient(MacheteClient):
         elif len(branches_in_sync_but_fork_point_off) == 1:
             second_part = (
                 f"Consider using `git machete fork-point {yellow_edge_branch} --override-to-parent`,\n"
-                f"rebasing {bold(yellow_edge_branch)} onto its parent with `git machete update`,\n"
-                f"or reattaching {bold(yellow_edge_branch)} under a different parent branch"
+                f"rebasing <b>{yellow_edge_branch}</b> onto its parent with `git machete update`,\n"
+                f"or reattaching <b>{yellow_edge_branch}</b> under a different parent branch"
             )
         else:
             second_part = (
@@ -294,11 +297,9 @@ class StatusMacheteClient(MacheteClient):
                     for commit in raw_commits:
                         if commit.hash == fork_point:
                             fp_branches_formatted = " and ".join(
-                                sorted(underline(lb_or_rb) for lb, lb_or_rb in fork_point_branches_cached[branch]))
-                            right_arrow = colored(utils.get_right_arrow(), utils.AE.RED)
-                            fork_point_str = colored("fork point ???", utils.AE.RED)
+                                sorted(f"<u>{lb_or_rb}</u>" for lb, lb_or_rb in fork_point_branches_cached[branch]))
                             fp_suffix = (
-                                f' {right_arrow} {fork_point_str} ' +
+                                ' <red><rarrow/> fork point ???</red> ' +
                                 ("this commit" if flags.opt_list_commits_with_hashes else f"commit {commit.short_hash}") +
                                 f' seems to be a part of the unique history of {fp_branches_formatted}'
                             )
@@ -316,24 +317,22 @@ class StatusMacheteClient(MacheteClient):
             s, remote = self._git.get_combined_remote_sync_status(branch)
             sync_status_by_branch[branch] = {
                 SyncToRemoteStatus.NO_REMOTES: "",
-                SyncToRemoteStatus.UNTRACKED: colored(" (untracked)", utils.AE.ORANGE),
+                SyncToRemoteStatus.UNTRACKED: "<orange> (untracked)</orange>",
                 SyncToRemoteStatus.IN_SYNC_WITH_REMOTE: "",
-                SyncToRemoteStatus.BEHIND_REMOTE: colored(f" (behind {bold(remote)})", utils.AE.RED),  # type: ignore[arg-type]
-                SyncToRemoteStatus.AHEAD_OF_REMOTE: colored(f" (ahead of {bold(remote)})", utils.AE.RED),  # type: ignore[arg-type]
-                SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: colored(
-                    f" (diverged from & older than {bold(remote)})", utils.AE.RED),  # type: ignore[arg-type]
-                SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: colored(
-                    f" (diverged from {bold(remote)})", utils.AE.RED),  # type: ignore[arg-type]
+                SyncToRemoteStatus.BEHIND_REMOTE: f"<red> (behind <b>{remote}</b>)</red>",
+                SyncToRemoteStatus.AHEAD_OF_REMOTE: f"<red> (ahead of <b>{remote}</b>)</red>",
+                SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: f"<red> (diverged from & older than <b>{remote}</b>)</red>",
+                SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: f"<red> (diverged from <b>{remote}</b>)</red>",
             }[SyncToRemoteStatus(s)]
 
             hook_output = ""
             if hook_executable:
                 debug(f"running machete-status-branch hook ({hook_path}) for branch {branch}")
-                hook_env = dict(os.environ, ASCII_ONLY=str(utils.ascii_only_stdout).lower())
+                hook_env = dict(os.environ, ASCII_ONLY=str(not utils.use_ansi_escapes_in_stdout).lower())
                 status_code, stdout, stderr = self._popen_hook(
                     hook_path, branch, cwd=self._git.get_current_worktree_root_dir(), env=hook_env)
                 if status_code == 0 and not stdout.isspace():
-                    hook_output = "  " + stdout.replace('\n', ' ').rstrip()
+                    hook_output = "  " + escape_markup(stdout.replace('\n', ' ').rstrip())
                 else:
                     debug(f"machete-status-branch hook ({hook_path}) for branch {branch} "
                           f"returned {status_code}; stdout: '{stdout}'; stderr: '{stderr}'")
@@ -384,7 +383,7 @@ class StatusMacheteClient(MacheteClient):
         )
         data = self.compute_status_data(flags=flags)
         format_out = self.format_status_output(data)
-        sys.stdout.write(format_out.result)
+        print_fmt(format_out.result, newline=False)
         if warn_when_branch_in_sync_but_fork_point_off:
             warning_msg = self._status_warning_message(data)
             if warning_msg is not None:

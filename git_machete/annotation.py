@@ -1,7 +1,7 @@
 import re
 from typing import Callable, NamedTuple
 
-from git_machete import utils
+from git_machete.utils import escape_markup
 
 
 class Qualifiers(NamedTuple):
@@ -47,11 +47,11 @@ class Annotation(NamedTuple):
             return ''
         result = ''
         if self.text_without_qualifiers:
-            result += utils.dim(self.text_without_qualifiers)
+            result += f'<dim>{escape_markup(self.text_without_qualifiers)}</dim>'
         if self.text_without_qualifiers and self.qualifiers.is_non_default():
             result += ' '
         if self.qualifiers.is_non_default():
-            result += utils.dim(utils.underline(s=str(self.qualifiers)))
+            result += f'<dim><u>{self.qualifiers}</u></dim>'
         return result
 
     @staticmethod
