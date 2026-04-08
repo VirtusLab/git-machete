@@ -1,6 +1,6 @@
 from pytest_mock import MockerFixture
 
-from git_machete.utils import UnderlyingGitException
+from git_machete.utils import SimpleAnsiEscapeCodes, UnderlyingGitException
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, execute,
@@ -258,11 +258,17 @@ class TestUpdate(BaseTest):
         assert_failure(["update", "--no-interactive-rebase"], "Aborting.")
         assert get_commit_hash("branch-1") == original_branch_1_hash
 
+        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+
+        pc_yn = f"({E.GREEN}y{E.ENDC}, {E.RED}N{E.ENDC})"
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(
             ["update", "--no-interactive-rebase"],
-            "Branch branch-1 not found in the tree of branch dependencies. "
-            "Rebase onto the inferred upstream branch-0? (y, N)\n")
+            f"Branch {E.BOLD}branch-1{E.ENDC_BOLD_DIM} not found in the tree of branch dependencies. "
+            f"Rebase onto the inferred upstream {E.BOLD}branch-0{E.ENDC_BOLD_DIM}? {pc_yn}\n")
         assert is_ancestor_or_equal("branch-0", "branch-1")
 
     def test_update_unmanaged_branch_when_parent_cannot_be_inferred(self) -> None:

@@ -133,7 +133,11 @@ class TestStatus(BaseTest):
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)
         assert_success(["status"], expected_output)
 
-    def test_single_invalid_branch_non_interactive_slide_out(self) -> None:
+    def test_single_invalid_branch_non_interactive_slide_out(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+
         create_repo()
         new_branch('master')
         commit()
@@ -144,13 +148,17 @@ class TestStatus(BaseTest):
             \t\tfoo
             """
         rewrite_branch_layout_file(body)
-        expected_output = """
-            Warning: sliding invalid branch foo out of the branch layout file
+        expected_output = textwrap.dedent(f"""\
+            Warning: sliding invalid branch {E.BOLD}foo{E.ENDC_BOLD_DIM} out of the branch layout file
               master *
-        """
+        """)
         assert_success(["status"], expected_output)
 
-    def test_multiple_invalid_branches_non_interactive_slide_out(self) -> None:
+    def test_multiple_invalid_branches_non_interactive_slide_out(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+
         create_repo()
         new_branch('master')
         commit()
@@ -170,18 +178,22 @@ class TestStatus(BaseTest):
             \t\tfeature
             """
         rewrite_branch_layout_file(body)
-        expected_output = """
-            Warning: sliding invalid branches foo, bar, qux, baz out of the branch layout file
+        expected_output = textwrap.dedent(f"""\
+            Warning: sliding invalid branches {E.BOLD}foo{E.ENDC_BOLD_DIM}, {E.BOLD}bar{E.ENDC_BOLD_DIM}, {E.BOLD}qux{E.ENDC_BOLD_DIM}, {E.BOLD}baz{E.ENDC_BOLD_DIM} out of the branch layout file
               master
               |
               o-develop
 
               feature *
-        """
+        """)
         assert_success(["status"], expected_output)
 
     @pytest.mark.skipif(sys.platform == "win32", reason="Windows doesn't distinguish between executable and non-executable files")
-    def test_status_advice_ignored_non_executable_hook(self) -> None:
+    def test_status_advice_ignored_non_executable_hook(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+
         repo_path = abspath_posix(create_repo())
         new_branch('master')
         commit()
@@ -198,13 +210,13 @@ class TestStatus(BaseTest):
         write_to_file(".git/hooks/machete-status-branch", "#!/bin/sh\ngit ls-tree $1 | wc -l | sed 's/ *//'")
         assert_success(
             ["status"],
-            f"""
-            hint: The '{repo_path}/.git/hooks/machete-status-branch' hook was ignored because it's not set as executable.
-            hint: You can disable this warning with `git config advice.ignoredHook false`.
+            textwrap.dedent(f"""\
+            {E.YELLOW}hint: The '{repo_path}/.git/hooks/machete-status-branch' hook was ignored because it's not set as executable.{E.ENDC}
+            {E.YELLOW}hint: You can disable this warning with `git config advice.ignoredHook false`.{E.ENDC}
               master
               |
               o-develop *
-            """
+            """)
         )
 
         set_git_config_key("advice.ignoredHook", "false")
@@ -519,7 +531,10 @@ class TestStatus(BaseTest):
         assert_failure(["status", "--squash-merge-detection=none", "--squash-merge-detection=invalid"],
                        "Invalid value for --squash-merge-detection flag: invalid. Valid values are none, simple, exact")
 
-    def test_status_inferring_counterpart_for_fetching_of_branch(self) -> None:
+    def test_status_inferring_counterpart_for_fetching_of_branch(self, mocker: MockerFixture) -> None:
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+
         create_repo_with_remote()
         origin_1_remote_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
         add_remote('origin_1', origin_1_remote_path)
@@ -565,7 +580,24 @@ class TestStatus(BaseTest):
         )
         assert_success(['status'], expected_status_output)
 
-    def test_status_when_child_branch_is_pushed_immediately_after_creation(self) -> None:
+        raw_output = launch_command('status', '--color=always')
+        expected_ansi = textwrap.dedent(f"""\
+              {E.BOLD}master{E.ENDC_BOLD_DIM}
+              {E.GREEN}│
+            {E.ENDC}  {E.GREEN}└─{E.ENDC}{E.BOLD}bar{E.ENDC_BOLD_DIM}
+                {E.GREEN}│
+            {E.ENDC}    {E.GREEN}└─{E.ENDC}{E.BOLD}foo{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
+                  {E.GREEN}│
+            {E.ENDC}      {E.GREEN}└─{E.ENDC}{E.BOLD}snickers{E.ENDC_BOLD_DIM}
+                    {E.GREEN}│
+            {E.ENDC}        {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}mars{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
+        """)
+        assert raw_output == expected_ansi
+
+    def test_status_when_child_branch_is_pushed_immediately_after_creation(self, mocker: MockerFixture) -> None:
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+
         create_repo_with_remote()
         new_branch("master")
         commit("master")
@@ -593,6 +625,16 @@ class TestStatus(BaseTest):
             """
         )
         assert_success(['status'], expected_status_output)
+
+        raw_output = launch_command('status', '--color=always')
+        expected_ansi = textwrap.dedent(f"""\
+              {E.BOLD}master{E.ENDC_BOLD_DIM}
+              {E.GREEN}│
+            {E.ENDC}  {E.GREEN}└─{E.ENDC}{E.BOLD}foo{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
+                {E.GREEN}│
+            {E.ENDC}    {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}bar{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}{E.RED} (ahead of {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}
+        """)
+        assert raw_output == expected_ansi
 
     def test_status_fork_point_without_reflogs(self) -> None:
         create_repo()
@@ -622,7 +664,10 @@ class TestStatus(BaseTest):
         )
         assert_success(['status', '-l'], expected_status_output)
 
-    def test_status_yellow_edges(self) -> None:
+    def test_status_yellow_edges(self, mocker: MockerFixture) -> None:
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+
         with fixed_author_and_committer_date_in_past():
             create_repo()
             new_branch("master")
@@ -680,6 +725,22 @@ class TestStatus(BaseTest):
             """  # noqa: E501
         )
         assert_success(['status', '-l'], expected_status_output)
+
+        # Verify ANSI escape codes with --color=always
+        raw_output = launch_command('status', '--color=always')
+        expected_ansi = textwrap.dedent(f"""\
+              {E.BOLD}master{E.ENDC_BOLD_DIM}
+              {E.YELLOW}│
+            {E.ENDC}  {E.YELLOW}├─{E.ENDC}{E.BOLD}feature-1{E.ENDC_BOLD_DIM}
+              {E.YELLOW}│
+            {E.ENDC}  {E.YELLOW}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-2{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
+
+            {E.ORANGE}Warn: {E.ENDC}yellow edges indicate that fork points for {E.BOLD}feature-1{E.ENDC_BOLD_DIM}, {E.BOLD}feature-2{E.ENDC_BOLD_DIM} are probably incorrectly inferred,
+            or that some extra branch should be added between each of these branches and its parent.
+
+            Run {E.UNDERLINE}git machete status --list-commits{E.ENDC_UNDERLINE} or {E.UNDERLINE}git machete status --list-commits-with-hashes{E.ENDC_UNDERLINE} to see more details.
+        """)
+        assert raw_output == expected_ansi
 
     def test_status_ansi_escapes(self, mocker: MockerFixture) -> None:
         # Setup: develop (root); feature-in-sync behind develop=RED; feature-merged merged into develop=DIM;
@@ -880,7 +941,10 @@ class TestStatus(BaseTest):
             """
         )
 
-    def test_status_removed_from_remote(self) -> None:
+    def test_status_removed_from_remote(self, mocker: MockerFixture) -> None:
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+
         create_repo_with_remote()
         new_branch('main')
         commit()
@@ -892,3 +956,7 @@ class TestStatus(BaseTest):
             ["status"],
             "main * (untracked)\n"
         )
+
+        raw_output = launch_command('status', '--color=always')
+        expected_ansi = f"  {E.BOLD}{E.UNDERLINE}main{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}\n"
+        assert raw_output == expected_ansi

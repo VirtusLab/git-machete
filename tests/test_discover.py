@@ -4,6 +4,8 @@ import textwrap
 
 from pytest_mock import MockerFixture
 
+from git_machete.utils import SimpleAnsiEscapeCodes
+
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
                       mock_input_returning, overridden_environment, read_file,
@@ -119,15 +121,20 @@ class TestDiscover(BaseTest):
             """
         )
 
-    def test_discover_checked_out_since_in_future(self) -> None:
+    def test_discover_checked_out_since_in_future(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+
         create_repo()
         new_branch("root")
         commit()
 
         assert_success(
             ["discover", "--checked-out-since=tomorrow"],
-            "Warn: no branches satisfying the criteria. "
-            "Try moving the value of --checked-out-since further to the past.\n"
+            f"{E.ORANGE}Warn: {E.ENDC}no branches satisfying the criteria. "
+            f"Try moving the value of {E.UNDERLINE}--checked-out-since{E.ENDC_UNDERLINE} further to the past.\n"
         )
 
     def test_discover_with_stale_branches(self) -> None:

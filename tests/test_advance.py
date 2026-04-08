@@ -1,6 +1,10 @@
+# flake8: noqa: E501
+import textwrap
+
 from pytest_mock import MockerFixture
 
-from git_machete.utils import ExitCode, UnderlyingGitException
+from git_machete.utils import (ExitCode, SimpleAnsiEscapeCodes,
+                               UnderlyingGitException)
 
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
@@ -181,29 +185,36 @@ class TestAdvance(BaseTest):
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("3"))
         assert_failure(["advance"], "Invalid index: 3")
 
+        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
+        E = SimpleAnsiEscapeCodes()
+        self.patch_symbol(mocker, "git_machete.utils.AE", E)
+
+        pc_yn = f"({E.GREEN}y{E.ENDC}, {E.RED}N{E.ENDC})"
+
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("1", "N", "n"))
         assert_success(
             ["advance"],
-            """
+            textwrap.dedent(f"""\
             [1] level-1a-branch
             [2] level-1b-branch
-            Specify downstream branch towards which root is to be fast-forwarded or hit <return> to skip:
+            Specify downstream branch towards which {E.BOLD}root{E.ENDC_BOLD_DIM} is to be fast-forwarded or hit <return> to skip:
 
-            Branch root is now fast-forwarded to match level-1a-branch. Push root to origin? (y, N)
+            Branch {E.BOLD}root{E.ENDC_BOLD_DIM} is now fast-forwarded to match {E.BOLD}level-1a-branch{E.ENDC_BOLD_DIM}. Push {E.BOLD}root{E.ENDC_BOLD_DIM} to {E.BOLD}origin{E.ENDC_BOLD_DIM}? {pc_yn}
 
-            Branch root is now fast-forwarded to match level-1a-branch. Slide level-1a-branch out of the tree of branch dependencies? (y, N)
-            """
+            Branch {E.BOLD}root{E.ENDC_BOLD_DIM} is now fast-forwarded to match {E.BOLD}level-1a-branch{E.ENDC_BOLD_DIM}. Slide {E.BOLD}level-1a-branch{E.ENDC_BOLD_DIM} out of the tree of branch dependencies? {pc_yn}
+            """)
         )
 
         assert_success(
             ["status"],
-            """
-            root * (ahead of origin)
-            |
-            m-level-1a-branch (untracked)
-            |
-            x-level-1b-branch (untracked)
-            """
+            textwrap.dedent(f"""\
+              {E.BOLD}{E.UNDERLINE}root{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}{E.RED} (ahead of {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}
+              {E.DIM}│
+            {E.ENDC}  {E.DIM}└─{E.ENDC}{E.BOLD}level-1a-branch{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
+              {E.RED}│
+            {E.ENDC}  {E.RED}└─{E.ENDC}{E.BOLD}level-1b-branch{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}
+            """)
         )
 
     def test_advance_when_push_no_qualifier_present(self, mocker: MockerFixture) -> None:
