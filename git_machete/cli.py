@@ -746,14 +746,15 @@ def launch_internal(orig_args: List[str]) -> None:
                     fail_on_missing_current_user_for_my_open_prs=True)
             elif subcommand == f"create-{pr_or_mr}":
                 current_branch = git.get_current_branch()
-                github_or_gitlab_client.sync_before_creating_pull_request(opt_yes=cli_opts.opt_yes)
+                pushed_to_remote = github_or_gitlab_client.sync_before_creating_pull_request(opt_yes=cli_opts.opt_yes)
                 github_or_gitlab_client.create_pull_request(
                     head=current_branch,
                     opt_base=cli_opts.opt_base,
                     opt_draft=cli_opts.opt_draft,
                     opt_title=cli_opts.opt_title,
                     opt_update_related_descriptions=cli_opts.opt_update_related_descriptions,
-                    opt_yes=cli_opts.opt_yes)
+                    opt_yes=cli_opts.opt_yes,
+                    head_pushed_to_remote=pushed_to_remote)
             elif subcommand == f"restack-{pr_or_mr}":
                 github_or_gitlab_client.restack_pull_request(opt_update_related_descriptions=cli_opts.opt_update_related_descriptions)
             elif subcommand == f"retarget-{pr_or_mr}":
