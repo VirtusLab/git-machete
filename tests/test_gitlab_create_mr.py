@@ -150,7 +150,6 @@ class TestGitLabCreateMR(BaseTest):
                 |
                 x-drop-constraint (untracked)
 
-            Checking if source branch chore/fields exists in origin remote... YES
             Checking if target branch ignore-trailing exists in origin remote... YES
             Creating a draft MR from chore/fields to ignore-trailing... OK, see www.gitlab.com
             Checking for open GitLab MRs... OK
@@ -238,7 +237,6 @@ class TestGitLabCreateMR(BaseTest):
                 |
                 x-drop-constraint (untracked)
 
-            Checking if source branch hotfix/add-trigger exists in origin remote... YES
             Checking if target branch master exists in origin remote... YES
             Creating an MR from hotfix/add-trigger to master... OK, see www.gitlab.com
             Updating description of MR !6 to include the chain of MRs... OK
@@ -335,7 +333,6 @@ class TestGitLabCreateMR(BaseTest):
               |
               o-testing/endpoints
 
-            Checking if source branch allow-ownership-link exists in origin remote... YES
             Checking if target branch develop exists in origin remote... YES
             Creating an MR from allow-ownership-link to develop... OK, see www.gitlab.com
             Setting milestone of MR !7 to 42... OK
@@ -712,7 +709,6 @@ class TestGitLabCreateMR(BaseTest):
               |
               o-feature_2 *
 
-        Checking if source branch feature_2 exists in origin_1 remote... YES
         Checking if target branch feature exists in origin_1 remote... YES
         Creating an MR from feature_2 to feature... OK, see www.gitlab.com
         Checking for open GitLab MRs... OK

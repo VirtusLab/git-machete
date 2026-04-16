@@ -117,6 +117,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
     def sync_before_creating_pull_request(self, *, opt_yes: bool) -> None:
         spec = self.code_hosting_spec
+        self.__head_branch_pushed_by_sync = False
         self.expect_at_least_one_managed_branch()
         self._set_empty_line_status()
 
@@ -157,32 +158,43 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
         if s in statuses_to_push:
             if current_branch not in self.annotations or self.annotations[current_branch].qualifiers.push:
-                if s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
-                    assert remote is not None
-                    self._handle_ahead_state(
-                        current_branch=current_branch,
-                        remote=remote,
-                        is_called_from_traverse=False,
-                        opt_push_tracked=True,
-                        opt_yes=opt_yes)
-                elif s == SyncToRemoteStatus.UNTRACKED:
-                    self._handle_untracked_state(
-                        branch=current_branch,
-                        is_called_from_traverse=False,
-                        is_called_from_code_hosting=True,
-                        opt_push_tracked=True,
-                        opt_push_untracked=True,
-                        opt_yes=opt_yes)
-                elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                    assert remote is not None
-                    self._handle_diverged_and_newer_state(
-                        current_branch=current_branch,
-                        remote=remote,
-                        is_called_from_traverse=False,
-                        opt_push_tracked=True,
-                        opt_yes=opt_yes)
-                else:
-                    raise UnexpectedMacheteException(f"Invalid sync to remote status: `{s}`.")
+                original_push = self._git.push
+
+                def push_and_mark(*args, **kwargs):  # type: ignore[no-untyped-def]
+                    result = original_push(*args, **kwargs)
+                    self.__head_branch_pushed_by_sync = True
+                    return result
+
+                self._git.push = push_and_mark  # type: ignore[method-assign]
+                try:
+                    if s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
+                        assert remote is not None
+                        self._handle_ahead_state(
+                            current_branch=current_branch,
+                            remote=remote,
+                            is_called_from_traverse=False,
+                            opt_push_tracked=True,
+                            opt_yes=opt_yes)
+                    elif s == SyncToRemoteStatus.UNTRACKED:
+                        self._handle_untracked_state(
+                            branch=current_branch,
+                            is_called_from_traverse=False,
+                            is_called_from_code_hosting=True,
+                            opt_push_tracked=True,
+                            opt_push_untracked=True,
+                            opt_yes=opt_yes)
+                    elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
+                        assert remote is not None
+                        self._handle_diverged_and_newer_state(
+                            current_branch=current_branch,
+                            remote=remote,
+                            is_called_from_traverse=False,
+                            opt_push_tracked=True,
+                            opt_yes=opt_yes)
+                    else:
+                        raise UnexpectedMacheteException(f"Invalid sync to remote status: `{s}`.")
+                finally:
+                    self._git.push = original_push  # type: ignore[method-assign]
 
                 self._print_new_line(False)
                 self.status(
@@ -231,6 +243,8 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             opt_update_related_descriptions: bool,
             opt_yes: bool
     ) -> None:
+        pushed = getattr(self, '_MacheteClientWithCodeHosting__head_branch_pushed_by_sync', False)
+        self.__head_branch_pushed_by_sync = False
         # Use provided base branch if --base flag is specified (undocumented), otherwise use upstream branch from .git/machete
         base: Optional[LocalBranchShortName] = opt_base or self.up_branch_for(LocalBranchShortName.of(head))
         spec = self.code_hosting_spec
@@ -266,15 +280,19 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         # Check both base and head branches in a single git ls-remote call if they use the same remote
         if base_org_repo_remote.remote == head_org_repo_remote.remote:
-            print_fmt(f"Checking if {spec.head_branch_name} branch <b>{head}</b> "
-                      f"exists in <b>{head_org_repo_remote.remote}</b> remote... ",
-                      newline=False)
+            if pushed:
+                base_branch_found_on_remote = self._git.does_remote_branch_exist(base_org_repo_remote.remote, base)
+                head_branch_found_on_remote = True
+            else:
+                print_fmt(f"Checking if {spec.head_branch_name} branch <b>{head}</b> "
+                          f"exists in <b>{head_org_repo_remote.remote}</b> remote... ",
+                          newline=False)
 
-            branches_existence = self._git.do_remote_branches_exist(base_org_repo_remote.remote, base, head)
-            base_branch_found_on_remote = branches_existence[base]
-            head_branch_found_on_remote = branches_existence[head]
+                branches_existence = self._git.do_remote_branches_exist(base_org_repo_remote.remote, base, head)
+                base_branch_found_on_remote = branches_existence[base]
+                head_branch_found_on_remote = branches_existence[head]
 
-            print_fmt(colored_yes_no(head_branch_found_on_remote))
+                print_fmt(colored_yes_no(head_branch_found_on_remote))
 
             print_fmt(f"Checking if {spec.base_branch_name} branch <b>{base}</b> "
                       f"exists in <b>{base_org_repo_remote.remote}</b> remote... ",
@@ -282,11 +300,14 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             print_fmt(colored_yes_no(base_branch_found_on_remote))
         else:
             # Different remotes, check separately (head first, then base)
-            print_fmt(f"Checking if {spec.head_branch_name} branch <b>{head}</b> "
-                      f"exists in <b>{head_org_repo_remote.remote}</b> remote... ",
-                      newline=False)
-            head_branch_found_on_remote = self._git.does_remote_branch_exist(head_org_repo_remote.remote, head)
-            print_fmt(colored_yes_no(head_branch_found_on_remote))
+            if pushed:
+                head_branch_found_on_remote = True
+            else:
+                print_fmt(f"Checking if {spec.head_branch_name} branch <b>{head}</b> "
+                          f"exists in <b>{head_org_repo_remote.remote}</b> remote... ",
+                          newline=False)
+                head_branch_found_on_remote = self._git.does_remote_branch_exist(head_org_repo_remote.remote, head)
+                print_fmt(colored_yes_no(head_branch_found_on_remote))
 
             print_fmt(f"Checking if {spec.base_branch_name} branch <b>{base}</b> "
                       f"exists in <b>{base_org_repo_remote.remote}</b> remote... ",

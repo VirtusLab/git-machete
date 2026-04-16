@@ -150,7 +150,6 @@ class TestGitHubCreatePR(BaseTest):
                 |
                 x-drop-constraint (untracked)
 
-            Checking if head branch chore/fields exists in origin remote... YES
             Checking if base branch ignore-trailing exists in origin remote... YES
             Creating a draft PR from chore/fields to ignore-trailing... OK, see www.github.com
             Checking for open GitHub PRs... OK
@@ -239,7 +238,6 @@ class TestGitHubCreatePR(BaseTest):
                 |
                 x-drop-constraint (untracked)
 
-            Checking if head branch hotfix/add-trigger exists in origin remote... YES
             Checking if base branch master exists in origin remote... YES
             Creating a PR from hotfix/add-trigger to master... OK, see www.github.com
             Updating description of PR #6 to include the chain of PRs... OK
@@ -337,7 +335,6 @@ class TestGitHubCreatePR(BaseTest):
               |
               o-testing/endpoints
 
-            Checking if head branch allow-ownership-link exists in origin remote... YES
             Checking if base branch develop exists in origin remote... YES
             Creating a PR from allow-ownership-link to develop... OK, see www.github.com
             Setting milestone of PR #7 to 42... OK
@@ -732,7 +729,6 @@ class TestGitHubCreatePR(BaseTest):
               |
               o-feature_2 *
 
-        Checking if head branch feature_2 exists in origin_1 remote... YES
         Checking if base branch feature exists in origin_1 remote... YES
         Creating a PR from feature_2 to feature... OK, see www.github.com
         Checking for open GitHub PRs... OK
@@ -1134,3 +1130,31 @@ class TestGitHubCreatePR(BaseTest):
             "Do you really want to create a PR for this branch?"
         )
         assert_failure(['github', 'create-pr'], expected_error_message)
+
+    def test_github_create_pr_skips_head_branch_check_after_sync_push(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        github_api_state = MockGitHubAPIState.with_prs()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+
+        create_repo_with_remote()
+
+        new_branch("master")
+        commit("master commit")
+        push()
+
+        new_branch("develop")
+        commit("develop commit")
+
+        rewrite_branch_layout_file("master\n\tdevelop")
+
+        output = launch_command("github", "create-pr")
+
+        assert "Checking if head branch" not in output
+        assert "Checking if base branch master exists in origin remote... YES" in output
+
+        pr = github_api_state.get_pull_by_number(1)
+        assert pr is not None
+        assert pr['head']['ref'] == 'develop'
+        assert pr['base']['ref'] == 'master'
