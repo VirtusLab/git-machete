@@ -1158,3 +1158,40 @@ class TestGitHubCreatePR(BaseTest):
         assert pr is not None
         assert pr['head']['ref'] == 'develop'
         assert pr['base']['ref'] == 'master'
+
+    def test_github_create_pr_checks_head_branch_after_sync_push_to_different_remote(
+            self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        github_api_state = MockGitHubAPIState.with_prs()
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+
+        create_repo_with_remote()
+        origin_2_remote_path = create_repo("remote-2", bare=True, switch_dir_to_new_repo=False)
+        add_remote("origin_2", origin_2_remote_path)
+
+        new_branch("master")
+        commit("master commit")
+        push(remote='origin')
+        push(remote='origin_2')
+
+        new_branch("develop")
+        commit("develop commit")
+        push(remote='origin')
+        push(remote='origin_2')
+        commit("develop follow-up commit")
+
+        set_git_config_key("machete.github.remote", "origin")
+        rewrite_branch_layout_file("master\n\tdevelop")
+
+        output = launch_command("github", "create-pr")
+
+        assert "Push develop to origin_2? (y, N, q)" in output
+        assert "Checking if head branch develop exists in origin remote... YES" in output
+        assert "Checking if base branch master exists in origin remote... YES" in output
+
+        pr = github_api_state.get_pull_by_number(1)
+        assert pr is not None
+        assert pr['head']['ref'] == 'develop'
+        assert pr['base']['ref'] == 'master'

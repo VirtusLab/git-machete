@@ -117,7 +117,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
     def sync_before_creating_pull_request(self, *, opt_yes: bool) -> None:
         spec = self.code_hosting_spec
-        self.__head_branch_pushed_by_sync = False
+        self.__head_branch_pushed_to_remote: Optional[str] = None
         self.expect_at_least_one_managed_branch()
         self._set_empty_line_status()
 
@@ -162,7 +162,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
                 def push_and_mark(*args, **kwargs):  # type: ignore[no-untyped-def]
                     result = original_push(*args, **kwargs)
-                    self.__head_branch_pushed_by_sync = True
+                    self.__head_branch_pushed_to_remote = args[0] if args else kwargs.get('remote')
                     return result
 
                 self._git.push = push_and_mark  # type: ignore[method-assign]
@@ -243,8 +243,8 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             opt_update_related_descriptions: bool,
             opt_yes: bool
     ) -> None:
-        pushed = getattr(self, '_MacheteClientWithCodeHosting__head_branch_pushed_by_sync', False)
-        self.__head_branch_pushed_by_sync = False
+        pushed_remote = getattr(self, '_MacheteClientWithCodeHosting__head_branch_pushed_to_remote', None)
+        self.__head_branch_pushed_to_remote = None
         # Use provided base branch if --base flag is specified (undocumented), otherwise use upstream branch from .git/machete
         base: Optional[LocalBranchShortName] = opt_base or self.up_branch_for(LocalBranchShortName.of(head))
         spec = self.code_hosting_spec
@@ -277,10 +277,13 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         remote_head_branch_exists_locally = head_remote_branch in self._git.get_remote_branches()
         base_remote_branch = RemoteBranchShortName(f"{base_org_repo_remote.remote}/{base}")
         remote_base_branch_exists_locally = base_remote_branch in self._git.get_remote_branches()
+        head_branch_was_pushed_to_code_hosting_remote = (
+            pushed_remote is not None and pushed_remote == head_org_repo_remote.remote
+        )
 
         # Check both base and head branches in a single git ls-remote call if they use the same remote
         if base_org_repo_remote.remote == head_org_repo_remote.remote:
-            if pushed:
+            if head_branch_was_pushed_to_code_hosting_remote:
                 base_branch_found_on_remote = self._git.does_remote_branch_exist(base_org_repo_remote.remote, base)
                 head_branch_found_on_remote = True
             else:
@@ -300,7 +303,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             print_fmt(colored_yes_no(base_branch_found_on_remote))
         else:
             # Different remotes, check separately (head first, then base)
-            if pushed:
+            if head_branch_was_pushed_to_code_hosting_remote:
                 head_branch_found_on_remote = True
             else:
                 print_fmt(f"Checking if {spec.head_branch_name} branch <b>{head}</b> "
