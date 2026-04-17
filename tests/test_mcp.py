@@ -54,11 +54,14 @@ def _tool_call(
 
 
 def _mcp_responses_from_launch_output(output: str) -> List[Dict[str, Any]]:
-    return [
-        json.loads(line)
-        for line in output.strip().splitlines()
-        if line.strip()
-    ]
+    """Parse JSON-RPC lines from captured stdout (stderr may contain MCP debug lines)."""
+    out: List[Dict[str, Any]] = []
+    for raw in output.strip().splitlines():
+        line = raw.strip()
+        if not line or not line.startswith("{"):
+            continue
+        out.append(json.loads(line))
+    return out
 
 
 def _result(responses: List[Dict[str, Any]], index: int) -> Dict[str, Any]:

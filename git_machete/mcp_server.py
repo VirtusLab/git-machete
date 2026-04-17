@@ -6,6 +6,7 @@ commands as MCP tools. Uses only the Python standard library.
 
 import io
 import json
+import os
 import subprocess
 import sys
 from contextlib import redirect_stderr, redirect_stdout
@@ -21,6 +22,12 @@ from git_machete.gitlab import GITLAB_CLIENT_SPEC
 from git_machete.utils import MacheteException, UnderlyingGitException
 
 _PROTOCOL_VERSION = "2024-11-05"
+
+
+def _mcp_log_line(message: str) -> None:
+    """Debug logging on stderr (stdio MCP keeps stdout for JSON-RPC only)."""
+    sys.stderr.write(f"[git-machete MCP] {message}\n")
+    sys.stderr.flush()
 
 
 # ---------------------------------------------------------------------------
@@ -895,6 +902,8 @@ def serve(
     _stdin: TextIO = stdin or sys.stdin
     _stdout: TextIO = stdout or sys.stdout
 
+    _mcp_log_line(f"server start cwd={os.getcwd()!r}")
+
     def send(msg: Dict[str, Any]) -> None:
         _stdout.write(json.dumps(msg, separators=(",", ":")) + "\n")
         _stdout.flush()
@@ -906,8 +915,16 @@ def serve(
         try:
             msg = json.loads(line)
         except json.JSONDecodeError:
+            _mcp_log_line("request invalid_json (parse error)")
             send(_error_response(None, code=-32700, message="Parse error"))
             continue
+
+        method = msg.get("method") or ""
+        params = msg.get("params") or {}
+        extra = ""
+        if method == "tools/call":
+            extra = f" tool={params.get('name', '')!r}"
+        _mcp_log_line(f"request method={method!r} id={msg.get('id')!r}{extra}")
 
         reply = _handle_message(msg)
         if reply is not None:
