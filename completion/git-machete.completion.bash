@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 _git_machete() {
-  local cmds="add advance anno completion delete-unmanaged diff discover edit file fork-point github gitlab go help is-managed list log reapply show slide-out squash status traverse update version"
+  local cmds="add advance anno completion delete-unmanaged diff discover edit file fork-point github gitlab go help is-managed list log mcp reapply show slide-out squash status traverse update version"
   local help_topics="$cmds config format hooks"
 
   local categories="addable childless managed slidable slidable-after unmanaged with-overridden-fork-point"
@@ -74,6 +74,7 @@ _git_machete() {
             "update-mr-descriptions") __gitcomp "$common_opts $githublab_update_descriptions_opts" ;;
             *) __gitcomp "$common_opts" ;;
           esac ;;
+        mcp) __gitcomp "$common_opts" ;;
         reapply) __gitcomp "$common_opts $reapply_opts" ;;
         slide-out) __gitcomp "$common_opts $slide_out_opts" ;;
         squash) __gitcomp "$common_opts $squash_opts" ;;

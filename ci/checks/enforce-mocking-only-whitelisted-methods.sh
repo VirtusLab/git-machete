@@ -28,6 +28,7 @@ git_machete.utils.slurp_file
 os.path.isfile
 shutil.which
 sys.argv
+sys.stdin
 termios.tcgetattr
 termios.tcsetattr
 tty.setraw

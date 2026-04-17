@@ -100,6 +100,9 @@ _git-machete() {
             '1:: :__git_machete_categories' \
             "${common_flags[@]}"
           ;;
+        (mcp)
+          _arguments "${common_flags[@]}"
+          ;;
         (reapply)
           _arguments \
             '(-f --fork-point)'{-f,--fork-point=}'[Fork point commit after which the rebased part of history is meant to start]: :__git_references' \
@@ -192,6 +195,7 @@ __git_machete_cmds=(
   'is-managed:Check if the current branch is managed by git-machete (mostly for scripts)'
   'list:List all branches that fall into one of pre-defined categories (mostly for internal use)'
   'log:Log the part of history specific to the given branch'
+  'mcp:Run a Model Context Protocol server on stdin/stdout for MCP clients'
   'reapply:Rebase the current branch onto its own fork point'
   'show:Show name(s) of the branch(es) relative to the position of the current branch'
   'slide-out:Slide the current branch out and sync its downstream (child) branch with its upstream (parent) branch via rebase or merge'

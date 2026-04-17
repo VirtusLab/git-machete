@@ -21,6 +21,7 @@
 * :ref:`is-managed`       -- Check if the current branch is managed by git machete (mostly for scripts)
 * :ref:`list`             -- List all branches that fall into one of pre-defined categories (mostly for internal use)
 * :ref:`log`              -- Log the part of history specific to the given branch
+* :ref:`mcp`              -- Run a Model Context Protocol server over stdin/stdout for MCP clients (for example, AI-assisted editors)
 * :ref:`reapply`          -- Rebase the current branch onto its computed fork point
 * :ref:`show`             -- Show name(s) of the branch(es) relative to the position of a branch
 * :ref:`slide-out`        -- Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge
