@@ -166,7 +166,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
         if opt_stop_after is not None:
             self.expect_in_managed_branches(opt_stop_after)
 
-        self._set_empty_line_status()
+        self._mark_trailing_blank_line()
         any_action_suggested: bool = False
 
         if opt_fetch:
@@ -193,13 +193,13 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
         try:
             if opt_start_from == TraverseStartFrom.ROOT:
                 dest = self.root_branch_for(self._git.get_current_branch(), if_unmanaged=PickRoot.FIRST)
-                self._print_new_line(False)
+                self._ensure_blank_separator()
                 self._switch_branch(dest, custom_checkout_message=f"Checking out the root branch (<b>{dest}</b>)")
                 current_branch = dest
             elif opt_start_from == TraverseStartFrom.FIRST_ROOT:
                 # Note that we already ensured that there is at least one managed branch.
                 dest = self.managed_branches[0]
-                self._print_new_line(False)
+                self._ensure_blank_separator()
                 root_qualifier = "first root" if len(self._state.roots) > 1 else "root"
                 self._switch_branch(dest, custom_checkout_message=f"Checking out the {root_qualifier} branch (<b>{dest}</b>)")
                 current_branch = dest
@@ -209,7 +209,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             elif isinstance(opt_start_from, LocalBranchShortName):
                 dest = opt_start_from
                 self.expect_in_managed_branches(dest)
-                self._print_new_line(False)
+                self._ensure_blank_separator()
                 self._switch_branch(dest)
                 current_branch = dest
             else:
@@ -285,19 +285,20 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
                 needs_any_action = needs_slide_out or needs_parent_sync or needs_remote_sync or needs_retarget_pr or needs_create_pr
                 if branch != current_branch and needs_any_action:
-                    self._print_new_line(False)
+                    self._ensure_blank_separator()
                     self._switch_branch(branch)
                     current_branch = branch
-                    self._print_new_line(False)
+                    self._ensure_blank_separator()
                     self.status(
                         warn_when_branch_in_sync_but_fork_point_off=True,
                         opt_list_commits=opt_list_commits,
                         opt_list_commits_with_hashes=False,
                         opt_squash_merge_detection=opt_squash_merge_detection)
-                    self._print_new_line(True)
+                    self._ensure_blank_separator()
+                    self._mark_trailing_blank_line()
                 if needs_slide_out:
                     any_action_suggested = True
-                    self._print_new_line(False)
+                    self._ensure_blank_separator()
                     assert upstream is not None
                     ans: str = self.ask_if(f"Branch <b>{branch}</b> is merged into <b>{upstream}</b>. "
                                            f"Slide <b>{branch}</b> out of the tree of branch dependencies?" +
@@ -336,7 +337,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     # suggest to sync with remote (if needed; very rare in practice).
                 elif needs_parent_sync:
                     any_action_suggested = True
-                    self._print_new_line(False)
+                    self._ensure_blank_separator()
                     assert upstream is not None
                     if use_merge:
                         ans = self.ask_if(f"Merge <b>{upstream}</b> into <b>{branch}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
@@ -408,7 +409,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
                 if skipping_parent_sync:
                     assert upstream is not None
-                    self._print_new_line(False)
+                    self._ensure_blank_separator()
                     if s == SyncToRemoteStatus.BEHIND_REMOTE:
                         reason = "behind its remote counterpart"
                     else:
@@ -420,7 +421,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     assert pr is not None
                     assert upstream is not None
                     spec = self.code_hosting_spec
-                    self._print_new_line(False)
+                    self._ensure_blank_separator()
                     ans_intro = f"Branch <b>{branch}</b> has a different {spec.pr_short_name} {spec.base_branch_name} (<b>{pr.base}</b>) " \
                         f"in {spec.display_name} than in machete file (<b>{upstream}</b>).\n"
                     ans = self.ask_if(
@@ -496,7 +497,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     any_action_suggested = True
                     assert upstream is not None
                     spec = self.code_hosting_spec
-                    self._print_new_line(False)
+                    self._ensure_blank_separator()
                     ans_intro = f"Branch <b>{branch}</b> does not have {spec.pr_short_name_article} {spec.pr_short_name}" \
                         f" in {spec.display_name}.\n"
                     ans = self.ask_if(
@@ -530,7 +531,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 # For NEAREST_REMAINING, we stay in the worktree where the branch is checked out
             # otherwise opt_return_to == TraverseReturnTo.STAY, so no action is needed
 
-            self._print_new_line(False)
+            self._ensure_blank_separator()
             self.status(
                 warn_when_branch_in_sync_but_fork_point_off=True,
                 opt_list_commits=opt_list_commits,

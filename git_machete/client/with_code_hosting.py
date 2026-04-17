@@ -118,7 +118,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
     def sync_before_creating_pull_request(self, *, opt_yes: bool) -> None:
         spec = self.code_hosting_spec
         self.expect_at_least_one_managed_branch()
-        self._set_empty_line_status()
+        self._mark_trailing_blank_line()
 
         current_branch = self._git.get_current_branch()
         if current_branch not in self.managed_branches:
@@ -184,24 +184,24 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 else:
                     raise UnexpectedMacheteException(f"Invalid sync to remote status: `{s}`.")
 
-                self._print_new_line(False)
+                self._ensure_blank_separator()
                 self.status(
                     warn_when_branch_in_sync_but_fork_point_off=True,
                     opt_list_commits=False,
                     opt_list_commits_with_hashes=False,
                     opt_squash_merge_detection=SquashMergeDetection.NONE)
-                self._print_new_line(False)
+                self._ensure_blank_separator()
 
         else:
             if s == SyncToRemoteStatus.BEHIND_REMOTE:
                 warn(f"branch <b>{current_branch}</b> is behind its remote counterpart. Consider using `git pull`.")
-                self._print_new_line(False)
+                self._ensure_blank_separator()
                 ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + pretty_choices('y', 'Q'),
                                   f"Proceeding with {spec.pr_full_name} creation...", opt_yes=opt_yes)
             elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
                 warn(f"branch <b>{current_branch}</b> is diverged from and older than its remote counterpart. "
                      "Consider using `git reset --keep`.")
-                self._print_new_line(False)
+                self._ensure_blank_separator()
                 ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + pretty_choices('y', 'Q'),
                                   f"Proceeding with {spec.pr_full_name} creation...", opt_yes=opt_yes)
             elif s == SyncToRemoteStatus.NO_REMOTES:
@@ -428,7 +428,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         self._git.fetch_remote(org_repo_remote.remote)
 
-        self._set_empty_line_status()
+        self._mark_trailing_blank_line()
         current_branch = self._git.get_current_branch()
         s, remote = self._git.get_combined_remote_sync_status(current_branch)
         statuses_to_push = (
@@ -477,13 +477,13 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             else:
                 raise UnexpectedMacheteException(f"Invalid sync to remote status: {s}.")
 
-            self._print_new_line(False)
+            self._ensure_blank_separator()
             self.status(
                 warn_when_branch_in_sync_but_fork_point_off=True,
                 opt_list_commits=False,
                 opt_list_commits_with_hashes=False,
                 opt_squash_merge_detection=SquashMergeDetection.NONE)
-            self._print_new_line(False)
+            self._ensure_blank_separator()
 
             if converted_to_draft:
                 self.code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=False)

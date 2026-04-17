@@ -83,7 +83,7 @@ class MacheteClient:
     def __init_state(self) -> None:
         self._state = MacheteState()
         self.__indent: Optional[str] = None
-        self.__empty_line_status: Optional[bool] = None
+        self.__has_trailing_blank_line: Optional[bool] = None
         self.__branch_pairs_by_hash_in_reflog: Optional[Dict[FullCommitHash, List[BranchPair]]] = None
 
     @property
@@ -388,13 +388,13 @@ class MacheteClient:
         self._state.managed_branches += [branch]
         self.save_branch_layout_file()
 
-    def _set_empty_line_status(self) -> None:
-        self.__empty_line_status = True
+    def _mark_trailing_blank_line(self) -> None:
+        self.__has_trailing_blank_line = True
 
-    def _print_new_line(self, new_status: bool) -> None:  # noqa: KW
-        if not self.__empty_line_status:
+    def _ensure_blank_separator(self) -> None:
+        if not self.__has_trailing_blank_line:
             print("")
-        self.__empty_line_status = new_status
+        self.__has_trailing_blank_line = False
 
     def __run_hook(self, *args: str, cwd: str) -> int:
         self._git.flush_caches()
@@ -1189,7 +1189,7 @@ class MacheteClient:
             opt_push_tracked: bool,
             opt_yes: bool
     ) -> None:
-        self._print_new_line(False)
+        self._ensure_blank_separator()
         remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(current_branch)
         assert remote_branch is not None
         choices = pretty_choices(*('y', 'N', 'q', 'yq') if is_called_from_traverse else ('y', 'N', 'q'))
@@ -1217,7 +1217,7 @@ class MacheteClient:
             opt_yes: bool
     ) -> None:
         remotes: List[str] = self._git.get_remotes()
-        self._print_new_line(False)
+        self._ensure_blank_separator()
         if len(remotes) == 1:
             self._handle_untracked_branch(
                 new_remote=remotes[0],
@@ -1256,7 +1256,7 @@ class MacheteClient:
             opt_push_tracked: bool,
             opt_yes: bool
     ) -> None:
-        self._print_new_line(False)
+        self._ensure_blank_separator()
         choices = pretty_choices(*('y', 'N', 'q', 'yq') if is_called_from_traverse else ('y', 'N', 'q'))
         ans = self.ask_if(
             f"Push <b>{current_branch}</b> to <b>{remote}</b>?" + choices,
@@ -1272,7 +1272,7 @@ class MacheteClient:
             raise InteractionStopped
 
     def _handle_diverged_and_older_state(self, branch: LocalBranchShortName, *, opt_yes: bool) -> None:
-        self._print_new_line(False)
+        self._ensure_blank_separator()
         remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(branch)
         assert remote_branch is not None
         ans = self.ask_if(
@@ -1289,7 +1289,7 @@ class MacheteClient:
             raise InteractionStopped
 
     def _handle_behind_state(self, *, branch: LocalBranchShortName, remote: str, opt_yes: bool) -> None:
-        self._print_new_line(False)
+        self._ensure_blank_separator()
         remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(branch)
         assert remote_branch is not None
         ans = self.ask_if(
