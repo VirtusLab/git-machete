@@ -32,7 +32,36 @@ def _mcp_log_line(message: str) -> None:
 
 # ---------------------------------------------------------------------------
 # Tool definitions
+#
+# Working directory: many MCP hosts (e.g. Cursor) spawn stdio servers with cwd set to
+# the user's home directory, not the workspace. Optional `root` on each tool selects
+# the directory for that invocation; see _ROOT_PARAM and _execute_tool.
 # ---------------------------------------------------------------------------
+
+_ROOT_PARAM: Dict[str, Any] = {
+    "root": {
+        "type": "string",
+        "description": (
+            "Absolute path of the working directory for this tool invocation "
+            "(typically the git repository root). Strongly recommended when the host "
+            "starts the MCP server outside that directory."
+        ),
+    },
+}
+
+
+def _input_schema_object(
+        properties: Dict[str, Any],
+        *,
+        required: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """JSON Schema object with tool-specific *properties* plus optional `root`."""
+    merged: Dict[str, Any] = {**properties, **_ROOT_PARAM}
+    sch: Dict[str, Any] = {"type": "object", "properties": merged}
+    if required:
+        sch["required"] = required
+    return sch
+
 
 def _code_hosting_tool(
     *,
@@ -49,6 +78,65 @@ def _code_hosting_tool(
         f"retarget-{pr_or_mr}",
         f"update-{pr_or_mr}-descriptions",
     ]
+    hosting_props: Dict[str, Any] = {
+        "subcommand": {
+            "type": "string",
+            "enum": subcommands,
+            "description": f"The {platform} subcommand to run.",
+        },
+        "request_ids": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "description": f"{entity_name} number(s). Used with checkout-{pr_or_mr}s.",
+        },
+        "all": {
+            "type": "boolean",
+            "description": f"Apply to all {entity_name}s. Used with checkout-{pr_or_mr}s, update-{pr_or_mr}-descriptions.",
+        },
+        "mine": {
+            "type": "boolean",
+            "description": f"Apply to my {entity_name}s only. Used with checkout-{pr_or_mr}s, update-{pr_or_mr}-descriptions.",
+        },
+        "by": {
+            "type": "string",
+            "description": f"Filter by author. Used with checkout-{pr_or_mr}s, update-{pr_or_mr}-descriptions.",
+        },
+        "branch": {
+            "type": "string",
+            "description": f"Target branch. Used with retarget-{pr_or_mr}.",
+        },
+        "base": {
+            "type": "string",
+            "description": f"Base branch for the {entity_name}. Used with create-{pr_or_mr}.",
+        },
+        "draft": {
+            "type": "boolean",
+            "description": f"Create as draft. Used with create-{pr_or_mr}.",
+        },
+        "title": {
+            "type": "string",
+            "description": f"Title for the {entity_name}. Used with create-{pr_or_mr}.",
+        },
+        "with_urls": {
+            "type": "boolean",
+            "description": f"Include URLs in annotations. Used with anno-{pr_or_mr}s.",
+        },
+        "ignore_if_missing": {
+            "type": "boolean",
+            "description": f"Don't fail if {entity_name} is missing. Used with retarget-{pr_or_mr}.",
+        },
+        "related": {
+            "type": "boolean",
+            "description": f"Apply to related {entity_name}s. Used with update-{pr_or_mr}-descriptions.",
+        },
+        "update_related_descriptions": {
+            "type": "boolean",
+            "description": (
+                f"Also update descriptions of related {entity_name}s. "
+                f"Used with create-{pr_or_mr}, restack-{pr_or_mr}, retarget-{pr_or_mr}."
+            ),
+        },
+    }
     return {
         "name": tool_name,
         "description": (
@@ -61,69 +149,7 @@ def _code_hosting_tool(
             f"retarget-{pr_or_mr} (change the base/target of a {entity_name}), "
             f"update-{pr_or_mr}-descriptions (update {entity_name} descriptions from branch layout)."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "subcommand": {
-                    "type": "string",
-                    "enum": subcommands,
-                    "description": f"The {platform} subcommand to run.",
-                },
-                "request_ids": {
-                    "type": "array",
-                    "items": {"type": "integer"},
-                    "description": f"{entity_name} number(s). Used with checkout-{pr_or_mr}s.",
-                },
-                "all": {
-                    "type": "boolean",
-                    "description": f"Apply to all {entity_name}s. Used with checkout-{pr_or_mr}s, update-{pr_or_mr}-descriptions.",
-                },
-                "mine": {
-                    "type": "boolean",
-                    "description": f"Apply to my {entity_name}s only. Used with checkout-{pr_or_mr}s, update-{pr_or_mr}-descriptions.",
-                },
-                "by": {
-                    "type": "string",
-                    "description": f"Filter by author. Used with checkout-{pr_or_mr}s, update-{pr_or_mr}-descriptions.",
-                },
-                "branch": {
-                    "type": "string",
-                    "description": f"Target branch. Used with retarget-{pr_or_mr}.",
-                },
-                "base": {
-                    "type": "string",
-                    "description": f"Base branch for the {entity_name}. Used with create-{pr_or_mr}.",
-                },
-                "draft": {
-                    "type": "boolean",
-                    "description": f"Create as draft. Used with create-{pr_or_mr}.",
-                },
-                "title": {
-                    "type": "string",
-                    "description": f"Title for the {entity_name}. Used with create-{pr_or_mr}.",
-                },
-                "with_urls": {
-                    "type": "boolean",
-                    "description": f"Include URLs in annotations. Used with anno-{pr_or_mr}s.",
-                },
-                "ignore_if_missing": {
-                    "type": "boolean",
-                    "description": f"Don't fail if {entity_name} is missing. Used with retarget-{pr_or_mr}.",
-                },
-                "related": {
-                    "type": "boolean",
-                    "description": f"Apply to related {entity_name}s. Used with update-{pr_or_mr}-descriptions.",
-                },
-                "update_related_descriptions": {
-                    "type": "boolean",
-                    "description": (
-                        f"Also update descriptions of related {entity_name}s. "
-                        f"Used with create-{pr_or_mr}, restack-{pr_or_mr}, retarget-{pr_or_mr}."
-                    ),
-                },
-            },
-            "required": ["subcommand"],
-        },
+        "inputSchema": _input_schema_object(hosting_props, required=["subcommand"]),
     }
 
 
@@ -183,23 +209,20 @@ def _tool_spec_machete_add() -> Dict[str, Any]:
             "The branch can be added as a child of a given parent (--onto), as a new root, "
             "or by default as a child of the current branch."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "branch": {
-                    "type": "string",
-                    "description": "Branch to add. Defaults to the current branch.",
-                },
-                "onto": {
-                    "type": "string",
-                    "description": "Make the added branch a child of this branch.",
-                },
-                "as_root": {
-                    "type": "boolean",
-                    "description": "Add as a new root (no parent) instead of as a child.",
-                },
+        "inputSchema": _input_schema_object({
+            "branch": {
+                "type": "string",
+                "description": "Branch to add. Defaults to the current branch.",
             },
-        },
+            "onto": {
+                "type": "string",
+                "description": "Make the added branch a child of this branch.",
+            },
+            "as_root": {
+                "type": "boolean",
+                "description": "Add as a new root (no parent) instead of as a child.",
+            },
+        }),
     }
 
 
@@ -224,7 +247,7 @@ def _tool_spec_machete_advance() -> Dict[str, Any]:
             "Useful after a child branch has been merged/approved. "
             "Runs non-interactively (auto-selects the child if unambiguous)."
         ),
-        "inputSchema": {"type": "object", "properties": {}},
+        "inputSchema": _input_schema_object({}),
     }
 
 
@@ -240,19 +263,16 @@ def _tool_spec_machete_anno() -> Dict[str, Any]:
             "Without annotation_text: display the annotation of the given branch. "
             "With annotation_text: set (or clear, if empty string) the annotation."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "annotation_text": {
-                    "type": "string",
-                    "description": "Annotation text to set. Pass empty string to clear. Omit to display current annotation.",
-                },
-                "branch": {
-                    "type": "string",
-                    "description": "Target branch. Defaults to the current branch.",
-                },
+        "inputSchema": _input_schema_object({
+            "annotation_text": {
+                "type": "string",
+                "description": "Annotation text to set. Pass empty string to clear. Omit to display current annotation.",
             },
-        },
+            "branch": {
+                "type": "string",
+                "description": "Target branch. Defaults to the current branch.",
+            },
+        }),
     }
 
 
@@ -275,7 +295,7 @@ def _tool_spec_machete_delete_unmanaged() -> Dict[str, Any]:
             "Delete local branches that are not present in the branch layout file. "
             "WARNING: this deletes branches. Runs non-interactively (auto-confirms)."
         ),
-        "inputSchema": {"type": "object", "properties": {}},
+        "inputSchema": _input_schema_object({}),
     }
 
 
@@ -290,19 +310,16 @@ def _tool_spec_machete_diff() -> Dict[str, Any]:
             "Diff the current working directory or a given branch against its fork point. "
             "Shows only the changes introduced on the branch, excluding changes from the parent."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "branch": {
-                    "type": "string",
-                    "description": "Branch to diff. Defaults to the current branch.",
-                },
-                "stat": {
-                    "type": "boolean",
-                    "description": "Show only a diffstat (file names and change counts) instead of full diff.",
-                },
+        "inputSchema": _input_schema_object({
+            "branch": {
+                "type": "string",
+                "description": "Branch to diff. Defaults to the current branch.",
             },
-        },
+            "stat": {
+                "type": "boolean",
+                "description": "Show only a diffstat (file names and change counts) instead of full diff.",
+            },
+        }),
     }
 
 
@@ -320,23 +337,20 @@ def _tool_spec_machete_discover() -> Dict[str, Any]:
             "Overwrites the current branch layout file. "
             "Runs non-interactively (auto-confirms)."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "list_commits": {
-                    "type": "boolean",
-                    "description": "List commits introduced on each branch in the status output after discovery.",
-                },
-                "roots": {
-                    "type": "string",
-                    "description": "Comma-separated list of branches to use as roots of the discovered tree.",
-                },
-                "checked_out_since": {
-                    "type": "string",
-                    "description": "Only consider branches checked out at least once since this date (e.g. '2 weeks ago').",
-                },
+        "inputSchema": _input_schema_object({
+            "list_commits": {
+                "type": "boolean",
+                "description": "List commits introduced on each branch in the status output after discovery.",
             },
-        },
+            "roots": {
+                "type": "string",
+                "description": "Comma-separated list of branches to use as roots of the discovered tree.",
+            },
+            "checked_out_since": {
+                "type": "string",
+                "description": "Only consider branches checked out at least once since this date (e.g. '2 weeks ago').",
+            },
+        }),
     }
 
 
@@ -359,7 +373,7 @@ def _tool_spec_machete_file() -> Dict[str, Any]:
             "(usually .git/machete or .git/info/machete). "
             "This file defines the tree structure of managed branches."
         ),
-        "inputSchema": {"type": "object", "properties": {}},
+        "inputSchema": _input_schema_object({}),
     }
 
 
@@ -378,27 +392,24 @@ def _tool_spec_machete_fork_point() -> Dict[str, Any]:
             "are not exposed here; use machete_update with fork_point to rebase onto a specific "
             "revision, or override_to_parent / unset_override for fork-point overrides."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "branch": {
-                    "type": "string",
-                    "description": "Branch to inspect. Defaults to the current branch.",
-                },
-                "inferred": {
-                    "type": "boolean",
-                    "description": "Show the inferred fork point (ignoring any overrides).",
-                },
-                "override_to_parent": {
-                    "type": "boolean",
-                    "description": "Set the fork point override to the tip of the parent branch.",
-                },
-                "unset_override": {
-                    "type": "boolean",
-                    "description": "Remove any fork point override.",
-                },
+        "inputSchema": _input_schema_object({
+            "branch": {
+                "type": "string",
+                "description": "Branch to inspect. Defaults to the current branch.",
             },
-        },
+            "inferred": {
+                "type": "boolean",
+                "description": "Show the inferred fork point (ignoring any overrides).",
+            },
+            "override_to_parent": {
+                "type": "boolean",
+                "description": "Set the fork point override to the tip of the parent branch.",
+            },
+            "unset_override": {
+                "type": "boolean",
+                "description": "Remove any fork point override.",
+            },
+        }),
     }
 
 
@@ -447,17 +458,13 @@ def _tool_spec_machete_go() -> Dict[str, Any]:
             "Directions: 'up' (parent), 'down' (child), 'first' (first child), "
             "'last' (last child), 'next' (next sibling), 'prev' (previous sibling), 'root' (tree root)."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "direction": {
-                    "type": "string",
-                    "enum": ["up", "down", "first", "last", "next", "prev", "root"],
-                    "description": "The direction to navigate in the branch tree.",
-                },
+        "inputSchema": _input_schema_object({
+            "direction": {
+                "type": "string",
+                "enum": ["up", "down", "first", "last", "next", "prev", "root"],
+                "description": "The direction to navigate in the branch tree.",
             },
-            "required": ["direction"],
-        },
+        }, required=["direction"]),
     }
 
 
@@ -472,15 +479,12 @@ def _tool_spec_machete_log() -> Dict[str, Any]:
             "Log the commits unique to the given branch, i.e., the commits between "
             "the fork point and the branch tip. Equivalent to 'git log fork-point..branch'."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "branch": {
-                    "type": "string",
-                    "description": "Branch to log. Defaults to the current branch.",
-                },
+        "inputSchema": _input_schema_object({
+            "branch": {
+                "type": "string",
+                "description": "Branch to log. Defaults to the current branch.",
             },
-        },
+        }),
     }
 
 
@@ -496,15 +500,12 @@ def _tool_spec_machete_reapply() -> Dict[str, Any]:
             "Rebase the current branch onto its own fork point. "
             "Useful for cleaning up the branch's history without changing its base."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "fork_point": {
-                    "type": "string",
-                    "description": "Override the fork point revision for the rebase.",
-                },
+        "inputSchema": _input_schema_object({
+            "fork_point": {
+                "type": "string",
+                "description": "Override the fork point revision for the rebase.",
             },
-        },
+        }),
     }
 
 
@@ -522,21 +523,17 @@ def _tool_spec_machete_show() -> Dict[str, Any]:
             "'first' (first child), 'last' (last child), 'next' (next sibling), "
             "'prev' (previous sibling), 'root' (root of the tree containing the branch)."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "direction": {
-                    "type": "string",
-                    "enum": ["current", "up", "down", "first", "last", "next", "prev", "root"],
-                    "description": "The direction to look in the branch tree.",
-                },
-                "branch": {
-                    "type": "string",
-                    "description": "The reference branch. Defaults to the current branch.",
-                },
+        "inputSchema": _input_schema_object({
+            "direction": {
+                "type": "string",
+                "enum": ["current", "up", "down", "first", "last", "next", "prev", "root"],
+                "description": "The direction to look in the branch tree.",
             },
-            "required": ["direction"],
-        },
+            "branch": {
+                "type": "string",
+                "description": "The reference branch. Defaults to the current branch.",
+            },
+        }, required=["direction"]),
     }
 
 
@@ -557,35 +554,32 @@ def _tool_spec_machete_slide_out() -> Dict[str, Any]:
             "whose remote-tracking branch no longer exists (same as "
             "`git machete slide-out --removed-from-remote`); in that mode only delete may be set."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "removed_from_remote": {
-                    "type": "boolean",
-                    "description": (
-                        "Slide out managed branches that no longer exist on the remote (no downstream). "
-                        "Cannot be combined with branches, merge, or no_rebase; only delete is allowed."
-                    ),
-                },
-                "branches": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Branch(es) to slide out. Defaults to the current branch. Ignored if removed_from_remote is true.",
-                },
-                "delete": {
-                    "type": "boolean",
-                    "description": "Also delete the slid-out branches from git.",
-                },
-                "merge": {
-                    "type": "boolean",
-                    "description": "Use merge instead of rebase when moving children.",
-                },
-                "no_rebase": {
-                    "type": "boolean",
-                    "description": "Don't rebase children at all, just remove the branch from the layout.",
-                },
+        "inputSchema": _input_schema_object({
+            "removed_from_remote": {
+                "type": "boolean",
+                "description": (
+                    "Slide out managed branches that no longer exist on the remote (no downstream). "
+                    "Cannot be combined with branches, merge, or no_rebase; only delete is allowed."
+                ),
             },
-        },
+            "branches": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Branch(es) to slide out. Defaults to the current branch. Ignored if removed_from_remote is true.",
+            },
+            "delete": {
+                "type": "boolean",
+                "description": "Also delete the slid-out branches from git.",
+            },
+            "merge": {
+                "type": "boolean",
+                "description": "Use merge instead of rebase when moving children.",
+            },
+            "no_rebase": {
+                "type": "boolean",
+                "description": "Don't rebase children at all, just remove the branch from the layout.",
+            },
+        }),
     }
 
 
@@ -617,15 +611,12 @@ def _tool_spec_machete_squash() -> Dict[str, Any]:
             "The commits between the fork point and HEAD are replaced by one commit "
             "with the combined changes."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "fork_point": {
-                    "type": "string",
-                    "description": "Override the fork point revision for determining which commits to squash.",
-                },
+        "inputSchema": _input_schema_object({
+            "fork_point": {
+                "type": "string",
+                "description": "Override the fork point revision for determining which commits to squash.",
             },
-        },
+        }),
     }
 
 
@@ -644,19 +635,16 @@ def _tool_spec_machete_status() -> Dict[str, Any]:
             "branch (ahead, behind, diverged, untracked). "
             "This is the primary tool for understanding the repository's branch structure."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "list_commits": {
-                    "type": "boolean",
-                    "description": "List short hashes and subjects of commits introduced on each branch.",
-                },
-                "list_commits_with_hashes": {
-                    "type": "boolean",
-                    "description": "Like list_commits but also includes full commit hashes.",
-                },
+        "inputSchema": _input_schema_object({
+            "list_commits": {
+                "type": "boolean",
+                "description": "List short hashes and subjects of commits introduced on each branch.",
             },
-        },
+            "list_commits_with_hashes": {
+                "type": "boolean",
+                "description": "Like list_commits but also includes full commit hashes.",
+            },
+        }),
     }
 
 
@@ -677,19 +665,16 @@ def _tool_spec_machete_update() -> Dict[str, Any]:
             "parent branch as defined in the branch layout. "
             "Runs non-interactively (no interactive rebase editor) unless using merge."
         ),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "merge": {
-                    "type": "boolean",
-                    "description": "Use merge instead of rebase to incorporate parent's changes.",
-                },
-                "fork_point": {
-                    "type": "string",
-                    "description": "Override the fork point revision for the rebase.",
-                },
+        "inputSchema": _input_schema_object({
+            "merge": {
+                "type": "boolean",
+                "description": "Use merge instead of rebase to incorporate parent's changes.",
             },
-        },
+            "fork_point": {
+                "type": "string",
+                "description": "Override the fork point revision for the rebase.",
+            },
+        }),
     }
 
 
@@ -768,6 +753,10 @@ def _capturing_run_cmd(
 
 def _execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
     """Execute a tool call via dispatch and return an MCP CallToolResult."""
+    args = dict(arguments)
+    root_raw = args.pop("root", None)
+    root = str(root_raw) if root_raw not in (None, "") else None
+
     captured_out = io.StringIO()
     captured_err = io.StringIO()
     is_error = False
@@ -784,15 +773,23 @@ def _execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
     try:
         with redirect_stdout(captured_out), redirect_stderr(captured_err):
             utils.displayed_warnings = set()
-            git = GitContext()
+            saved_cwd: Optional[str] = None
+            if root:
+                saved_cwd = os.getcwd()
+                os.chdir(root)
             try:
-                _dispatch_tool(tool_name, arguments, git)
-            except (MacheteException, UnderlyingGitException) as e:
-                is_error = True
-                error_message = str(e)
-            except EOFError:
-                is_error = True
-                error_message = "This command requires interactive input, which is not available in MCP mode."
+                git = GitContext()
+                try:
+                    _dispatch_tool(tool_name, args, git)
+                except (MacheteException, UnderlyingGitException) as e:
+                    is_error = True
+                    error_message = str(e)
+                except EOFError:
+                    is_error = True
+                    error_message = "This command requires interactive input, which is not available in MCP mode."
+            finally:
+                if saved_cwd is not None:
+                    os.chdir(saved_cwd)
     finally:
         sys.stdin = old_stdin
         utils._run_cmd = old_run_cmd

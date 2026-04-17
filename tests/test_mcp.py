@@ -2,6 +2,7 @@
 
 import io
 import json
+import os
 import textwrap
 from typing import Any, Dict, List, Optional, cast
 
@@ -185,6 +186,21 @@ class TestMcp(BaseTest):
             include_handshake=False,
         )
         assert len(responses) == 0
+
+    def test_machete_status_honors_root_argument(self, mocker: MockerFixture) -> None:
+        repo = create_repo()
+        new_branch("master")
+        commit()
+        rewrite_branch_layout_file("master\n")
+        outside = os.path.abspath(os.environ.get("TMPDIR", "/tmp"))
+        os.chdir(outside)
+        responses = self._run_session(
+            mocker,
+            _tool_call(1, "machete_status", {"root": repo}),
+        )
+        assert len(responses) == 2
+        assert not _result(responses, 1)["isError"]
+        assert "master" in _result(responses, 1)["content"][0]["text"]
 
     def test_skips_blank_lines_between_messages(self, mocker: MockerFixture) -> None:
         create_repo()
