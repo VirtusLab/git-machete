@@ -1,6 +1,6 @@
 # Release notes
 
-## New in git-machete 3.40.1
+## New in git-machete 3.41.0
 
 - fixed: ASCII-only mode is now applied separately for stdout and stderr so that stderr retains formatting when stdout is redirected (contributed by @tmchow)
 

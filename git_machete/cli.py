@@ -10,23 +10,7 @@ from typing import (Any, Dict, Iterable, List, NoReturn, Optional, Sequence,
                     Tuple, TypeVar, Union)
 
 import git_machete.options
-from git_machete import __version__, utils
-from git_machete.client.advance import AdvanceMacheteClient
-from git_machete.client.anno import AnnoMacheteClient
-from git_machete.client.base import MacheteClient
-from git_machete.client.diff import DiffMacheteClient
-from git_machete.client.discover import DiscoverMacheteClient
-from git_machete.client.fork_point import ForkPointMacheteClient
-from git_machete.client.go_interactive import GoInteractiveMacheteClient
-from git_machete.client.go_show import GoShowMacheteClient
-from git_machete.client.log import LogMacheteClient
-from git_machete.client.slide_out import SlideOutMacheteClient
-from git_machete.client.squash import SquashMacheteClient
-from git_machete.client.status import StatusMacheteClient
-from git_machete.client.traverse import (TraverseMacheteClient,
-                                         TraverseReturnTo, TraverseStartFrom)
-from git_machete.client.update import UpdateMacheteClient
-from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
+from git_machete import __version__, dispatch, utils
 from git_machete.config import MacheteConfig, SquashMergeDetection
 from git_machete.github import GITHUB_CLIENT_SPEC
 from git_machete.gitlab import GITLAB_CLIENT_SPEC
@@ -35,7 +19,7 @@ from .generated_docs import long_docs, short_docs
 from .git_operations import AnyRevision, GitContext, LocalBranchShortName
 from .utils import (ExitCode, InteractionStopped, MacheteException,
                     UnderlyingGitException, UnexpectedMacheteException,
-                    green_ok, print_fmt, warn)
+                    print_fmt, warn)
 
 T = TypeVar('T')
 
@@ -552,7 +536,36 @@ def launch_internal(orig_args: List[str]) -> None:
                     cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
             return MacheteConfig(git).squash_merge_detection()
 
-        if cmd == "completion":
+        if cmd == "add":
+            if cli_opts.opt_as_root and cli_opts.opt_onto:
+                raise MacheteException("Option `-R/--as-root` cannot be specified together with `-o/--onto`.")
+            if cli_opts.opt_as_root and cli_opts.opt_as_first_child:
+                raise MacheteException("Option `-R/--as-root` cannot be specified together with `-f/--as-first-child`.")
+            dispatch.add(
+                git,
+                branch=cli_opts.opt_branch or git.get_current_branch(),
+                opt_onto=cli_opts.opt_onto,
+                opt_as_first_child=cli_opts.opt_as_first_child,
+                opt_as_root=cli_opts.opt_as_root,
+                opt_yes=cli_opts.opt_yes)
+        elif cmd == "advance":
+            dispatch.advance(git, opt_yes=cli_opts.opt_yes)
+        elif cmd == "anno":
+            spec = GITHUB_CLIENT_SPEC if cli_opts.opt_sync_github_prs else GITLAB_CLIENT_SPEC
+            dispatch.anno(
+                git,
+                branch=cli_opts.opt_branch or git.get_current_branch(),
+                annotation_text=parsed_cli.annotation_text if 'annotation_text' in parsed_cli else None,
+                opt_sync_github_prs=cli_opts.opt_sync_github_prs,
+                opt_sync_gitlab_mrs=cli_opts.opt_sync_gitlab_mrs,
+                spec=spec)
+        elif cmd == "clean":
+            dispatch.clean(
+                git,
+                opt_checkout_my_github_prs='checkout_my_github_prs' in parsed_cli,
+                opt_yes=cli_opts.opt_yes,
+                spec=GITHUB_CLIENT_SPEC)
+        elif cmd == "completion":
             completion_shell = parsed_cli.shell
 
             def print_completion_resource(name: str) -> None:
@@ -578,123 +591,34 @@ def launch_internal(orig_args: List[str]) -> None:
             version()
             return
 
-        if cmd == "add":
-            if cli_opts.opt_as_root and cli_opts.opt_onto:
-                raise MacheteException("Option `-R/--as-root` cannot be specified together with `-o/--onto`.")
-            if cli_opts.opt_as_root and cli_opts.opt_as_first_child:
-                raise MacheteException("Option `-R/--as-root` cannot be specified together with `-f/--as-first-child`.")
-            add_client = MacheteClient(git)
-            add_client.read_branch_layout_file()
-            branch = cli_opts.opt_branch or git.get_current_branch()
-            add_client.add(
-                branch=branch,
-                opt_onto=cli_opts.opt_onto,
-                opt_as_first_child=cli_opts.opt_as_first_child,
-                opt_as_root=cli_opts.opt_as_root,
-                opt_yes=cli_opts.opt_yes,
-                verbose=True,
-                switch_head_if_new_branch=True)
-        elif cmd == "advance":
-            advance_client = AdvanceMacheteClient(git)
-            advance_client.read_branch_layout_file()
-            advance_client.advance(opt_yes=cli_opts.opt_yes)
-        elif cmd == "anno":
-            spec = GITHUB_CLIENT_SPEC if cli_opts.opt_sync_github_prs else GITLAB_CLIENT_SPEC
-            anno_client = AnnoMacheteClient(git, spec)
-            anno_client.read_branch_layout_file(verify_branches=False)
-            if cli_opts.opt_sync_github_prs or cli_opts.opt_sync_gitlab_mrs:
-                anno_client.sync_annotations_to_prs(include_urls=False)
-            else:
-                branch = cli_opts.opt_branch or git.get_current_branch()
-                anno_client.expect_in_managed_branches(branch)
-                if 'annotation_text' in parsed_cli:
-                    anno_client.annotate(branch, parsed_cli.annotation_text)
-                else:
-                    anno_client.print_annotation(branch)
-        elif cmd == "clean":
-            clean_client = MacheteClientWithCodeHosting(git, GITHUB_CLIENT_SPEC)
-            clean_client.read_branch_layout_file()
-            if 'checkout_my_github_prs' in parsed_cli:
-                clean_client.checkout_pull_requests(pr_numbers=[], mine=True)
-            clean_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=cli_opts.opt_yes)
-            clean_client.delete_untracked(opt_yes=cli_opts.opt_yes)
         elif cmd == "delete-unmanaged":
-            delete_unmanaged_client = MacheteClient(git)
-            delete_unmanaged_client.read_branch_layout_file()
-            delete_unmanaged_client.delete_unmanaged(
-                opt_squash_merge_detection=MacheteConfig(git).squash_merge_detection(),
-                opt_yes=cli_opts.opt_yes)
+            dispatch.delete_unmanaged(git, opt_yes=cli_opts.opt_yes)
         elif cmd in {"diff", alias_by_command["diff"]}:
-            diff_client = DiffMacheteClient(git)
-            diff_client.read_branch_layout_file()
-            diff_client.display_diff(branch=cli_opts.opt_branch, opt_stat=cli_opts.opt_stat, extra_git_diff_args=pass_through_args)
+            dispatch.diff(
+                git,
+                branch=cli_opts.opt_branch,
+                opt_stat=cli_opts.opt_stat,
+                extra_args=pass_through_args)
         elif cmd == "discover":
-            discover_client = DiscoverMacheteClient(git)
-            discover_client.read_branch_layout_file()
-            discover_client.discover(
+            dispatch.discover(
+                git,
                 opt_checked_out_since=cli_opts.opt_checked_out_since,
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_roots=cli_opts.opt_roots,
                 opt_yes=cli_opts.opt_yes)
         elif cmd in {"edit", alias_by_command["edit"]}:
-            # No need to read branch layout file.
-            edit_client = MacheteClient(git)
-            edit_client.edit()
+            dispatch.edit(git)
         elif cmd == "file":
-            # No need to read branch layout file.
-            file_client = MacheteClient(git)
-            print(utils.abspath_posix(file_client.branch_layout_file_path))
+            dispatch.file(git)
         elif cmd == "fork-point":
-            fork_point_client = ForkPointMacheteClient(git)
-            fork_point_client.read_branch_layout_file()
-            branch = cli_opts.opt_branch or git.get_current_branch()
-            upstream = fork_point_client.up_branch_for(branch)
-            fork_point_client.expect_in_local_branches(branch)
-
-            def warn_on_deprecation(*, flag: str, revision: AnyRevision, revision_str: str) -> None:
-                if upstream:
-                    print()
-                    warn(
-                        f"`git machete fork-point {flag}` may lead to a confusing user experience and is deprecated.\n\n"
-                        f"If the commits between <b>{upstream}</b> (parent of <b>{branch}</b>) "
-                        f"and {revision_str} <b>{git.get_short_commit_hash_by_revision_or_none(revision) or ''}</b> "
-                        f"do NOT belong to <b>{branch}</b>, consider using:\n"
-                        f"    `git checkout {branch}`\n"
-                        f"    `git machete update --fork-point=\"{revision}\"`\n\n"
-                        "Otherwise, if you're okay with treating these commits "
-                        f"as a part of <b>{branch}</b>'s unique history, use instead:\n"
-                        f"    `git machete fork-point {branch} --override-to-parent`"
-                    )
-                # It's unlikely that anyone overrides fork point for a branch that doesn't have a parent,
-                # also it's unclear what the suggested action should even be - let's skip this case.
-
-            if cli_opts.opt_inferred:
-                print(fork_point_client.fork_point(branch=branch, use_overrides=False))
-            elif cli_opts.opt_override_to:
-                override_to = AnyRevision.of(cli_opts.opt_override_to)
-                fork_point_client.set_fork_point_override(branch, override_to)
-                # Let's issue the warning only if there are no errors from set_fork_point_override.
-                warn_on_deprecation(
-                    flag="--override-to=...",
-                    revision=override_to,
-                    revision_str="selected commit")
-            elif cli_opts.opt_override_to_inferred:
-                fork_point = fork_point_client.fork_point(branch=branch, use_overrides=False)
-                fork_point_client.set_fork_point_override(branch, fork_point)
-                warn_on_deprecation(
-                    flag="--override-to-inferred",
-                    revision=fork_point,
-                    revision_str="inferred commit")
-            elif cli_opts.opt_override_to_parent:
-                if upstream:
-                    fork_point_client.set_fork_point_override(branch, upstream)
-                else:
-                    raise MacheteException(
-                        f"Branch <b>{branch}</b> does not have upstream (parent) branch")
-            elif cli_opts.opt_unset_override:
-                fork_point_client.unset_fork_point_override(branch)
-            else:
-                print(fork_point_client.fork_point(branch=branch, use_overrides=True))
+            dispatch.fork_point(
+                git,
+                branch=cli_opts.opt_branch or git.get_current_branch(),
+                opt_inferred=cli_opts.opt_inferred,
+                opt_override_to=cli_opts.opt_override_to,
+                opt_override_to_inferred=cli_opts.opt_override_to_inferred,
+                opt_override_to_parent=cli_opts.opt_override_to_parent,
+                opt_unset_override=cli_opts.opt_unset_override)
         elif cmd in {"github", "gitlab"}:
             subcommand = parsed_cli.subcommand
             spec = GITHUB_CLIENT_SPEC if cmd == "github" else GITLAB_CLIENT_SPEC
@@ -728,85 +652,56 @@ def launch_internal(orig_args: List[str]) -> None:
             if cli_opts.opt_yes and subcommand != f"create-{pr_or_mr}":
                 raise MacheteException(f"`--yes` option is only valid with `create-{pr_or_mr}` subcommand.")
 
-            github_or_gitlab_client = MacheteClientWithCodeHosting(git, spec)
-            github_or_gitlab_client.read_branch_layout_file()
-
             if subcommand == f"anno-{pr_or_mr}s":
-                github_or_gitlab_client.sync_annotations_to_prs(include_urls=cli_opts.opt_with_urls)
+                dispatch.code_hosting_anno_prs(git, spec, include_urls=cli_opts.opt_with_urls)
             elif subcommand == f"checkout-{pr_or_mr}s":
                 if len(set(parsed_cli_as_dict.keys()).intersection({'all', 'by', 'mine', 'request_id'})) != 1:
                     raise MacheteException(
                         f"`checkout-{pr_or_mr}s` subcommand must take exactly one of the following options: "
                         f'`--all`, `--by=...`, `--mine`, `{pr_or_mr}-number(s)`')
-                github_or_gitlab_client.checkout_pull_requests(
+                dispatch.code_hosting_checkout_prs(
+                    git, spec,
                     pr_numbers=parsed_cli.request_id if 'request_id' in parsed_cli else [],
-                    all=cli_opts.opt_all,
-                    mine=cli_opts.opt_mine,
-                    by=cli_opts.opt_by,
-                    fail_on_missing_current_user_for_my_open_prs=True)
+                    opt_all=cli_opts.opt_all,
+                    opt_mine=cli_opts.opt_mine,
+                    opt_by=cli_opts.opt_by)
             elif subcommand == f"create-{pr_or_mr}":
-                current_branch = git.get_current_branch()
-                github_or_gitlab_client.sync_before_creating_pull_request(opt_yes=cli_opts.opt_yes)
-                github_or_gitlab_client.create_pull_request(
-                    head=current_branch,
+                dispatch.code_hosting_create_pr(
+                    git, spec,
                     opt_base=cli_opts.opt_base,
                     opt_draft=cli_opts.opt_draft,
                     opt_title=cli_opts.opt_title,
                     opt_update_related_descriptions=cli_opts.opt_update_related_descriptions,
                     opt_yes=cli_opts.opt_yes)
             elif subcommand == f"restack-{pr_or_mr}":
-                github_or_gitlab_client.restack_pull_request(opt_update_related_descriptions=cli_opts.opt_update_related_descriptions)
+                dispatch.code_hosting_restack_pr(git, spec,
+                                                 opt_update_related_descriptions=cli_opts.opt_update_related_descriptions)
             elif subcommand == f"retarget-{pr_or_mr}":
-                branch = cli_opts.opt_branch or git.get_current_branch()
-                github_or_gitlab_client.expect_in_managed_branches(branch)
-                github_or_gitlab_client.retarget_pull_request(
-                    head=branch,
+                dispatch.code_hosting_retarget_pr(
+                    git, spec,
+                    branch=cli_opts.opt_branch or git.get_current_branch(),
                     opt_ignore_if_missing=cli_opts.opt_ignore_if_missing,
-                    opt_update_related_descriptions=cli_opts.opt_update_related_descriptions
-                )
+                    opt_update_related_descriptions=cli_opts.opt_update_related_descriptions)
             elif subcommand == "sync":  # GitHub only
-                github_or_gitlab_client.checkout_pull_requests(pr_numbers=[], mine=True)
-                github_or_gitlab_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
-                github_or_gitlab_client.delete_untracked(opt_yes=cli_opts.opt_yes)
+                dispatch.code_hosting_sync(git, spec, opt_yes=cli_opts.opt_yes)
             elif subcommand == f"update-{pr_or_mr}-descriptions":
                 if len(set(parsed_cli_as_dict.keys()).intersection({'all', 'by', 'mine', 'related'})) != 1:
                     raise MacheteException(
                         f"`update-{pr_or_mr}-descriptions` subcommand must take exactly one of the following options: "
                         '`--all`, `--by=...`, `--mine`, `--related`')
-                github_or_gitlab_client.update_pull_request_descriptions(
-                    all=cli_opts.opt_all, by=cli_opts.opt_by, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
+                dispatch.code_hosting_update_pr_descriptions(
+                    git, spec,
+                    opt_all=cli_opts.opt_all,
+                    opt_by=cli_opts.opt_by,
+                    opt_mine=cli_opts.opt_mine,
+                    opt_related=cli_opts.opt_related)
             else:  # an unknown subcommand is handled by argparse
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")
         elif cmd in {"go", alias_by_command["go"]}:
-            git.expect_no_operation_in_progress()
-            current_branch_or_none = git.get_current_branch_or_none()
-
-            if parsed_cli.direction is not None:
-                go_client = GoShowMacheteClient(git)
-                go_client.read_branch_layout_file()
-                # with pick_if_multiple=True, there returned list will have exactly one element
-                dest = go_client.parse_direction(
-                    parsed_cli.direction, branch=current_branch_or_none,
-                    allow_current=False, pick_if_multiple=True)[0]
-                if dest != current_branch_or_none:
-                    print_fmt(f"Checking out <b>{dest}</b>... ", newline=False)
-                    git.checkout(dest)
-                    print_fmt(green_ok())
-            else:
-                interactive_client = GoInteractiveMacheteClient(git)
-                interactive_client.read_branch_layout_file()
-                interactive_client.expect_at_least_one_managed_branch()
-                selected_branch = interactive_client.go_interactive(current_branch=current_branch_or_none)
-                if selected_branch is not None and selected_branch != current_branch_or_none:
-                    print()
-                    print_fmt(f"Checking out <b>{selected_branch}</b>... ", newline=False)
-                    git.checkout(selected_branch)
-                    print_fmt(green_ok())
+            dispatch.go(git, direction=parsed_cli.direction)
         elif cmd == "is-managed":
-            is_managed_client = MacheteClient(git)
-            is_managed_client.read_branch_layout_file()
             branch = cli_opts.opt_branch or git.get_current_branch()
-            if branch is None or branch not in is_managed_client.managed_branches:
+            if not dispatch.is_managed(git, branch=branch):
                 sys.exit(ExitCode.MACHETE_EXCEPTION)
         elif cmd == "list":
             category = parsed_cli.category
@@ -814,57 +709,25 @@ def launch_internal(orig_args: List[str]) -> None:
                 raise MacheteException(f"`git machete list {category}` requires an extra <branch> argument")
             elif category != 'slidable-after' and cli_opts.opt_branch:
                 raise MacheteException(f"`git machete list {category}` does not expect extra arguments")
-
-            list_client = MacheteClient(git)
-            list_client.read_branch_layout_file()
-            res = []
-            if category == "addable":
-                res = list_client.addable_branches
-            elif category == "childless":
-                res = list_client.childless_managed_branches
-            elif category == "managed":
-                res = list_client.managed_branches
-            elif category == "slidable":
-                res = list_client.slidable_branches
-            elif category == "slidable-after":
-                list_client.expect_in_managed_branches(parsed_cli.branch)
-                res = list_client.get_slidable_after(parsed_cli.branch)
-            elif category == "unmanaged":
-                res = list_client.unmanaged_branches
-            elif category == "with-overridden-fork-point":
-                res = list_client.branches_with_overridden_fork_point
-            else:  # an unknown category is handled by argparse
-                raise UnexpectedMacheteException(f"Invalid category: `{category}`")
-
-            if res:
-                print("\n".join(res))
+            dispatch.list_branches(git, category=category, branch=cli_opts.opt_branch)
         elif cmd in {"log", alias_by_command["log"]}:
-            log_client = LogMacheteClient(git)
-            log_client.read_branch_layout_file()
-            branch = cli_opts.opt_branch or git.get_current_branch()
-            log_client.display_log(branch, extra_git_log_args=pass_through_args)
+            dispatch.log(
+                git,
+                branch=cli_opts.opt_branch or git.get_current_branch(),
+                extra_args=pass_through_args)
         elif cmd == "reapply":
-            reapply_client = MacheteClient(git)
-            reapply_client.read_branch_layout_file()
-            current_branch = git.get_current_branch()
-            if cli_opts.opt_fork_point is not None:
-                reapply_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-                    fork_point=cli_opts.opt_fork_point, branch=current_branch)
-
-            reapply_fork_point = cli_opts.opt_fork_point or reapply_client.fork_point(branch=current_branch, use_overrides=True)
-            reapply_client.rebase(
-                onto=reapply_fork_point,
-                from_exclusive=reapply_fork_point,
-                branch=current_branch,
+            dispatch.reapply(
+                git,
+                opt_fork_point=cli_opts.opt_fork_point,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase)
         elif cmd == "show":
             direction = parsed_cli.direction
             if direction == "current" and cli_opts.opt_branch:
                 raise MacheteException('`show current` with a `<branch>` argument does not make sense')
-            branch = cli_opts.opt_branch or git.get_current_branch()
-            show_client = GoShowMacheteClient(git)
-            show_client.read_branch_layout_file(verify_branches=False)
-            print('\n'.join(show_client.parse_direction(direction, branch=branch, allow_current=True, pick_if_multiple=False)))
+            dispatch.show(
+                git,
+                direction=direction,
+                branch=cli_opts.opt_branch or git.get_current_branch())
         elif cmd == "slide-out":
             if cli_opts.opt_down_fork_point and cli_opts.opt_merge:
                 raise MacheteException(
@@ -886,60 +749,35 @@ def launch_internal(orig_args: List[str]) -> None:
                     "Option `--no-edit-merge` only makes sense when using "
                     "merge and cannot be specified together with `--no-rebase`.")
 
-            slide_out_client = SlideOutMacheteClient(git)
-            slide_out_client.read_branch_layout_file()
             branches_to_slide_out: Optional[List[str]] = parsed_cli_as_dict.get('branches')
             if cli_opts.opt_removed_from_remote:
                 if (branches_to_slide_out or cli_opts.opt_down_fork_point or cli_opts.opt_merge or
                         cli_opts.opt_no_interactive_rebase or cli_opts.opt_no_rebase):
                     raise MacheteException("Only `--delete` can be passed with `--removed-from-remote`")
-                slide_out_client.slide_out_removed_from_remote(opt_delete=cli_opts.opt_delete)
-            else:
-                slide_out_client.slide_out(
-                    branches_to_slide_out=[LocalBranchShortName.of(branch)
-                                           for branch in (branches_to_slide_out or [git.get_current_branch()])],
-                    opt_delete=cli_opts.opt_delete,
-                    opt_down_fork_point=cli_opts.opt_down_fork_point,
-                    opt_merge=cli_opts.opt_merge,
-                    opt_no_edit_merge=cli_opts.opt_no_edit_merge,
-                    opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
-                    opt_no_rebase=cli_opts.opt_no_rebase)
-        elif cmd == "squash":
-            squash_client = SquashMacheteClient(git)
-            squash_client.read_branch_layout_file()
-            current_branch = git.get_current_branch()
-            if cli_opts.opt_fork_point is not None:
-                squash_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-                    fork_point=cli_opts.opt_fork_point, branch=current_branch)
 
-            squash_fork_point = cli_opts.opt_fork_point or squash_client.fork_point_or_none(branch=current_branch, use_overrides=True)
-            if squash_fork_point is None:
-                raise MacheteException(
-                    f"git-machete cannot determine the range of commits unique to branch <b>{current_branch}</b>.\n"
-                    f"Use `git machete squash --fork-point=...` to select the commit "
-                    f"after which the commits of <b>{current_branch}</b> start.\n"
-                    "For example, if you want to squash 3 latest commits, use `git machete squash --fork-point=HEAD~3`."
-                )
-            squash_client.squash(current_branch=current_branch, opt_fork_point=squash_fork_point)
+            dispatch.slide_out(
+                git,
+                branches=[LocalBranchShortName.of(branch)
+                          for branch in (branches_to_slide_out or [git.get_current_branch()])],
+                opt_delete=cli_opts.opt_delete,
+                opt_down_fork_point=cli_opts.opt_down_fork_point,
+                opt_merge=cli_opts.opt_merge,
+                opt_no_edit_merge=cli_opts.opt_no_edit_merge,
+                opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
+                opt_no_rebase=cli_opts.opt_no_rebase,
+                opt_removed_from_remote=cli_opts.opt_removed_from_remote)
+        elif cmd == "squash":
+            dispatch.squash(git, opt_fork_point=cli_opts.opt_fork_point)
         elif cmd in {"status", alias_by_command["status"]}:
-            opt_squash_merge_detection = squash_merge_detection()
-            status_client = StatusMacheteClient(git)
-            status_client.read_branch_layout_file(interactively_slide_out_invalid_branches=utils.is_stdout_a_tty())
-            status_client.expect_at_least_one_managed_branch()
-            status_client.status(
-                warn_when_branch_in_sync_but_fork_point_off=True,
+            dispatch.status(
+                git,
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_list_commits_with_hashes=cli_opts.opt_list_commits_with_hashes,
-                opt_squash_merge_detection=opt_squash_merge_detection)
+                opt_squash_merge_detection=squash_merge_detection())
         elif cmd in {"traverse", alias_by_command["traverse"]}:
-            opt_squash_merge_detection = squash_merge_detection()
-            opt_return_to = TraverseReturnTo.from_string(cli_opts.opt_return_to, "`--return-to` flag")
-            opt_start_from = TraverseStartFrom.from_string_or_branch(cli_opts.opt_start_from, git)
-
             spec = GITHUB_CLIENT_SPEC if cli_opts.opt_sync_github_prs else GITLAB_CLIENT_SPEC
-            traverse_client = TraverseMacheteClient(git, spec)
-            traverse_client.read_branch_layout_file(interactively_slide_out_invalid_branches=utils.is_stdout_a_tty())
-            traverse_client.traverse(
+            dispatch.traverse(
+                git,
                 opt_fetch=cli_opts.opt_fetch,
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_merge=cli_opts.opt_merge,
@@ -947,24 +785,23 @@ def launch_internal(orig_args: List[str]) -> None:
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_push_tracked=cli_opts.opt_push_tracked,
                 opt_push_untracked=cli_opts.opt_push_untracked,
-                opt_return_to=opt_return_to,
-                opt_squash_merge_detection=opt_squash_merge_detection,
-                opt_start_from=opt_start_from,
+                opt_return_to=cli_opts.opt_return_to,
+                opt_squash_merge_detection=squash_merge_detection(),
+                opt_start_from=cli_opts.opt_start_from,
                 opt_stop_after=cli_opts.opt_stop_after,
                 opt_sync_github_prs=cli_opts.opt_sync_github_prs,
                 opt_sync_gitlab_mrs=cli_opts.opt_sync_gitlab_mrs,
-                opt_yes=cli_opts.opt_yes)
+                opt_yes=cli_opts.opt_yes,
+                spec=spec)
         elif cmd == "update":
-            update_client = UpdateMacheteClient(git)
-            update_client.read_branch_layout_file()
-            if cli_opts.opt_fork_point is not None:
-                update_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-                    fork_point=cli_opts.opt_fork_point, branch=git.get_current_branch())
-            update_client.update(
+            dispatch.update(
+                git,
                 opt_merge=cli_opts.opt_merge,
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_fork_point=cli_opts.opt_fork_point)
+        elif cmd == "version":
+            version()
         else:  # an unknown command is handled by argparse
             raise UnexpectedMacheteException(f"Unknown command: `{cmd}`")
     finally:
