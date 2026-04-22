@@ -2,6 +2,10 @@ name: Bug Report
 description: Report a bug in git machete
 labels: ["bug"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        git machete leans on branch reflogs under `.git/logs/refs/`. Those files change as you work, and `git gc` can expire old entries. If you can, run `cp -r .git .git.bak` before you rewrite more history so we still have a snapshot to reproduce from later.
   - type: textarea
     id: description
     attributes:
@@ -23,14 +27,22 @@ body:
     id: expected
     attributes:
       label: Expected behavior
-      description: What you expected to happen.
+      description: What you expected to happen (command output, state of the repo, etc.).
     validations:
       required: true
   - type: textarea
     id: actual
     attributes:
       label: Actual behavior
-      description: What actually happened.
+      description: What actually happened (command output, errors, etc.).
+    validations:
+      required: true
+  - type: input
+    id: git_version
+    attributes:
+      label: git version
+      description: Output of `git --version`.
+      placeholder: "git version 2.x.x"
     validations:
       required: true
   - type: input
@@ -48,10 +60,31 @@ body:
       placeholder: "e.g. macOS 15, Ubuntu 24.04, Windows 11"
     validations:
       required: false
+  - type: markdown
+    attributes:
+      value: |
+        Extra logs are optional but they usually shorten the back-and-forth. Share whatever matches your NDAs or how sensitive the repo is.
+
+        1. `git machete --verbose <command>` (stdout and stderr) shows which git commands ran. Repo-specific bits are mostly commit hashes and local/remote branch names, not commit messages, paths, or file contents.
+
+        2. `git machete --debug <command>` adds full command output and more detail: branch logs (hashes), reflogs (often with commit messages), and `git config --list`. We try to scrub tokens from remote URLs; still give the paste a quick read before you send it.
+
+        3. For the heaviest case, add a tarball of `.git` after the debug run: `tar czvf dotgit.tgz .git/`. That is your whole local history, so it fits open source best. If the file is too big for GitHub's upload, put it on a branch or push `.git` as its own throwaway repo.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Verbose / debug output (optional)
+      description: Paste output from `git machete --verbose` or `git machete --debug` if you can share it.
+      placeholder: |
+        $ git machete --debug <problematic-command>
+        ...
+      render: false
+    validations:
+      required: false
   - type: textarea
     id: additional
     attributes:
       label: Additional context
-      description: Any other context about the problem.
+      description: Anything else (link to diagnostics archive, notes on what you already tried, etc.).
     validations:
       required: false

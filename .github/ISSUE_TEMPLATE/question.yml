@@ -2,6 +2,10 @@ name: Question
 description: Ask a question about git machete usage
 labels: ["question"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        If your question depends on behavior or version, including the output of `git --version` and `git machete version` (and optionally `git machete status`) usually speeds up answers.
   - type: textarea
     id: question
     attributes:
