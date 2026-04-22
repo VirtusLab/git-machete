@@ -5,7 +5,7 @@ from git_machete.client.base import MacheteClient
 from git_machete.git_operations import GitContext, LocalBranchShortName
 
 from .base_test import BaseTest
-from .mockers import rewrite_branch_layout_file
+from .mockers import read_branch_layout_file, rewrite_branch_layout_file
 from .mockers_git_repository import (check_out, commit,
                                      create_repo_with_remote, new_branch, push)
 
@@ -108,3 +108,75 @@ class TestClient(BaseTest):
         assert annotations[feature_8_branch].qualifiers.push is False
         assert annotations[feature_8_branch].text_without_qualifiers == 'annotation'
         assert str(annotations[feature_8_branch].qualifiers) == 'rebase=no push=no'
+
+    def test_branch_layout_leading_hash_comment_lines_ignored(self) -> None:
+        create_repo_with_remote()
+        new_branch('master')
+        commit()
+        push()
+        new_branch('develop')
+        commit()
+        new_branch('feature')
+        commit()
+        check_out('master')
+
+        rewrite_branch_layout_file(
+            """
+            master
+            # develop
+              feature
+            """)
+        machete_client = MacheteClient(GitContext())
+        machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
+
+        assert machete_client.managed_branches == [
+            LocalBranchShortName.of('master'),
+            LocalBranchShortName.of('feature'),
+        ]
+        assert machete_client.down_branches_for(LocalBranchShortName.of('master')) == [
+            LocalBranchShortName.of('feature')]
+
+    def test_branch_layout_hash_not_leading_whitespace_is_branch_or_annotation(self) -> None:
+        create_repo_with_remote()
+        new_branch('master')
+        commit()
+        push()
+        new_branch('feature')
+        commit()
+        check_out('master')
+
+        rewrite_branch_layout_file(
+            """
+            master
+            feature  note #123
+            """)
+        machete_client = MacheteClient(GitContext())
+        machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
+
+        feature = LocalBranchShortName.of('feature')
+        assert machete_client.managed_branches == [
+            LocalBranchShortName.of('master'),
+            feature,
+        ]
+        assert machete_client.annotations[feature].unformatted_full_text == 'note #123'
+
+    def test_save_branch_layout_file_does_not_preserve_hash_comment_lines(self) -> None:
+        create_repo_with_remote()
+        new_branch('master')
+        commit()
+        push()
+        new_branch('feature')
+        commit()
+        check_out('master')
+
+        rewrite_branch_layout_file(
+            """
+            master
+            # feature
+            """)
+        machete_client = MacheteClient(GitContext())
+        machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
+        machete_client.save_branch_layout_file()
+
+        assert '#' not in read_branch_layout_file()
+        assert read_branch_layout_file() == "master\n"

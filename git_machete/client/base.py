@@ -165,6 +165,11 @@ class MacheteClient:
         for index, line in enumerate(lines):
             if line == "":
                 continue
+            # Undocumented: lines whose first non-whitespace character is `#` are ignored as comments.
+            # They are not preserved when git-machete writes the branch layout file;
+            # supporting that would need an explicit strategy for comment placement and merging with programmatic edits.
+            if line.lstrip().startswith("#"):
+                continue
             prefix = "".join(itertools.takewhile(str.isspace, line))
             if prefix and not self.__indent:
                 self.__indent = prefix
