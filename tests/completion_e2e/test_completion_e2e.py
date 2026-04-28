@@ -27,6 +27,18 @@ test_cases: Dict[str, str] = {
         "develop master",
     "git machete add --onto=":
         "develop master",
+    # Mutex: with --as-root on the cmdline,
+    # `-f`/`--as-first-child` and `-o`/`--onto` MUST NOT be suggested.
+    "git machete add --as-root -":
+        "--debug -h --help -v --verbose -y --yes",
+    # Mutex: with --as-root and -f (== --as-first-child) on the cmdline,
+    # `-o`/`--onto` MUST NOT be suggested (mutex with --as-root).
+    "git machete add --as-root -f -":
+        "--debug -h --help -v --verbose -y --yes",
+    # Same mutex case as above, expressed with short flags `-R -f`;
+    # `-o`/`--onto` MUST NOT be suggested.
+    "git machete add -R -f -":
+        "--debug -h --help -v --verbose -y --yes",
     "git machete advance -":
         "--debug -h --help -v --verbose -y --yes",
     "git machete anno -":
@@ -37,6 +49,14 @@ test_cases: Dict[str, str] = {
         "develop master",
     "git machete anno --branch=":
         "develop master",
+    # Mutex: with --sync-github-prs (== -H) on the cmdline,
+    # `-L`/`--sync-gitlab-mrs` MUST NOT be suggested.
+    "git machete anno --sync-github-prs -":
+        "-b --branch --debug -h --help -v --verbose",
+    # Mutex: with --sync-gitlab-mrs (== -L) on the cmdline,
+    # `-H`/`--sync-github-prs` MUST NOT be suggested.
+    "git machete anno --sync-gitlab-mrs -":
+        "-b --branch --debug -h --help -v --verbose",
     "git machete completion ":
         "bash fish zsh",
     "git machete delete-unmanaged -":
@@ -57,6 +77,21 @@ test_cases: Dict[str, str] = {
         "--debug -h --help --inferred --override-to --override-to-inferred --override-to-parent --unset-override -v --verbose",
     "git machete fork-point --inferred ":
         "develop feature master",
+    # Mutex: with --inferred on the cmdline,
+    # `--override-to=`, `--override-to-parent`, `--override-to-inferred`,
+    # `--unset-override` MUST NOT be suggested.
+    "git machete fork-point --inferred -":
+        "--debug -h --help -v --verbose",
+    # Mutex: with --override-to-parent on the cmdline,
+    # `--inferred`, `--override-to=`, `--override-to-inferred`,
+    # `--unset-override` MUST NOT be suggested.
+    "git machete fork-point --override-to-parent -":
+        "--debug -h --help -v --verbose",
+    # Mutex: with --override-to-inferred on the cmdline,
+    # `--inferred`, `--override-to=`, `--override-to-parent`,
+    # `--unset-override` MUST NOT be suggested.
+    "git machete fork-point --override-to-inferred -":
+        "--debug -h --help -v --verbose",
     "git machete fork-point --override-to=":
         "HEAD develop feature master",
     "git machete fork-point --unset-override ":
@@ -123,6 +158,31 @@ test_cases: Dict[str, str] = {
         "--no-edit-merge --no-interactive-rebase --no-rebase --removed-from-remote -v --verbose",
     "git machete slide-out --down-fork-point=":
         "HEAD develop feature master",
+    # Mutex: with --merge on the cmdline, `-d`/`--down-fork-point=`,
+    # `--no-rebase`, `--no-interactive-rebase`, `--removed-from-remote`
+    # MUST NOT be suggested.
+    "git machete slide-out --merge -":
+        "--debug --delete -h --help -n --no-edit-merge -v --verbose",
+    # Same mutex case as above, expressed with the short flag `-M`.
+    "git machete slide-out -M -":
+        "--debug --delete -h --help -n --no-edit-merge -v --verbose",
+    # Mutex: with -n on the cmdline,
+    # `--no-edit-merge`, `--no-interactive-rebase`, `--removed-from-remote`
+    # MUST NOT be suggested.
+    "git machete slide-out -n -":
+        "-M -d --debug --delete --down-fork-point -h --help --merge --no-rebase -v --verbose",
+    # Mutex: with --no-rebase on the cmdline,
+    # `-d`/`--down-fork-point=`, `-M`/`--merge`, `--no-edit-merge`,
+    # `--no-interactive-rebase`, `--removed-from-remote`
+    # MUST NOT be suggested.
+    "git machete slide-out --no-rebase -":
+        "--debug --delete -h --help -n -v --verbose",
+    # Mutex: with --removed-from-remote on the cmdline,
+    # `-d`/`--down-fork-point=`, `-M`/`--merge`, `-n`, `--no-edit-merge`,
+    # `--no-interactive-rebase`, `--no-rebase` MUST NOT be suggested
+    # (only `--delete` is compatible with --removed-from-remote).
+    "git machete slide-out --removed-from-remote -":
+        "--debug --delete -h --help -v --verbose",
     "git machete squash -":
         "--debug -f --fork-point -h --help -v --verbose",
     "git machete squash --fork-point ":
@@ -163,10 +223,94 @@ test_cases: Dict[str, str] = {
         "develop feature master",
     "git machete traverse --stop-after=":
         "develop feature master",
+    # Mutex: with --push on the cmdline, `--no-push` MUST NOT be suggested.
+    "git machete traverse --push -":
+        "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
+        "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
+        "--no-push-untracked --push-untracked --return-to --start-from --stop-after "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
+    # Mutex: with --no-push on the cmdline, `--push` MUST NOT be suggested.
+    "git machete traverse --no-push -":
+        "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
+        "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
+        "--no-push-untracked --push-untracked --return-to --start-from --stop-after "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
+    # Mutex: with --push-untracked on the cmdline,
+    # `--no-push-untracked` MUST NOT be suggested.
+    "git machete traverse --push-untracked -":
+        "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
+        "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
+        "--no-push --push --return-to --start-from --stop-after "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
+    # Mutex: with --no-push-untracked on the cmdline,
+    # `--push-untracked` MUST NOT be suggested.
+    "git machete traverse --no-push-untracked -":
+        "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
+        "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
+        "--no-push --push --return-to --start-from --stop-after "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
+    # Mutex: with -W (== --fetch + --whole) on the cmdline,
+    # `-F`/`--fetch`, `-l`/`--list-commits`, `-w`/`--whole` MUST NOT be suggested.
+    "git machete traverse -W -":
+        "-H -L -M --debug -h --help --merge -n --no-detect-squash-merges "
+        "--no-edit-merge --no-interactive-rebase --no-push --no-push-untracked "
+        "--push --push-untracked --return-to --start-from --stop-after "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -y --yes",
+    # Mutex: with -F (== --fetch) on the cmdline, `-W` MUST NOT be suggested
+    # (since -W implies --fetch + --whole).
+    "git machete traverse -F -":
+        "-H -L -M --debug -h --help -l --list-commits --merge -n "
+        "--no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
+        "--no-push --no-push-untracked --push --push-untracked "
+        "--return-to --start-from --stop-after "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
+    # Mutex: with -H (== --sync-github-prs) on the cmdline,
+    # `-L`/`--sync-gitlab-mrs` MUST NOT be suggested.
+    "git machete traverse -H -":
+        "-F -M -W --debug --fetch -h --help -l --list-commits --merge -n "
+        "--no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
+        "--no-push --no-push-untracked --push --push-untracked "
+        "--return-to --start-from --stop-after -v --verbose -w --whole -y --yes",
+    # Mutex: with -M (== --merge) on the cmdline,
+    # `--no-interactive-rebase` MUST NOT be suggested.
+    "git machete traverse -M -":
+        "-F -H -L -W --debug --fetch -h --help -l --list-commits -n "
+        "--no-detect-squash-merges --no-edit-merge "
+        "--no-push --no-push-untracked --push --push-untracked "
+        "--return-to --start-from --stop-after "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
+    # Mutex: with -n on the cmdline,
+    # `--no-edit-merge`, `--no-interactive-rebase`, `-y`/`--yes` MUST NOT be suggested.
+    "git machete traverse -n -":
+        "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
+        "--no-detect-squash-merges "
+        "--no-push --no-push-untracked --push --push-untracked "
+        "--return-to --start-from --stop-after "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole",
+    # Mutex: with --no-interactive-rebase on the cmdline,
+    # `-n` and `-M`/`--merge` MUST NOT be suggested.
+    "git machete traverse --no-interactive-rebase -":
+        "-F -H -L -W --debug --fetch -h --help -l --list-commits "
+        "--no-detect-squash-merges --no-edit-merge "
+        "--no-push --no-push-untracked --push --push-untracked "
+        "--return-to --start-from --stop-after "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
+    # Mutex: with -y (== --yes) on the cmdline, `-n` MUST NOT be suggested
+    # (since --yes implies -n).
+    "git machete traverse -y -":
+        "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
+        "--no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
+        "--no-push --no-push-untracked --push --push-untracked "
+        "--return-to --start-from --stop-after "
+        "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole",
     "git machete update -":
         "-M --debug -f --fork-point -h --help --merge -n --no-edit-merge --no-interactive-rebase -v --verbose",
     "git machete update -f ":
         "HEAD develop feature master",
+    # Mutex: with -n on the cmdline,
+    # `--no-edit-merge` and `--no-interactive-rebase` MUST NOT be suggested.
+    "git machete update -n -":
+        "-M --debug -f --fork-point -h --help --merge -v --verbose",
     "git machete version ":
         ""
 }

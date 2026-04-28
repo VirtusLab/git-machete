@@ -20,8 +20,8 @@ _git-machete() {
           _arguments \
             '1:: :__git_machete_list_addable' \
             '(-R --as-root -f --as-first-child)'{-f,--as-first-child}'[Add the given branch as the first (instead of last) child of its parent]' \
-            '(-R --as-root -o --onto)'{-R,--as-root}'[Add the given branch as a new root]' \
-            '(-R --as-root -f --as-first-child)'{-o,--onto=}'[Specify the target parent branch to add the given branch onto]: :__git_machete_list_managed' \
+            '(-R --as-root -f --as-first-child -o --onto)'{-R,--as-root}'[Add the given branch as a new root]' \
+            '(-R --as-root -o --onto)'{-o,--onto=}'[Specify the target parent branch to add the given branch onto]: :__git_machete_list_managed' \
             '(-y --yes)'{-y,--yes}'[Do not ask for confirmation whether to create the branch or whether to add onto the inferred upstream]' \
             "${common_flags[@]}"
           ;;
@@ -67,11 +67,11 @@ _git-machete() {
           ;;
         (fork-point)
           _arguments '1:: :__git_branch_names' \
-            '(--override-to --override-to-inferred --override-to-parent --unset-override)'--inferred'[Display the fork point ignoring any potential override]' \
-            '(--inferred --unset-override --override-to-inferred --override-to-parent)'--override-to='[Override fork point to the given revision]: :__git_references' \
-            '(--inferred --unset-override --override-to --override-to-parent)'--override-to-inferred'[Override fork point to the inferred location]' \
-            '(--inferred --unset-override --override-to --override-to-inferred)'--override-to-parent'[Override fork point to the upstream (parent) branch]' \
-            '(--inferred --override-to --override-to-inferred --override-to-parent)'--unset-override='[Unset fork point override by removing machete.overrideForkPoint.<branch>.* configs]: :__git_machete_list_with_overridden_fork_point' \
+            '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--inferred'[Display the fork point ignoring any potential override]' \
+            '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--override-to='[Override fork point to the given revision]: :__git_references' \
+            '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--override-to-inferred'[Override fork point to the inferred location]' \
+            '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--override-to-parent'[Override fork point to the upstream (parent) branch]' \
+            '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--unset-override='[Unset fork point override by removing machete.overrideForkPoint.<branch>.* configs]: :__git_machete_list_with_overridden_fork_point' \
             "${common_flags[@]}"
           ;;
         (g|go)
@@ -115,14 +115,14 @@ _git-machete() {
           # TODO (#113): suggest further branches based on the previous specified branch (like in Bash completion script)
           _arguments \
             '*:: :__git_machete_list_slidable' \
-            '(--removed-from-remote -M --merge)'{-d,--down-fork-point=}'[If updating by rebase, specify fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
+            '(--removed-from-remote -M --merge --no-rebase -d --down-fork-point)'{-d,--down-fork-point=}'[If updating by rebase, specify fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
             '(--delete)'--delete'[Delete branches after sliding them out]' \
-            '(--removed-from-remote -d --down-fork-point --no-interactive-rebase)'{-M,--merge}'[Update by merge rather than by rebase]' \
-            '(--removed-from-remote --no-edit-merge --no-interactive-rebase)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
-            '(--removed-from-remote -n --no-interactive-rebase)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
-            '(--removed-from-remote -M --merge -n --no-edit-merge)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
-            '(--removed-from-remote -d --down-fork-point -M --merge --no-interactive-rebase --no-edit-merge)'--no-rebase'[Skip rebase of downstream branches after sliding out]' \
-            '(-d --down-fork-point -M --merge -n --no-edit-merge --no-interactive-rebase --no-rebase --delete)'--removed-from-remote'[Slide out all branches removed from the remote]' \
+            '(--removed-from-remote -d --down-fork-point --no-interactive-rebase --no-rebase -M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
+            '(--removed-from-remote -n --no-edit-merge --no-interactive-rebase)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
+            '(--removed-from-remote -n --no-edit-merge --no-interactive-rebase --no-rebase)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
+            '(--removed-from-remote -M --merge -n --no-edit-merge --no-interactive-rebase --no-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
+            '(--removed-from-remote -d --down-fork-point -M --merge --no-interactive-rebase --no-edit-merge --no-rebase)'--no-rebase'[Skip rebase of downstream branches after sliding out]' \
+            '(--removed-from-remote -d --down-fork-point -M --merge -n --no-edit-merge --no-interactive-rebase --no-rebase)'--removed-from-remote'[Slide out all branches removed from the remote]' \
             "${common_flags[@]}"
           ;;
         (squash)
@@ -140,34 +140,34 @@ _git-machete() {
           ;;
         (t|traverse)
           _arguments \
-            '(-W)'{-F,--fetch}'[Fetch the remotes of all managed branches at the beginning of traversal]' \
-            '(-L --sync-gitlab-mrs)'{-H,--sync-github-prs}'[Create and retarget GitHub PRs while traversing]' \
-            '(-H --sync-github-prs)'{-L,--sync-gitlab-mrs}'[Create and retarget GitLab MRs while traversing]' \
-            '(-W)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
-            '(--no-interactive-rebase)'{-M,--merge}'[Update by merge rather than by rebase]' \
-            '(--no-edit-merge --no-interactive-rebase -y --yes)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
+            '(-W -F --fetch)'{-F,--fetch}'[Fetch the remotes of all managed branches at the beginning of traversal]' \
+            '(-L --sync-gitlab-mrs -H --sync-github-prs)'{-H,--sync-github-prs}'[Create and retarget GitHub PRs while traversing]' \
+            '(-H --sync-github-prs -L --sync-gitlab-mrs)'{-L,--sync-gitlab-mrs}'[Create and retarget GitLab MRs while traversing]' \
+            '(-W -l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
+            '(--no-interactive-rebase -M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
+            '(-n --no-edit-merge --no-interactive-rebase -y --yes)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
             '(--no-detect-squash-merges)'--no-detect-squash-merges'[Only consider "strict" (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream]' \
-            '(-n --no-interactive-rebase)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
-            '(-n --no-edit-merge -M --merge)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
-            '(--push)'--no-push'[Do not push any (neither tracked nor untracked) branches to remote]' \
-            '(--push-untracked)'--no-push-untracked'[Do not push untracked branches to remote]' \
-            '(--no-push)'--push'[Push all (both tracked and untracked) branches to remote (default behavior)]' \
-            '(--no-push-untracked)'--push-untracked'[Push untracked branches to remote (default behavior)]' \
+            '(-n --no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
+            '(-n -M --merge --no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
+            '(--push --no-push)'--no-push'[Do not push any (neither tracked nor untracked) branches to remote]' \
+            '(--push-untracked --no-push-untracked)'--no-push-untracked'[Do not push untracked branches to remote]' \
+            '(--no-push --push)'--push'[Push all (both tracked and untracked) branches to remote (default behavior)]' \
+            '(--no-push-untracked --push-untracked)'--push-untracked'[Push untracked branches to remote (default behavior)]' \
             '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :__git_machete_opt_return_to_args' \
             '(--start-from)'--start-from='[The branch to start the traversal from; argument can be "here", "root", "first-root", or any branch name]: :__git_machete_opt_start_from_args_or_branches' \
             '(--stop-after)'--stop-after='[The branch to stop the traversal after]: :__git_branch_names' \
-            '(-W)'{-w,--whole}'[Equivalent to -n --start-from=first-root --return-to=nearest-remaining]' \
-            '(-F --fetch -l --list-commits -w --whole)'-W'[Equivalent to --fetch --whole]' \
-            '(-n)'{-y,--yes}'[Do not ask for any interactive input; implicates -n]' \
+            '(-W -w --whole)'{-w,--whole}'[Equivalent to -n --start-from=first-root --return-to=nearest-remaining]' \
+            '(-F --fetch -l --list-commits -w --whole -W)'-W'[Equivalent to --fetch --whole]' \
+            '(-n -y --yes)'{-y,--yes}'[Do not ask for any interactive input; implicates -n]' \
             "${common_flags[@]}"
           ;;
          (update)
           _arguments \
-            '(-M --merge)'{-f,--fork-point=}'[If updating by rebase, specify fork point commit after which the rebased part of history is meant to start]: :__git_references' \
-            '(-f --fork-point --no-interactive-rebase)'{-M,--merge}'[Update by merge rather than by rebase]' \
-            '(--no-edit-merge --no-interactive-rebase)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
-            '(-n --no-interactive-rebase)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
-            '(-n --no-edit-merge -M --merge)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
+            '(-M --merge -f --fork-point)'{-f,--fork-point=}'[If updating by rebase, specify fork point commit after which the rebased part of history is meant to start]: :__git_references' \
+            '(-f --fork-point --no-interactive-rebase -M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
+            '(-n --no-edit-merge --no-interactive-rebase)'-n'[If updating by rebase, equivalent to --no-interactive-rebase. If updating by merge, equivalent to --no-edit-merge]' \
+            '(-n --no-edit-merge)'--no-edit-merge'[If updating by merge, pass --no-edit flag to underlying git merge]' \
+            '(-n -M --merge --no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
             "${common_flags[@]}"
           ;;
       esac

@@ -3,6 +3,7 @@
 ## New in git-machete 3.40.1
 
 - fixed: ASCII-only mode is now applied separately for stdout and stderr so that stderr retains formatting when stdout is redirected (contributed by @tmchow)
+- improved: bash, zsh and fish completion scripts now consistently filter out mutually exclusive options (contributed by @CodeLine9)
 
 ## New in git-machete 3.40.0
 

@@ -22,6 +22,28 @@ _git_machete_seen_opt() {
   return 1
 }
 
+# Apply mutual exclusion to a space-separated options string.
+# Each subsequent argument is a mutually-exclusive group of options (space-separated).
+# If any option in a group is present on the current command line,
+# all options from that group are removed from the resulting string.
+# Usage: result=$(_git_machete_filter_mutex_groups "<opts>" "<group1>" "<group2>" ...)
+_git_machete_filter_mutex_groups() {
+  local opts=" $1 "
+  shift
+  local group
+  for group in "$@"; do
+    if _git_machete_seen_opt $group; then
+      local opt
+      for opt in $group; do
+        opts="${opts// $opt / }"
+      done
+    fi
+  done
+  opts="${opts# }"
+  opts="${opts% }"
+  echo "$opts"
+}
+
 _git_machete() {
   local cmds="add advance anno completion delete-unmanaged diff discover edit file fork-point github gitlab go help is-managed list log reapply show slide-out squash status traverse update version"
   local help_topics="$cmds config format hooks"
@@ -70,43 +92,26 @@ _git_machete() {
     -*)
       case ${COMP_WORDS[2]} in
         add)
-          local filtered_add_opts="$add_opts"
-          if _git_machete_seen_opt -R --as-root; then
-            filtered_add_opts=$(echo "$filtered_add_opts" | tr ' ' '\n' | grep -v '^\(-f\|--as-first-child\|-o\|--onto=\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -o --onto= || _git_machete_seen_opt -f --as-first-child; then
-            filtered_add_opts=$(echo "$filtered_add_opts" | tr ' ' '\n' | grep -v '^\(-R\|--as-root\)$' | tr '\n' ' ')
-          fi
+          local filtered_add_opts
+          filtered_add_opts=$(_git_machete_filter_mutex_groups "$add_opts" \
+            "-R --as-root -f --as-first-child" \
+            "-R --as-root -o --onto=")
           __gitcomp "$common_opts $filtered_add_opts"
           ;;
         advance) __gitcomp "$common_opts $advance_opts" ;;
         anno)
-          local filtered_anno_opts="$anno_opts"
-          if _git_machete_seen_opt -H --sync-github-prs; then
-            filtered_anno_opts=$(echo "$filtered_anno_opts" | tr ' ' '\n' | grep -v '^\(-L\|--sync-gitlab-mrs\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -L --sync-gitlab-mrs; then
-            filtered_anno_opts=$(echo "$filtered_anno_opts" | tr ' ' '\n' | grep -v '^\(-H\|--sync-github-prs\)$' | tr '\n' ' ')
-          fi
+          local filtered_anno_opts
+          filtered_anno_opts=$(_git_machete_filter_mutex_groups "$anno_opts" \
+            "-H --sync-github-prs -L --sync-gitlab-mrs")
           __gitcomp "$common_opts $filtered_anno_opts"
           ;;
         d|diff) __gitcomp "$common_opts $diff_opts" ;;
         delete-unmanaged) __gitcomp "$common_opts $delete_unmanaged_opts" ;;
         discover) __gitcomp "$common_opts $discover_opts" ;;
         fork-point)
-          local filtered_fork_point_opts="$fork_point_opts"
-          # Form 1: --inferred
-          if _git_machete_seen_opt --inferred; then
-            filtered_fork_point_opts=$(echo "$filtered_fork_point_opts" | tr ' ' '\n' | grep -v '^\(--override-to=\|--override-to-inferred\|--override-to-parent\|--unset-override\)$' | tr '\n' ' ')
-          fi
-          # Form 2: --override-to/--override-to-inferred/--override-to-parent
-          if _git_machete_seen_opt --override-to= --override-to-inferred --override-to-parent; then
-            filtered_fork_point_opts=$(echo "$filtered_fork_point_opts" | tr ' ' '\n' | grep -v '^\(--inferred\|--unset-override\)$' | tr '\n' ' ')
-          fi
-          # Form 3: --unset-override
-          if _git_machete_seen_opt --unset-override; then
-            filtered_fork_point_opts=$(echo "$filtered_fork_point_opts" | tr ' ' '\n' | grep -v '^\(--inferred\|--override-to=\|--override-to-inferred\|--override-to-parent\)$' | tr '\n' ' ')
-          fi
+          local filtered_fork_point_opts
+          filtered_fork_point_opts=$(_git_machete_filter_mutex_groups "$fork_point_opts" \
+            "--inferred --override-to= --override-to-inferred --override-to-parent --unset-override")
           __gitcomp "$common_opts $filtered_fork_point_opts"
           ;;
         github)
@@ -131,92 +136,48 @@ _git_machete() {
           esac ;;
         reapply) __gitcomp "$common_opts $reapply_opts" ;;
         slide-out)
-          local filtered_slide_out_opts="$slide_out_opts"
-          if _git_machete_seen_opt --removed-from-remote; then
-            filtered_slide_out_opts=$(echo "$filtered_slide_out_opts" | tr ' ' '\n' | grep -v '^\(-d\|--down-fork-point=\|-M\|--merge\|-n\|--no-edit-merge\|--no-interactive-rebase\|--no-rebase\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -M --merge; then
-            filtered_slide_out_opts=$(echo "$filtered_slide_out_opts" | tr ' ' '\n' | grep -v '^\(-d\|--down-fork-point=\|--no-interactive-rebase\|--removed-from-remote\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -d --down-fork-point=; then
-            filtered_slide_out_opts=$(echo "$filtered_slide_out_opts" | tr ' ' '\n' | grep -v '^\(-M\|--merge\|--no-rebase\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -n; then
-            filtered_slide_out_opts=$(echo "$filtered_slide_out_opts" | tr ' ' '\n' | grep -v '^\(--no-edit-merge\|--no-interactive-rebase\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt --no-edit-merge; then
-            filtered_slide_out_opts=$(echo "$filtered_slide_out_opts" | tr ' ' '\n' | grep -v '^\(-n\|--no-interactive-rebase\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt --no-interactive-rebase; then
-            filtered_slide_out_opts=$(echo "$filtered_slide_out_opts" | tr ' ' '\n' | grep -v '^\(-n\|--no-edit-merge\|-M\|--merge\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt --no-rebase; then
-            filtered_slide_out_opts=$(echo "$filtered_slide_out_opts" | tr ' ' '\n' | grep -v '^\(-d\|--down-fork-point=\|-M\|--merge\|--no-interactive-rebase\|--no-edit-merge\)$' | tr '\n' ' ')
-          fi
+          local filtered_slide_out_opts
+          filtered_slide_out_opts=$(_git_machete_filter_mutex_groups "$slide_out_opts" \
+            "--removed-from-remote -d --down-fork-point=" \
+            "--removed-from-remote -M --merge" \
+            "--removed-from-remote -n" \
+            "--removed-from-remote --no-edit-merge" \
+            "--removed-from-remote --no-interactive-rebase" \
+            "--removed-from-remote --no-rebase" \
+            "-M --merge -d --down-fork-point=" \
+            "-M --merge --no-interactive-rebase" \
+            "-M --merge --no-rebase" \
+            "-n --no-edit-merge" \
+            "-n --no-interactive-rebase" \
+            "--no-rebase -d --down-fork-point=" \
+            "--no-rebase --no-edit-merge" \
+            "--no-rebase --no-interactive-rebase")
           __gitcomp "$common_opts $filtered_slide_out_opts"
           ;;
         squash) __gitcomp "$common_opts $squash_opts" ;;
         s|status) __gitcomp "$common_opts $status_opts" ;;
         t|traverse)
-          local filtered_traverse_opts="$traverse_opts"
-          if _git_machete_seen_opt -W; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(-F\|--fetch\|-l\|--list-commits\|-w\|--whole\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -H --sync-github-prs; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(-L\|--sync-gitlab-mrs\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -L --sync-gitlab-mrs; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(-H\|--sync-github-prs\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -M --merge; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(--no-interactive-rebase\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -n; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(--no-edit-merge\|--no-interactive-rebase\|-y\|--yes\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt --no-edit-merge; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(-n\|--no-interactive-rebase\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt --no-interactive-rebase; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(-n\|--no-edit-merge\|-M\|--merge\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt --no-push; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(--push\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt --push; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(--no-push\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt --no-push-untracked; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(--push-untracked\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt --push-untracked; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(--no-push-untracked\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -w --whole; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(-W\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -y --yes; then
-            filtered_traverse_opts=$(echo "$filtered_traverse_opts" | tr ' ' '\n' | grep -v '^\(-n\)$' | tr '\n' ' ')
-          fi
+          local filtered_traverse_opts
+          filtered_traverse_opts=$(_git_machete_filter_mutex_groups "$traverse_opts" \
+            "-W -F --fetch" \
+            "-W -l --list-commits" \
+            "-W -w --whole" \
+            "-H --sync-github-prs -L --sync-gitlab-mrs" \
+            "-M --merge --no-interactive-rebase" \
+            "-n --no-edit-merge" \
+            "-n --no-interactive-rebase" \
+            "-n -y --yes" \
+            "--push --no-push" \
+            "--push-untracked --no-push-untracked")
           __gitcomp "$common_opts $filtered_traverse_opts"
           ;;
         update)
-          local filtered_update_opts="$update_opts"
-          if _git_machete_seen_opt -M --merge; then
-            filtered_update_opts=$(echo "$filtered_update_opts" | tr ' ' '\n' | grep -v '^\(-f\|--fork-point=\|--no-interactive-rebase\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -f --fork-point=; then
-            filtered_update_opts=$(echo "$filtered_update_opts" | tr ' ' '\n' | grep -v '^\(-M\|--merge\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt -n; then
-            filtered_update_opts=$(echo "$filtered_update_opts" | tr ' ' '\n' | grep -v '^\(--no-edit-merge\|--no-interactive-rebase\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt --no-edit-merge; then
-            filtered_update_opts=$(echo "$filtered_update_opts" | tr ' ' '\n' | grep -v '^\(-n\|--no-interactive-rebase\)$' | tr '\n' ' ')
-          fi
-          if _git_machete_seen_opt --no-interactive-rebase; then
-            filtered_update_opts=$(echo "$filtered_update_opts" | tr ' ' '\n' | grep -v '^\(-n\|--no-edit-merge\|-M\|--merge\)$' | tr '\n' ' ')
-          fi
+          local filtered_update_opts
+          filtered_update_opts=$(_git_machete_filter_mutex_groups "$update_opts" \
+            "-M --merge -f --fork-point=" \
+            "-M --merge --no-interactive-rebase" \
+            "-n --no-edit-merge" \
+            "-n --no-interactive-rebase")
           __gitcomp "$common_opts $filtered_update_opts"
           ;;
         *)
