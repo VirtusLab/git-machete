@@ -1,5 +1,5 @@
 import sys
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Type
 
 try:
     import termios
@@ -31,7 +31,7 @@ class GoInteractiveMacheteClient(StatusMacheteClient):
     _status_data: StatusData
     _current_branch: Optional[LocalBranchShortName]
     _max_visible_branches: int
-    _ansi_output_codes: FullTerminalAnsiOutputCodes
+    _ansi_output_codes: Type[FullTerminalAnsiOutputCodes]
 
     def _get_max_visible_branches(self) -> int:
         """Get the maximum number of branches that can be displayed based on terminal height."""
@@ -127,7 +127,7 @@ class GoInteractiveMacheteClient(StatusMacheteClient):
             raise MacheteException("Interactive `git machete go` requires stdout to be a TTY.")
 
         self._current_branch = current_branch
-        self._ansi_output_codes = FullTerminalAnsiOutputCodes() if is_terminal_fully_fledged() else BasicTerminalAnsiOutputCodes()
+        self._ansi_output_codes = FullTerminalAnsiOutputCodes if is_terminal_fully_fledged() else BasicTerminalAnsiOutputCodes
         self._max_visible_branches = self._get_max_visible_branches()
 
         # Compute status data once (no list-commits in TUI; config same as status)

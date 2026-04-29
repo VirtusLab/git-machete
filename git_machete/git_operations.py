@@ -10,7 +10,7 @@ from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
 
 from . import utils
 from .constants import MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
-from .utils import (CommandResult, UnderlyingGitException,
+from .utils import (PopenResult, UnderlyingGitException,
                     UnexpectedMacheteException, abspath_posix, debug,
                     escape_markup, hex_repr, join_paths_posix, print_fmt,
                     slurp_file)
@@ -277,15 +277,15 @@ class GitContext:
         return exit_code
 
     def _popen_git(self, git_cmd: str, *args: str,
-                   allow_non_zero: bool = False, env: Optional[Dict[str, str]] = None, input: Optional[str] = None) -> CommandResult:
-        exit_code, stdout, stderr = utils.popen_cmd(*GIT_EXEC, git_cmd, *args, env=env, input=input)
-        if not allow_non_zero and exit_code != 0:
+                   allow_non_zero: bool = False, env: Optional[Dict[str, str]] = None, input: Optional[str] = None) -> PopenResult:
+        result = utils.popen_cmd(*GIT_EXEC, git_cmd, *args, env=env, input=input)
+        if not allow_non_zero and result.exit_code != 0:
             cmd_repr = escape_markup(utils.get_cmd_shell_repr(*GIT_EXEC, git_cmd, *args, env=env))
-            exit_code_msg: str = f"`{cmd_repr}` returned {exit_code}\n"
-            stdout_msg: str = f"\n<b>stdout</b>:\n<dim>{escape_markup(stdout)}</dim>" if stdout else ""
-            stderr_msg: str = f"\n<b>stderr</b>:\n<dim>{escape_markup(stderr)}</dim>" if stderr else ""
+            exit_code_msg: str = f"`{cmd_repr}` returned {result.exit_code}\n"
+            stdout_msg: str = f"\n<b>stdout</b>:\n<dim>{escape_markup(result.stdout)}</dim>" if result.stdout else ""
+            stderr_msg: str = f"\n<b>stderr</b>:\n<dim>{escape_markup(result.stderr)}</dim>" if result.stderr else ""
             raise UnderlyingGitException(exit_code_msg + stdout_msg + stderr_msg)
-        return CommandResult(stdout, stderr, exit_code)
+        return result
 
     def get_git_version(self) -> Tuple[int, int, int]:
         if not self.__git_version:

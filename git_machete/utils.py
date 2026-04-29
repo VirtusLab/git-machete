@@ -1,5 +1,6 @@
 import datetime
 import inspect
+import itertools
 import os
 import re
 import subprocess
@@ -74,11 +75,6 @@ def is_terminal_fully_fledged() -> bool:
     return _terminal_fully_fledged
 
 
-def hex_repr(input: str) -> str:
-    # Skip the first two `0x` characters.
-    return ':'.join(hex(ord(char))[2:] for char in input)
-
-
 # === ANSI escape code classes ===
 
 class AnsiInputCodes:
@@ -123,9 +119,10 @@ class FullTerminalAnsiOutputCodes:
     SHOW_CURSOR = '\033[?25h'
     CLEAR_TO_END = '\033[J'
 
-    def cursor_up(self, num_lines: int) -> str:
+    @classmethod
+    def cursor_up(cls, num_lines: int) -> str:
         """CSI n A — move cursor up by num_lines."""
-        return self.CSI + str(num_lines) + "A"
+        return cls.CSI + str(num_lines) + "A"
 
 
 class BasicTerminalAnsiOutputCodes(FullTerminalAnsiOutputCodes):
@@ -156,26 +153,26 @@ def _fmt(s: str, *, use_ansi_escapes: bool) -> str:
     __dim_as_gray = os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true'
     dim = '\033[38;2;128;128;128m' if __dim_as_gray else '\033[2m'
 
-    ao = FullTerminalAnsiOutputCodes() if is_terminal_fully_fledged() else BasicTerminalAnsiOutputCodes()
+    ao = FullTerminalAnsiOutputCodes if is_terminal_fully_fledged() else BasicTerminalAnsiOutputCodes
 
     # pattern                                ansi replacement                            ascii replacement
     rules: List[Tuple[str, str, str]] = [
-        ('`(.*?)`',                         f'{ao.UNDERLINE}\\1{ao.ENDC_UNDERLINE}',    r'\1'),              # noqa: E241
-        ('<b>(.*?)</b>',                    f'{ao.BOLD}\\1{ao.ENDC_BOLD_DIM}',          r'\1'),              # noqa: E241
-        ('<u>(.*?)</u>',                    f'{ao.UNDERLINE}\\1{ao.ENDC_UNDERLINE}',    r'\1'),              # noqa: E241
-        ('<dim>(.*?)</dim>',                f'{dim}\\1{ao.ENDC_BOLD_DIM}',              r'\1'),              # noqa: E241
-        ('<gray>(.*?)</gray>',              f'{dim}\\1{ao.ENDC_BOLD_DIM}',              r'\1'),              # noqa: E241
-        ('<red>(.*?)</red>',                f'{ao.RED}\\1{ao.ENDC}',                    r'\1'),              # noqa: E241
-        ('<yellow>(.*?)</yellow>',          f'{ao.YELLOW}\\1{ao.ENDC}',                 r'\1'),              # noqa: E241
-        ('<green>(.*?)</green>',            f'{ao.GREEN}\\1{ao.ENDC}',                  r'\1'),              # noqa: E241
-        ('<orange>(.*?)</orange>',          f'{ao.ORANGE}\\1{ao.ENDC}',                 r'\1'),              # noqa: E241
-        ('<reverse>(.*?)</reverse>',        f'{ao.REVERSE_VIDEO}\\1{ao.ENDC}',          r'\1'),              # noqa: E241
-        ('<vbar/>',                          '│',                                        '|'),               # noqa: E241
-        ('<rarrow/>',                        '➔',                                        '->'),              # noqa: E241
-        (r'<ifansi:([^:]*):([^/]*)/>',      r'\1',                                      r'\2'),              # noqa: E241
-        ('&backtick;',                       '`',                                        '`'),               # noqa: E241
-        ('&lt;',                             '<',                                        '<'),               # noqa: E241
-        ('&amp;',                            '&',                                        '&'),               # noqa: E241
+        ('`(.*?)`',                           f'{ao.UNDERLINE}\\1{ao.ENDC_UNDERLINE}',    r'\1'),              # noqa: E241
+        ('<b>(.*?)</b>',                      f'{ao.BOLD}\\1{ao.ENDC_BOLD_DIM}',          r'\1'),              # noqa: E241
+        ('<u>(.*?)</u>',                      f'{ao.UNDERLINE}\\1{ao.ENDC_UNDERLINE}',    r'\1'),              # noqa: E241
+        ('<dim>(.*?)</dim>',                  f'{dim}\\1{ao.ENDC_BOLD_DIM}',              r'\1'),              # noqa: E241
+        ('<gray>(.*?)</gray>',                f'{dim}\\1{ao.ENDC_BOLD_DIM}',              r'\1'),              # noqa: E241
+        ('<red>(.*?)</red>',                  f'{ao.RED}\\1{ao.ENDC}',                    r'\1'),              # noqa: E241
+        ('<yellow>(.*?)</yellow>',            f'{ao.YELLOW}\\1{ao.ENDC}',                 r'\1'),              # noqa: E241
+        ('<green>(.*?)</green>',              f'{ao.GREEN}\\1{ao.ENDC}',                  r'\1'),              # noqa: E241
+        ('<orange>(.*?)</orange>',            f'{ao.ORANGE}\\1{ao.ENDC}',                 r'\1'),              # noqa: E241
+        ('<reverse>(.*?)</reverse>',          f'{ao.REVERSE_VIDEO}\\1{ao.ENDC}',          r'\1'),              # noqa: E241
+        ('<vbar/>',                            '│',                                        '|'),               # noqa: E241
+        ('<rarrow/>',                          '➔',                                        '->'),              # noqa: E241
+        ('<ifansi>(.*?)<else>(.*?)</ifansi>', r'\1',                                      r'\2'),              # noqa: E241
+        ('&backtick;',                         '`',                                        '`'),               # noqa: E241
+        ('&lt;',                               '<',                                        '<'),               # noqa: E241
+        ('&amp;',                              '&',                                        '&'),               # noqa: E241
     ]
 
     result = s
@@ -280,7 +277,7 @@ def excluding(iterable: Iterable[T], s: Iterable[T]) -> List[T]:
 
 
 def flat_map(func: Callable[[T], List[T]], iterable: Iterable[T]) -> List[T]:
-    return sum(map(func, iterable), [])
+    return list(itertools.chain.from_iterable(map(func, iterable)))
 
 
 def find_or_none(func: Callable[[T], bool], iterable: Iterable[T]) -> Optional[T]:
@@ -365,6 +362,11 @@ def get_current_date() -> str:
 
 
 # === Debug / logging ===
+
+def hex_repr(input: str) -> str:
+    # Skip the first two `0x` characters.
+    return ':'.join(hex(ord(char))[2:] for char in input)
+
 
 def compact_dict(d: Dict[str, Any]) -> Dict[str, str]:
     return {k: re.sub('\n +', ' ', str(v)) for k, v in d.items()}
@@ -587,9 +589,3 @@ class ParsableEnum(Enum):
             prefix = f"Invalid value for {from_where}" if from_where else "Invalid value"
             printed_value = value or '<empty>'
             raise MacheteException(f"{prefix}: `{printed_value}`. Valid values are {valid_values}")
-
-
-class CommandResult(NamedTuple):
-    stdout: str
-    stderr: str
-    exit_code: int

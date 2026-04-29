@@ -259,7 +259,7 @@ class TestUpdate(BaseTest):
         assert_failure(["update", "--no-interactive-rebase"], "Aborting.")
         assert get_commit_hash("branch-1") == original_branch_1_hash
 
-        E = FullTerminalAnsiOutputCodes()
+        E = FullTerminalAnsiOutputCodes
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)

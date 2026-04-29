@@ -10,7 +10,7 @@ fi
 
 if grep -Pn 'not __fish_seen_subcommand_from .*?--([a-zA-Z0-9-]+)[^a-zA-Z0-9-].*? -x.*? -l \1 .*?-a ' $file; then
   echo
-  echo "In fish completion ($file), a flag \`--<FLAG>\` with required parameter (-x) should not use \`not __fish_seen_subcommand_from <FLAG>\`."
-  echo 'If it does, as of fish v4.1.0, its parameter is not completed (-a) when the flag is used without `=` (`--foo <TAB>`).'
+  echo "In fish completion ($file), a flag \`--<FLAG>\` with required parameter (\`-x\`) should not use \`not __fish_seen_subcommand_from <FLAG>\`."
+  echo 'If it does, as of fish v4.1.0, its parameter is not completed (`-a`) when the flag is used without `=` (`--foo <TAB>`).'
   exit 1
 fi

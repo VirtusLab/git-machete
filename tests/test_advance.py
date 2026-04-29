@@ -185,7 +185,7 @@ class TestAdvance(BaseTest):
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("3"))
         assert_failure(["advance"], "Invalid index: 3")
 
-        E = FullTerminalAnsiOutputCodes()
+        E = FullTerminalAnsiOutputCodes
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)

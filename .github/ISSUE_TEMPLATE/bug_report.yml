@@ -50,7 +50,7 @@ body:
     attributes:
       label: git machete version
       description: Output of `git machete version`.
-      placeholder: "git machete version X.Y.Z"
+      placeholder: "git machete version 3.x.x"
     validations:
       required: true
   - type: input

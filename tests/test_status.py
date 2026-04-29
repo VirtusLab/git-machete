@@ -69,7 +69,7 @@ class TestStatus(BaseTest):
         assert_failure(['status'], expected_error_message)
 
     def test_single_invalid_branch_interactive_slide_out(self, mocker: MockerFixture) -> None:
-        E = FullTerminalAnsiOutputCodes()
+        E = FullTerminalAnsiOutputCodes
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
@@ -99,7 +99,7 @@ class TestStatus(BaseTest):
             assert_success(["status"], expected_output)
 
     def test_multiple_invalid_branches_interactive_slide_out(self, mocker: MockerFixture) -> None:
-        E = FullTerminalAnsiOutputCodes()
+        E = FullTerminalAnsiOutputCodes
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
@@ -520,7 +520,7 @@ class TestStatus(BaseTest):
                        "Invalid value for --squash-merge-detection flag: invalid. Valid values are none, simple, exact")
 
     def test_status_inferring_counterpart_for_fetching_of_branch(self, mocker: MockerFixture) -> None:
-        E = FullTerminalAnsiOutputCodes()
+        E = FullTerminalAnsiOutputCodes
         self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
@@ -583,7 +583,7 @@ class TestStatus(BaseTest):
         assert raw_output == expected_ansi
 
     def test_status_when_child_branch_is_pushed_immediately_after_creation(self, mocker: MockerFixture) -> None:
-        E = FullTerminalAnsiOutputCodes()
+        E = FullTerminalAnsiOutputCodes
         self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
@@ -653,7 +653,7 @@ class TestStatus(BaseTest):
         assert_success(['status', '-l'], expected_status_output)
 
     def test_status_yellow_edges(self, mocker: MockerFixture) -> None:
-        E = FullTerminalAnsiOutputCodes()
+        E = FullTerminalAnsiOutputCodes
         self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         with fixed_author_and_committer_date_in_past():
@@ -759,7 +759,7 @@ class TestStatus(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        E = FullTerminalAnsiOutputCodes()
+        E = FullTerminalAnsiOutputCodes
         self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         raw_output = launch_command('status', '--color=always')
@@ -934,7 +934,7 @@ class TestStatus(BaseTest):
         )
 
     def test_status_removed_from_remote(self, mocker: MockerFixture) -> None:
-        E = FullTerminalAnsiOutputCodes()
+        E = FullTerminalAnsiOutputCodes
         self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()

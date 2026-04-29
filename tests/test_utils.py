@@ -25,8 +25,8 @@ class TestUtils(BaseTest):
         assert foo["foo"] == 1  # and not string "1"
 
     def test_fmt(self, mocker: MockerFixture) -> None:
-        F = FullTerminalAnsiOutputCodes()
-        B = BasicTerminalAnsiOutputCodes()
+        F = FullTerminalAnsiOutputCodes
+        B = BasicTerminalAnsiOutputCodes
 
         input_string = '<red> red <yellow>yellow <b>yellow_bold</b> `yellow_underlined` yellow <green>green </green> default' \
                        ' <dim> dimmed </dim></yellow> <green>green `green_underlined`</green> default</red>'

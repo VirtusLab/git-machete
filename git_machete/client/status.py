@@ -156,7 +156,7 @@ class StatusMacheteClient(MacheteClient):
                     unicode_junc = "├─"
                 else:
                     unicode_junc = "└─"
-                junction = f"<ifansi:{unicode_junc}:{junc_char}-/>"
+                junction = f"<ifansi>{unicode_junc}<else>{junc_char}-</ifansi>"
                 write_line_prefix(branch, next_sibling_of_ancestor, junction + space)
             else:
                 if branch != data.roots[0]:
@@ -182,9 +182,9 @@ class StatusMacheteClient(MacheteClient):
                 else:
                     prefix = ""
                 if prefix:
-                    current = f"<b><red>{prefix}</red></b><b><u>{branch}</u><ifansi:: */></b>"
+                    current = f"<b><red>{prefix}</red></b><b><u>{branch}</u><ifansi><else> *</ifansi></b>"
                 else:
-                    current = f"<b><u>{branch}</u><ifansi:: */></b>"
+                    current = f"<b><u>{branch}</u><ifansi><else> *</ifansi></b>"
             else:
                 current = f"<b>{branch}</b>"
 

@@ -122,7 +122,7 @@ class TestDiscover(BaseTest):
         )
 
     def test_discover_checked_out_since_in_future(self, mocker: MockerFixture) -> None:
-        E = FullTerminalAnsiOutputCodes()
+        E = FullTerminalAnsiOutputCodes
         self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
         self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)

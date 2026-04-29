@@ -2,7 +2,7 @@
 import os
 import sys
 import textwrap
-from typing import Any, Tuple
+from typing import Any, Tuple, Type
 
 import pytest
 from pytest_mock import MockerFixture
@@ -16,7 +16,7 @@ from .mockers_git_repository import check_out, commit, create_repo, new_branch
 AI = AnsiInputCodes
 KEY_ENTER = '\r'
 
-AO = FullTerminalAnsiOutputCodes()
+AO = FullTerminalAnsiOutputCodes
 
 HEADER = (
     "Select branch (↑/↓: prev/next, Shift+↑/↓: first/last, ←: parent, →: child, "
@@ -24,7 +24,7 @@ HEADER = (
 )
 
 
-def _redraw_sequence(ao: FullTerminalAnsiOutputCodes, num_lines: int) -> str:
+def _redraw_sequence(ao: Type[FullTerminalAnsiOutputCodes], num_lines: int) -> str:
     """ANSI sequence to move cursor up num_lines and clear to end of screen (for TUI redraw)."""
     return ao.cursor_up(num_lines) + ao.CLEAR_TO_END
 
