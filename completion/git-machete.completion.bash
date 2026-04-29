@@ -1,5 +1,49 @@
 #!/usr/bin/env bash
 
+# Check if any of the given options appear in the current command line words.
+# Usage: _git_machete_seen_opt --opt1 -o --opt2 ...
+_git_machete_seen_opt() {
+  local opt
+  for opt in "$@"; do
+    local word
+    for word in "${COMP_WORDS[@]}"; do
+      # Handle options with = (e.g. --onto= matches --onto=* and --onto)
+      if [[ "$opt" == *"=" ]]; then
+        if [[ "$word" == "${opt%=}" || "$word" == "${opt}"* ]]; then
+          return 0
+        fi
+      else
+        if [[ "$word" == "$opt" ]]; then
+          return 0
+        fi
+      fi
+    done
+  done
+  return 1
+}
+
+# Apply mutual exclusion to a space-separated options string.
+# Each subsequent argument is a mutually-exclusive group of options (space-separated).
+# If any option in a group is present on the current command line,
+# all options from that group are removed from the resulting string.
+# Usage: result=$(_git_machete_filter_mutex_groups "<opts>" "<group1>" "<group2>" ...)
+_git_machete_filter_mutex_groups() {
+  local opts=" $1 "
+  shift
+  local group
+  for group in "$@"; do
+    if _git_machete_seen_opt $group; then
+      local opt
+      for opt in $group; do
+        opts="${opts// $opt / }"
+      done
+    fi
+  done
+  opts="${opts# }"
+  opts="${opts% }"
+  echo "$opts"
+}
+
 _git_machete() {
   local cmds="add advance anno completion delete-unmanaged diff discover edit file fork-point github gitlab go help is-managed list log reapply show slide-out squash status traverse update version"
   local help_topics="$cmds config format hooks"
@@ -47,13 +91,29 @@ _git_machete() {
     --stop-after=*) __gitcomp "$(__git_heads)" "" "${cur##--stop-after=}" ;;
     -*)
       case ${COMP_WORDS[2]} in
-        add) __gitcomp "$common_opts $add_opts" ;;
+        add)
+          local filtered_add_opts
+          filtered_add_opts=$(_git_machete_filter_mutex_groups "$add_opts" \
+            "-R --as-root -f --as-first-child" \
+            "-R --as-root -o --onto=")
+          __gitcomp "$common_opts $filtered_add_opts"
+          ;;
         advance) __gitcomp "$common_opts $advance_opts" ;;
-        anno) __gitcomp "$common_opts $anno_opts" ;;
+        anno)
+          local filtered_anno_opts
+          filtered_anno_opts=$(_git_machete_filter_mutex_groups "$anno_opts" \
+            "-H --sync-github-prs -L --sync-gitlab-mrs")
+          __gitcomp "$common_opts $filtered_anno_opts"
+          ;;
         d|diff) __gitcomp "$common_opts $diff_opts" ;;
         delete-unmanaged) __gitcomp "$common_opts $delete_unmanaged_opts" ;;
         discover) __gitcomp "$common_opts $discover_opts" ;;
-        fork-point) __gitcomp "$common_opts $fork_point_opts" ;;
+        fork-point)
+          local filtered_fork_point_opts
+          filtered_fork_point_opts=$(_git_machete_filter_mutex_groups "$fork_point_opts" \
+            "--inferred --override-to= --override-to-inferred --override-to-parent --unset-override")
+          __gitcomp "$common_opts $filtered_fork_point_opts"
+          ;;
         github)
           case ${COMP_WORDS[3]} in
             "anno-prs") __gitcomp "$common_opts $githublab_anno_opts" ;;
@@ -75,11 +135,51 @@ _git_machete() {
             *) __gitcomp "$common_opts" ;;
           esac ;;
         reapply) __gitcomp "$common_opts $reapply_opts" ;;
-        slide-out) __gitcomp "$common_opts $slide_out_opts" ;;
+        slide-out)
+          local filtered_slide_out_opts
+          filtered_slide_out_opts=$(_git_machete_filter_mutex_groups "$slide_out_opts" \
+            "--removed-from-remote -d --down-fork-point=" \
+            "--removed-from-remote -M --merge" \
+            "--removed-from-remote -n" \
+            "--removed-from-remote --no-edit-merge" \
+            "--removed-from-remote --no-interactive-rebase" \
+            "--removed-from-remote --no-rebase" \
+            "-M --merge -d --down-fork-point=" \
+            "-M --merge --no-interactive-rebase" \
+            "-M --merge --no-rebase" \
+            "-n --no-edit-merge" \
+            "-n --no-interactive-rebase" \
+            "--no-rebase -d --down-fork-point=" \
+            "--no-rebase --no-edit-merge" \
+            "--no-rebase --no-interactive-rebase")
+          __gitcomp "$common_opts $filtered_slide_out_opts"
+          ;;
         squash) __gitcomp "$common_opts $squash_opts" ;;
         s|status) __gitcomp "$common_opts $status_opts" ;;
-        t|traverse) __gitcomp "$common_opts $traverse_opts" ;;
-        update) __gitcomp "$common_opts $update_opts" ;;
+        t|traverse)
+          local filtered_traverse_opts
+          filtered_traverse_opts=$(_git_machete_filter_mutex_groups "$traverse_opts" \
+            "-W -F --fetch" \
+            "-W -l --list-commits" \
+            "-W -w --whole" \
+            "-H --sync-github-prs -L --sync-gitlab-mrs" \
+            "-M --merge --no-interactive-rebase" \
+            "-n --no-edit-merge" \
+            "-n --no-interactive-rebase" \
+            "-n -y --yes" \
+            "--push --no-push" \
+            "--push-untracked --no-push-untracked")
+          __gitcomp "$common_opts $filtered_traverse_opts"
+          ;;
+        update)
+          local filtered_update_opts
+          filtered_update_opts=$(_git_machete_filter_mutex_groups "$update_opts" \
+            "-M --merge -f --fork-point=" \
+            "-M --merge --no-interactive-rebase" \
+            "-n --no-edit-merge" \
+            "-n --no-interactive-rebase")
+          __gitcomp "$common_opts $filtered_update_opts"
+          ;;
         *)
           if [[ $COMP_CWORD -eq 2 ]]; then
             __gitcomp "$common_opts --version"
