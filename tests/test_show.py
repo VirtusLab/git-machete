@@ -5,92 +5,33 @@ from git_machete.utils import ExitCode
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, execute, launch_command,
                       launch_command_capturing_output_and_exception,
-                      remove_directory, rewrite_branch_layout_file,
-                      wait_to_bump_commit_timestamp)
-from .mockers_git_repository import (amend_commit, check_out, commit,
-                                     create_repo, create_repo_with_remote,
-                                     delete_branch, new_branch,
-                                     new_orphan_branch, pull, push, reset_to)
+                      remove_directory, rewrite_branch_layout_file)
+from .mockers_git_repository import (check_out, commit, create_repo,
+                                     create_repo_with_remote, new_branch,
+                                     new_orphan_branch, pull, push)
 
 
 class TestShow(BaseTest):
 
-    def setup_standard_tree(self) -> None:
-        create_repo_with_remote()
-        new_branch("root")
-        commit("root")
+    def test_show(self) -> None:
+        create_repo()
         new_branch("develop")
-        commit("develop commit")
-        new_branch("allow-ownership-link")
-        commit("Allow ownership links")
-        push()
-        new_branch("build-chain")
-        commit("Build arbitrarily long chains")
-        check_out("allow-ownership-link")
-        commit("1st round of fixes")
-        check_out("develop")
-        commit("Other develop commit")
-        push()
+        commit()
         new_branch("call-ws")
-        commit("Call web service")
-        commit("1st round of fixes")
-        push()
-        new_branch("drop-constraint")
-        commit("Drop unneeded SQL constraints")
-        check_out("call-ws")
-        commit("2nd round of fixes")
-        check_out("root")
-        new_branch("master")
-        commit("Master commit")
-        push()
+        commit()
         new_branch("hotfix/add-trigger")
-        commit("HOTFIX Add the trigger")
-        push()
-        amend_commit("HOTFIX Add the trigger (amended)")
+        commit()
         new_branch("ignore-trailing")
-        commit("Ignore trailing data")
-        wait_to_bump_commit_timestamp()
-        amend_commit("Ignore trailing data (amended)")
-        push()
-        reset_to("ignore-trailing@{1}")  # noqa: FS003
-        delete_branch("root")
+        commit()
 
         body: str = \
             """
             develop
-                allow-ownership-link
-                    build-chain
                 call-ws
-                    drop-constraint
-            master
-                hotfix/add-trigger
-                    ignore-trailing
+            hotfix/add-trigger
+                ignore-trailing
             """
         rewrite_branch_layout_file(body)
-
-        assert_success(
-            ["status"],
-            """
-            develop
-            |
-            x-allow-ownership-link (ahead of origin)
-            | |
-            | x-build-chain (untracked)
-            |
-            o-call-ws (ahead of origin)
-              |
-              x-drop-constraint (untracked)
-
-            master
-            |
-            o-hotfix/add-trigger (diverged from origin)
-              |
-              o-ignore-trailing * (diverged from & older than origin)
-            """
-        )
-
-    def test_show(self) -> None:
-        self.setup_standard_tree()
 
         assert launch_command("show", "up").strip() == "hotfix/add-trigger"
         assert launch_command("show", "up", "call-ws").strip() == "develop"

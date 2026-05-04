@@ -1392,8 +1392,10 @@ class TestTraverse(BaseTest):
 
     def test_traverse_start_from_nonexistent_branch(self) -> None:
         """Test error handling for non-existent branch names."""
-        self.setup_standard_tree()
-        check_out("develop")
+        create_repo()
+        new_branch("develop")
+        commit()
+        rewrite_branch_layout_file("develop")
 
         assert_failure(
             ["traverse", "--start-from=nonexistent-branch"],

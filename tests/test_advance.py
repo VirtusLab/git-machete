@@ -10,7 +10,8 @@ from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
                       launch_command_capturing_output_and_exception,
                       mock_input_returning, mock_input_returning_y,
-                      rewrite_branch_layout_file, wait_to_bump_commit_timestamp)
+                      rewrite_branch_layout_file,
+                      wait_to_bump_commit_timestamp)
 from .mockers_git_repository import (check_out, commit, create_repo,
                                      create_repo_with_remote, fetch,
                                      get_commit_hash, get_current_commit_hash,
