@@ -8,7 +8,7 @@ from tests.mockers import (assert_failure, assert_success, execute,
                            fixed_author_and_committer_date_in_past,
                            launch_command, mock_input_returning,
                            mock_input_returning_y, rewrite_branch_layout_file,
-                           sleep, write_to_file)
+                           wait_to_bump_commit_timestamp, write_to_file)
 from tests.mockers_code_hosting import mock_from_url
 from tests.mockers_git_repository import (add_remote, amend_commit, check_out,
                                           commit, create_repo,
@@ -71,7 +71,7 @@ class TestGitLabCreateMR(BaseTest):
         amend_commit("HOTFIX Add the trigger (amended)")
         new_branch("ignore-trailing")
         commit("Ignore trailing data")
-        sleep(1)
+        wait_to_bump_commit_timestamp()
         amend_commit("Ignore trailing data (amended)")
         push()
         reset_to("ignore-trailing@{1}")  # noqa: FS003

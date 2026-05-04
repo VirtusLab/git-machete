@@ -5,7 +5,8 @@ from git_machete.utils import ExitCode
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, execute, launch_command,
                       launch_command_capturing_output_and_exception,
-                      remove_directory, rewrite_branch_layout_file, sleep)
+                      remove_directory, rewrite_branch_layout_file,
+                      wait_to_bump_commit_timestamp)
 from .mockers_git_repository import (amend_commit, check_out, commit,
                                      create_repo, create_repo_with_remote,
                                      delete_branch, new_branch,
@@ -48,7 +49,7 @@ class TestShow(BaseTest):
         amend_commit("HOTFIX Add the trigger (amended)")
         new_branch("ignore-trailing")
         commit("Ignore trailing data")
-        sleep(1)
+        wait_to_bump_commit_timestamp()
         amend_commit("Ignore trailing data (amended)")
         push()
         reset_to("ignore-trailing@{1}")  # noqa: FS003

@@ -10,10 +10,11 @@ from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
                       launch_command_capturing_output_and_exception,
                       mock_input_returning, mock_input_returning_y,
-                      rewrite_branch_layout_file)
+                      rewrite_branch_layout_file, wait_to_bump_commit_timestamp)
 from .mockers_git_repository import (check_out, commit, create_repo,
-                                     create_repo_with_remote, get_commit_hash,
-                                     get_current_commit_hash, new_branch, push)
+                                     create_repo_with_remote, fetch,
+                                     get_commit_hash, get_current_commit_hash,
+                                     new_branch, push, reset_to)
 
 
 class TestAdvance(BaseTest):
@@ -323,10 +324,6 @@ class TestAdvance(BaseTest):
         Verify that when the branch diverged from and is older than remote after fast-forward,
         a warning is shown and push is not suggested.
         """
-        import time
-
-        from .mockers_git_repository import fetch, reset_to
-
         create_repo_with_remote()
         new_branch("root")
         commit("root-initial")
@@ -345,8 +342,7 @@ class TestAdvance(BaseTest):
         # Create divergence on remote: push a different commit as origin/root (newer timestamp)
         new_branch("temp-diverge")
         reset_to(initial_hash)
-        # Wait a bit to ensure newer timestamp
-        time.sleep(1)
+        wait_to_bump_commit_timestamp()
         commit("diverged-remote-newer")
         push(tracking_branch="root", set_upstream=False)
 
@@ -374,10 +370,6 @@ class TestAdvance(BaseTest):
         Verify that when the branch diverged from and is newer than remote after fast-forward,
         a warning is shown and push is not suggested.
         """
-        import time
-
-        from .mockers_git_repository import fetch, reset_to
-
         create_repo_with_remote()
         new_branch("root")
         commit("root-initial")
@@ -393,8 +385,7 @@ class TestAdvance(BaseTest):
         # Now make local diverge (newer timestamp) - this will be level-1-branch
         check_out("root")
         reset_to(root_hash)
-        # Wait a bit to ensure newer timestamp
-        time.sleep(1)
+        wait_to_bump_commit_timestamp()
         new_branch("level-1-branch")
         commit("diverged-local-newer")
 

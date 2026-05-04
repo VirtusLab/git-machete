@@ -152,8 +152,15 @@ def set_file_executable(file_name: str) -> None:
     os.chmod(file_name, 0o700)
 
 
-def sleep(seconds: int) -> None:
-    time.sleep(seconds)
+def wait_to_bump_commit_timestamp() -> None:
+    # Git committer dates have 1-second resolution, so to guarantee that two
+    # consecutive commits land on different committer-seconds we need to wait
+    # strictly more than 1 second of wall-clock time. A plain `time.sleep(1)`
+    # is not enough in practice: on macOS CI runners NTP can slew the wall
+    # clock backwards during the sleep, leaving both commits on the same
+    # committer-second and causing flaky `DIVERGED_FROM_AND_OLDER_THAN_REMOTE`
+    # vs. `DIVERGED_FROM_AND_NEWER_THAN_REMOTE` detection.
+    time.sleep(1.5)
 
 
 def remove_directory(file_path: str) -> None:
