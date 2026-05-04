@@ -49,6 +49,7 @@ _ prohibit-markdown-links-in-rst
 _ prohibit-mrs-in-github-files
 _ prohibit-prs-in-gitlab-files
 _ prohibit-single-backtick-in-rst
+_ prohibit-sleep-in-python
 _ prohibit-split-backslash-n
 _ prohibit-strings-split-without-delimiter
 _ prohibit-strings-with-backslash-continuation
