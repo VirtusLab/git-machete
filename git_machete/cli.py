@@ -273,7 +273,16 @@ class CustomArgumentParser(argparse.ArgumentParser):
             candidates: List[argparse.Action],
     ) -> List[argparse.Action]:
         """Return the originally-required actions belonging to an active parser
-        whose value didn't actually land in the namespace."""
+        whose value didn't actually land in the namespace.
+
+        Note: `argparse._get_positional_kwargs` on Python < 3.12 sets
+        `required=True` on `nargs='*'` positionals whenever the parser uses
+        `argument_default=argparse.SUPPRESS`, even though such positionals
+        legitimately accept zero values - see CPython gh-95292. We therefore
+        also filter on `nargs` here so a `nargs='*'` action that consumed
+        zero values is never reported as missing, regardless of what argparse
+        internally flagged as required.
+        """
         active = {id(p) for p in self._active_parser_chain(parsed)}
         owners = self._build_action_owner_map()
         parsed_keys = vars(parsed)
@@ -283,6 +292,8 @@ class CustomArgumentParser(argparse.ArgumentParser):
             if owner is None or id(owner) not in active:
                 continue
             if action.dest in (None, argparse.SUPPRESS):
+                continue
+            if action.nargs in ("?", "*", argparse.REMAINDER, argparse.SUPPRESS):
                 continue
             if action.dest not in parsed_keys:
                 missing.append(action)
