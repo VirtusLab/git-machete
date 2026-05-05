@@ -9,18 +9,18 @@ from git_machete.utils import (FullTerminalAnsiOutputCodes,
                                UnderlyingGitException)
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success,
-                      fixed_author_and_committer_date_in_past, launch_command,
+from .cli_runner import (assert_failure, assert_success, launch_command,
+                         rewrite_branch_layout_file)
+from .git_repository import (add_file_and_commit, add_remote, amend_commit,
+                             check_out, commit, create_repo,
+                             create_repo_with_remote, delete_branch,
+                             get_current_branch, get_git_version, merge,
+                             new_branch, push, remove_remote, reset_to,
+                             set_git_config_key, wait_to_bump_commit_timestamp)
+from .mockers import (fixed_author_and_committer_date_in_past,
                       mock_input_returning, mock_input_returning_y,
-                      overridden_environment, rewrite_branch_layout_file,
-                      wait_to_bump_commit_timestamp, write_to_file)
-from .mockers_git_repository import (add_file_and_commit, add_remote,
-                                     amend_commit, check_out, commit,
-                                     create_repo, create_repo_with_remote,
-                                     delete_branch, get_current_branch,
-                                     get_git_version, merge, new_branch, push,
-                                     remove_remote, reset_to,
-                                     set_git_config_key)
+                      overridden_environment)
+from .shell import write_to_file
 
 
 class TestTraverse(BaseTest):

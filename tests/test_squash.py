@@ -1,10 +1,11 @@
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success,
-                      fixed_author_and_committer_date_in_past,
-                      overridden_environment, popen)
-from .mockers_git_repository import (check_out, commit, create_repo,
-                                     get_current_commit_hash, new_branch)
+from .cli_runner import assert_failure, assert_success
+from .git_repository import (check_out, commit, create_repo,
+                             get_current_commit_hash, new_branch)
+from .mockers import (fixed_author_and_committer_date_in_past,
+                      overridden_environment)
+from .shell import popen
 
 
 class TestSquash(BaseTest):

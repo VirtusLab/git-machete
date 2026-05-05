@@ -1,8 +1,9 @@
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success,
-                      fixed_author_and_committer_date_in_past, launch_command,
-                      overridden_environment, rewrite_branch_layout_file)
-from .mockers_git_repository import check_out, commit, create_repo, new_branch
+from .cli_runner import (assert_failure, assert_success, launch_command,
+                         rewrite_branch_layout_file)
+from .git_repository import check_out, commit, create_repo, new_branch
+from .mockers import (fixed_author_and_committer_date_in_past,
+                      overridden_environment)
 
 
 class TestReapply(BaseTest):

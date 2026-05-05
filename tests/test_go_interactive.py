@@ -10,8 +10,9 @@ from pytest_mock import MockerFixture
 from git_machete.utils import AnsiInputCodes, FullTerminalAnsiOutputCodes
 
 from .base_test import BaseTest
-from .mockers import assert_failure, launch_command, rewrite_branch_layout_file
-from .mockers_git_repository import check_out, commit, create_repo, new_branch
+from .cli_runner import (assert_failure, launch_command,
+                         rewrite_branch_layout_file)
+from .git_repository import check_out, commit, create_repo, new_branch
 
 AI = AnsiInputCodes
 KEY_ENTER = '\r'

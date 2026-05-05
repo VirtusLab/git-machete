@@ -4,18 +4,18 @@ from git_machete.utils import (FullTerminalAnsiOutputCodes,
                                UnderlyingGitException)
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success, execute,
-                      execute_ignoring_exit_code,
-                      fixed_author_and_committer_date_in_past, launch_command,
+from .cli_runner import (assert_failure, assert_success, launch_command,
+                         rewrite_branch_layout_file)
+from .git_repository import (add_file_and_commit, check_out, commit,
+                             create_repo, get_commit_hash,
+                             get_current_commit_hash, get_git_version,
+                             is_ancestor_or_equal, new_branch,
+                             new_orphan_branch)
+from .mockers import (fixed_author_and_committer_date_in_past,
                       mock_input_returning, mock_input_returning_y,
-                      overridden_environment, popen, read_file,
-                      rewrite_branch_layout_file, set_file_executable,
-                      write_to_file)
-from .mockers_git_repository import (add_file_and_commit, check_out, commit,
-                                     create_repo, get_commit_hash,
-                                     get_current_commit_hash, get_git_version,
-                                     is_ancestor_or_equal, new_branch,
-                                     new_orphan_branch)
+                      overridden_environment)
+from .shell import (execute, execute_ignoring_exit_code, popen, read_file,
+                    set_file_executable, write_to_file)
 
 
 class TestUpdate(BaseTest):

@@ -4,9 +4,9 @@ from git_machete.cli import commands_and_aliases
 from git_machete.utils import ExitCode
 
 from .base_test import BaseTest
-from .mockers import (launch_command,
-                      launch_command_capturing_output_and_exception)
-from .mockers_git_repository import create_repo, set_git_config_key
+from .cli_runner import (launch_command,
+                         launch_command_capturing_output_and_exception)
+from .git_repository import create_repo, set_git_config_key
 
 
 class TestHelp(BaseTest):

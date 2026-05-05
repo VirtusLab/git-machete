@@ -4,9 +4,10 @@ import pytest
 from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success, launch_command,
-                      overridden_environment, read_file)
-from .mockers_git_repository import create_repo, set_git_config_key
+from .cli_runner import assert_failure, assert_success, launch_command
+from .git_repository import create_repo, set_git_config_key
+from .mockers import overridden_environment
+from .shell import read_file
 
 dummy_editor = "sh -c 'echo foo > $1' 'ignored_$0'"
 

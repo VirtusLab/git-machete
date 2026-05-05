@@ -1,7 +1,7 @@
 
 from git_machete import __version__
 
-from .mockers import assert_success
+from .cli_runner import assert_success
 
 
 class TestVersion:

@@ -5,9 +5,9 @@ from git_machete.client.base import MacheteClient
 from git_machete.git_operations import GitContext, LocalBranchShortName
 
 from .base_test import BaseTest
-from .mockers import read_branch_layout_file, rewrite_branch_layout_file
-from .mockers_git_repository import (check_out, commit,
-                                     create_repo_with_remote, new_branch, push)
+from .cli_runner import read_branch_layout_file, rewrite_branch_layout_file
+from .git_repository import (check_out, commit, create_repo_with_remote,
+                             new_branch, push)
 
 
 class TestClient(BaseTest):

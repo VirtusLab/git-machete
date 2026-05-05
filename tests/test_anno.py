@@ -2,11 +2,10 @@ from pytest_mock import MockerFixture
 
 from . import mockers_github, mockers_gitlab
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success, launch_command,
-                      rewrite_branch_layout_file)
-from .mockers_git_repository import (add_remote, check_out, commit,
-                                     create_repo, create_repo_with_remote,
-                                     new_branch)
+from .cli_runner import (assert_failure, assert_success, launch_command,
+                         rewrite_branch_layout_file)
+from .git_repository import (add_remote, check_out, commit, create_repo,
+                             create_repo_with_remote, new_branch)
 from .mockers_github import (MockGitHubAPIState,
                              mock_github_token_for_domain_fake)
 from .mockers_gitlab import (MockGitLabAPIState,

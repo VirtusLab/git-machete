@@ -8,19 +8,19 @@ from pytest_mock import MockerFixture
 from git_machete.utils import FullTerminalAnsiOutputCodes, abspath_posix
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success, execute,
-                      execute_ignoring_exit_code,
-                      fixed_author_and_committer_date_in_past, launch_command,
+from .cli_runner import (assert_failure, assert_success, launch_command,
+                         rewrite_branch_layout_file)
+from .git_repository import (add_file_and_commit, add_remote, check_out,
+                             commit, commit_n_times, create_repo,
+                             create_repo_with_remote, delete_branch,
+                             delete_remote_branch, new_branch,
+                             new_orphan_branch, push, set_git_config_key,
+                             unset_git_config_key)
+from .mockers import (fixed_author_and_committer_date_in_past,
                       mock_input_returning, mock_input_returning_y,
-                      overridden_environment, popen, remove_directory,
-                      rewrite_branch_layout_file, set_file_executable,
-                      write_to_file)
-from .mockers_git_repository import (add_file_and_commit, add_remote,
-                                     check_out, commit, commit_n_times,
-                                     create_repo, create_repo_with_remote,
-                                     delete_branch, delete_remote_branch,
-                                     new_branch, new_orphan_branch, push,
-                                     set_git_config_key, unset_git_config_key)
+                      overridden_environment)
+from .shell import (execute, execute_ignoring_exit_code, popen,
+                    remove_directory, set_file_executable, write_to_file)
 
 
 class TestStatus(BaseTest):

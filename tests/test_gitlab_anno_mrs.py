@@ -1,15 +1,13 @@
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
-from tests.mockers import (assert_failure, assert_success, launch_command,
-                           rewrite_branch_layout_file,
-                           wait_to_bump_commit_timestamp)
-from tests.mockers_git_repository import (add_remote, amend_commit, check_out,
-                                          commit, create_repo,
-                                          create_repo_with_remote,
-                                          delete_branch, new_branch, push,
-                                          remove_remote, reset_to,
-                                          set_git_config_key)
+from tests.cli_runner import (assert_failure, assert_success, launch_command,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (add_remote, amend_commit, check_out, commit,
+                                  create_repo, create_repo_with_remote,
+                                  delete_branch, new_branch, push,
+                                  remove_remote, reset_to, set_git_config_key,
+                                  wait_to_bump_commit_timestamp)
 from tests.mockers_gitlab import (MockGitLabAPIState,
                                   mock_gitlab_token_for_domain_fake,
                                   mock_mr_json, mock_urlopen)

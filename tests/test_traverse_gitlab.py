@@ -3,11 +3,12 @@ import textwrap
 from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success, mock_input_returning,
-                      rewrite_branch_layout_file)
+from .cli_runner import (assert_failure, assert_success,
+                         rewrite_branch_layout_file)
+from .git_repository import (check_out, commit, create_repo_with_remote,
+                             new_branch, push)
+from .mockers import mock_input_returning
 from .mockers_code_hosting import mock_from_url
-from .mockers_git_repository import (check_out, commit,
-                                     create_repo_with_remote, new_branch, push)
 from .mockers_gitlab import (MockGitLabAPIState,
                              mock_gitlab_token_for_domain_fake, mock_mr_json,
                              mock_urlopen)

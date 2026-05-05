@@ -1,15 +1,15 @@
 from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
-from .mockers import (assert_success, execute,
-                      fixed_author_and_committer_date_in_past, launch_command,
-                      mock__run_cmd_and_forward_stdout, mock_input_returning,
-                      rewrite_branch_layout_file)
-from .mockers_git_repository import (add_file_and_commit, amend_commit,
-                                     check_out, commit, create_repo,
-                                     create_repo_with_remote,
-                                     get_local_branches, new_branch, push,
-                                     set_git_config_key)
+from .cli_runner import (assert_success, launch_command,
+                         rewrite_branch_layout_file)
+from .git_repository import (add_file_and_commit, amend_commit, check_out,
+                             commit, create_repo, create_repo_with_remote,
+                             get_local_branches, new_branch, push,
+                             set_git_config_key)
+from .mockers import (fixed_author_and_committer_date_in_past,
+                      mock__run_cmd_and_forward_stdout, mock_input_returning)
+from .shell import execute
 
 
 class TestDeleteUnmanaged(BaseTest):

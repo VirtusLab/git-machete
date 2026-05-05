@@ -3,13 +3,13 @@ import os
 from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success, launch_command,
-                      launch_command_capturing_output_and_exception,
-                      mock_input_returning, rewrite_branch_layout_file)
-from .mockers_git_repository import (add_worktree, check_out, commit,
-                                     create_repo, get_commit_hash,
-                                     get_git_version, new_branch,
-                                     new_orphan_branch)
+from .cli_runner import (assert_failure, assert_success, launch_command,
+                         launch_command_capturing_output_and_exception,
+                         rewrite_branch_layout_file)
+from .git_repository import (add_worktree, check_out, commit, create_repo,
+                             get_commit_hash, get_git_version, new_branch,
+                             new_orphan_branch)
+from .mockers import mock_input_returning
 
 
 class TestGo(BaseTest):

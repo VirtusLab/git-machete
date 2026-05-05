@@ -27,11 +27,11 @@ class BaseTest:
             mocker.patch(symbol, target)
 
     def teardown_method(self) -> None:
+        # Chdir into an empty directory which is NOT a git repository.
+        # This way, no test can accidentally use a repository set up by a previous test.
+        os.chdir(BaseTest.empty_temp_dir)
+
         if len(self.expected_mock_methods) == 1:
             raise Exception("Patched method has never been called: " + list(self.expected_mock_methods)[0])
         elif len(self.expected_mock_methods) > 1:
             raise Exception("Patched methods have never been called: " + ", ".join(self.expected_mock_methods))
-
-        # Chdir into an empty directory which is NOT a git repository.
-        # This way, no test can accidentally use a repository set up by a previous test.
-        os.chdir(BaseTest.empty_temp_dir)

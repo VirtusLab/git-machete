@@ -1,11 +1,12 @@
 import os
 import re
 import subprocess
+import time
 from os import mkdir
 from tempfile import mkdtemp
 from typing import List, Optional, Tuple
 
-from tests.mockers import execute, popen, write_to_file
+from tests.shell import execute, popen, write_to_file
 
 
 def create_repo(name: str = "local", bare: bool = False, switch_dir_to_new_repo: bool = True) -> str:
@@ -168,3 +169,14 @@ def add_worktree(branch: str) -> str:
 def get_worktree_dirs() -> List[str]:
     lines = popen("git worktree list --porcelain").splitlines()
     return [line[len("worktree "):] for line in lines if line.startswith("worktree ")]
+
+
+def wait_to_bump_commit_timestamp() -> None:
+    # Git committer dates have 1-second resolution, so to guarantee that two
+    # consecutive commits land on different committer-seconds we need to wait
+    # strictly more than 1 second of wall-clock time. A plain `time.sleep(1)`
+    # is not enough in practice: on macOS CI runners NTP can slew the wall
+    # clock backwards during the sleep, leaving both commits on the same
+    # committer-second and causing flaky `DIVERGED_FROM_AND_OLDER_THAN_REMOTE`
+    # vs. `DIVERGED_FROM_AND_NEWER_THAN_REMOTE` detection.
+    time.sleep(1.5)

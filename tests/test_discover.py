@@ -7,12 +7,12 @@ from pytest_mock import MockerFixture
 from git_machete.utils import FullTerminalAnsiOutputCodes
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success, launch_command,
-                      mock_input_returning, overridden_environment, read_file,
-                      rewrite_branch_layout_file)
-from .mockers_git_repository import (check_out, commit, create_repo,
-                                     create_repo_with_remote, merge,
-                                     new_branch, push)
+from .cli_runner import (assert_failure, assert_success, launch_command,
+                         rewrite_branch_layout_file)
+from .git_repository import (check_out, commit, create_repo,
+                             create_repo_with_remote, merge, new_branch, push)
+from .mockers import mock_input_returning, overridden_environment
+from .shell import read_file
 
 
 class TestDiscover(BaseTest):

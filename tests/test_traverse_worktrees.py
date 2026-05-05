@@ -7,15 +7,15 @@ from pytest_mock import MockerFixture
 from git_machete.utils import UnderlyingGitException, abspath_posix
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success,
-                      fixed_author_and_committer_date_in_past, launch_command,
-                      mock_input_returning, rewrite_branch_layout_file)
-from .mockers_git_repository import (add_file_and_commit, add_worktree,
-                                     check_out, commit,
-                                     create_repo_with_remote,
-                                     get_current_branch, get_git_version,
-                                     get_worktree_dirs, new_branch, push,
-                                     set_git_config_key)
+from .cli_runner import (assert_failure, assert_success, launch_command,
+                         rewrite_branch_layout_file)
+from .git_repository import (add_file_and_commit, add_worktree, check_out,
+                             commit, create_repo_with_remote,
+                             get_current_branch, get_git_version,
+                             get_worktree_dirs, new_branch, push,
+                             set_git_config_key)
+from .mockers import (fixed_author_and_committer_date_in_past,
+                      mock_input_returning)
 
 # pytestmark is a special variable that pytest recognizes automatically.
 # It applies the specified marks to all test functions in this module.
@@ -30,7 +30,7 @@ class TestTraverseWorktrees(BaseTest):
 
     def test_traverse_with_worktrees(self) -> None:
         """Test that traverse can handle branches checked out in separate worktrees."""
-        from .mockers import execute
+        from .shell import execute
 
         create_repo_with_remote()
         new_branch("develop")

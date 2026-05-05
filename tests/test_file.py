@@ -5,9 +5,10 @@ from tempfile import mkdtemp
 from git_machete.utils import UnderlyingGitException
 
 from .base_test import BaseTest
-from .mockers import assert_failure, execute, launch_command
-from .mockers_git_repository import (commit, create_repo, get_git_version,
-                                     new_branch, set_git_config_key)
+from .cli_runner import assert_failure, launch_command
+from .git_repository import (commit, create_repo, get_git_version, new_branch,
+                             set_git_config_key)
+from .shell import execute
 
 
 class TestFile(BaseTest):

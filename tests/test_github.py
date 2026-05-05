@@ -8,16 +8,15 @@ from pytest_mock import MockerFixture
 from git_machete.code_hosting import OrganizationAndRepository
 from git_machete.github import GitHubClient, GitHubToken
 from tests.base_test import BaseTest
-from tests.mockers import (assert_failure, assert_success, launch_command,
-                           mock__popen_cmd_with_fixed_results,
-                           mock_input_returning_y, overridden_environment,
-                           rewrite_branch_layout_file)
+from tests.cli_runner import (assert_failure, assert_success, launch_command,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (add_remote, check_out, commit, create_repo,
+                                  create_repo_with_remote, delete_branch,
+                                  new_branch, push, set_git_config_key,
+                                  unset_git_config_key)
+from tests.mockers import (mock__popen_cmd_with_fixed_results,
+                           mock_input_returning_y, overridden_environment)
 from tests.mockers_code_hosting import mock_from_url, mock_shutil_which
-from tests.mockers_git_repository import (add_remote, check_out, commit,
-                                          create_repo, create_repo_with_remote,
-                                          delete_branch, new_branch, push,
-                                          set_git_config_key,
-                                          unset_git_config_key)
 from tests.mockers_github import (MockGitHubAPIState,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,

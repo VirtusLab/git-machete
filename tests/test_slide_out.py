@@ -3,16 +3,15 @@ import pytest
 from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
-from .mockers import (assert_failure, assert_success,
-                      fixed_author_and_committer_date_in_past, launch_command,
-                      mock_input_returning_y, read_branch_layout_file,
-                      read_file, rewrite_branch_layout_file,
-                      set_file_executable, write_to_file)
-from .mockers_git_repository import (amend_commit, check_out, commit,
-                                     create_repo, create_repo_with_remote,
-                                     delete_remote_branch, get_current_branch,
-                                     get_current_commit_hash,
-                                     get_local_branches, new_branch, push)
+from .cli_runner import (assert_failure, assert_success, launch_command,
+                         read_branch_layout_file, rewrite_branch_layout_file)
+from .git_repository import (amend_commit, check_out, commit, create_repo,
+                             create_repo_with_remote, delete_remote_branch,
+                             get_current_branch, get_current_commit_hash,
+                             get_local_branches, new_branch, push)
+from .mockers import (fixed_author_and_committer_date_in_past,
+                      mock_input_returning_y)
+from .shell import read_file, set_file_executable, write_to_file
 
 
 class TestSlideOut(BaseTest):

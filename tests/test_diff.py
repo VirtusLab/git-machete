@@ -1,10 +1,11 @@
 from pytest_mock import MockerFixture
 
 from .base_test import BaseTest
-from .mockers import (assert_success, mock__run_cmd_and_forward_stdout,
-                      write_to_file)
-from .mockers_git_repository import (add_file_and_commit,
-                                     create_repo_with_remote, new_branch, push)
+from .cli_runner import assert_success
+from .git_repository import (add_file_and_commit, create_repo_with_remote,
+                             new_branch, push)
+from .mockers import mock__run_cmd_and_forward_stdout
+from .shell import write_to_file
 
 
 class TestDiff(BaseTest):

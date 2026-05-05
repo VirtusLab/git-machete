@@ -3,14 +3,13 @@ import textwrap
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
-from tests.mockers import (assert_failure, assert_success, launch_command,
-                           rewrite_branch_layout_file)
+from tests.cli_runner import (assert_failure, assert_success, launch_command,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (add_remote, check_out, commit, create_repo,
+                                  create_repo_with_remote, new_branch, push,
+                                  remove_remote, set_git_config_key,
+                                  unset_git_config_key)
 from tests.mockers_code_hosting import mock_from_url
-from tests.mockers_git_repository import (add_remote, check_out, commit,
-                                          create_repo, create_repo_with_remote,
-                                          new_branch, push, remove_remote,
-                                          set_git_config_key,
-                                          unset_git_config_key)
 from tests.mockers_github import (MockGitHubAPIState,
                                   mock_github_token_for_domain_fake,
                                   mock_pr_json, mock_urlopen)
