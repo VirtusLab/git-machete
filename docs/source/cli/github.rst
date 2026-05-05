@@ -8,7 +8,7 @@ github
 
     git machete github <subcommand>
 
-where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``, ``retarget-pr``, ``restack-pr`` or ``update-pr-descriptions``.
+where ``<subcommand>`` is one of: ``anno-prs``, ``checkout-prs``, ``create-pr``, ``restack-pr``, ``retarget-pr`` or ``update-pr-descriptions``.
 
 Create, check out and manage GitHub PRs while keeping them reflected in branch layout file.
 

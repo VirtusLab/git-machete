@@ -148,7 +148,8 @@ test_cases: Dict[str, str] = {
     "git machete reapply --fork-point ":
         "HEAD develop feature master",
     "git machete s -":
-        "-L --color --debug -h --help -l --list-commits --list-commits-with-hashes --no-detect-squash-merges -v --verbose",
+        "-L --color --debug -h --help -l --list-commits --list-commits-with-hashes "
+        "--no-detect-squash-merges --squash-merge-detection -v --verbose",
     "git machete show ":
         "current down first last next prev root up",
     "git machete slide-out ":
@@ -190,15 +191,20 @@ test_cases: Dict[str, str] = {
     "git machete squash --fork-point=":
         "HEAD develop feature master",
     "git machete status -":
-        "-L --color --debug -h --help -l --list-commits --list-commits-with-hashes --no-detect-squash-merges -v --verbose",
+        "-L --color --debug -h --help -l --list-commits --list-commits-with-hashes "
+        "--no-detect-squash-merges --squash-merge-detection -v --verbose",
     "git machete status --color ":
         "always auto never",
     "git machete status --color=":
         "always auto never",
+    "git machete status --squash-merge-detection ":
+        "exact none simple",
+    "git machete status --squash-merge-detection=":
+        "exact none simple",
     "git machete t -":
         "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
         "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
-        "--no-push --no-push-untracked --push --push-untracked --return-to --start-from --stop-after "
+        "--no-push --no-push-untracked --push --push-untracked --return-to --squash-merge-detection --start-from --stop-after "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
     "git machete t --return-to ":
         "HERE NEAREST-REMAINING STAY",
@@ -211,12 +217,16 @@ test_cases: Dict[str, str] = {
     "git machete traverse -":
         "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
         "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
-        "--no-push --no-push-untracked --push --push-untracked --return-to --start-from --stop-after "
+        "--no-push --no-push-untracked --push --push-untracked --return-to --squash-merge-detection --start-from --stop-after "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
     "git machete traverse --return-to ":
         "HERE NEAREST-REMAINING STAY",
     "git machete traverse --return-to=":
         "HERE NEAREST-REMAINING STAY",
+    "git machete traverse --squash-merge-detection ":
+        "exact none simple",
+    "git machete traverse --squash-merge-detection=":
+        "exact none simple",
     "git machete traverse --start-from ":
         "FIRST-ROOT HERE ROOT develop feature master",
     "git machete traverse --stop-after ":
@@ -227,34 +237,34 @@ test_cases: Dict[str, str] = {
     "git machete traverse --push -":
         "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
         "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
-        "--no-push-untracked --push-untracked --return-to --start-from --stop-after "
+        "--no-push-untracked --push-untracked --return-to --squash-merge-detection --start-from --stop-after "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
     # Mutex: with --no-push on the cmdline, `--push` MUST NOT be suggested.
     "git machete traverse --no-push -":
         "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
         "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
-        "--no-push-untracked --push-untracked --return-to --start-from --stop-after "
+        "--no-push-untracked --push-untracked --return-to --squash-merge-detection --start-from --stop-after "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
     # Mutex: with --push-untracked on the cmdline,
     # `--no-push-untracked` MUST NOT be suggested.
     "git machete traverse --push-untracked -":
         "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
         "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
-        "--no-push --push --return-to --start-from --stop-after "
+        "--no-push --push --return-to --squash-merge-detection --start-from --stop-after "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
     # Mutex: with --no-push-untracked on the cmdline,
     # `--push-untracked` MUST NOT be suggested.
     "git machete traverse --no-push-untracked -":
         "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
         "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
-        "--no-push --push --return-to --start-from --stop-after "
+        "--no-push --push --return-to --squash-merge-detection --start-from --stop-after "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
     # Mutex: with -W (== --fetch + --whole) on the cmdline,
     # `-F`/`--fetch`, `-l`/`--list-commits`, `-w`/`--whole` MUST NOT be suggested.
     "git machete traverse -W -":
         "-H -L -M --debug -h --help --merge -n --no-detect-squash-merges "
         "--no-edit-merge --no-interactive-rebase --no-push --no-push-untracked "
-        "--push --push-untracked --return-to --start-from --stop-after "
+        "--push --push-untracked --return-to --squash-merge-detection --start-from --stop-after "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -y --yes",
     # Mutex: with -F (== --fetch) on the cmdline, `-W` MUST NOT be suggested
     # (since -W implies --fetch + --whole).
@@ -262,7 +272,7 @@ test_cases: Dict[str, str] = {
         "-H -L -M --debug -h --help -l --list-commits --merge -n "
         "--no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
         "--no-push --no-push-untracked --push --push-untracked "
-        "--return-to --start-from --stop-after "
+        "--return-to --squash-merge-detection --start-from --stop-after "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
     # Mutex: with -H (== --sync-github-prs) on the cmdline,
     # `-L`/`--sync-gitlab-mrs` MUST NOT be suggested.
@@ -270,14 +280,14 @@ test_cases: Dict[str, str] = {
         "-F -M -W --debug --fetch -h --help -l --list-commits --merge -n "
         "--no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
         "--no-push --no-push-untracked --push --push-untracked "
-        "--return-to --start-from --stop-after -v --verbose -w --whole -y --yes",
+        "--return-to --squash-merge-detection --start-from --stop-after -v --verbose -w --whole -y --yes",
     # Mutex: with -M (== --merge) on the cmdline,
     # `--no-interactive-rebase` MUST NOT be suggested.
     "git machete traverse -M -":
         "-F -H -L -W --debug --fetch -h --help -l --list-commits -n "
         "--no-detect-squash-merges --no-edit-merge "
         "--no-push --no-push-untracked --push --push-untracked "
-        "--return-to --start-from --stop-after "
+        "--return-to --squash-merge-detection --start-from --stop-after "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
     # Mutex: with -n on the cmdline,
     # `--no-edit-merge`, `--no-interactive-rebase`, `-y`/`--yes` MUST NOT be suggested.
@@ -285,7 +295,7 @@ test_cases: Dict[str, str] = {
         "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
         "--no-detect-squash-merges "
         "--no-push --no-push-untracked --push --push-untracked "
-        "--return-to --start-from --stop-after "
+        "--return-to --squash-merge-detection --start-from --stop-after "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole",
     # Mutex: with --no-interactive-rebase on the cmdline,
     # `-n` and `-M`/`--merge` MUST NOT be suggested.
@@ -293,7 +303,7 @@ test_cases: Dict[str, str] = {
         "-F -H -L -W --debug --fetch -h --help -l --list-commits "
         "--no-detect-squash-merges --no-edit-merge "
         "--no-push --no-push-untracked --push --push-untracked "
-        "--return-to --start-from --stop-after "
+        "--return-to --squash-merge-detection --start-from --stop-after "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole -y --yes",
     # Mutex: with -y (== --yes) on the cmdline, `-n` MUST NOT be suggested
     # (since --yes implies -n).
@@ -301,7 +311,7 @@ test_cases: Dict[str, str] = {
         "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
         "--no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
         "--no-push --no-push-untracked --push --push-untracked "
-        "--return-to --start-from --stop-after "
+        "--return-to --squash-merge-detection --start-from --stop-after "
         "--sync-github-prs --sync-gitlab-mrs -v --verbose -w --whole",
     "git machete update -":
         "-M --debug -f --fork-point -h --help --merge -n --no-edit-merge --no-interactive-rebase -v --verbose",

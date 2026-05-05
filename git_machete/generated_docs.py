@@ -172,7 +172,7 @@ long_docs: Dict[str, str] = {
    """,
     "clean": """
         <b>Usage:</b><b>
-           git machete clean [-c|--checkout-my-github-prs] [-y|--yes]</b>
+           git machete clean [-H|--checkout-my-github-prs] [-y|--yes]</b>
 
         <b>Deprecated.</b> Use `github checkout-prs --mine`, `delete-unmanaged` and `slide-out --removed-from-remote`.
 
@@ -194,7 +194,7 @@ long_docs: Dict[str, str] = {
 
         <b>Options:</b>
 
-           <b>-c</b>, <b>--checkout-my-github-prs</b>
+           <b>-H</b>, <b>--checkout-my-github-prs</b>
               Checkout your open PRs into local branches.
 
            <b>-y</b>, <b>--yes</b>
@@ -605,7 +605,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete github <subcommand></b>
 
-        where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `retarget-pr`, `restack-pr` or `update-pr-descriptions`.
+        where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `restack-pr`, `retarget-pr` or `update-pr-descriptions`.
 
         Create, check out and manage GitHub PRs while keeping them reflected in branch layout file.
 
@@ -802,7 +802,7 @@ long_docs: Dict[str, str] = {
         <b>Usage:</b><b>
            git machete gitlab <subcommand></b>
 
-        where `<subcommand>` is one of: `anno-mrs`, `checkout-mrs`, `create-mr`, `retarget-mr`, `restack-mr` or `update-mr-descriptions`.
+        where `<subcommand>` is one of: `anno-mrs`, `checkout-mrs`, `create-mr`, `restack-mr`, `retarget-mr` or `update-mr-descriptions`.
 
         Create, check out and manage GitLab MRs while keeping them reflected in branch layout file.
 

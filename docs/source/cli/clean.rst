@@ -6,7 +6,7 @@ clean
 
 .. code-block:: shell
 
-    git machete clean [-c|--checkout-my-github-prs] [-y|--yes]
+    git machete clean [-H|--checkout-my-github-prs] [-y|--yes]
 
 **Deprecated.** Use ``github checkout-prs --mine``, ``delete-unmanaged`` and ``slide-out --removed-from-remote``.
 
@@ -28,7 +28,7 @@ Equivalent of ``git machete github sync`` if invoked with ``-H`` or ``--checkout
 
 **Options:**
 
--c, --checkout-my-github-prs    Checkout your open PRs into local branches.
+-H, --checkout-my-github-prs    Checkout your open PRs into local branches.
 
 -y, --yes                       Don't ask for confirmation when deleting branches from git.
 

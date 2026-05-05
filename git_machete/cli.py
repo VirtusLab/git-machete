@@ -482,6 +482,9 @@ def create_cli_parser() -> argparse.ArgumentParser:
         parser.add_argument('request_id', nargs='*', type=int)
         parser.add_argument('-b', '--branch')
         parser.add_argument('--all', action='store_true')
+        # Intentionally undocumented (see commit 336c152): an escape hatch for the rare
+        # case when the parent branch detected by git-machete isn't the desired PR/MR
+        # base. Not exposed in --help, RST docs, manpage or shell completions on purpose.
         parser.add_argument('--base')
         parser.add_argument('--by')
         parser.add_argument('--draft', action='store_true')

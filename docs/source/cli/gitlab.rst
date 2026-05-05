@@ -8,7 +8,7 @@ gitlab
 
     git machete gitlab <subcommand>
 
-where ``<subcommand>`` is one of: ``anno-mrs``, ``checkout-mrs``, ``create-mr``, ``retarget-mr``, ``restack-mr`` or ``update-mr-descriptions``.
+where ``<subcommand>`` is one of: ``anno-mrs``, ``checkout-mrs``, ``create-mr``, ``restack-mr``, ``retarget-mr`` or ``update-mr-descriptions``.
 
 Create, check out and manage GitLab MRs while keeping them reflected in branch layout file.
 

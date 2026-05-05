@@ -55,6 +55,7 @@ _git_machete() {
   local locations="current $directions"
   local opt_color_args="always auto never"
   local opt_return_to_args="HERE NEAREST-REMAINING STAY"
+  local opt_squash_merge_detection_args="exact none simple"
   local opt_start_from_args="HERE ROOT FIRST-ROOT"
   local shells="bash fish zsh"
 
@@ -75,8 +76,8 @@ _git_machete() {
   local reapply_opts="-f --fork-point="
   local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase --no-rebase --removed-from-remote"
   local squash_opts="-f --fork-point="
-  local status_opts="--color= -L --list-commits-with-hashes -l --list-commits --no-detect-squash-merges"
-  local traverse_opts="-F --fetch -H --sync-github-prs -L --sync-gitlab-mrs -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --no-push-untracked --push --push-untracked --return-to= --start-from= --stop-after= -w --whole -W -y --yes"
+  local status_opts="--color= -L --list-commits-with-hashes -l --list-commits --no-detect-squash-merges --squash-merge-detection="
+  local traverse_opts="-F --fetch -H --sync-github-prs -L --sync-gitlab-mrs -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --no-push-untracked --push --push-untracked --return-to= --squash-merge-detection= --start-from= --stop-after= -w --whole -W -y --yes"
   local update_opts="-f --fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
 
   cur=${COMP_WORDS[$COMP_CWORD]}
@@ -87,6 +88,7 @@ _git_machete() {
     --down-fork-point=*|--fork-point=*|--override-to=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
     --return-to=*) __gitcomp "$opt_return_to_args" "" "${cur##--return-to=}" ;;
     --roots=*) __gitcomp "$(__git_heads)" "" "${cur##--roots=}" ;;
+    --squash-merge-detection=*) __gitcomp "$opt_squash_merge_detection_args" "" "${cur##--squash-merge-detection=}" ;;
     --start-from=*) __gitcomp "$opt_start_from_args $(__git_heads)" "" "${cur##--start-from=}" ;;
     --stop-after=*) __gitcomp "$(__git_heads)" "" "${cur##--stop-after=}" ;;
     -*)
@@ -208,6 +210,7 @@ _git_machete() {
           --return-to) __gitcomp "$opt_return_to_args" ;;
           # TODO (#111): complete the comma-separated list of roots
           -r|--roots) __gitcomp "$(__git_heads)" ;;
+          --squash-merge-detection) __gitcomp "$opt_squash_merge_detection_args" ;;
           --start-from) __gitcomp "$opt_start_from_args $(__git_heads)" ;;
           --stop-after) __gitcomp "$(__git_heads)" ;;
           --unset-override) __gitcomp_nl "$(git machete list with-overridden-fork-point 2>/dev/null)" ;;

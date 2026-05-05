@@ -66,12 +66,12 @@ _git-machete() {
           _arguments "${common_flags[@]}"
           ;;
         (fork-point)
-          _arguments '1:: :__git_branch_names' \
+          _arguments '1:: :__git_machete_fork_point_branch_arg' \
             '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--inferred'[Display the fork point ignoring any potential override]' \
             '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--override-to='[Override fork point to the given revision]: :__git_references' \
             '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--override-to-inferred'[Override fork point to the inferred location]' \
             '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--override-to-parent'[Override fork point to the upstream (parent) branch]' \
-            '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--unset-override='[Unset fork point override by removing machete.overrideForkPoint.<branch>.* configs]: :__git_machete_list_with_overridden_fork_point' \
+            '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--unset-override'[Unset fork point override by removing machete.overrideForkPoint.<branch>.* configs]' \
             "${common_flags[@]}"
           ;;
         (g|go)
@@ -136,6 +136,7 @@ _git-machete() {
             '(-L --list-commits-with-hashes)'{-L,--list-commits-with-hashes}'[List the short hashes and messages of commits introduced on each branch]' \
             '(-l --list-commits)'{-l,--list-commits}'[List the messages of commits introduced on each branch]' \
             '(--no-detect-squash-merges)'--no-detect-squash-merges'[Only consider "strict" (fast-forward or 2-parent) merges, rather than rebase/squash merges, when detecting if a branch is merged into its upstream]' \
+            '(--squash-merge-detection)'--squash-merge-detection='[Mode of detection of squash merges; argument can be "none", "simple" or "exact"]: :__git_machete_opt_squash_merge_detection_args' \
             "${common_flags[@]}"
           ;;
         (t|traverse)
@@ -154,6 +155,7 @@ _git-machete() {
             '(--no-push --push)'--push'[Push all (both tracked and untracked) branches to remote (default behavior)]' \
             '(--no-push-untracked --push-untracked)'--push-untracked'[Push untracked branches to remote (default behavior)]' \
             '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :__git_machete_opt_return_to_args' \
+            '(--squash-merge-detection)'--squash-merge-detection='[Mode of detection of squash merges; argument can be "none", "simple" or "exact"]: :__git_machete_opt_squash_merge_detection_args' \
             '(--start-from)'--start-from='[The branch to start the traversal from; argument can be "here", "root", "first-root", or any branch name]: :__git_machete_opt_start_from_args_or_branches' \
             '(--stop-after)'--stop-after='[The branch to stop the traversal after]: :__git_branch_names' \
             '(-W -w --whole)'{-w,--whole}'[Equivalent to -n --start-from=first-root --return-to=nearest-remaining]' \
@@ -427,6 +429,16 @@ __git_machete_opt_return_to_args() {
   _describe 'return-to argument' opt_return_to
 }
 
+__git_machete_opt_squash_merge_detection_args() {
+  local opt_squash_merge_detection
+  opt_squash_merge_detection=(
+    'none:disable squash merge detection entirely'
+    'simple:the default - detect squashes by checking if the merge base of the branch and its upstream matches the branch'
+    'exact:detect squashes by checking if there is a commit on the upstream whose tree matches that of the branch tip'
+  )
+  _describe 'squash-merge-detection argument' opt_squash_merge_detection
+}
+
 __git_machete_opt_start_from_args() {
   local opt_start_from
   opt_start_from=(
@@ -463,6 +475,17 @@ __git_machete_list_with_overridden_fork_point() {
   local result
   IFS=$'\n' result=($(git machete list with-overridden-fork-point 2>/dev/null))
   _describe 'branch with overridden fork point' result
+}
+
+# Positional <branch> for `git machete fork-point`: when --unset-override is on the
+# command line, the branch must be one whose fork-point override is being unset
+# (i.e. one currently with an override); otherwise any local branch is allowed.
+__git_machete_fork_point_branch_arg() {
+  if (( ${words[(I)--unset-override]} )); then
+    __git_machete_list_with_overridden_fork_point
+  else
+    __git_branch_names
+  fi
 }
 
 __git_machete_completion_shells() {

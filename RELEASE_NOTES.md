@@ -2,7 +2,8 @@
 
 ## New in git-machete 3.40.2
 
-- improved: CLI errors now suggest close matches for typo'd subcommands, flags and choices
+- improved: CLI error messages now suggest close matches for typo'd subcommands, flags and choices
+- fixed: minor glitches in shell completions
 
 ## New in git-machete 3.40.1
 

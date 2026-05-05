@@ -4,5 +4,8 @@ Don't pipe command outputs through `head` or `tail`, I'd like to see the full ou
 
 Don't `git commit` or `git push` unless I explicitly ask for it.
 
+When running completion end-to-end tests on macOS, skip the zsh subset (they're flaky on Mac):
+`tox -e test-completions -- -k "not zsh"`. CI runs the full set on Linux.
+
 Don't leave whitespace at the end of the lines.
 Always leave a single newline at the end of the file.

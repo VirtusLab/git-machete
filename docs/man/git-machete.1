@@ -542,7 +542,7 @@ Used to store GitLab API token. Used by commands such as \fBanno \-\-sync\-gitla
 .INDENT 3.5
 .sp
 .EX
-git machete clean [\-c|\-\-checkout\-my\-github\-prs] [\-y|\-\-yes]
+git machete clean [\-H|\-\-checkout\-my\-github\-prs] [\-y|\-\-yes]
 .EE
 .UNINDENT
 .UNINDENT
@@ -575,7 +575,7 @@ For enterprise domains, non\-standard URLs etc., check git config keys in \fBgit
 \fBOptions:\fP
 .INDENT 0.0
 .TP
-.B  \-c\fP,\fB  \-\-checkout\-my\-github\-prs
+.B  \-H\fP,\fB  \-\-checkout\-my\-github\-prs
 Checkout your open PRs into local branches.
 .TP
 .B  \-y\fP,\fB  \-\-yes
@@ -925,7 +925,7 @@ git machete github <subcommand>
 .UNINDENT
 .UNINDENT
 .sp
-where \fB<subcommand>\fP is one of: \fBanno\-prs\fP, \fBcheckout\-prs\fP, \fBcreate\-pr\fP, \fBretarget\-pr\fP, \fBrestack\-pr\fP or \fBupdate\-pr\-descriptions\fP\&.
+where \fB<subcommand>\fP is one of: \fBanno\-prs\fP, \fBcheckout\-prs\fP, \fBcreate\-pr\fP, \fBrestack\-pr\fP, \fBretarget\-pr\fP or \fBupdate\-pr\-descriptions\fP\&.
 .sp
 Create, check out and manage GitHub PRs while keeping them reflected in branch layout file.
 .sp
@@ -1205,7 +1205,7 @@ git machete gitlab <subcommand>
 .UNINDENT
 .UNINDENT
 .sp
-where \fB<subcommand>\fP is one of: \fBanno\-mrs\fP, \fBcheckout\-mrs\fP, \fBcreate\-mr\fP, \fBretarget\-mr\fP, \fBrestack\-mr\fP or \fBupdate\-mr\-descriptions\fP\&.
+where \fB<subcommand>\fP is one of: \fBanno\-mrs\fP, \fBcheckout\-mrs\fP, \fBcreate\-mr\fP, \fBrestack\-mr\fP, \fBretarget\-mr\fP or \fBupdate\-mr\-descriptions\fP\&.
 .sp
 Create, check out and manage GitLab MRs while keeping them reflected in branch layout file.
 .sp
