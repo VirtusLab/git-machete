@@ -5,11 +5,10 @@ import difflib
 import itertools
 import os
 import pkgutil
-import re
 import sys
 import textwrap
-from typing import (Any, Dict, Iterable, List, NoReturn, Optional, Sequence,
-                    Tuple, TypeVar, Union)
+from typing import (Any, Dict, Iterable, Iterator, List, NoReturn, Optional,
+                    Sequence, Set, Tuple, TypeVar, Union)
 
 import git_machete.options
 from git_machete import __version__, utils
@@ -141,7 +140,6 @@ class MacheteHelpAction(argparse.Action):
 
 _CLOSE_MATCH_CUTOFF = 0.6
 _MAX_SUGGESTIONS = 3
-_MISSING_REQUIRED_RE = re.compile(r"^the following arguments are required: (.+)$")
 
 
 def _format_choices(choices: Iterable[Any]) -> str:
@@ -158,19 +156,39 @@ def _format_suggestions(suggestions: List[str]) -> str:
     return f"Did you mean: {quoted}?"
 
 
+def _displayed_action_name(action: argparse.Action) -> str:
+    """Mirrors argparse's `_get_action_name` precedence (option strings -> metavar -> dest)."""
+    if action.option_strings:
+        return "/".join(action.option_strings)
+    if action.metavar not in (None, argparse.SUPPRESS):
+        # `metavar` is typed as `Optional[str]` but at this point it cannot be None or SUPPRESS.
+        return str(action.metavar)
+    return action.dest
+
+
 class CustomArgumentParser(argparse.ArgumentParser):
-    """An ArgumentParser with friendlier error messages.
+    """An ArgumentParser with friendlier - and fully owned - error messages.
 
-    The default argparse error for invalid choices, missing required positionals
-    with `choices=`, and unknown options is generally too terse - and worse,
-    suggests no fix when the user makes a typo. This parser:
+    The standard argparse failure modes (invalid choice, missing required
+    positional, unknown option) are too terse and offer no fix when the user
+    makes a typo. Worse, the only public extension point - `error()` - sees
+    pre-formatted English strings, which forces any enrichment to pattern-match
+    on argparse's wording and breaks under translations or future Python
+    versions.
 
-    * augments invalid-choice errors with `difflib`-based "did you mean" hints,
-    * enriches "the following arguments are required: NAME" with the choices
-      defined for NAME (looked up from the parser's actions, no string patching),
-    * routes unknown options through the active subparser so the suggested
-      alternatives are scoped to the (sub)command actually being invoked,
-    * skips argparse's auto-generated `usage:` and `prog: error:` boilerplate,
+    To avoid that coupling, this parser:
+
+    * overrides `_check_value` so invalid-choice errors are raised with our own
+      message including `difflib.get_close_matches` hints,
+    * overrides `parse_args` to disable argparse's built-in "missing required"
+      check (by clearing `action.required` across the parser tree before
+      delegating to `parse_known_args`), then re-validates afterwards using
+      direct introspection of the `Action` objects - no string parsing of
+      argparse output,
+    * scopes "unrecognized argument" suggestions to the active subparser, so
+      the proposed alternatives are options the dispatched (sub)command will
+      actually accept,
+    * skips argparse's auto-generated `usage:` / `prog: error:` boilerplate,
       since `MacheteHelpAction` is the canonical place for usage output.
     """
 
@@ -188,32 +206,109 @@ class CustomArgumentParser(argparse.ArgumentParser):
             args: Optional[Sequence[str]] = None,
             namespace: Optional[argparse.Namespace] = None,
     ) -> argparse.Namespace:
-        parsed, leftovers = self.parse_known_args(args, namespace)
+        # Temporarily clear `required` on every action in the parser tree so
+        # that `parse_known_args` never reaches the path where argparse builds
+        # its English `the following arguments are required: ...` message.
+        # We restore the flags afterwards and re-validate with full ownership
+        # of the resulting message (including the choices listing).
+        was_required = [a for a in self._iter_actions_recursive() if a.required]
+        for action in was_required:
+            action.required = False
+        try:
+            parsed, leftovers = self.parse_known_args(args, namespace)
+        finally:
+            for action in was_required:
+                action.required = True
+
         if leftovers:
             self._fail_for_unrecognized(leftovers, parsed)
+
+        missing = self._find_missing_required(parsed, was_required)
+        if missing:
+            self._fail_for_missing_required(missing)
+
         return parsed
 
     def error(self, message: str) -> NoReturn:
-        match = _MISSING_REQUIRED_RE.match(message)
-        if match:
-            extras: List[str] = []
-            for name in (n.strip() for n in match.group(1).split(",")):
-                action = self._find_action_by_displayed_name(name)
-                if action is not None and action.choices:
-                    choices_str = _format_choices(action.choices)
-                    extras.append(f"Possible values for {name} are: {choices_str}")
-            if extras:
-                message = message + "\n" + "\n".join(extras)
+        # Reached for the failure modes argparse handles itself (invalid type,
+        # invalid value via `_check_value` -> `ArgumentError`, ambiguous option,
+        # etc.) as well as for our own custom messages. We always print bare;
+        # `MacheteHelpAction` is the canonical place for usage output.
         sys.stderr.write(message + "\n")
         self.exit(ExitCode.ARGUMENT_ERROR)
+
+    def _iter_actions_recursive(self) -> Iterator[argparse.Action]:
+        seen_parsers: Set[int] = set()
+        stack: List[argparse.ArgumentParser] = [self]
+        while stack:
+            parser = stack.pop()
+            if id(parser) in seen_parsers:
+                continue
+            seen_parsers.add(id(parser))
+            for action in parser._actions:
+                yield action
+                if isinstance(action, argparse._SubParsersAction):
+                    stack.extend(action.choices.values())
+
+    def _active_parser_chain(self, parsed: argparse.Namespace) -> List[argparse.ArgumentParser]:
+        """Return the chain of (sub)parsers actually invoked, root-first."""
+        chain: List[argparse.ArgumentParser] = [self]
+        parser: argparse.ArgumentParser = self
+        while True:
+            sub_action = next(
+                (a for a in parser._actions if isinstance(a, argparse._SubParsersAction)),
+                None)
+            if sub_action is None:
+                break
+            sub_value = getattr(parsed, sub_action.dest, None)
+            if sub_value is None or sub_value not in sub_action.choices:
+                break
+            parser = sub_action.choices[sub_value]
+            chain.append(parser)
+        return chain
+
+    def _find_missing_required(
+            self,
+            parsed: argparse.Namespace,
+            candidates: List[argparse.Action],
+    ) -> List[argparse.Action]:
+        """Return the originally-required actions belonging to an active parser
+        whose value didn't actually land in the namespace."""
+        active = {id(p) for p in self._active_parser_chain(parsed)}
+        owners = self._build_action_owner_map()
+        parsed_keys = vars(parsed)
+        missing: List[argparse.Action] = []
+        for action in candidates:
+            owner = owners.get(id(action))
+            if owner is None or id(owner) not in active:
+                continue
+            if action.dest in (None, argparse.SUPPRESS):
+                continue
+            if action.dest not in parsed_keys:
+                missing.append(action)
+        return missing
+
+    def _build_action_owner_map(self) -> Dict[int, argparse.ArgumentParser]:
+        owners: Dict[int, argparse.ArgumentParser] = {}
+        seen_parsers: Set[int] = set()
+        stack: List[argparse.ArgumentParser] = [self]
+        while stack:
+            parser = stack.pop()
+            if id(parser) in seen_parsers:
+                continue
+            seen_parsers.add(id(parser))
+            for action in parser._actions:
+                owners.setdefault(id(action), parser)
+                if isinstance(action, argparse._SubParsersAction):
+                    stack.extend(action.choices.values())
+        return owners
 
     def _fail_for_unrecognized(
             self,
             leftovers: List[str],
             parsed: argparse.Namespace,
     ) -> NoReturn:
-        active_parser: argparse.ArgumentParser = self._find_subparser(
-            getattr(parsed, "command", None)) or self
+        active_parser = self._active_parser_chain(parsed)[-1]
         known_options = [
             opt for action in active_parser._actions
             for opt in action.option_strings
@@ -234,32 +329,14 @@ class CustomArgumentParser(argparse.ArgumentParser):
             message += "\n" + "\n".join(suggestion_lines)
         self.error(message)
 
-    def _find_subparser(self, name: Optional[str]) -> Optional[argparse.ArgumentParser]:
-        if name is None:
-            return None
-        for action in self._actions:
-            if isinstance(action, argparse._SubParsersAction):
-                return action.choices.get(name)
-        return None
-
-    def _find_action_by_displayed_name(self, name: str) -> Optional[argparse.Action]:
-        """Find the action whose `_get_action_name`-equivalent matches `name`.
-
-        Mirrors argparse's own `_get_action_name` precedence (option strings ->
-        metavar -> dest) so we can look up actions by the same identifier
-        argparse uses in its `the following arguments are required: NAME` message.
-        """
-        for action in self._actions:
-            if action.option_strings:
-                if "/".join(action.option_strings) == name:
-                    return action
-            elif action.metavar not in (None, argparse.SUPPRESS):
-                if action.metavar == name:
-                    return action
-            elif action.dest not in (None, argparse.SUPPRESS):
-                if action.dest == name:
-                    return action
-        return None
+    def _fail_for_missing_required(self, actions: List[argparse.Action]) -> NoReturn:
+        names = [_displayed_action_name(a) for a in actions]
+        lines = ["the following arguments are required: " + ", ".join(names)]
+        for action in actions:
+            if action.choices:
+                choices_str = _format_choices(action.choices)
+                lines.append(f"Possible values for {_displayed_action_name(action)} are: {choices_str}")
+        self.error("\n".join(lines))
 
 
 def create_cli_parser() -> argparse.ArgumentParser:
