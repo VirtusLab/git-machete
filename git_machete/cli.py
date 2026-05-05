@@ -158,7 +158,11 @@ def _format_suggestions(suggestions: List[str]) -> str:
 
 def _displayed_action_name(action: argparse.Action) -> str:
     """Mirrors argparse's `_get_action_name` precedence (option strings -> metavar -> dest)."""
-    if action.option_strings:
+    # The option-strings branch only fires for required `--flag`s and we have none
+    # today (the only required actions in our parser are subparser-selector
+    # positionals). Kept for parity with `argparse._get_action_name` so that future
+    # additions of required flags get a sensible label automatically.
+    if action.option_strings:  # pragma: no cover
         return "/".join(action.option_strings)
     if action.metavar not in (None, argparse.SUPPRESS):
         # `metavar` is typed as `Optional[str]` but at this point it cannot be None or SUPPRESS.
@@ -291,8 +295,6 @@ class CustomArgumentParser(argparse.ArgumentParser):
             owner = owners.get(id(action))
             if owner is None or id(owner) not in active:
                 continue
-            if action.dest in (None, argparse.SUPPRESS):
-                continue
             if action.nargs in ("?", "*", argparse.REMAINDER, argparse.SUPPRESS):
                 continue
             if action.dest not in parsed_keys:
@@ -344,7 +346,10 @@ class CustomArgumentParser(argparse.ArgumentParser):
         names = [_displayed_action_name(a) for a in actions]
         lines = ["the following arguments are required: " + ", ".join(names)]
         for action in actions:
-            if action.choices:
+            # All required actions in our parser today are subparser selectors and so
+            # always have `choices`; the falsy branch is kept defensively for any
+            # future required positional (e.g. a filename) that wouldn't have any.
+            if action.choices:  # pragma: no branch
                 choices_str = _format_choices(action.choices)
                 lines.append(f"Possible values for {_displayed_action_name(action)} are: {choices_str}")
         self.error("\n".join(lines))
