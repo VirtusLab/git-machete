@@ -341,11 +341,12 @@ class TestCompletionEndToEnd:
         version_raw = version_match.group(0)
         version = tuple(map(int, version_raw.split('.')))
 
-        # Only fish 4.0.0 and 4.0.1 are known to break our completions; 3.x and 4.0.2+
-        # work fine, so the assertion narrowly excludes just those two releases rather
-        # than imposing a >= 4.0.2 floor that would also reject the perfectly working
-        # 3.x line (e.g. 3.7.0 from Ubuntu noble/universe when our fish-shell PPA times
-        # out on CI).
+        # Only fish 4.0.0 and 4.0.1 are known to break our completions; both
+        # the 3.x line (which is what Ubuntu's default repos still ship, and
+        # what `.circleci/config.yml` therefore picks up) and 4.0.2+ work
+        # fine, so the assertion narrowly excludes just those two releases
+        # rather than imposing a >= 4.0.2 floor that would also reject the
+        # perfectly working 3.x.
         assert not (4, 0, 0) <= version < (4, 0, 2), \
             f"Fish 4.0.0 and 4.0.1 are known to break completions; install 3.x or >= 4.0.2 (is: {version_raw})"
 

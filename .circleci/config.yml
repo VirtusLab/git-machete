@@ -91,17 +91,17 @@ jobs:
             python --version
             pip3 install tox
 
-            # `add-apt-repository` was getting stuck on CI for some reason
-            fish_major_version=4
-            url=https://ppa.launchpadcontent.net/fish-shell/release-${fish_major_version}/ubuntu
-            echo "deb     $url jammy main" | sudo tee -a /etc/apt/sources.list
-            echo "deb-src $url jammy main" | sudo tee -a /etc/apt/sources.list
-            sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 73C9FCC9E2BB48DA
-            sudo apt-get update
-            sudo apt-get install fish
+            # We only need stock-Ubuntu `fish` (universe) and `zsh` (main),
+            # and the CircleCI `ubuntu-2404` image's apt cache is already
+            # fresh enough for both, so we deliberately skip `apt-get update`:
+            # the image preloads several unrelated third-party PPAs in
+            # `/etc/apt/sources.list.d/` (mozillateam, openjdk-r, ...) whose
+            # refresh routinely takes minutes and times out. Fish 3.x works
+            # just as well as 4.x for our completions (only 4.0.0 / 4.0.1 are
+            # excluded by `test_fish_version`), so the version that ships in
+            # Ubuntu's universe is fine.
+            sudo apt-get install -y fish zsh
             fish --version
-
-            sudo apt-get install zsh
       - run:
           name: Test shell completions
           command: tox -e test-completions -- -vv
