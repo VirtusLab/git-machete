@@ -24,8 +24,6 @@ git_machete.utils.get_terminal_height
 git_machete.utils.is_stderr_a_tty
 git_machete.utils.is_stdout_a_tty
 git_machete.utils.is_terminal_fully_fledged
-git_machete.utils.slurp_file
-os.path.isfile
 shutil.which
 sys.argv
 termios.tcgetattr

@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 from contextlib import AbstractContextManager, contextmanager
+from tempfile import mkdtemp
 from typing import Any, Callable, Iterator, Tuple
 
 from git_machete.utils import PopenResult
@@ -27,6 +28,22 @@ def fixed_author_and_committer_date_in_past() -> AbstractContextManager:  # type
         GIT_COMMITTER_DATE=fixed_committer_and_author_date,
         GIT_AUTHOR_DATE=fixed_committer_and_author_date
     )
+
+
+@contextmanager
+def temporary_home_directory() -> Iterator[str]:
+    """Override `HOME` (POSIX) and `USERPROFILE` (Windows) to point at a
+    fresh empty temp directory, and yield its path.
+
+    Both `os.path.expanduser('~/...')` and `pathlib.Path.home()` consult
+    these env vars on every call (no caching), so anything resolving paths
+    relative to `~` will see the temp dir for the duration of the
+    with-block. The test can then drop real files (e.g. `.github-token`,
+    `.config/hub`) into the yielded path - which is preferable to mocking
+    `os.path.isfile` / `git_machete.utils.slurp_file`."""
+    home = mkdtemp()
+    with overridden_environment(HOME=home, USERPROFILE=home):
+        yield home
 
 
 def mock__popen_cmd_with_fixed_results(*results: Tuple[int, str, str]) -> Callable[..., PopenResult]:

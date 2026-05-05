@@ -298,7 +298,7 @@ only_special_branches: &only_special_branches
   filters:
     branches:
       only:
-        - "/.*(aur|ci[/-]|dependabot.pip|deploy|dry.run|hotfix|macos|nix|publish|release|windows).*/"
+        - "/.*(aur|ci[/-]|cross-platform|dependabot.pip|deploy|dry.run|hotfix|macos|nix|publish|release|windows).*/"
         - "develop"
         - "master"
 

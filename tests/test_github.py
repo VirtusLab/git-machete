@@ -1,4 +1,5 @@
 import itertools
+import os
 from contextlib import contextmanager
 from textwrap import dedent
 from typing import Iterator
@@ -15,12 +16,14 @@ from tests.git_repository import (add_remote, check_out, commit, create_repo,
                                   new_branch, push, set_git_config_key,
                                   unset_git_config_key)
 from tests.mockers import (mock__popen_cmd_with_fixed_results,
-                           mock_input_returning_y, overridden_environment)
+                           mock_input_returning_y, overridden_environment,
+                           temporary_home_directory)
 from tests.mockers_code_hosting import mock_from_url, mock_shutil_which
 from tests.mockers_github import (MockGitHubAPIState,
                                   mock_github_token_for_domain_fake,
                                   mock_github_token_for_domain_none,
                                   mock_pr_json, mock_urlopen)
+from tests.shell import write_to_file
 
 
 class TestGitHub(BaseTest):
@@ -184,7 +187,6 @@ class TestGitHub(BaseTest):
 
     def test_github_token_retrieval_order(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'os.path.isfile', lambda _file: False)
         self.patch_symbol(mocker, 'shutil.which', mock_shutil_which(None))
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_enterprise_domain()))
 
@@ -207,10 +209,11 @@ class TestGitHub(BaseTest):
                            "__get_token_from_hub(cls=<class 'git_machete.github.GitHubToken'>, domain=github.com): "
                            "4. Trying to find token via hub GitHub CLI..."]
 
-        assert list(itertools.dropwhile(
-            lambda line: '__get_token_from_env' not in line,
-            launch_command('github', 'anno-prs', '--debug').splitlines()
-        ))[:4] == expected_output
+        with temporary_home_directory():
+            assert list(itertools.dropwhile(
+                lambda line: '__get_token_from_env' not in line,
+                launch_command('github', 'anno-prs', '--debug').splitlines()
+            ))[:4] == expected_output
 
     def test_github_get_token_from_env_var(self) -> None:
         with overridden_environment(GITHUB_TOKEN='github_token_from_env_var'):
@@ -225,85 +228,86 @@ class TestGitHub(BaseTest):
     # This doesn't cover the case of running from outside tox (e.g. via IntelliJ),
     # so hiding GITHUB_TOKEN might eventually become necessary.
 
-    def test_github_get_token_from_file_in_home_directory(self, mocker: MockerFixture) -> None:
+    def test_github_get_token_from_file_in_home_directory(self) -> None:
         github_token_contents = ('ghp_mytoken_for_github_com\n'
                                  'ghp_myothertoken_for_git_example_org git.example.org\n'
                                  'ghp_yetanothertoken_for_git_example_com git.example.com')
-        self.patch_symbol(mocker, 'git_machete.utils.slurp_file', lambda _: github_token_contents)
-        self.patch_symbol(mocker, 'os.path.isfile', lambda _file: True)
 
-        domain = GitHubClient.DEFAULT_GITHUB_DOMAIN
-        github_token = GitHubToken.for_domain(domain=domain)
-        assert github_token is not None
-        assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
-        assert github_token.value == 'ghp_mytoken_for_github_com'
+        with temporary_home_directory() as home:
+            write_to_file(os.path.join(home, '.github-token'), github_token_contents)
 
-        # Line ends with \n
-        domain = 'git.example.org'
-        github_token = GitHubToken.for_domain(domain=domain)
-        assert github_token is not None
-        assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
-        assert github_token.value == 'ghp_myothertoken_for_git_example_org'
+            domain = GitHubClient.DEFAULT_GITHUB_DOMAIN
+            github_token = GitHubToken.for_domain(domain=domain)
+            assert github_token is not None
+            assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
+            assert github_token.value == 'ghp_mytoken_for_github_com'
 
-        # Last line, doesn't end with \n
-        domain = 'git.example.com'
-        github_token = GitHubToken.for_domain(domain=domain)
-        assert github_token is not None
-        assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
-        assert github_token.value == 'ghp_yetanothertoken_for_git_example_com'
+            # Line ends with \n
+            domain = 'git.example.org'
+            github_token = GitHubToken.for_domain(domain=domain)
+            assert github_token is not None
+            assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
+            assert github_token.value == 'ghp_myothertoken_for_git_example_org'
 
-        domain = 'git.example.net'
-        github_token = GitHubToken.for_domain(domain=domain)
-        assert github_token is None
+            # Last line, doesn't end with \n
+            domain = 'git.example.com'
+            github_token = GitHubToken.for_domain(domain=domain)
+            assert github_token is not None
+            assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
+            assert github_token.value == 'ghp_yetanothertoken_for_git_example_com'
+
+            domain = 'git.example.net'
+            github_token = GitHubToken.for_domain(domain=domain)
+            assert github_token is None
 
     def test_github_get_token_from_gh(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'os.path.isfile', lambda _file: False)
         self.patch_symbol(mocker, 'shutil.which', mock_shutil_which('/path/to/gh'))
 
         domain = 'git.example.com'
 
-        fixed_popen_cmd_results = [(1, "unknown error", "")]
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
-        github_token = GitHubToken.for_domain(domain=domain)
-        assert github_token is None
+        with temporary_home_directory():
+            fixed_popen_cmd_results = [(1, "unknown error", "")]
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
+            github_token = GitHubToken.for_domain(domain=domain)
+            assert github_token is None
 
-        fixed_popen_cmd_results = [(0, "gh version 2.0.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.0.0\n", ""),
-                                   (0, "", "You are not logged into any GitHub hosts. Run gh auth login to authenticate.")]
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
-        github_token = GitHubToken.for_domain(domain=domain)
-        assert github_token is None
+            fixed_popen_cmd_results = [(0, "gh version 2.0.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.0.0\n", ""),
+                                       (0, "", "You are not logged into any GitHub hosts. Run gh auth login to authenticate.")]
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
+            github_token = GitHubToken.for_domain(domain=domain)
+            assert github_token is None
 
-        fixed_popen_cmd_results = [(0, "gh version 2.16.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.16.0\n", ""),
-                                   (0, "", """github.com
-                                                ✓ Logged in to git.example.com as Foo Bar (/Users/foo_bar/.config/gh/hosts.yml)
-                                                ✓ Git operations for git.example.com configured to use ssh protocol.
-                                                ✓ Token: ghp_mytoken_for_github_com_from_gh_cli
-                                                ✓ Token scopes: gist, read:discussion, read:org, repo, workflow""")]
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
-        github_token = GitHubToken.for_domain(domain=domain)
-        assert github_token is not None
-        assert github_token.provider == f'auth token for {domain} from `gh` GitHub CLI'
-        assert github_token.value == 'ghp_mytoken_for_github_com_from_gh_cli'
+            fixed_popen_cmd_results = [(0, "gh version 2.16.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.16.0\n", ""),
+                                       (0, "", """github.com
+                                                    ✓ Logged in to git.example.com as Foo Bar (/Users/foo_bar/.config/gh/hosts.yml)
+                                                    ✓ Git operations for git.example.com configured to use ssh protocol.
+                                                    ✓ Token: ghp_mytoken_for_github_com_from_gh_cli
+                                                    ✓ Token scopes: gist, read:discussion, read:org, repo, workflow""")]
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
+            github_token = GitHubToken.for_domain(domain=domain)
+            assert github_token is not None
+            assert github_token.provider == f'auth token for {domain} from `gh` GitHub CLI'
+            assert github_token.value == 'ghp_mytoken_for_github_com_from_gh_cli'
 
-        fixed_popen_cmd_results = [(0, "gh version 2.17.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.17.0\n", ""),
-                                   (0, "", "You are not logged into any GitHub hosts. Run gh auth login to authenticate.")]
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
-        github_token = GitHubToken.for_domain(domain=domain)
-        assert github_token is None
+            fixed_popen_cmd_results = [(0, "gh version 2.17.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.17.0\n", ""),
+                                       (0, "", "You are not logged into any GitHub hosts. Run gh auth login to authenticate.")]
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
+            github_token = GitHubToken.for_domain(domain=domain)
+            assert github_token is None
 
-        fixed_popen_cmd_results = [(0, "gh version 2.17.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.17.0\n", ""),
-                                   (0, "ghp_mytoken_for_github_com_from_gh_cli", "")]
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
-        github_token = GitHubToken.for_domain(domain=domain)
-        assert github_token is not None
-        assert github_token.provider == f'auth token for {domain} from `gh` GitHub CLI'
-        assert github_token.value == 'ghp_mytoken_for_github_com_from_gh_cli'
+            fixed_popen_cmd_results = [(0, "gh version 2.17.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.17.0\n", ""),
+                                       (0, "ghp_mytoken_for_github_com_from_gh_cli", "")]
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
+            github_token = GitHubToken.for_domain(domain=domain)
+            assert github_token is not None
+            assert github_token.provider == f'auth token for {domain} from `gh` GitHub CLI'
+            assert github_token.value == 'ghp_mytoken_for_github_com_from_gh_cli'
 
     def test_github_get_token_from_hub(self, mocker: MockerFixture) -> None:
         domain0 = 'git.example.net'
         domain1 = GitHubClient.DEFAULT_GITHUB_DOMAIN
         domain2 = 'git.example.org'
-        config_hub_contents = f'''        {domain1}:
+        config_hub_contents = dedent(f'''        {domain1}:
         - user: username1
           oauth_token: ghp_mytoken_for_github_com
           protocol: protocol
@@ -312,32 +316,33 @@ class TestGitHub(BaseTest):
         - user: username2
           oauth_token: ghp_myothertoken_for_git_example_org
           protocol: protocol
-        '''
+        ''')
 
         # Let's pretend that `gh` is available, but fails for whatever reason.
         self.patch_symbol(mocker, 'shutil.which', mock_shutil_which('/path/to/gh'))
-        self.patch_symbol(mocker, 'os.path.isfile', lambda path: '.github-token' not in path)
-        self.patch_symbol(mocker, 'git_machete.utils.slurp_file', lambda _: dedent(config_hub_contents))
 
-        fixed_popen_cmd_results = [(0, "gh version 2.31.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.31.0\n", ""),
-                                   (1, "", "unknown error")]
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
-        github_token = GitHubToken.for_domain(domain=domain0)
-        assert github_token is None
+        with temporary_home_directory() as home:
+            write_to_file(os.path.join(home, '.config', 'hub'), config_hub_contents)
 
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
-        github_token = GitHubToken.for_domain(domain=domain1)
-        assert github_token is not None
-        assert github_token.provider == f'auth token for {domain1} from `hub` GitHub CLI'
-        assert github_token.value == 'ghp_mytoken_for_github_com'
+            fixed_popen_cmd_results = [(0, "gh version 2.31.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.31.0\n", ""),
+                                       (1, "", "unknown error")]
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
+            github_token = GitHubToken.for_domain(domain=domain0)
+            assert github_token is None
 
-        fixed_popen_cmd_results = [(0, "gh version 2.16.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.16.0\n", ""),
-                                   (1, "", "unknown error")]
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
-        github_token = GitHubToken.for_domain(domain=domain2)
-        assert github_token is not None
-        assert github_token.provider == f'auth token for {domain2} from `hub` GitHub CLI'
-        assert github_token.value == 'ghp_myothertoken_for_git_example_org'
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
+            github_token = GitHubToken.for_domain(domain=domain1)
+            assert github_token is not None
+            assert github_token.provider == f'auth token for {domain1} from `hub` GitHub CLI'
+            assert github_token.value == 'ghp_mytoken_for_github_com'
+
+            fixed_popen_cmd_results = [(0, "gh version 2.16.0 (2099-12-31)\nhttps://github.com/cli/cli/releases/tag/v2.16.0\n", ""),
+                                       (1, "", "unknown error")]
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(*fixed_popen_cmd_results))
+            github_token = GitHubToken.for_domain(domain=domain2)
+            assert github_token is not None
+            assert github_token.provider == f'auth token for {domain2} from `hub` GitHub CLI'
+            assert github_token.value == 'ghp_myothertoken_for_git_example_org'
 
     def test_github_invalid_flag_combinations(self) -> None:
         create_repo()

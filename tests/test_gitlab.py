@@ -1,4 +1,5 @@
 import itertools
+import os
 from contextlib import contextmanager
 from typing import Iterator
 
@@ -14,12 +15,14 @@ from tests.git_repository import (add_remote, check_out, commit, create_repo,
                                   new_branch, push, set_git_config_key,
                                   unset_git_config_key)
 from tests.mockers import (mock__popen_cmd_with_fixed_results,
-                           mock_input_returning_y, overridden_environment)
+                           mock_input_returning_y, overridden_environment,
+                           temporary_home_directory)
 from tests.mockers_code_hosting import mock_from_url, mock_shutil_which
 from tests.mockers_gitlab import (MockGitLabAPIState,
                                   mock_gitlab_token_for_domain_fake,
                                   mock_gitlab_token_for_domain_none,
                                   mock_mr_json, mock_urlopen)
+from tests.shell import write_to_file
 
 
 class TestGitLab(BaseTest):
@@ -186,7 +189,6 @@ class TestGitLab(BaseTest):
 
     def test_gitlab_token_retrieval_order(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'os.path.isfile', lambda _file: False)
         self.patch_symbol(mocker, 'shutil.which', mock_shutil_which(None))
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_gitlab_enterprise_domain()))
 
@@ -207,10 +209,11 @@ class TestGitLab(BaseTest):
                            "__get_token_from_glab(cls=<class 'git_machete.gitlab.GitLabToken'>, domain=gitlab.com): "
                            "3. Trying to find token via glab GitLab CLI..."]
 
-        assert list(itertools.dropwhile(
-            lambda line: '__get_token_from_env' not in line,
-            launch_command('gitlab', 'anno-mrs', '--debug').splitlines()
-        ))[:3] == expected_output
+        with temporary_home_directory():
+            assert list(itertools.dropwhile(
+                lambda line: '__get_token_from_env' not in line,
+                launch_command('gitlab', 'anno-mrs', '--debug').splitlines()
+            ))[:3] == expected_output
 
     def test_gitlab_get_token_from_env_var(self) -> None:
         with overridden_environment(GITLAB_TOKEN='gitlab_token_from_env_var'):
@@ -225,97 +228,98 @@ class TestGitLab(BaseTest):
     # This doesn't cover the case of running from outside tox (e.g. via IntelliJ),
     # so hiding GITLAB_TOKEN might eventually become necessary.
 
-    def test_gitlab_get_token_from_file_in_home_directory(self, mocker: MockerFixture) -> None:
+    def test_gitlab_get_token_from_file_in_home_directory(self) -> None:
         gitlab_token_contents = ('glpat-mytoken_for_gitlab_com\n'
                                  'glpat-myothertoken_for_git_example_org git.example.org\n'
                                  'glpat-yetanothertoken_for_git_example_com git.example.com')
-        self.patch_symbol(mocker, 'git_machete.utils.slurp_file', lambda _: gitlab_token_contents)
-        self.patch_symbol(mocker, 'os.path.isfile', lambda _file: True)
 
-        domain = GitLabClient.DEFAULT_GITLAB_DOMAIN
-        gitlab_token = GitLabToken.for_domain(domain=domain)
-        assert gitlab_token is not None
-        assert gitlab_token.provider == f'auth token for {domain} from `~/.gitlab-token`'
-        assert gitlab_token.value == 'glpat-mytoken_for_gitlab_com'
+        with temporary_home_directory() as home:
+            write_to_file(os.path.join(home, '.gitlab-token'), gitlab_token_contents)
 
-        # Line ends with \n
-        domain = 'git.example.org'
-        gitlab_token = GitLabToken.for_domain(domain=domain)
-        assert gitlab_token is not None
-        assert gitlab_token.provider == f'auth token for {domain} from `~/.gitlab-token`'
-        assert gitlab_token.value == 'glpat-myothertoken_for_git_example_org'
+            domain = GitLabClient.DEFAULT_GITLAB_DOMAIN
+            gitlab_token = GitLabToken.for_domain(domain=domain)
+            assert gitlab_token is not None
+            assert gitlab_token.provider == f'auth token for {domain} from `~/.gitlab-token`'
+            assert gitlab_token.value == 'glpat-mytoken_for_gitlab_com'
 
-        # Last line, doesn't end with \n
-        domain = 'git.example.com'
-        gitlab_token = GitLabToken.for_domain(domain=domain)
-        assert gitlab_token is not None
-        assert gitlab_token.provider == f'auth token for {domain} from `~/.gitlab-token`'
-        assert gitlab_token.value == 'glpat-yetanothertoken_for_git_example_com'
+            # Line ends with \n
+            domain = 'git.example.org'
+            gitlab_token = GitLabToken.for_domain(domain=domain)
+            assert gitlab_token is not None
+            assert gitlab_token.provider == f'auth token for {domain} from `~/.gitlab-token`'
+            assert gitlab_token.value == 'glpat-myothertoken_for_git_example_org'
 
-        domain = 'git.example.net'
-        gitlab_token = GitLabToken.for_domain(domain=domain)
-        assert gitlab_token is None
+            # Last line, doesn't end with \n
+            domain = 'git.example.com'
+            gitlab_token = GitLabToken.for_domain(domain=domain)
+            assert gitlab_token is not None
+            assert gitlab_token.provider == f'auth token for {domain} from `~/.gitlab-token`'
+            assert gitlab_token.value == 'glpat-yetanothertoken_for_git_example_com'
+
+            domain = 'git.example.net'
+            gitlab_token = GitLabToken.for_domain(domain=domain)
+            assert gitlab_token is None
 
     def test_gitlab_get_token_from_glab(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'os.path.isfile', lambda _file: False)
         self.patch_symbol(mocker, 'shutil.which', mock_shutil_which('/path/to/glab'))
 
         domain = 'git.example.com'
 
-        fixed_popen_cmd_result = (1, "unknown error", "")
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(fixed_popen_cmd_result))
-        gitlab_token = GitLabToken.for_domain(domain=domain)
-        assert gitlab_token is None
+        with temporary_home_directory():
+            fixed_popen_cmd_result = (1, "unknown error", "")
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(fixed_popen_cmd_result))
+            gitlab_token = GitLabToken.for_domain(domain=domain)
+            assert gitlab_token is None
 
-        fixed_popen_cmd_result = (0, "", """gitlab.com
+            fixed_popen_cmd_result = (0, "", """gitlab.com
                                           x gitlab.com: api call failed: GET https://gitlab.com/api/v4/user: 401 {message: 401 Unauthorized}
                                           ✓ Git operations for gitlab.com configured to use ssh protocol.
                                           ✓ API calls for gitlab.com are made over https protocol
                                           ✓ REST API Endpoint: https://gitlab.com/api/v4/
                                           ✓ GraphQL Endpoint: https://gitlab.com/api/graphql/
                                           x No token provided""")
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(fixed_popen_cmd_result))
-        gitlab_token = GitLabToken.for_domain(domain=domain)
-        assert gitlab_token is None
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(fixed_popen_cmd_result))
+            gitlab_token = GitLabToken.for_domain(domain=domain)
+            assert gitlab_token is None
 
-        fixed_popen_cmd_result = (0, "", """gitlab.com
+            fixed_popen_cmd_result = (0, "", """gitlab.com
                                           ✓ Logged in to gitlab.com as Foo Bar (/Users/foo_bar/.config/gh/hosts.yml)
                                           ✓ Git operations for gitlab.com configured to use ssh protocol.
                                           ✓ API calls for gitlab.com are made over https protocol
                                           ✓ REST API Endpoint: https://gitlab.com/api/v4/
                                           ✓ GraphQL Endpoint: https://gitlab.com/api/graphql/
                                           ✓ Token: glpat-mytoken_for_gitlab_com_from_glab_cli_pre_1_66_0""")
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(fixed_popen_cmd_result))
-        gitlab_token = GitLabToken.for_domain(domain=domain)
-        assert gitlab_token is not None
-        assert gitlab_token.provider == f'auth token for {domain} from `glab` GitLab CLI'
-        assert gitlab_token.value == 'glpat-mytoken_for_gitlab_com_from_glab_cli_pre_1_66_0'
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(fixed_popen_cmd_result))
+            gitlab_token = GitLabToken.for_domain(domain=domain)
+            assert gitlab_token is not None
+            assert gitlab_token.provider == f'auth token for {domain} from `glab` GitLab CLI'
+            assert gitlab_token.value == 'glpat-mytoken_for_gitlab_com_from_glab_cli_pre_1_66_0'
 
-        fixed_popen_cmd_result = (0, "", """gitlab.com
+            fixed_popen_cmd_result = (0, "", """gitlab.com
                                           ✓ Logged in to gitlab.com as Foo Bar (/Users/foo_bar/.config/glab-cli/config.yml)
                                           ✓ Git operations for gitlab.com configured to use https protocol.
                                           ✓ API calls for gitlab.com are made over https protocol.
                                           ✓ REST API Endpoint: https://gitlab.com/api/v4/
                                           ✓ GraphQL Endpoint: https://gitlab.com/api/graphql/
                                           ✓ Token found: glpat-mytoken_for_gitlab_com_from_glab_cli_post_1_66_0""")
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(fixed_popen_cmd_result))
-        gitlab_token = GitLabToken.for_domain(domain=domain)
-        assert gitlab_token is not None
-        assert gitlab_token.provider == f'auth token for {domain} from `glab` GitLab CLI'
-        assert gitlab_token.value == 'glpat-mytoken_for_gitlab_com_from_glab_cli_post_1_66_0'
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(fixed_popen_cmd_result))
+            gitlab_token = GitLabToken.for_domain(domain=domain)
+            assert gitlab_token is not None
+            assert gitlab_token.provider == f'auth token for {domain} from `glab` GitLab CLI'
+            assert gitlab_token.value == 'glpat-mytoken_for_gitlab_com_from_glab_cli_post_1_66_0'
 
-        fixed_popen_cmd_result = (0, "", """gitlab.com
+            fixed_popen_cmd_result = (0, "", """gitlab.com
                                           ✓ Logged in to gitlab.com as Foo Bar (/Users/foo_bar/.config/glab-cli/config.yml)
                                           ✓ Git operations for gitlab.com configured to use https protocol.
                                           ✓ API calls for gitlab.com are made over https protocol.
                                           ✓ REST API Endpoint: https://gitlab.com/api/v4/
                                           ✓ GraphQL Endpoint: https://gitlab.com/api/graphql/
                                           ✓ Token found: glpat-mytoken_for_gitlab_com.containing.dots""")
-        self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(fixed_popen_cmd_result))
-        gitlab_token = GitLabToken.for_domain(domain=domain)
-        assert gitlab_token is not None
-        assert gitlab_token.provider == f'auth token for {domain} from `glab` GitLab CLI'
-        assert gitlab_token.value == 'glpat-mytoken_for_gitlab_com.containing.dots'
+            self.patch_symbol(mocker, 'git_machete.utils._popen_cmd', mock__popen_cmd_with_fixed_results(fixed_popen_cmd_result))
+            gitlab_token = GitLabToken.for_domain(domain=domain)
+            assert gitlab_token is not None
+            assert gitlab_token.provider == f'auth token for {domain} from `glab` GitLab CLI'
+            assert gitlab_token.value == 'glpat-mytoken_for_gitlab_com.containing.dots'
 
     def test_gitlab_invalid_flag_combinations(self) -> None:
         create_repo()
