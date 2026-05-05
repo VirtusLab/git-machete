@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.40.2
 
+- improved: CLI errors now suggest close matches for typo'd subcommands, flags and choices
+
 ## New in git-machete 3.40.1
 
 - fixed: ASCII-only mode is now applied separately for stdout and stderr so that stderr retains formatting when stdout is redirected (contributed by @tmchow)

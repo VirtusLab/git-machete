@@ -355,6 +355,7 @@ class TestGitLab(BaseTest):
         output, e = launch_command_capturing_output_and_exception("gitlab")
         assert output == \
             "the following arguments are required: gitlab subcommand\n" \
-            "Possible values for subcommand are: anno-mrs, checkout-mrs, create-mr, restack-mr, retarget-mr, update-mr-descriptions\n"
+            "Possible values for gitlab subcommand are: " \
+            "anno-mrs, checkout-mrs, create-mr, restack-mr, retarget-mr, update-mr-descriptions\n"
         assert type(e) is SystemExit
         assert e.code == ExitCode.ARGUMENT_ERROR

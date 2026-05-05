@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
+import difflib
 import itertools
 import os
 import pkgutil
+import re
 import sys
 import textwrap
 from typing import (Any, Dict, Iterable, List, NoReturn, Optional, Sequence,
@@ -137,6 +139,129 @@ class MacheteHelpAction(argparse.Action):
         parser.exit(status=ExitCode.SUCCESS)
 
 
+_CLOSE_MATCH_CUTOFF = 0.6
+_MAX_SUGGESTIONS = 3
+_MISSING_REQUIRED_RE = re.compile(r"^the following arguments are required: (.+)$")
+
+
+def _format_choices(choices: Iterable[Any]) -> str:
+    return ", ".join(str(c) for c in choices)
+
+
+def _close_matches(value: str, candidates: Iterable[str]) -> List[str]:
+    return difflib.get_close_matches(
+        value, list(candidates), n=_MAX_SUGGESTIONS, cutoff=_CLOSE_MATCH_CUTOFF)
+
+
+def _format_suggestions(suggestions: List[str]) -> str:
+    quoted = ", ".join(f"`{s}`" for s in suggestions)
+    return f"Did you mean: {quoted}?"
+
+
+class CustomArgumentParser(argparse.ArgumentParser):
+    """An ArgumentParser with friendlier error messages.
+
+    The default argparse error for invalid choices, missing required positionals
+    with `choices=`, and unknown options is generally too terse - and worse,
+    suggests no fix when the user makes a typo. This parser:
+
+    * augments invalid-choice errors with `difflib`-based "did you mean" hints,
+    * enriches "the following arguments are required: NAME" with the choices
+      defined for NAME (looked up from the parser's actions, no string patching),
+    * routes unknown options through the active subparser so the suggested
+      alternatives are scoped to the (sub)command actually being invoked,
+    * skips argparse's auto-generated `usage:` and `prog: error:` boilerplate,
+      since `MacheteHelpAction` is the canonical place for usage output.
+    """
+
+    def _check_value(self, action: argparse.Action, value: Any) -> None:
+        if action.choices is not None and value not in action.choices:
+            choices_as_strings = [str(c) for c in action.choices]
+            msg = f"invalid choice: {value!r} (choose from {_format_choices(action.choices)})"
+            suggestions = _close_matches(str(value), choices_as_strings)
+            if suggestions:
+                msg += "\n" + _format_suggestions(suggestions)
+            raise argparse.ArgumentError(action, msg)
+
+    def parse_args(  # type: ignore[override]
+            self,
+            args: Optional[Sequence[str]] = None,
+            namespace: Optional[argparse.Namespace] = None,
+    ) -> argparse.Namespace:
+        parsed, leftovers = self.parse_known_args(args, namespace)
+        if leftovers:
+            self._fail_for_unrecognized(leftovers, parsed)
+        return parsed
+
+    def error(self, message: str) -> NoReturn:
+        match = _MISSING_REQUIRED_RE.match(message)
+        if match:
+            extras: List[str] = []
+            for name in (n.strip() for n in match.group(1).split(",")):
+                action = self._find_action_by_displayed_name(name)
+                if action is not None and action.choices:
+                    choices_str = _format_choices(action.choices)
+                    extras.append(f"Possible values for {name} are: {choices_str}")
+            if extras:
+                message = message + "\n" + "\n".join(extras)
+        sys.stderr.write(message + "\n")
+        self.exit(ExitCode.ARGUMENT_ERROR)
+
+    def _fail_for_unrecognized(
+            self,
+            leftovers: List[str],
+            parsed: argparse.Namespace,
+    ) -> NoReturn:
+        active_parser: argparse.ArgumentParser = self._find_subparser(
+            getattr(parsed, "command", None)) or self
+        known_options = [
+            opt for action in active_parser._actions
+            for opt in action.option_strings
+        ]
+
+        suggestion_lines: List[str] = []
+        for arg in leftovers:
+            if not arg.startswith("-"):
+                continue
+            # `--flag=value` -> match against `--flag` only
+            flag = arg.split("=", 1)[0]
+            close = _close_matches(flag, known_options)
+            if close:
+                suggestion_lines.append(f"For `{flag}`: {_format_suggestions(close)}")
+
+        message = "unrecognized arguments: " + " ".join(leftovers)
+        if suggestion_lines:
+            message += "\n" + "\n".join(suggestion_lines)
+        self.error(message)
+
+    def _find_subparser(self, name: Optional[str]) -> Optional[argparse.ArgumentParser]:
+        if name is None:
+            return None
+        for action in self._actions:
+            if isinstance(action, argparse._SubParsersAction):
+                return action.choices.get(name)
+        return None
+
+    def _find_action_by_displayed_name(self, name: str) -> Optional[argparse.Action]:
+        """Find the action whose `_get_action_name`-equivalent matches `name`.
+
+        Mirrors argparse's own `_get_action_name` precedence (option strings ->
+        metavar -> dest) so we can look up actions by the same identifier
+        argparse uses in its `the following arguments are required: NAME` message.
+        """
+        for action in self._actions:
+            if action.option_strings:
+                if "/".join(action.option_strings) == name:
+                    return action
+            elif action.metavar not in (None, argparse.SUPPRESS):
+                if action.metavar == name:
+                    return action
+            elif action.dest not in (None, argparse.SUPPRESS):
+                if action.dest == name:
+                    return action
+        return None
+
+
 def create_cli_parser() -> argparse.ArgumentParser:
     common_args_parser = argparse.ArgumentParser(
         prog='git machete',
@@ -146,23 +271,6 @@ def create_cli_parser() -> argparse.ArgumentParser:
     common_args_parser.add_argument('-h', '--help', action=MacheteHelpAction)
     common_args_parser.add_argument('--version', action='version', version=f'git-machete version {__version__}')
     common_args_parser.add_argument('-v', '--verbose', action='store_true')
-
-    class CustomArgumentParser(argparse.ArgumentParser):
-        def error(self, message: str) -> NoReturn:
-            if "the following arguments are required: github subcommand" in message:
-                print(f"{message.replace(', request_id', '')}\nPossible values for subcommand are: "
-                      "anno-prs, checkout-prs, create-pr, restack-pr, retarget-pr, update-pr-descriptions, sync", file=sys.stderr)
-                self.exit(2)
-            elif "the following arguments are required: gitlab subcommand" in message:
-                print(f"{message.replace(', request_id', '')}\nPossible values for subcommand are: "
-                      "anno-mrs, checkout-mrs, create-mr, restack-mr, retarget-mr, update-mr-descriptions", file=sys.stderr)
-                self.exit(2)
-            elif "the following arguments are required: show direction" in message:
-                print(f"{message}\nPossible values for show direction are: "
-                      f"c, current, d, down, f, first, l, last, n, next, p, prev, r, root, u, up", file=sys.stderr)
-                self.exit(2)
-            else:
-                super().error(message)
 
     cli_parser: argparse.ArgumentParser = CustomArgumentParser(
         prog='git machete',

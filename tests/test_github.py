@@ -377,6 +377,7 @@ class TestGitHub(BaseTest):
         output, e = launch_command_capturing_output_and_exception("github")
         assert output == \
             "the following arguments are required: github subcommand\n" \
-            "Possible values for subcommand are: anno-prs, checkout-prs, create-pr, restack-pr, retarget-pr, update-pr-descriptions, sync\n"
+            "Possible values for github subcommand are: " \
+            "anno-prs, checkout-prs, create-pr, restack-pr, retarget-pr, update-pr-descriptions, sync\n"
         assert type(e) is SystemExit
         assert e.code == ExitCode.ARGUMENT_ERROR
