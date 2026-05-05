@@ -97,8 +97,24 @@ jobs:
             echo "deb     $url jammy main" | sudo tee -a /etc/apt/sources.list
             echo "deb-src $url jammy main" | sudo tee -a /etc/apt/sources.list
             sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 73C9FCC9E2BB48DA
-            sudo apt-get update
-            sudo apt-get install fish
+
+            # ppa.launchpadcontent.net occasionally times out from CI runners.
+            # Without pinning, a failed PPA fetch makes `apt-get install fish`
+            # silently fall back to Ubuntu's older `fish` (e.g. 3.7.0 from
+            # noble/universe), which then fails `test_fish_version`.
+            # Pinning forces apt to install ONLY from the PPA, so a missing
+            # PPA index produces a loud install failure - which the retry loop
+            # below can recover from.
+            printf 'Package: fish fish-common\nPin: origin ppa.launchpadcontent.net\nPin-Priority: 1001\n' \
+              | sudo tee /etc/apt/preferences.d/fish-shell-release-ppa
+
+            for attempt in 1 2 3; do
+              sudo apt-get update -o Acquire::Retries=3 \
+                && sudo apt-get install -y fish \
+                && break
+              echo "fish install attempt $attempt failed (likely transient PPA timeout); retrying..."
+              sleep $((attempt * 5))
+            done
             fish --version
 
             sudo apt-get install zsh
