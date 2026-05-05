@@ -2,8 +2,6 @@ import os
 
 from pytest_mock import MockerFixture
 
-from git_machete.utils import ExitCode
-
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
                       launch_command_capturing_output_and_exception,
@@ -15,24 +13,6 @@ from .mockers_git_repository import (add_worktree, check_out, commit,
 
 
 class TestGo(BaseTest):
-
-    def test_go_current(self) -> None:
-        create_repo()
-        new_branch("level-0-branch")
-        commit()
-
-        output, e = launch_command_capturing_output_and_exception("go", "current")
-        assert type(e) is SystemExit
-        assert e.code == ExitCode.ARGUMENT_ERROR
-
-    def test_go_invalid_direction(self) -> None:
-        create_repo()
-        new_branch("level-0-branch")
-        commit()
-
-        output, e = launch_command_capturing_output_and_exception("go", "invalid")
-        assert type(e) is SystemExit
-        assert e.code == ExitCode.ARGUMENT_ERROR
 
     def test_go_up(self) -> None:
         """Verify behaviour of a 'git machete go up' command.

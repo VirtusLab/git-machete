@@ -7,8 +7,8 @@ import os
 import pkgutil
 import sys
 import textwrap
-from typing import (Any, Dict, Iterable, Iterator, List, NoReturn, Optional,
-                    Sequence, Set, Tuple, TypeVar, Union)
+from typing import (Any, Dict, FrozenSet, Iterable, Iterator, List, NoReturn,
+                    Optional, Sequence, Set, Tuple, TypeVar, Union)
 
 import git_machete.options
 from git_machete import __version__, utils
@@ -151,9 +151,22 @@ def _close_matches(value: str, candidates: Iterable[str]) -> List[str]:
         value, list(candidates), n=_MAX_SUGGESTIONS, cutoff=_CLOSE_MATCH_CUTOFF)
 
 
-def _format_suggestions(suggestions: List[str]) -> str:
+def _format_suggestions(suggestions: List[str], *, capitalize: bool = True) -> str:
     quoted = ", ".join(f"`{s}`" for s in suggestions)
-    return f"Did you mean: {quoted}?"
+    lead = "Did" if capitalize else "did"
+    return f"{lead} you mean: {quoted}?"
+
+
+def _visible_choices(action: argparse.Action) -> List[str]:
+    """`action.choices` minus any `_hidden_from_listing` entries (deprecated
+    aliases / undocumented escape hatches that we don't want to surface in
+    user-facing hints or fuzzy-match suggestions, even though they remain
+    accepted by the parser).
+    """
+    hidden: FrozenSet[str] = getattr(action, "_hidden_from_listing", frozenset())
+    # `_visible_choices` is only ever called on actions where `action.choices`
+    # is non-None (gated by the call sites), so the cast is safe.
+    return [str(c) for c in (action.choices or ()) if c not in hidden]
 
 
 def _displayed_action_name(action: argparse.Action) -> str:
@@ -182,8 +195,9 @@ class CustomArgumentParser(argparse.ArgumentParser):
 
     To avoid that coupling, this parser:
 
-    * overrides `_check_value` so invalid-choice errors are raised with our own
-      message including `difflib.get_close_matches` hints,
+    * overrides `_check_value` so invalid-choice errors are emitted with our
+      own message (capitalized prefix, no `(choose from ...)` litany) and
+      enriched with `difflib.get_close_matches` hints,
     * overrides `parse_args` to disable argparse's built-in "missing required"
       check (by clearing `action.required` across the parser tree before
       delegating to `parse_known_args`), then re-validates afterwards using
@@ -197,13 +211,29 @@ class CustomArgumentParser(argparse.ArgumentParser):
     """
 
     def _check_value(self, action: argparse.Action, value: Any) -> None:
+        # Argparse would normally raise `ArgumentError(action, msg)` here, which
+        # gets stringified as `argument <name>: invalid choice: <value> (choose
+        # from <list>)`. We bypass that and call `self.error` with a fully owned
+        # message instead - shorter, more natural-sounding and not weighed down
+        # by a possibly very long `(choose from ...)` listing.
         if action.choices is not None and value not in action.choices:
-            choices_as_strings = [str(c) for c in action.choices]
-            msg = f"invalid choice: {value!r} (choose from {_format_choices(action.choices)})"
-            suggestions = _close_matches(str(value), choices_as_strings)
+            visible = _visible_choices(action)
+            lines = [f"Invalid {_displayed_action_name(action)}: {value!r}"]
+            suggestions = _close_matches(str(value), visible)
             if suggestions:
-                msg += "\n" + _format_suggestions(suggestions)
-            raise argparse.ArgumentError(action, msg)
+                lines.append(_format_suggestions(suggestions))
+            elif action.dest == "command" and self.prog == "git machete":
+                # Top-level command typo without a near-miss: with ~30 commands
+                # the full listing would dwarf the error, so just steer the user
+                # to `help` instead.
+                lines.append("Run `git machete help` to see all available commands.")
+            else:
+                # Nested choice (github/gitlab subcommand, go/show direction,
+                # `--color` value, ...) with no near-miss: the set is small
+                # enough that printing it all is more helpful than asking the
+                # user to dig further.
+                lines.append(f"Possible values for {_displayed_action_name(action)} are: " + _format_choices(visible))
+            self.error("\n".join(lines))
 
     def parse_args(  # type: ignore[override]
             self,
@@ -212,7 +242,8 @@ class CustomArgumentParser(argparse.ArgumentParser):
     ) -> argparse.Namespace:
         # Temporarily clear `required` on every action in the parser tree so
         # that `parse_known_args` never reaches the path where argparse builds
-        # its English `the following arguments are required: ...` message.
+        # its English `the following arguments are required: ...` message
+        # (whose wording and capitalization we don't control).
         # We restore the flags afterwards and re-validate with full ownership
         # of the resulting message (including the choices listing).
         was_required = [a for a in self._iter_actions_recursive() if a.required]
@@ -335,22 +366,22 @@ class CustomArgumentParser(argparse.ArgumentParser):
             flag = arg.split("=", 1)[0]
             close = _close_matches(flag, known_options)
             if close:
-                suggestion_lines.append(f"For `{flag}`: {_format_suggestions(close)}")
+                suggestion_lines.append(f"For `{flag}`: {_format_suggestions(close, capitalize=False)}")
 
-        message = "unrecognized arguments: " + " ".join(leftovers)
+        message = "Unrecognized arguments: " + " ".join(leftovers)
         if suggestion_lines:
             message += "\n" + "\n".join(suggestion_lines)
         self.error(message)
 
     def _fail_for_missing_required(self, actions: List[argparse.Action]) -> NoReturn:
         names = [_displayed_action_name(a) for a in actions]
-        lines = ["the following arguments are required: " + ", ".join(names)]
+        lines = ["The following arguments are required: " + ", ".join(names)]
         for action in actions:
             # All required actions in our parser today are subparser selectors and so
             # always have `choices`; the falsy branch is kept defensively for any
             # future required positional (e.g. a filename) that wouldn't have any.
             if action.choices:  # pragma: no branch
-                choices_str = _format_choices(action.choices)
+                choices_str = _format_choices(_visible_choices(action))
                 lines.append(f"Possible values for {_displayed_action_name(action)} are: {choices_str}")
         self.error("\n".join(lines))
 
@@ -434,14 +465,20 @@ def create_cli_parser() -> argparse.ArgumentParser:
 
     def add_code_hosting_parser(command: str, pr_or_mr: str, include_sync: bool) -> Any:
         parser = create_subparser(command)
-        parser.add_argument('subcommand', metavar=f'{command} subcommand', choices=[
-            f'anno-{pr_or_mr}s',
-            f'checkout-{pr_or_mr}s',
-            f'create-{pr_or_mr}',
-            f'restack-{pr_or_mr}',
-            f'retarget-{pr_or_mr}',
-            f'update-{pr_or_mr}-descriptions'
-        ] + (['sync'] if include_sync else []))
+        subcommand_action = parser.add_argument(
+            'subcommand', metavar=f'{command} subcommand', choices=[
+                f'anno-{pr_or_mr}s',
+                f'checkout-{pr_or_mr}s',
+                f'create-{pr_or_mr}',
+                f'restack-{pr_or_mr}',
+                f'retarget-{pr_or_mr}',
+                f'update-{pr_or_mr}-descriptions'
+            ] + (['sync'] if include_sync else []))
+        if include_sync:
+            # `github sync` is deep into deprecation - keep it accepted for now,
+            # but never surface it in user-facing listings or close-match
+            # suggestions. See `_visible_choices` for how this is honored.
+            setattr(subcommand_action, '_hidden_from_listing', frozenset({'sync'}))
         parser.add_argument('request_id', nargs='*', type=int)
         parser.add_argument('-b', '--branch')
         parser.add_argument('--all', action='store_true')

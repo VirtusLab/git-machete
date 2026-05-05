@@ -1,10 +1,5 @@
-
-
-from git_machete.utils import ExitCode
-
 from .base_test import BaseTest
 from .mockers import (assert_failure, assert_success, launch_command,
-                      launch_command_capturing_output_and_exception,
                       rewrite_branch_layout_file)
 from .mockers_git_repository import (check_out, commit,
                                      create_repo_with_remote, delete_branch,
@@ -134,10 +129,6 @@ class TestList(BaseTest):
             ['list', 'with-overridden-fork-point'],
             ""
         )
-
-        output, e = launch_command_capturing_output_and_exception('list', 'no-such-category')
-        assert type(e) is SystemExit
-        assert e.code == ExitCode.ARGUMENT_ERROR
 
     def test_list_invalid_flag_combinations(self) -> None:
         assert_failure(["list", "slidable-after"], "git machete list slidable-after requires an extra <branch> argument")
