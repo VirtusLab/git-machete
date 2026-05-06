@@ -287,10 +287,10 @@ class TestGitLab(BaseTest):
             import sys
             sys.stderr.write('''gitlab.com
               x gitlab.com: api call failed: GET https://gitlab.com/api/v4/user: 401 {message: 401 Unauthorized}
-              \u2713 Git operations for gitlab.com configured to use ssh protocol.
-              \u2713 API calls for gitlab.com are made over https protocol
-              \u2713 REST API Endpoint: https://gitlab.com/api/v4/
-              \u2713 GraphQL Endpoint: https://gitlab.com/api/graphql/
+              ✓ Git operations for gitlab.com configured to use ssh protocol.
+              ✓ API calls for gitlab.com are made over https protocol
+              ✓ REST API Endpoint: https://gitlab.com/api/v4/
+              ✓ GraphQL Endpoint: https://gitlab.com/api/graphql/
               x No token provided''')
             sys.exit(0)
         """)
@@ -302,12 +302,12 @@ class TestGitLab(BaseTest):
         fake_glab = textwrap.dedent("""\
             import sys
             sys.stderr.write('''gitlab.com
-              \u2713 Logged in to gitlab.com as Foo Bar (/Users/foo_bar/.config/gh/hosts.yml)
-              \u2713 Git operations for gitlab.com configured to use ssh protocol.
-              \u2713 API calls for gitlab.com are made over https protocol
-              \u2713 REST API Endpoint: https://gitlab.com/api/v4/
-              \u2713 GraphQL Endpoint: https://gitlab.com/api/graphql/
-              \u2713 Token: glpat-mytoken_for_gitlab_com_from_glab_cli_pre_1_66_0''')
+              ✓ Logged in to gitlab.com as Foo Bar (/Users/foo_bar/.config/gh/hosts.yml)
+              ✓ Git operations for gitlab.com configured to use ssh protocol.
+              ✓ API calls for gitlab.com are made over https protocol
+              ✓ REST API Endpoint: https://gitlab.com/api/v4/
+              ✓ GraphQL Endpoint: https://gitlab.com/api/graphql/
+              ✓ Token: glpat-mytoken_for_gitlab_com_from_glab_cli_pre_1_66_0''')
             sys.exit(0)
         """)
         with temporary_home_directory(), fake_executables_on_path(glab=fake_glab):
@@ -321,12 +321,12 @@ class TestGitLab(BaseTest):
         fake_glab = textwrap.dedent("""\
             import sys
             sys.stderr.write('''gitlab.com
-              \u2713 Logged in to gitlab.com as Foo Bar (/Users/foo_bar/.config/glab-cli/config.yml)
-              \u2713 Git operations for gitlab.com configured to use https protocol.
-              \u2713 API calls for gitlab.com are made over https protocol.
-              \u2713 REST API Endpoint: https://gitlab.com/api/v4/
-              \u2713 GraphQL Endpoint: https://gitlab.com/api/graphql/
-              \u2713 Token found: glpat-mytoken_for_gitlab_com_from_glab_cli_post_1_66_0''')
+              ✓ Logged in to gitlab.com as Foo Bar (/Users/foo_bar/.config/glab-cli/config.yml)
+              ✓ Git operations for gitlab.com configured to use https protocol.
+              ✓ API calls for gitlab.com are made over https protocol.
+              ✓ REST API Endpoint: https://gitlab.com/api/v4/
+              ✓ GraphQL Endpoint: https://gitlab.com/api/graphql/
+              ✓ Token found: glpat-mytoken_for_gitlab_com_from_glab_cli_post_1_66_0''')
             sys.exit(0)
         """)
         with temporary_home_directory(), fake_executables_on_path(glab=fake_glab):
@@ -340,12 +340,12 @@ class TestGitLab(BaseTest):
         fake_glab = textwrap.dedent("""\
             import sys
             sys.stderr.write('''gitlab.com
-              \u2713 Logged in to gitlab.com as Foo Bar (/Users/foo_bar/.config/glab-cli/config.yml)
-              \u2713 Git operations for gitlab.com configured to use https protocol.
-              \u2713 API calls for gitlab.com are made over https protocol.
-              \u2713 REST API Endpoint: https://gitlab.com/api/v4/
-              \u2713 GraphQL Endpoint: https://gitlab.com/api/graphql/
-              \u2713 Token found: glpat-mytoken_for_gitlab_com.containing.dots''')
+              ✓ Logged in to gitlab.com as Foo Bar (/Users/foo_bar/.config/glab-cli/config.yml)
+              ✓ Git operations for gitlab.com configured to use https protocol.
+              ✓ API calls for gitlab.com are made over https protocol.
+              ✓ REST API Endpoint: https://gitlab.com/api/v4/
+              ✓ GraphQL Endpoint: https://gitlab.com/api/graphql/
+              ✓ Token found: glpat-mytoken_for_gitlab_com.containing.dots''')
             sys.exit(0)
         """)
         with temporary_home_directory(), fake_executables_on_path(glab=fake_glab):

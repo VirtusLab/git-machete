@@ -311,10 +311,10 @@ class TestGitHub(BaseTest):
             if args[:2] == ['auth', 'status']:
                 sys.stderr.write(
                     'github.com\\n'
-                    '  \u2713 Logged in to git.example.com as Foo Bar'
+                    '  ✓ Logged in to git.example.com as Foo Bar'
                     ' (/Users/foo_bar/.config/gh/hosts.yml)\\n'
-                    '  \u2713 Token: ghp_mytoken_for_github_com_from_gh_cli\\n'
-                    '  \u2713 Token scopes: gist, read:discussion, read:org, repo, workflow')
+                    '  ✓ Token: ghp_mytoken_for_github_com_from_gh_cli\\n'
+                    '  ✓ Token scopes: gist, read:discussion, read:org, repo, workflow')
                 sys.exit(0)
             sys.exit(99)
         """)
