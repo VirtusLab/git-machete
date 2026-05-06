@@ -2,12 +2,7 @@
 
 ## New in git-machete 3.41.0
 
-- added: `git machete rename <new-name>` command to rename a branch both in git and in the branch layout file;
-  optionally `-b`/`--branch` to act on a non-current branch, and `--retrack` to repoint the remote tracking
-  branch to `<remote>/<new-name>` after the rename (or unset tracking if `<remote>/<new-name>` does not exist)
-
-## New in git-machete 3.40.2
-
+- added: `git machete rename <new-name>` command to rename a branch both in git and in the branch layout file
 - improved: CLI error messages now suggest close matches for typo'd subcommands, flags and choices
 - fixed: minor glitches in shell completions
 

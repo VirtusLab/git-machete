@@ -307,6 +307,31 @@ class TestRename(BaseTest):
         result = subprocess.call("git config branch.feature-new.merge", shell=True)
         assert result != 0, "Expected branch.feature-new.merge to be unset after --repoint-tracking"
 
+    def test_rename_repoint_tracking_no_remote_configured(self) -> None:
+        """--repoint-tracking is a no-op (no message) when the branch has no remote configured."""
+        create_repo()
+        new_branch("master")
+        commit()
+        new_branch("feature")
+        commit()
+        check_out("feature")
+
+        rewrite_branch_layout_file(
+            """
+            master
+              feature
+            """
+        )
+
+        # No remote exists, so there is no strict remote for the branch
+        assert_success(
+            ["rename", "--repoint-tracking", "feature-new"],
+            "Renamed branch feature to feature-new\n"
+        )
+
+        assert "feature-new" in get_local_branches()
+        assert "feature" not in get_local_branches()
+
     def test_rename_without_repoint_tracking_keeps_old_remote(self) -> None:
         """Without --repoint-tracking the branch still tracks origin/<old-name>."""
         create_repo_with_remote()
