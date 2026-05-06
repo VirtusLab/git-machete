@@ -28,9 +28,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GIT-MACHETE" "1" "May 05, 2026" "" "git-machete"
+.TH "GIT-MACHETE" "1" "May 06, 2026" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.40.2
+git-machete \- git-machete 3.41.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -99,6 +99,8 @@ list             \-\- List all branches that fall into one of pre\-defined categ
 log              \-\- Log the part of history specific to the given branch
 .IP \(bu 2
 reapply          \-\- Rebase the current branch onto its computed fork point
+.IP \(bu 2
+rename           \-\- Rename a branch both in git and in the branch layout file
 .IP \(bu 2
 show             \-\- Show name(s) of the branch(es) relative to the position of a branch
 .IP \(bu 2
@@ -1725,6 +1727,41 @@ Specifies the alternative fork point commit after which the rebased part of hist
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
 Extra options to pass to the underlying \fBgit rebase\fP invocations, space\-separated.
 Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq git machete <command>\fP\&.
+.UNINDENT
+.SH RENAME
+.sp
+\fBUsage:\fP
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.EX
+git machete rename [\-b|\-\-branch=<branch>] [\-\-repoint\-tracking] <new\-name>
+.EE
+.UNINDENT
+.UNINDENT
+.sp
+Renames the given branch (or the current branch, if \fB\-b\fP/\fB\-\-branch\fP is not specified) to \fB<new\-name>\fP
+in both the local git repository and in the branch layout file.
+.sp
+Under the hood, \fBgit branch \-m\fP is used to rename the branch, which also automatically migrates
+the branch\(aqs remote tracking configuration to the new name.
+As a result, after the rename the local branch still tracks the same remote branch as before
+(for example \fBorigin/old\-name\fP), unless \fB\-\-repoint\-tracking\fP is given.
+.sp
+Note: \fBrename\fP does \fBnot\fP rename the branch on the remote — it only renames the local branch.
+The remote branch is left intact and can still be pushed to under its original name.
+.sp
+\fBOptions:\fP
+.INDENT 0.0
+.TP
+.BI \-b\fP,\fB  \-\-branch\fB= <branch>
+Branch to rename; if not given, the current branch is renamed.
+.TP
+.B  \-\-repoint\-tracking
+After the rename, try to set the tracking branch to \fB<remote>/<new\-name>\fP\&.
+If \fB<remote>/<new\-name>\fP does not exist, the tracking is unset instead.
+Without this flag the tracking branch is left pointing to the same remote
+branch it pointed to before (for example \fBorigin/old\-name\fP).
 .UNINDENT
 .SH SHOW
 .sp

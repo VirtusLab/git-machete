@@ -2,10 +2,11 @@ import subprocess
 import textwrap
 
 from .base_test import BaseTest
-from .cli_runner import assert_failure, assert_success, rewrite_branch_layout_file
+from .cli_runner import (assert_failure, assert_success,
+                         rewrite_branch_layout_file)
 from .git_repository import (check_out, commit, create_repo,
-                              create_repo_with_remote, get_local_branches,
-                              new_branch, push)
+                             create_repo_with_remote, get_local_branches,
+                             new_branch, push)
 from .shell import popen
 
 
