@@ -95,21 +95,21 @@ class TestCLI(BaseTest):
         assert_argparse_failure(
             ["--debg"],
             "Unrecognized arguments: --debg\n"
-            "For `--debg`: did you mean: `--debug`?")
+            "Did you mean: `--debug`?")
 
     def test_unknown_flag_suggests_close_match(self) -> None:
         """`git machete traverse --srart-from foo` should suggest `--start-from`."""
         assert_argparse_failure(
             ["traverse", "--srart-from", "foo"],
             "Unrecognized arguments: --srart-from foo\n"
-            "For `--srart-from`: did you mean: `--start-from`?")
+            "Did you mean: `--start-from`?")
 
     def test_unknown_flag_with_equals_suggests_close_match(self) -> None:
         """`--srart-from=foo` is split on `=` before fuzzy-matching."""
         assert_argparse_failure(
             ["traverse", "--srart-from=foo"],
             "Unrecognized arguments: --srart-from=foo\n"
-            "For `--srart-from`: did you mean: `--start-from`?")
+            "Did you mean: `--start-from`?")
 
     def test_unknown_flag_with_uppercase_letter_suggests_close_match(self) -> None:
         """A wrong-case typo (`--list-commitS` vs `--list-commits`) is still
@@ -121,7 +121,7 @@ class TestCLI(BaseTest):
         assert_argparse_failure(
             ["status", "--list-commitS"],
             "Unrecognized arguments: --list-commitS\n"
-            "For `--list-commitS`: did you mean: `--list-commits`, `--list-commits-with-hashes`?")
+            "Did you mean: `--list-commits`, `--list-commits-with-hashes`?")
 
     def test_unknown_flag_scoped_to_subparser(self) -> None:
         """Suggestions only consider options of the active subcommand.
@@ -130,17 +130,45 @@ class TestCLI(BaseTest):
         of it under `traverse` must NOT trigger a suggestion based on `discover`'s
         vocabulary - otherwise we'd be telling the user to use a flag that the
         active subcommand rejects.
+
+        Since there is no spelling-correction hint, the message falls back to
+        pointing the user at the subcommand's help page.
         """
         assert_argparse_failure(
             ["traverse", "--checked-out-snc", "foo"],
-            "Unrecognized arguments: --checked-out-snc foo")
+            "Unrecognized arguments: --checked-out-snc foo\n"
+            "See `git machete help traverse` for usage.")
 
     def test_unknown_flag_scoped_to_subparser_positive(self) -> None:
         """Conversely, when the typo is under the right subparser, suggest."""
         assert_argparse_failure(
             ["discover", "--checked-out-snc", "foo"],
             "Unrecognized arguments: --checked-out-snc foo\n"
-            "For `--checked-out-snc`: did you mean: `--checked-out-since`?")
+            "Did you mean: `--checked-out-since`?")
+
+    def test_unknown_short_flag_points_to_help(self) -> None:
+        """Short flags like `-q` or `-gs` have no long-option close match,
+        so the message falls back to the subcommand help page."""
+        assert_argparse_failure(
+            ["status", "-q"],
+            "Unrecognized arguments: -q\n"
+            "See `git machete help status` for usage.")
+
+    def test_unknown_short_flags_nested_subcommand_points_to_help(self) -> None:
+        """For a two-level subcommand (`github create-pr`), the hint points
+        at the top-level subcommand (`github`) since that is what
+        `git machete help` accepts as its argument."""
+        assert_argparse_failure(
+            ["github", "create-pr", "-gs"],
+            "Unrecognized arguments: -gs\n"
+            "See `git machete help github` for usage.")
+
+    def test_unknown_flag_no_subcommand_no_hint(self) -> None:
+        """At the top level (no subcommand selected), there is no help page
+        to point at, so no hint is appended when there is also no suggestion."""
+        assert_argparse_failure(
+            ["-q"],
+            "Unrecognized arguments: -q")
 
     # ─── Invalid choice for positional ───────────────────────────────────────
 

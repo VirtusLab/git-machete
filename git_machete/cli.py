@@ -352,13 +352,15 @@ class CustomArgumentParser(argparse.ArgumentParser):
             leftovers: List[str],
             parsed: argparse.Namespace,
     ) -> NoReturn:
-        active_parser = self._active_parser_chain(parsed)[-1]
+        chain = self._active_parser_chain(parsed)
+        active_parser = chain[-1]
         known_options = [
             opt for action in active_parser._actions
             for opt in action.option_strings
         ]
 
-        suggestion_lines: List[str] = []
+        # Collect (flag, close_matches) for every unrecognized option-like arg.
+        flag_suggestions: List[Tuple[str, List[str]]] = []
         for arg in leftovers:
             if not arg.startswith("-"):
                 continue
@@ -366,11 +368,25 @@ class CustomArgumentParser(argparse.ArgumentParser):
             flag = arg.split("=", 1)[0]
             close = _close_matches(flag, known_options)
             if close:
-                suggestion_lines.append(f"For `{flag}`: {_format_suggestions(close, capitalize=False)}")
+                flag_suggestions.append((flag, close))
 
         message = "Unrecognized arguments: " + " ".join(leftovers)
-        if suggestion_lines:
-            message += "\n" + "\n".join(suggestion_lines)
+        if len(flag_suggestions) == 1:
+            # Single suggestion: the flag already appears on the "Unrecognized
+            # arguments" line so the "For `flag`:" prefix would be redundant.
+            _, close = flag_suggestions[0]
+            message += "\n" + _format_suggestions(close)
+        elif flag_suggestions:
+            # Multiple flags with suggestions: prefix each line so the user can
+            # tell which suggestion belongs to which argument.
+            lines = [f"For `{flag}`: {_format_suggestions(close, capitalize=False)}"
+                     for flag, close in flag_suggestions]
+            message += "\n" + "\n".join(lines)
+        elif len(chain) > 1:
+            # No spelling-correction hint available: point to the subcommand's
+            # help page.  chain[1] is always the top-level subcommand parser.
+            top_cmd = chain[1].prog.split()[-1]
+            message += f"\nSee `git machete help {top_cmd}` for usage."
         self.error(message)
 
     def _fail_for_missing_required(self, actions: List[argparse.Action]) -> NoReturn:
