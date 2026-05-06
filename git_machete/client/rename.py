@@ -1,14 +1,15 @@
 from git_machete.client.base import MacheteClient
-from git_machete.git_operations import LocalBranchShortName, RemoteBranchShortName
+from git_machete.git_operations import (LocalBranchShortName,
+                                        RemoteBranchShortName)
 from git_machete.utils import MacheteException, print_fmt
 
 
 class RenameMacheteClient(MacheteClient):
 
     def rename(self,
+               *,
                branch: LocalBranchShortName,
                new_name: LocalBranchShortName,
-               *,
                opt_repoint_tracking: bool) -> None:
         self.expect_in_managed_branches(branch)
         if new_name == branch:
@@ -18,9 +19,9 @@ class RenameMacheteClient(MacheteClient):
 
         # git branch -m automatically moves branch.*.remote and branch.*.merge configs,
         # so after rename the new branch keeps tracking the same remote branch as before.
-        self._git.rename_local_branch(branch, new_name)
+        self._git.rename_local_branch(old_name=branch, new_name=new_name)
 
-        self._rename_branch_in_state(branch, new_name)
+        self._rename_branch_in_state(old_name=branch, new_name=new_name)
         self.save_branch_layout_file()
 
         if opt_repoint_tracking:
@@ -30,7 +31,7 @@ class RenameMacheteClient(MacheteClient):
             if remote is not None:
                 new_remote_branch = RemoteBranchShortName.of(f"{remote}/{new_name}")
                 if new_remote_branch in self._git.get_remote_branches():
-                    self._git.set_upstream_of(new_name, new_remote_branch)
+                    self._git.set_upstream_of(branch=new_name, remote_branch=new_remote_branch)
                     print_fmt(f"Repointed tracking to <b>{new_remote_branch}</b>")
                 else:
                     self._git.unset_upstream_of(new_name)
@@ -38,7 +39,7 @@ class RenameMacheteClient(MacheteClient):
 
         print_fmt(f"Renamed branch <b>{branch}</b> to <b>{new_name}</b>")
 
-    def _rename_branch_in_state(self, old_name: LocalBranchShortName, new_name: LocalBranchShortName) -> None:
+    def _rename_branch_in_state(self, *, old_name: LocalBranchShortName, new_name: LocalBranchShortName) -> None:
         idx = self._state.managed_branches.index(old_name)
         self._state.managed_branches[idx] = new_name
 
