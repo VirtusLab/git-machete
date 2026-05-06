@@ -13,7 +13,7 @@ from tests.shell import popen
 test_cases: Dict[str, str] = {
     "git machete ":
         "add advance anno completion delete-unmanaged diff discover edit file fork-point github gitlab "
-        "go help is-managed list log reapply show slide-out squash status traverse update version",
+        "go help is-managed list log reapply rename show slide-out squash status traverse update version",
     "git machete -":
         "--debug -h --help -v --verbose --version",
     "git machete a":
@@ -135,7 +135,7 @@ test_cases: Dict[str, str] = {
         "down first last next prev root up",
     "git machete help ":
         "add advance anno completion config delete-unmanaged diff discover edit file fork-point format github gitlab "
-        "go help hooks is-managed list log reapply show slide-out squash status traverse update version",
+        "go help hooks is-managed list log reapply rename show slide-out squash status traverse update version",
     "git machete is-managed ":
         "develop feature master",
     "git machete list ":
@@ -148,6 +148,14 @@ test_cases: Dict[str, str] = {
         "--debug -f --fork-point -h --help -v --verbose",
     "git machete reapply --fork-point ":
         "HEAD develop feature master",
+    "git machete rename -":
+        "-b --branch --debug -h --help --repoint-tracking -v --verbose",
+    "git machete rename -b ":
+        "develop master",
+    "git machete rename --branch ":
+        "develop master",
+    "git machete rename --branch=":
+        "develop master",
     "git machete s -":
         "-L --color --debug -h --help -l --list-commits --list-commits-with-hashes "
         "--no-detect-squash-merges --squash-merge-detection -v --verbose",
