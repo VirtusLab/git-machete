@@ -21,6 +21,7 @@ from git_machete.client.fork_point import ForkPointMacheteClient
 from git_machete.client.go_interactive import GoInteractiveMacheteClient
 from git_machete.client.go_show import GoShowMacheteClient
 from git_machete.client.log import LogMacheteClient
+from git_machete.client.reapply import ReapplyMacheteClient
 from git_machete.client.slide_out import SlideOutMacheteClient
 from git_machete.client.squash import SquashMacheteClient
 from git_machete.client.status import StatusMacheteClient
@@ -1101,18 +1102,10 @@ def launch_internal(orig_args: List[str]) -> None:
             branch = cli_opts.opt_branch or git.get_current_branch()
             log_client.display_log(branch, extra_git_log_args=pass_through_args)
         elif cmd == "reapply":
-            reapply_client = MacheteClient(git)
+            reapply_client = ReapplyMacheteClient(git)
             reapply_client.read_branch_layout_file()
-            current_branch = git.get_current_branch()
-            if cli_opts.opt_fork_point is not None:
-                reapply_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-                    fork_point=cli_opts.opt_fork_point, branch=current_branch)
-
-            reapply_fork_point = cli_opts.opt_fork_point or reapply_client.fork_point(branch=current_branch, use_overrides=True)
-            reapply_client.rebase(
-                onto=reapply_fork_point,
-                from_exclusive=reapply_fork_point,
-                branch=current_branch,
+            reapply_client.reapply(
+                opt_fork_point=cli_opts.opt_fork_point,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase)
         elif cmd == "show":
             direction = parsed_cli.direction
@@ -1164,20 +1157,9 @@ def launch_internal(orig_args: List[str]) -> None:
         elif cmd == "squash":
             squash_client = SquashMacheteClient(git)
             squash_client.read_branch_layout_file()
-            current_branch = git.get_current_branch()
-            if cli_opts.opt_fork_point is not None:
-                squash_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-                    fork_point=cli_opts.opt_fork_point, branch=current_branch)
-
-            squash_fork_point = cli_opts.opt_fork_point or squash_client.fork_point_or_none(branch=current_branch, use_overrides=True)
-            if squash_fork_point is None:
-                raise MacheteException(
-                    f"git-machete cannot determine the range of commits unique to branch <b>{current_branch}</b>.\n"
-                    f"Use `git machete squash --fork-point=...` to select the commit "
-                    f"after which the commits of <b>{current_branch}</b> start.\n"
-                    "For example, if you want to squash 3 latest commits, use `git machete squash --fork-point=HEAD~3`."
-                )
-            squash_client.squash(current_branch=current_branch, opt_fork_point=squash_fork_point)
+            squash_client.squash(
+                current_branch=git.get_current_branch(),
+                opt_fork_point=cli_opts.opt_fork_point)
         elif cmd in {"status", alias_by_command["status"]}:
             opt_squash_merge_detection = squash_merge_detection()
             status_client = StatusMacheteClient(git)
@@ -1214,9 +1196,6 @@ def launch_internal(orig_args: List[str]) -> None:
         elif cmd == "update":
             update_client = UpdateMacheteClient(git)
             update_client.read_branch_layout_file()
-            if cli_opts.opt_fork_point is not None:
-                update_client.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-                    fork_point=cli_opts.opt_fork_point, branch=git.get_current_branch())
             update_client.update(
                 opt_merge=cli_opts.opt_merge,
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,

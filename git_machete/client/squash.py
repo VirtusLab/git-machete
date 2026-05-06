@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 
 from git_machete.client.base import MacheteClient
 from git_machete.git_operations import (AnyRevision, FullCommitHash,
@@ -9,10 +9,21 @@ from git_machete.utils import MacheteException, print_fmt
 
 
 class SquashMacheteClient(MacheteClient):
-    def squash(self, *, current_branch: LocalBranchShortName, opt_fork_point: AnyRevision) -> None:
+    def squash(self, *, current_branch: LocalBranchShortName, opt_fork_point: Optional[AnyRevision]) -> None:
         self._git.expect_no_operation_in_progress()
+        if opt_fork_point is not None:
+            self.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
+                fork_point=opt_fork_point, branch=current_branch)
+        fork_point = opt_fork_point or self.fork_point_or_none(branch=current_branch, use_overrides=True)
+        if fork_point is None:
+            raise MacheteException(
+                f"git-machete cannot determine the range of commits unique to branch <b>{current_branch}</b>.\n"
+                f"Use `git machete squash --fork-point=...` to select the commit "
+                f"after which the commits of <b>{current_branch}</b> start.\n"
+                "For example, if you want to squash 3 latest commits, use `git machete squash --fork-point=HEAD~3`."
+            )
 
-        commits: List[GitLogEntry] = self._git.get_commits_between(earliest_exclusive=opt_fork_point, latest_inclusive=current_branch)
+        commits: List[GitLogEntry] = self._git.get_commits_between(earliest_exclusive=fork_point, latest_inclusive=current_branch)
         if not commits:
             raise MacheteException(
                 "No commits to squash. Use `-f` or `--fork-point` to specify the "
@@ -43,7 +54,7 @@ class SquashMacheteClient(MacheteClient):
         # otherwise the entire `commit-tree` will fail on some ancient supported
         # versions of git (at least on v1.7.10).
         squashed_hash = FullCommitHash.of(self._git.commit_tree_with_given_parent_and_message_and_env(
-            opt_fork_point, earliest_full_message, author_env).strip())
+            fork_point, earliest_full_message, author_env).strip())
 
         # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
         # Even worse, reset's reflog message would be filtered out in our fork point algorithm,

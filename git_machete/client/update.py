@@ -11,6 +11,9 @@ class UpdateMacheteClient(MacheteClient):
             opt_no_interactive_rebase: bool, opt_fork_point: Optional[AnyRevision]) -> None:
         self._git.expect_no_operation_in_progress()
         current_branch = self._git.get_current_branch()
+        if opt_fork_point is not None:
+            self.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
+                fork_point=opt_fork_point, branch=current_branch)
         use_merge = opt_merge or (current_branch in self.annotations and self.annotations[current_branch].qualifiers.update_with_merge)
         if use_merge:
             with_branch = self.get_or_infer_up_branch_for(
