@@ -11,7 +11,8 @@ def execute_ignoring_exit_code(command: str) -> None:
 
 
 def popen(command: str) -> str:
-    return subprocess.check_output(command, shell=True, timeout=5).decode("utf-8").strip()
+    timeout = 30 if "zsh" in command else 5
+    return subprocess.check_output(command, shell=True, timeout=timeout).decode("utf-8").strip()
 
 
 def read_file(file_name: str) -> str:

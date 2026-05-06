@@ -183,8 +183,7 @@ jobs:
       - checkout: {method: blobless}
       - run: brew install fish zsh
       - run: pip install tox
-      # TODO (#1005): make zsh completion tests pass on macOS machine on CI
-      - run: tox -e test-completions -- -vv -k "not zsh"
+      - run: tox -e test-completions -- -vv
       - run: PYTHON_VERSION=3-macos  tox -e coverage -- -vv
       - store_test_results:
           path: test-results/
@@ -298,7 +297,7 @@ only_special_branches: &only_special_branches
   filters:
     branches:
       only:
-        - "/.*(aur|ci[/-]|cross-platform|dependabot.pip|deploy|dry.run|hotfix|macos|nix|publish|release|windows).*/"
+        - "/.*(aur|ci[/-]|cross-platform|dependabot.pip|deploy|dry.run|hotfix|mac|nix|publish|release|windows).*/"
         - "develop"
         - "master"
 

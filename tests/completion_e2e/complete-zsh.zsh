@@ -44,22 +44,66 @@ comptest () {
   vared -c tmp
 }
 
+_run_once () {
+  local input=$1 preamble="" accumulated="" chunk="" i
+
+  # Create a new pty and run our function in it.
+  zpty {,}comptest
+
+  # Wait for vared to produce any output, which means it has started up and
+  # switched the terminal to raw mode.  On macOS we must NOT send any input
+  # before that moment: the pty's cooked-mode line discipline would process
+  # the TAB before ZLE sees it (expanding it or echoing it away) and the
+  # completion widget would never fire.
+  for i in $(seq 1 100); do
+    if zpty -r -t comptest chunk 2>/dev/null; then
+      preamble+="$chunk"
+      break
+    fi
+    sleep 0.05
+  done
+
+  if [[ -z "$preamble" ]]; then
+    zpty -d comptest 2>/dev/null
+    return 1
+  fi
+
+  # Now in raw mode: send the input text followed by TAB to trigger the widget.
+  zpty -w comptest "$input"$'\t'
+
+  # Accumulate output until we see ^C (the completion widget's final marker).
+  # We poll with non-blocking reads because on macOS zpty -r with a pattern
+  # blocks forever when the pattern is never matched, even after pty exits.
+  for i in $(seq 1 80); do
+    if zpty -r -t comptest chunk 2>/dev/null; then
+      accumulated+="$chunk"
+      [[ "$accumulated" == *$'\C-C'* ]] && break
+    else
+      sleep 0.05
+    fi
+  done
+
+  zpty -d comptest 2>/dev/null
+
+  [[ "$accumulated" == *$'\C-C'* ]] || return 1
+
+  local result="${accumulated#*$'\C-B'}"
+  echo "${result%$'\C-C'*}"
+}
+
 autoload -Uz compinit && compinit
 # Load the pseudo terminal module.
 zmodload zsh/zpty
 
 input=$1
 
-# Create a new pty and run our function in it.
-zpty {,}comptest
-# Simulate a command being typed, ending with TAB to get completions.
-zpty -w comptest "$input"$'\t'
-# Read up to the first delimiter. Discard all of this.
-zpty -r comptest REPLY $'*\C-B'
-# Read up to the second delimiter.
-zpty -r comptest REPLY $'*\C-C'
-# Delete the pty.
-zpty -d comptest
+# Retry up to 5 times.  On macOS the ZLE widget occasionally fails to fire on
+# the first attempt due to a timing race in the pty subprocess; a subsequent
+# attempt virtually always succeeds.
+local result=""
+for _ in $(seq 1 5); do
+  result=$(_run_once "$input" 2>/dev/null) && break
+  result=""
+done
 
-# Extract the results; trim off the ^C, just in case.
-echo "${REPLY%$'\C-C'}"
+echo "$result"
