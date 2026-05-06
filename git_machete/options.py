@@ -34,6 +34,7 @@ class CommandLineOptions:
         self.opt_override_to_parent: bool = False
         self.opt_push_tracked: bool = True
         self.opt_push_untracked: bool = True
+        self.opt_repoint_tracking: bool = False
         self.opt_related: bool = False
         self.opt_removed_from_remote: bool = False
         self.opt_return_to: str = "stay"

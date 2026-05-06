@@ -27,6 +27,7 @@ short_docs: Dict[str, str] = {
     "list": "List all branches that fall into one of pre-defined categories (mostly for internal use)",
     "log": "Log the part of history specific to the given branch",
     "reapply": "Rebase the current branch onto its computed fork point",
+    "rename": "Rename a branch both in git and in the branch layout file",
     "show": "Show name(s) of the branch(es) relative to the position of a branch",
     "slide-out": "Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge",
     "squash": "Squash the unique history of the current branch into a single commit",
@@ -1177,6 +1178,32 @@ long_docs: Dict[str, str] = {
            `GIT_MACHETE_REBASE_OPTS`
               Extra options to pass to the underlying `git rebase` invocations, space-separated.
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete <command>`.
+   """,
+    "rename": """
+        <b>Usage:</b><b>
+           git machete rename [-b|--branch=<branch>] [--repoint-tracking] <new-name></b>
+
+        Renames the given branch (or the current branch, if `-b`/`--branch` is not specified) to `<new-name>`
+        in both the local git repository and in the branch layout file.
+
+        Under the hood, `git branch -m` is used to rename the branch, which also automatically migrates
+        the branch's remote tracking configuration to the new name.
+        As a result, after the rename the local branch still tracks the same remote branch as before
+        (for example `origin/old-name`), unless `--repoint-tracking` is given.
+
+        Note: `rename` does <b>not</b> rename the branch on the remote — it only renames the local branch.
+        The remote branch is left intact and can still be pushed to under its original name.
+
+        <b>Options:</b>
+
+           <b>-b</b>, <b>--branch=<branch></b>
+              Branch to rename; if not given, the current branch is renamed.
+
+           <b>--repoint-tracking</b>
+              After the rename, try to set the tracking branch to `<remote>/<new-name>`.
+              If `<remote>/<new-name>` does not exist, the tracking is unset instead.
+              Without this flag the tracking branch is left pointing to the same remote
+              branch it pointed to before (for example `origin/old-name`).
    """,
     "show": """
         <b>Usage:</b><b>

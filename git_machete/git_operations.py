@@ -526,8 +526,17 @@ class GitContext:
 
         return {branch: branch in existing_branches for branch in branches}
 
+    def rename_local_branch(self, old_name: LocalBranchShortName, new_name: LocalBranchShortName) -> None:
+        self._run_git("branch", "-m", old_name, new_name, flush_caches=True)
+
     def set_upstream_to(self, remote_branch: RemoteBranchShortName) -> None:
         self._run_git("branch", "--set-upstream-to", remote_branch, flush_caches=True)
+
+    def set_upstream_of(self, branch: LocalBranchShortName, remote_branch: RemoteBranchShortName) -> None:
+        self._run_git("branch", "--set-upstream-to", remote_branch, branch, flush_caches=True)
+
+    def unset_upstream_of(self, branch: LocalBranchShortName) -> None:
+        self._run_git("branch", "--unset-upstream", branch, flush_caches=True)
 
     def reset_keep(self, to_revision: AnyRevision) -> None:
         try:

@@ -105,6 +105,13 @@ _git-machete() {
             '(-f --fork-point)'{-f,--fork-point=}'[Fork point commit after which the rebased part of history is meant to start]: :__git_references' \
             "${common_flags[@]}"
           ;;
+        (rename)
+          _arguments \
+            '1:: :__git_machete_list_managed' \
+            '(-b --branch)'{-b,--branch=}'[Branch to rename; if not given, the current branch is renamed]: :__git_machete_list_managed' \
+            '(--repoint-tracking)'--repoint-tracking'[After rename, try to set tracking to <remote>/<new-name>, or unset tracking if that remote branch does not exist]' \
+            "${common_flags[@]}"
+          ;;
         (show)
           _arguments \
             '1:: :__git_machete_directions_show' \
@@ -195,6 +202,7 @@ __git_machete_cmds=(
   'list:List all branches that fall into one of pre-defined categories (mostly for internal use)'
   'log:Log the part of history specific to the given branch'
   'reapply:Rebase the current branch onto its own fork point'
+  'rename:Rename a branch both in git and in the branch layout file'
   'show:Show name(s) of the branch(es) relative to the position of the current branch'
   'slide-out:Slide the current branch out and sync its downstream (child) branch with its upstream (parent) branch via rebase or merge'
   'squash:Squash the unique history of the current branch into a single commit'

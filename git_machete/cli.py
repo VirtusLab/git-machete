@@ -22,6 +22,7 @@ from git_machete.client.go_interactive import GoInteractiveMacheteClient
 from git_machete.client.go_show import GoShowMacheteClient
 from git_machete.client.log import LogMacheteClient
 from git_machete.client.reapply import ReapplyMacheteClient
+from git_machete.client.rename import RenameMacheteClient
 from git_machete.client.slide_out import SlideOutMacheteClient
 from git_machete.client.squash import SquashMacheteClient
 from git_machete.client.status import StatusMacheteClient
@@ -56,7 +57,7 @@ command_groups: List[Tuple[str, List[str]]] = [
     ("General topics",
      ["completion", "config", "file", "format", "help", "hooks", "version"]),
     ("Build, display and modify the tree of branch dependencies",
-     ["add", "anno", "discover", "edit", "status"]),
+     ["add", "anno", "discover", "edit", "rename", "status"]),
     ("List, check out and delete branches",
      ["delete-unmanaged", "go", "is-managed", "list", "show"]),
     ("Determine changes specific to the given branch",
@@ -543,6 +544,11 @@ def create_cli_parser() -> argparse.ArgumentParser:
     reapply_parser = create_subparser('reapply')
     reapply_parser.add_argument('-f', '--fork-point')
 
+    rename_parser = create_subparser('rename')
+    rename_parser.add_argument('new_name')
+    rename_parser.add_argument('-b', '--branch')
+    rename_parser.add_argument('--repoint-tracking', action='store_true')
+
     show_parser = create_subparser('show')
     show_parser.add_argument('direction', metavar='show direction', choices=[
         'c', 'current', 'd', 'down', 'f', 'first', 'l', 'last',
@@ -690,6 +696,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_push_untracked = True
         elif opt == "related":
             cli_opts.opt_related = True
+        elif opt == "repoint_tracking":
+            cli_opts.opt_repoint_tracking = True
         elif opt == "removed_from_remote":
             cli_opts.opt_removed_from_remote = True
         elif opt == "return_to":
@@ -1107,6 +1115,14 @@ def launch_internal(orig_args: List[str]) -> None:
             reapply_client.reapply(
                 opt_fork_point=cli_opts.opt_fork_point,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase)
+        elif cmd == "rename":
+            rename_client = RenameMacheteClient(git)
+            rename_client.read_branch_layout_file()
+            branch = cli_opts.opt_branch or git.get_current_branch()
+            rename_client.rename(
+                branch=branch,
+                new_name=LocalBranchShortName.of(parsed_cli.new_name),
+                opt_repoint_tracking=cli_opts.opt_repoint_tracking)
         elif cmd == "show":
             direction = parsed_cli.direction
             if direction == "current" and cli_opts.opt_branch:

@@ -22,6 +22,7 @@
 * :ref:`list`             -- List all branches that fall into one of pre-defined categories (mostly for internal use)
 * :ref:`log`              -- Log the part of history specific to the given branch
 * :ref:`reapply`          -- Rebase the current branch onto its computed fork point
+* :ref:`rename`           -- Rename a branch both in git and in the branch layout file
 * :ref:`show`             -- Show name(s) of the branch(es) relative to the position of a branch
 * :ref:`slide-out`        -- Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge
 * :ref:`squash`           -- Squash the unique history of the current branch into a single commit

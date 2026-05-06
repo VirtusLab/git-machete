@@ -2,7 +2,7 @@
 
 set -l __machete_help_topics config format hooks
 set -l __machete_commands_long add advance anno completion delete-unmanaged diff discover edit file fork-point \
-  github gitlab go help is-managed list log reapply show slide-out squash status traverse update version
+  github gitlab go help is-managed list log reapply rename show slide-out squash status traverse update version
 set -l __machete_commands_short d e g l s t
 set -l __machete_commands $__machete_commands_long $__machete_commands_short
 
@@ -184,6 +184,11 @@ complete -c git-machete -n "__fish_seen_subcommand_from log l"                  
 # git machete reapply
 complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands" -f                    -a reapply             -d 'Rebase the current branch onto its computed fork point'
 complete -c git-machete -n "__fish_seen_subcommand_from reapply"                 -x -l fork-point -s f -a '(__fish_git_refs)' -d 'Specifies the alternative fork point commit after which the rebased part of history is meant to start'
+
+# git machete rename
+complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"  -f -a rename    -d 'Rename a branch both in git and in the branch layout file'
+complete -c git-machete -n "__fish_seen_subcommand_from rename"                                                  -x -l branch -s b -a '(__machete_managed_branches)' -d 'Branch to rename; if not given, the current branch is renamed'
+complete -c git-machete -n "__fish_seen_subcommand_from rename; and not __fish_seen_subcommand_from --repoint-tracking"   -f -l repoint-tracking                                        -d 'After rename, try to set tracking to <remote>/<new-name>, or unset if that remote branch does not exist'
 
 # git machete show
 complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                                                             -f -a show    -d 'Show name(s) of the branch(es) relative to the position of a branch, accepts down/first/last/next/root/prev/up argument'

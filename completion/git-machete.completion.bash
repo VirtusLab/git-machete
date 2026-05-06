@@ -45,7 +45,7 @@ _git_machete_filter_mutex_groups() {
 }
 
 _git_machete() {
-  local cmds="add advance anno completion delete-unmanaged diff discover edit file fork-point github gitlab go help is-managed list log reapply show slide-out squash status traverse update version"
+  local cmds="add advance anno completion delete-unmanaged diff discover edit file fork-point github gitlab go help is-managed list log reapply rename show slide-out squash status traverse update version"
   local help_topics="$cmds config format hooks"
 
   local categories="addable childless managed slidable slidable-after unmanaged with-overridden-fork-point"
@@ -74,6 +74,7 @@ _git_machete() {
   local githublab_retarget_opts="-b --branch= --ignore-if-missing -U --update-related-descriptions"
   local githublab_update_descriptions_opts="--all --by= --mine --related"
   local reapply_opts="-f --fork-point="
+  local rename_opts="-b --branch= --repoint-tracking"
   local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase --no-rebase --removed-from-remote"
   local squash_opts="-f --fork-point="
   local status_opts="--color= -L --list-commits-with-hashes -l --list-commits --no-detect-squash-merges --squash-merge-detection="
@@ -137,6 +138,7 @@ _git_machete() {
             *) __gitcomp "$common_opts" ;;
           esac ;;
         reapply) __gitcomp "$common_opts $reapply_opts" ;;
+        rename) __gitcomp "$common_opts $rename_opts" ;;
         slide-out)
           local filtered_slide_out_opts
           filtered_slide_out_opts=$(_git_machete_filter_mutex_groups "$slide_out_opts" \
