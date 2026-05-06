@@ -1,6 +1,8 @@
 from typing import List
 
-from git_machete.cli import commands_and_aliases
+from git_machete.generated_docs import long_docs
+from git_machete.help import (alias_by_command, command_groups,
+                              commands_and_aliases)
 from git_machete.utils import ExitCode
 
 from .base_test import BaseTest
@@ -44,6 +46,17 @@ class TestHelp(BaseTest):
         for command in commands_and_aliases:
             help_output = launch_command('help', command)
             assert '\033' not in help_output
+
+    def test_aliases_unique(self) -> None:
+        assert len(alias_by_command.values()) == len(set(alias_by_command.values()))
+
+    def test_all_commands_present_in_command_groups(self) -> None:
+        # Deprecated commands are intentionally excluded from the help overview.
+        intentionally_hidden = {'clean'}
+        grouped = {cmd for _, cmds in command_groups for cmd in cmds}
+        for cmd in long_docs:
+            if cmd not in intentionally_hidden:
+                assert cmd in grouped, f"`{cmd}` is in long_docs but missing from command_groups in cli.py"
 
     def test_help_succeeds_despite_invalid_git_config_key(self) -> None:
         create_repo()

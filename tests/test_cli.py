@@ -5,7 +5,7 @@ from typing import List
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.cli import alias_by_command, main
+from git_machete.cli import main
 from git_machete.utils import ExitCode
 
 from .base_test import BaseTest
@@ -31,9 +31,6 @@ def assert_argparse_failure(cmd_and_args: List[str], expected_output: str) -> No
 
 
 class TestCLI(BaseTest):
-    def test_aliases_unique(self) -> None:
-        assert len(alias_by_command.values()) == len(set(alias_by_command.values()))
-
     @pytest.mark.parametrize("flag", ["--debug", "-v", "--verbose"])
     def test_verbose_no_command(self, flag: str) -> None:
         # Asserting on the full help output here would be brittle (the listing
