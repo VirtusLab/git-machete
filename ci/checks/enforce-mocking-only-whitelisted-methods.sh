@@ -16,7 +16,6 @@ git_machete.github.GitHubClient.MAX_PULLS_PER_PAGE_COUNT
 git_machete.github.GitHubToken.for_domain
 git_machete.gitlab.GitLabClient.MAX_PULLS_PER_PAGE_COUNT
 git_machete.gitlab.GitLabToken.for_domain
-git_machete.utils._popen_cmd
 git_machete.utils._run_cmd
 git_machete.utils.find_executable
 git_machete.utils.get_current_date
@@ -24,7 +23,6 @@ git_machete.utils.get_terminal_height
 git_machete.utils.is_stderr_a_tty
 git_machete.utils.is_stdout_a_tty
 git_machete.utils.is_terminal_fully_fledged
-shutil.which
 sys.argv
 termios.tcgetattr
 termios.tcsetattr

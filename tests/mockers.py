@@ -3,9 +3,9 @@ import subprocess
 import sys
 from contextlib import AbstractContextManager, contextmanager
 from tempfile import mkdtemp
-from typing import Any, Callable, Iterator, Tuple
+from typing import Any, Callable, Iterator
 
-from git_machete.utils import PopenResult
+from tests.shell import set_file_executable, write_to_file
 
 
 @contextmanager
@@ -46,12 +46,47 @@ def temporary_home_directory() -> Iterator[str]:
         yield home
 
 
-def mock__popen_cmd_with_fixed_results(*results: Tuple[int, str, str]) -> Callable[..., PopenResult]:
-    gen = (i for i in results)
+@contextmanager
+def fake_executables_on_path(**executables: str) -> Iterator[str]:
+    """For the duration of the with-block, write fake executables to a
+    fresh temporary directory and PREPEND that directory to `PATH`.
 
-    def inner(*args: Any, **kwargs: Any) -> PopenResult:  # noqa: U100
-        return PopenResult(*next(gen))
-    return inner
+    Each keyword argument maps an executable name (e.g. `gh`, `glab`) to a
+    Python script body. The wrappers invoke the body with the original CLI
+    args, so the body can inspect `sys.argv[1:]`, `print()` to
+    stdout/stderr, and set the exit code via `sys.exit(...)` - mimicking a
+    real CLI tool from the SUT's perspective.
+
+    Two wrappers are written per executable so `shutil.which(name)` finds
+    the fake on either platform:
+      - POSIX: an extensionless `name` shell script with the executable
+        bit set.
+      - Windows: a `name.cmd` batch file (Windows resolves the `.cmd`
+        extension via `PATHEXT`).
+
+    Both wrappers force `PYTHONIOENCODING=utf-8` so `print()` works
+    consistently across hosts (especially Windows, whose default stdio
+    encoding is locale-dependent).
+
+    `PATH` is only PREPENDED to (not replaced), so other tools the test
+    relies on - notably `git` - keep working through the rest of `PATH`.
+    Yields the path of the bin directory in case the test needs to inspect
+    or amend it."""
+    bin_dir = mkdtemp()
+    py = sys.executable
+    for name, body in executables.items():
+        impl_path = os.path.join(bin_dir, f'{name}_impl.py')
+        write_to_file(impl_path, body)
+        posix_path = os.path.join(bin_dir, name)
+        write_to_file(posix_path,
+                      f'#!/bin/sh\nPYTHONIOENCODING=utf-8 exec "{py}" "{impl_path}" "$@"\n')
+        set_file_executable(posix_path)
+        windows_path = os.path.join(bin_dir, f'{name}.cmd')
+        write_to_file(windows_path,
+                      f'@echo off\r\nset PYTHONIOENCODING=utf-8\r\n"{py}" "{impl_path}" %*\r\n')
+    new_path = bin_dir + os.pathsep + os.environ.get('PATH', '')
+    with overridden_environment(PATH=new_path):
+        yield bin_dir
 
 
 def mock__run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:

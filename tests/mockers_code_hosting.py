@@ -1,7 +1,7 @@
 import json
 import os
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 from urllib.error import HTTPError
 
 from git_machete.code_hosting import OrganizationAndRepository
@@ -45,7 +45,3 @@ def mock_from_url(domain: str, url: str) -> "OrganizationAndRepository":  # noqa
     }
     dir = url.split(os.path.sep)[-1]
     return OrganizationAndRepository("example-org", dir_to_repo[dir])
-
-
-def mock_shutil_which(path: Optional[str]) -> Callable[[Any], Optional[str]]:
-    return lambda _cmd: path
