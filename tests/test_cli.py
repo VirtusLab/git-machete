@@ -146,6 +146,16 @@ class TestCLI(BaseTest):
             "Unrecognized arguments: --checked-out-snc foo\n"
             "Did you mean: `--checked-out-since`?")
 
+    def test_two_unknown_flags_each_with_suggestion(self) -> None:
+        """When multiple unrecognized flags each have a close match, every
+        suggestion line is prefixed with the originating flag name so the
+        user can tell them apart."""
+        assert_argparse_failure(
+            ["traverse", "--srart-from", "foo", "--debugg"],
+            "Unrecognized arguments: --srart-from foo --debugg\n"
+            "For `--srart-from`: did you mean: `--start-from`?\n"
+            "For `--debugg`: did you mean: `--debug`?")
+
     def test_unknown_short_flag_points_to_help(self) -> None:
         """Short flags like `-q` or `-gs` have no long-option close match,
         so the message falls back to the subcommand help page."""

@@ -3,6 +3,7 @@ extend-exclude = [
   "ci/checks/*",
   "graphics/*.cast",
   "graphics/generate-asciinema-gif",
+  "tests/test_cli.py"  # to allow for testing typos in commands/flags
 ]
 
 [default.extend-words]
