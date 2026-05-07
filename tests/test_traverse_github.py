@@ -59,7 +59,7 @@ class TestTraverseGitHub(BaseTest):
     def test_traverse_sync_retarget_github_prs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, "git_machete.github.GitHubToken.for_domain", mock_github_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
+        self.patch_symbol(mocker, 'git_machete.utils.fs.get_current_date', lambda: '2023-12-31')
         github_api_state = self.github_api_state_for_test_traverse_sync_github_prs()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
 

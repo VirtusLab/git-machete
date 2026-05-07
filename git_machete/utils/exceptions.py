@@ -9,10 +9,8 @@ output.
 from enum import Enum, IntEnum
 from typing import Optional, Type, TypeVar
 
+from . import markup
 from .markup import _fmt
-
-# Parent-package imports are intentionally lazy (inside function bodies); see
-# `markup.py` for the rationale.
 
 E = TypeVar('E', bound=Enum)
 
@@ -26,9 +24,7 @@ class InteractionStopped(Exception):
 
 class UnderlyingGitException(Exception):
     def __init__(self, msg: str) -> None:
-        from git_machete import utils as _utils
-
-        self.msg: str = _fmt(msg, use_ansi_escapes=_utils.use_ansi_escapes_in_stdout)
+        self.msg: str = _fmt(msg, use_ansi_escapes=markup.use_ansi_escapes_in_stdout)
 
     def __str__(self) -> str:
         return str(self.msg)
@@ -36,16 +32,14 @@ class UnderlyingGitException(Exception):
 
 class MacheteException(Exception):
     def __init__(self, msg: str) -> None:
-        from git_machete import utils as _utils
-
-        self.msg: str = _fmt(msg, use_ansi_escapes=_utils.use_ansi_escapes_in_stdout)
+        self.msg: str = _fmt(msg, use_ansi_escapes=markup.use_ansi_escapes_in_stdout)
 
     def __str__(self) -> str:
         return str(self.msg)
 
 
 class UnexpectedMacheteException(MacheteException):
-    def __init__(self, msg: str) -> None:
+    def __init__(self, msg: str) -> None:  # pragma: no cover
         super().__init__(f"{msg}\n\nConsider posting an issue at `{NEW_ISSUE_LINK}`")
 
 

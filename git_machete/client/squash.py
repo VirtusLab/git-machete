@@ -5,7 +5,8 @@ from git_machete.client.base import MacheteClient
 from git_machete.git_operations import (AnyRevision, FullCommitHash,
                                         GitFormatPatterns, GitLogEntry,
                                         LocalBranchShortName)
-from git_machete.utils import MacheteException, print_fmt
+from git_machete.utils.exceptions import MacheteException
+from git_machete.utils.markup import print_fmt
 
 
 class SquashMacheteClient(MacheteClient):

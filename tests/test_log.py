@@ -11,7 +11,7 @@ from .mockers import (fixed_author_and_committer_date_in_past,
 class TestLog(BaseTest):
 
     def test_log(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils._run_cmd', mock__run_cmd_and_forward_stdout)
+        self.patch_symbol(mocker, 'git_machete.utils._subproc._run_cmd', mock__run_cmd_and_forward_stdout)
 
         create_repo()
         with fixed_author_and_committer_date_in_past():

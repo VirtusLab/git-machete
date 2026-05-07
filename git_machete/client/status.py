@@ -6,15 +6,17 @@ import sys
 from enum import Enum, auto
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
-from git_machete import utils
 from git_machete.annotation import Annotation
 from git_machete.config import SquashMergeDetection
 from git_machete.git_operations import (BranchPair, FullCommitHash,
                                         GitLogEntry, LocalBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (MacheteException, PopenResult, debug,
-                               escape_markup, print_fmt, warn)
+from git_machete.utils._subproc import PopenResult
+from git_machete.utils.debug_log import debug
+from git_machete.utils.exceptions import MacheteException
+from git_machete.utils.markup import escape_markup, print_fmt, warn
 
+from ..utils import cmd, markup
 from .base import MacheteClient
 
 
@@ -331,7 +333,7 @@ class StatusMacheteClient(MacheteClient):
             hook_output = ""
             if hook_executable:
                 debug(f"running machete-status-branch hook ({hook_path}) for branch {branch}")
-                hook_env = dict(os.environ, ASCII_ONLY=str(not utils.use_ansi_escapes_in_stdout).lower())
+                hook_env = dict(os.environ, ASCII_ONLY=str(not markup.use_ansi_escapes_in_stdout).lower())
                 status_code, stdout, stderr = self._popen_hook(
                     hook_path, branch, cwd=self._git.get_current_worktree_root_dir(), env=hook_env)
                 if status_code == 0 and not stdout.isspace():
@@ -396,6 +398,6 @@ class StatusMacheteClient(MacheteClient):
     @staticmethod
     def _popen_hook(*args: str, cwd: str, env: Dict[str, str]) -> PopenResult:
         if sys.platform == "win32":
-            return utils.popen_cmd("sh", *args, cwd=cwd, env=env)
+            return cmd.popen_cmd("sh", *args, cwd=cwd, env=env)
         else:
-            return utils.popen_cmd(*args, cwd=cwd, env=env)
+            return cmd.popen_cmd(*args, cwd=cwd, env=env)

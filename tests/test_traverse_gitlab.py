@@ -59,7 +59,7 @@ class TestTraverseGitLab(BaseTest):
     def test_traverse_sync_gitlab_mrs(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
-        self.patch_symbol(mocker, 'git_machete.utils.get_current_date', lambda: '2023-12-31')
+        self.patch_symbol(mocker, 'git_machete.utils.fs.get_current_date', lambda: '2023-12-31')
         gitlab_api_state = self.gitlab_api_state_for_test_traverse_sync_gitlab_mrs()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 

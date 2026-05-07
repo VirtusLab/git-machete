@@ -6,9 +6,9 @@ import tempfile
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete import utils
-from git_machete.utils import (BasicTerminalAnsiOutputCodes,
-                               FullTerminalAnsiOutputCodes)
+from git_machete.utils import debug_log, fs, markup, paths
+from git_machete.utils.terminal import (BasicTerminalAnsiOutputCodes,
+                                        FullTerminalAnsiOutputCodes)
 
 from .base_test import BaseTest
 
@@ -18,10 +18,10 @@ class TestUtils(BaseTest):
     def test_debug_doesnt_overwrite_local_vars(self) -> None:
         foo = {"foo": 1}
         try:
-            utils.debug_mode = True
-            utils.debug("")
+            debug_log.debug_mode = True
+            debug_log.debug("")
         finally:
-            utils.debug_mode = False
+            debug_log.debug_mode = False
         assert foo["foo"] == 1  # and not string "1"
 
     def test_fmt(self, mocker: MockerFixture) -> None:
@@ -37,8 +37,8 @@ class TestUtils(BaseTest):
             ' default ' + F.DIM + ' dimmed ' + F.ENDC_BOLD_DIM + F.ENDC + ' ' + F.GREEN + 'green ' +
             F.UNDERLINE + 'green_underlined' + F.ENDC_UNDERLINE + F.ENDC + ' default' + F.ENDC
         )
-        self.patch_symbol(mocker, 'git_machete.utils.is_terminal_fully_fledged', lambda: True)
-        assert utils._fmt(input_string, use_ansi_escapes=True) == expected_full_terminal
+        self.patch_symbol(mocker, 'git_machete.utils.terminal.is_terminal_fully_fledged', lambda: True)
+        assert markup._fmt(input_string, use_ansi_escapes=True) == expected_full_terminal
 
         expected_basic_terminal = (
             B.RED + ' red ' + B.YELLOW + 'yellow ' + B.BOLD + 'yellow_bold' + B.ENDC_BOLD_DIM + ' ' +
@@ -46,23 +46,23 @@ class TestUtils(BaseTest):
             ' default ' + B.DIM + ' dimmed ' + B.ENDC_BOLD_DIM + B.ENDC + ' ' + B.GREEN + 'green ' +
             B.UNDERLINE + 'green_underlined' + B.ENDC_UNDERLINE + B.ENDC + ' default' + B.ENDC
         )
-        self.patch_symbol(mocker, 'git_machete.utils.is_terminal_fully_fledged', lambda: False)
-        assert utils._fmt(input_string, use_ansi_escapes=True) == expected_basic_terminal
+        self.patch_symbol(mocker, 'git_machete.utils.terminal.is_terminal_fully_fledged', lambda: False)
+        assert markup._fmt(input_string, use_ansi_escapes=True) == expected_basic_terminal
 
         expected_ascii = ' red yellow yellow_bold yellow_underlined yellow green  default  dimmed  green green_underlined default'
-        assert utils._fmt(input_string, use_ansi_escapes=False) == expected_ascii
+        assert markup._fmt(input_string, use_ansi_escapes=False) == expected_ascii
 
     def test_get_current_date(self) -> None:
-        assert re.fullmatch("20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]", utils.get_current_date())
+        assert re.fullmatch("20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]", fs.get_current_date())
 
     def test_hex_repr(self) -> None:
-        assert utils.hex_repr("Hello, world!") == "48:65:6c:6c:6f:2c:20:77:6f:72:6c:64:21"
+        assert debug_log.hex_repr("Hello, world!") == "48:65:6c:6c:6f:2c:20:77:6f:72:6c:64:21"
 
     def test_abspath_posix_general(self) -> None:
         """Test that abspath_posix returns an absolute path with forward slashes."""
         # Create a temporary directory to ensure we're working with real paths
         with tempfile.TemporaryDirectory() as tmpdir:
-            normalized = utils.abspath_posix(tmpdir)
+            normalized = paths.abspath_posix(tmpdir)
             # Should be absolute
             assert os.path.isabs(normalized)
             # Should use forward slashes (no backslashes)
@@ -79,7 +79,7 @@ class TestUtils(BaseTest):
             # Verify it contains backslashes before normalization
             assert '\\' in tmpdir or '/' in tmpdir  # Windows paths have one or the other
 
-            normalized = utils.abspath_posix(tmpdir)
+            normalized = paths.abspath_posix(tmpdir)
 
             # After normalization, should have forward slashes only
             assert '\\' not in normalized
@@ -96,7 +96,7 @@ class TestUtils(BaseTest):
             # tmpdir is in /tmp or /var on macOS
             # It might be returned as /var/folders/... or /private/var/folders/...
 
-            normalized = utils.abspath_posix(tmpdir)
+            normalized = paths.abspath_posix(tmpdir)
 
             # After normalization with resolve(), should have /private prefix if in /var or /tmp
             # (resolve resolves the symlink)
@@ -109,7 +109,7 @@ class TestUtils(BaseTest):
     def test_abspath_posix_unix_absolute_paths(self) -> None:
         """Test that paths start with / on Unix systems."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            normalized = utils.abspath_posix(tmpdir)
+            normalized = paths.abspath_posix(tmpdir)
             # Should start with / on Unix
             assert normalized.startswith('/')
             # Should not contain backslashes

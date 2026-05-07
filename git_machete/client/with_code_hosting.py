@@ -2,7 +2,6 @@ import itertools
 import os
 from typing import Dict, Iterator, List, Optional, Set, Tuple
 
-from git_machete import utils
 from git_machete.annotation import Annotation, Qualifiers
 from git_machete.client.status import StatusMacheteClient
 from git_machete.code_hosting import (CodeHostingClient, CodeHostingSpec,
@@ -14,10 +13,16 @@ from git_machete.git_operations import (GitContext, GitFormatPatterns,
                                         GitLogEntry, LocalBranchShortName,
                                         RemoteBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (MacheteException, UnexpectedMacheteException,
-                               colored_yes_no, debug, find_or_none, green_ok,
-                               join_paths_posix, pretty_choices, print_fmt,
-                               slurp_file, warn)
+from git_machete.utils.collections_utils import find_or_none
+from git_machete.utils.debug_log import debug
+from git_machete.utils.exceptions import (MacheteException,
+                                          UnexpectedMacheteException)
+from git_machete.utils.fs import slurp_file
+from git_machete.utils.markup import (colored_yes_no, green_ok, pretty_choices,
+                                      print_fmt, warn)
+from git_machete.utils.paths import join_paths_posix
+
+from ..utils import collections_utils, fs
 
 
 class MacheteClientWithCodeHosting(StatusMacheteClient):
@@ -403,7 +408,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         reviewers_path = self._git.get_main_worktree_git_subpath('info', 'reviewers')
         if os.path.isfile(reviewers_path):
-            reviewers = utils.get_non_empty_lines(slurp_file(reviewers_path))
+            reviewers = collections_utils.get_non_empty_lines(slurp_file(reviewers_path))
         else:
             reviewers = []
         if reviewers:
@@ -748,7 +753,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             prepend += f'## Tree of downstream {pr_short_name}s'
         else:
             prepend += f'## Chain of upstream {pr_short_name}s'
-        current_date = utils.get_current_date()
+        current_date = fs.get_current_date()
         prepend += f' as of {current_date}\n\n'
 
         def pr_entry(_pr: PullRequest, _depth: int) -> str:
@@ -932,7 +937,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 raise MacheteException(f"There is a cycle between {spec.display_name} {spec.pr_short_name}s: " +
                                        " -> ".join(visited_head_branches + [pr_base]))
             visited_head_branches += [pr_base]
-            pr = utils.find_or_none(lambda x: x.head == pr_base, self._get_all_open_prs())
+            pr = collections_utils.find_or_none(lambda x: x.head == pr_base, self._get_all_open_prs())
             path = (path + [pr]) if pr else path
             pr_base = pr.base if pr else None
         return path
@@ -952,7 +957,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             f"{spec.repository_name} <b>{self.code_hosting_client.organization}</b>/<b>{self.code_hosting_client.repository}</b>")
         if pr_numbers:
             for pr_number in pr_numbers:
-                pr: Optional[PullRequest] = utils.find_or_none(lambda x: x.number == pr_number, all_open_prs)
+                pr: Optional[PullRequest] = collections_utils.find_or_none(lambda x: x.number == pr_number, all_open_prs)
                 if pr:
                     result.append(pr)
                 else:

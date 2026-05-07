@@ -11,9 +11,10 @@ from git_machete.config import (SquashMergeDetection,
                                 TraverseWhenBranchNotCheckedOutInAnyWorktree)
 from git_machete.git_operations import (GitContext, LocalBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (MacheteException, ParsableEnum,
-                               UnexpectedMacheteException, abspath_posix,
-                               green_ok, pretty_choices, print_fmt, warn)
+from git_machete.utils.exceptions import (MacheteException, ParsableEnum,
+                                          UnexpectedMacheteException)
+from git_machete.utils.markup import green_ok, pretty_choices, print_fmt, warn
+from git_machete.utils.paths import abspath_posix
 
 
 class TraverseReturnTo(ParsableEnum):

@@ -7,7 +7,8 @@ from typing import Any, Tuple, Type
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils import AnsiInputCodes, FullTerminalAnsiOutputCodes
+from git_machete.utils.terminal import (AnsiInputCodes,
+                                        FullTerminalAnsiOutputCodes)
 
 from .base_test import BaseTest
 from .cli_runner import (assert_failure, launch_command,
@@ -82,9 +83,9 @@ class TestGoInteractive(BaseTest):
         Helper to run an interactive test by mocking stdin and terminal methods.
         Returns the captured stdout.
         """
-        self.patch_symbol(mocker, 'git_machete.utils.is_stdout_a_tty', lambda: True)
-        self.patch_symbol(mocker, 'git_machete.utils.is_stderr_a_tty', lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
+        self.patch_symbol(mocker, 'git_machete.utils.terminal.is_stdout_a_tty', lambda: True)
+        self.patch_symbol(mocker, 'git_machete.utils.terminal.is_stderr_a_tty', lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_terminal_fully_fledged", lambda: True)
 
         # Mock _get_stdin_fd to return a fake file descriptor
         self.patch_symbol(mocker, 'git_machete.client.go_interactive.GoInteractiveMacheteClient._get_stdin_fd',
@@ -319,7 +320,7 @@ class TestGoInteractive(BaseTest):
         """Test that scrolling works when there are more branches than fit on screen."""
         # Mock terminal height to 3, which results in max_visible_branches = 1 (3 - 2)
         # With only 1 branch visible, initial view shows just master; after 3x DOWN we show feature-2.
-        self.patch_symbol(mocker, 'git_machete.utils.get_terminal_height', lambda: 3)
+        self.patch_symbol(mocker, 'git_machete.utils.terminal.get_terminal_height', lambda: 3)
 
         check_out("master")
 
@@ -379,7 +380,7 @@ class TestGoInteractive(BaseTest):
         """Test that scrolling up works when starting from a branch that requires initial scroll offset."""
         # Mock terminal height to 3, which results in max_visible_branches = 1 (3 - 2)
         # With only 1 branch visible, initial view shows just feature-2; after 3x UP we show master.
-        self.patch_symbol(mocker, 'git_machete.utils.get_terminal_height', lambda: 3)
+        self.patch_symbol(mocker, 'git_machete.utils.terminal.get_terminal_height', lambda: 3)
 
         check_out("feature-2")
 
@@ -450,7 +451,7 @@ class TestGoInteractive(BaseTest):
 
     def test_go_interactive_requires_tty(self, mocker: MockerFixture) -> None:
         """Interactive `go` fails immediately when stdout is not a TTY (e.g. piped to cat)."""
-        self.patch_symbol(mocker, 'git_machete.utils.is_stdout_a_tty', lambda: False)
+        self.patch_symbol(mocker, 'git_machete.utils.terminal.is_stdout_a_tty', lambda: False)
         assert_failure(
             ['go'],
             "Interactive git machete go requires stdout to be a TTY.",

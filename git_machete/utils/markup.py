@@ -5,25 +5,27 @@ blocks plus a few self-closing tags - and is rendered to either ANSI escape
 sequences or plain ASCII depending on whether the destination stream is a
 TTY (and on `--color`).
 
-`_fmt` looks up :func:`is_terminal_fully_fledged` indirectly through the
-parent :mod:`git_machete.utils` namespace, so that :func:`unittest.mock.patch`
-on `git_machete.utils.is_terminal_fully_fledged` (used heavily in tests) keeps
-working after the module split.
+`_fmt` looks up `is_terminal_fully_fledged` via `terminal.is_terminal_fully_fledged()`
+(rather than via a `from .terminal import ...` binding) so that
+`unittest.mock.patch('git_machete.utils.terminal.is_terminal_fully_fledged', ...)`
+in tests is honoured at every call.
 """
 
 import re
 import sys
 from typing import Any, List, Optional, Tuple
 
+from . import terminal
 from .collections_utils import map_truthy_only
 from .terminal import BasicTerminalAnsiOutputCodes, FullTerminalAnsiOutputCodes
 
-# Note: `git_machete.utils` (the parent package) is imported lazily inside the
-# functions that need it - both to break the package <-> submodule import cycle
-# that pylint's `cyclic-import` check would otherwise flag, and so that
-# `unittest.mock.patch('git_machete.utils.is_terminal_fully_fledged', ...)` and
-# external assignments to `utils.use_ansi_escapes_in_*` are picked up at every
-# call (the package object holds the canonical bindings).
+# === Mutable runtime flags ===
+#
+# Whether to emit ANSI escapes on stdout / stderr. Set by `cli.py` based on
+# `--color` and TTY detection; read by `print_fmt`, `input_fmt`, and -
+# indirectly via `_fmt` - by `MacheteException` / `UnderlyingGitException`.
+use_ansi_escapes_in_stdout: bool = sys.stdout.isatty()
+use_ansi_escapes_in_stderr: bool = sys.stderr.isatty()
 
 
 def escape_markup(s: str) -> str:
@@ -36,11 +38,11 @@ def escape_markup(s: str) -> str:
 
 
 def _fmt(s: str, *, use_ansi_escapes: bool) -> str:
-    from git_machete import utils as _utils
-
-    # Looked up via the parent package so that `mock.patch('git_machete.utils.is_terminal_fully_fledged', ...)`
-    # in tests is honoured - rebinding the attribute on the package replaces the value seen here.
-    ao = FullTerminalAnsiOutputCodes if _utils.is_terminal_fully_fledged() else BasicTerminalAnsiOutputCodes
+    # Looked up via the `terminal` module (not via a top-level
+    # `from .terminal import is_terminal_fully_fledged`) so that
+    # `mock.patch('git_machete.utils.terminal.is_terminal_fully_fledged', ...)`
+    # is honoured.
+    ao = FullTerminalAnsiOutputCodes if terminal.is_terminal_fully_fledged() else BasicTerminalAnsiOutputCodes
 
     # pattern                                  ansi replacement                            ascii replacement
     rules: List[Tuple[str, str, str]] = [
@@ -78,9 +80,7 @@ def print_fmt(s: str, *, file: Optional[Any] = None, newline: bool = True) -> No
     subsequent print_fmt (e.g. "OK") appears on the same line
     without delay.
     """
-    from git_machete import utils as _utils
-
-    use_ansi = _utils.use_ansi_escapes_in_stderr if file is sys.stderr else _utils.use_ansi_escapes_in_stdout
+    use_ansi = use_ansi_escapes_in_stderr if file is sys.stderr else use_ansi_escapes_in_stdout
     # Defaults to stdout at call time so that contextlib.redirect_stdout is respected.
     if file is None:
         file = sys.stdout
@@ -89,9 +89,7 @@ def print_fmt(s: str, *, file: Optional[Any] = None, newline: bool = True) -> No
 
 
 def input_fmt(prompt: str) -> str:
-    from git_machete import utils as _utils
-
-    return input(_fmt(prompt, use_ansi_escapes=_utils.use_ansi_escapes_in_stdout))
+    return input(_fmt(prompt, use_ansi_escapes=use_ansi_escapes_in_stdout))
 
 
 def warn(msg: str) -> None:

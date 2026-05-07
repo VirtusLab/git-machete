@@ -4,7 +4,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from git_machete import __version__
 from git_machete.generated_docs import long_docs, short_docs
-from git_machete.utils import ExitCode, print_fmt
+from git_machete.utils.exceptions import ExitCode
+from git_machete.utils.markup import print_fmt
 
 alias_by_command: Dict[str, str] = {
     "diff": "d",

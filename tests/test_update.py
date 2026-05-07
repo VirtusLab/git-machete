@@ -1,7 +1,7 @@
 from pytest_mock import MockerFixture
 
-from git_machete.utils import (FullTerminalAnsiOutputCodes,
-                               UnderlyingGitException)
+from git_machete.utils.exceptions import UnderlyingGitException
+from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 
 from .base_test import BaseTest
 from .cli_runner import (assert_failure, assert_success, launch_command,
@@ -260,9 +260,9 @@ class TestUpdate(BaseTest):
         assert get_commit_hash("branch-1") == original_branch_1_hash
 
         E = FullTerminalAnsiOutputCodes
-        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stderr_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_terminal_fully_fledged", lambda: True)
 
         pc_yn = f"({E.GREEN}y{E.ENDC}, {E.RED}N{E.ENDC})"
         self.patch_symbol(mocker, "builtins.input", mock_input_returning_y)

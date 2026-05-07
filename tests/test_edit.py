@@ -60,7 +60,7 @@ class TestEdit(BaseTest):
         assert read_file(".git/machete").strip() == "foo"
 
     def test_edit_no_variant_matches(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, "git_machete.utils.find_executable", lambda _executable: None)
+        self.patch_symbol(mocker, "git_machete.utils.fs.find_executable", lambda _executable: None)
         create_repo()
         set_git_config_key("core.editor", "lolxd-this-doesnt-exist")
 

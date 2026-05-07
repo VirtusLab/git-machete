@@ -9,14 +9,19 @@ except ImportError:  # pragma: no cover; Windows-specific
     termios = None  # type: ignore[assignment]
     tty = None  # type: ignore[assignment]
 
-from git_machete import utils
 from git_machete.client.status import (StatusData, StatusFlags,
                                        StatusMacheteClient)
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import (AnsiInputCodes, BasicTerminalAnsiOutputCodes,
-                               FullTerminalAnsiOutputCodes, MacheteException,
-                               UnexpectedMacheteException, index_or_none,
-                               is_terminal_fully_fledged, print_fmt, warn)
+from git_machete.utils.collections_utils import index_or_none
+from git_machete.utils.exceptions import (MacheteException,
+                                          UnexpectedMacheteException)
+from git_machete.utils.markup import print_fmt, warn
+from git_machete.utils.terminal import (AnsiInputCodes,
+                                        BasicTerminalAnsiOutputCodes,
+                                        FullTerminalAnsiOutputCodes,
+                                        is_terminal_fully_fledged)
+
+from ..utils import terminal
 
 AI = AnsiInputCodes
 
@@ -35,7 +40,7 @@ class GoInteractiveMacheteClient(StatusMacheteClient):
 
     def _get_max_visible_branches(self) -> int:
         """Get the maximum number of branches that can be displayed based on terminal height."""
-        terminal_height = utils.get_terminal_height()
+        terminal_height = terminal.get_terminal_height()
         if terminal_height is None:
             # Fallback if terminal size cannot be determined (e.g., not a TTY)
             return self.MAX_VISIBLE_BRANCHES_DEFAULT
@@ -123,7 +128,7 @@ class GoInteractiveMacheteClient(StatusMacheteClient):
         """
         if termios is None or tty is None:
             raise UnexpectedMacheteException("Interactive mode is not supported on Windows yet")
-        if not utils.is_stdout_a_tty():
+        if not terminal.is_stdout_a_tty():
             raise MacheteException("Interactive `git machete go` requires stdout to be a TTY.")
 
         self._current_branch = current_branch

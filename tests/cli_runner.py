@@ -5,7 +5,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from typing import Iterable, Optional, Tuple, Type
 
 from git_machete import cli
-from git_machete.utils import MacheteException
+from git_machete.utils.exceptions import MacheteException
 
 
 def launch_command_capturing_output_and_exception(*cmd_and_args: str) -> Tuple[Optional[str], Optional[BaseException]]:

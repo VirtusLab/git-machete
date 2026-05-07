@@ -5,8 +5,8 @@ import textwrap
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils import (FullTerminalAnsiOutputCodes,
-                               UnderlyingGitException)
+from git_machete.utils.exceptions import UnderlyingGitException
+from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 
 from .base_test import BaseTest
 from .cli_runner import (assert_failure, assert_success, launch_command,
@@ -80,9 +80,9 @@ class TestTraverse(BaseTest):
 
     def test_traverse_slide_out(self, mocker: MockerFixture) -> None:
         E = FullTerminalAnsiOutputCodes
-        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stderr_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_terminal_fully_fledged", lambda: True)
 
         create_repo()
         new_branch("master")
@@ -325,9 +325,9 @@ class TestTraverse(BaseTest):
 
     def test_traverse_ahead_of_remote_responses(self, mocker: MockerFixture) -> None:
         E = FullTerminalAnsiOutputCodes
-        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stderr_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         new_branch("master")
@@ -359,9 +359,9 @@ class TestTraverse(BaseTest):
 
     def test_traverse_behind_remote_responses(self, mocker: MockerFixture) -> None:
         E = FullTerminalAnsiOutputCodes
-        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stderr_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         new_branch("master")
@@ -556,9 +556,9 @@ class TestTraverse(BaseTest):
 
     def test_traverse_no_push_no_checkout(self, mocker: MockerFixture) -> None:
         E = FullTerminalAnsiOutputCodes
-        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stderr_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         new_branch("root")
@@ -1897,9 +1897,9 @@ class TestTraverse(BaseTest):
 
     def test_traverse_yellow_edges(self, mocker: MockerFixture) -> None:
         E = FullTerminalAnsiOutputCodes
-        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stderr_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_terminal_fully_fledged", lambda: True)
 
         create_repo()
         new_branch("master")
@@ -1992,9 +1992,9 @@ class TestTraverse(BaseTest):
 
     def test_traverse_behind_remote_with_red_edge(self, mocker: MockerFixture) -> None:
         E = FullTerminalAnsiOutputCodes
-        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stderr_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         new_branch("master")
@@ -2029,9 +2029,9 @@ class TestTraverse(BaseTest):
 
     def test_traverse_diverged_from_and_older_with_red_edge(self, mocker: MockerFixture) -> None:
         E = FullTerminalAnsiOutputCodes
-        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stderr_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_terminal_fully_fledged", lambda: True)
 
         create_repo_with_remote()
         new_branch("master")

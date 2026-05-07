@@ -5,7 +5,7 @@ from typing import Optional
 
 from git_machete.code_hosting import CodeHostingGitConfigKeys
 from git_machete.git_operations import GitContext
-from git_machete.utils import ParsableEnum
+from git_machete.utils.exceptions import ParsableEnum
 
 
 def _override_fork_point_to_key(branch: str) -> str:

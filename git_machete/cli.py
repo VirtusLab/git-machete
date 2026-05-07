@@ -10,7 +10,7 @@ from typing import (Any, Dict, FrozenSet, Iterable, Iterator, List, NoReturn,
                     Optional, Sequence, Set, Tuple, TypeVar)
 
 import git_machete.options
-from git_machete import __version__, utils
+from git_machete import __version__
 from git_machete.client.advance import AdvanceMacheteClient
 from git_machete.client.anno import AnnoMacheteClient
 from git_machete.client.base import MacheteClient
@@ -36,9 +36,11 @@ from git_machete.gitlab import GITLAB_CLIENT_SPEC
 from .git_operations import AnyRevision, GitContext, LocalBranchShortName
 from .help import (MacheteHelpAction, alias_by_command, commands_and_aliases,
                    get_help_description, version)
-from .utils import (ExitCode, InteractionStopped, MacheteException,
-                    UnderlyingGitException, UnexpectedMacheteException,
-                    green_ok, print_fmt, warn)
+from .utils import cmd, debug_log, fs, markup, paths, terminal
+from .utils.exceptions import (ExitCode, InteractionStopped, MacheteException,
+                               UnderlyingGitException,
+                               UnexpectedMacheteException)
+from .utils.markup import green_ok, print_fmt, warn
 
 T = TypeVar('T')
 
@@ -660,10 +662,10 @@ def update_cli_options_using_config_keys(
 def set_utils_global_variables(parsed_args: argparse.Namespace) -> None:
     args = vars(parsed_args)
     color = args.get("color")
-    utils.use_ansi_escapes_in_stdout = color == "always" or (color in {None, "auto"} and utils.is_stdout_a_tty())
-    utils.use_ansi_escapes_in_stderr = color == "always" or (color in {None, "auto"} and utils.is_stderr_a_tty())
-    utils.debug_mode = "debug" in args
-    utils.verbose_mode = "verbose" in args
+    markup.use_ansi_escapes_in_stdout = color == "always" or (color in {None, "auto"} and terminal.is_stdout_a_tty())
+    markup.use_ansi_escapes_in_stderr = color == "always" or (color in {None, "auto"} and terminal.is_stderr_a_tty())
+    debug_log.debug_mode = "debug" in args
+    cmd.verbose_mode = "verbose" in args
 
 
 def launch(orig_args: List[str]) -> None:
@@ -674,7 +676,7 @@ def launch(orig_args: List[str]) -> None:
 
 
 def launch_internal(orig_args: List[str]) -> None:
-    initial_current_directory: Optional[str] = utils.get_current_directory_or_none()
+    initial_current_directory: Optional[str] = fs.get_current_directory_or_none()
 
     try:
         cli_opts = git_machete.options.CommandLineOptions()
@@ -811,7 +813,7 @@ def launch_internal(orig_args: List[str]) -> None:
         elif cmd == "file":
             # No need to read branch layout file.
             file_client = MacheteClient(git)
-            print(utils.abspath_posix(file_client.branch_layout_file_path))
+            print(paths.abspath_posix(file_client.branch_layout_file_path))
         elif cmd == "fork-point":
             fork_point_client = ForkPointMacheteClient(git)
             fork_point_client.read_branch_layout_file()
@@ -1081,7 +1083,7 @@ def launch_internal(orig_args: List[str]) -> None:
         elif cmd in {"status", alias_by_command["status"]}:
             opt_squash_merge_detection = squash_merge_detection()
             status_client = StatusMacheteClient(git)
-            status_client.read_branch_layout_file(interactively_slide_out_invalid_branches=utils.is_stdout_a_tty())
+            status_client.read_branch_layout_file(interactively_slide_out_invalid_branches=terminal.is_stdout_a_tty())
             status_client.expect_at_least_one_managed_branch()
             status_client.status(
                 warn_when_branch_in_sync_but_fork_point_off=True,
@@ -1095,7 +1097,7 @@ def launch_internal(orig_args: List[str]) -> None:
 
             spec = GITHUB_CLIENT_SPEC if cli_opts.opt_sync_github_prs else GITLAB_CLIENT_SPEC
             traverse_client = TraverseMacheteClient(git, spec)
-            traverse_client.read_branch_layout_file(interactively_slide_out_invalid_branches=utils.is_stdout_a_tty())
+            traverse_client.read_branch_layout_file(interactively_slide_out_invalid_branches=terminal.is_stdout_a_tty())
             traverse_client.traverse(
                 opt_fetch=cli_opts.opt_fetch,
                 opt_list_commits=cli_opts.opt_list_commits,
@@ -1125,13 +1127,13 @@ def launch_internal(orig_args: List[str]) -> None:
         # Note that this problem (current directory no longer existing due to e.g. underlying git checkouts)
         # has been fixed in git itself as of 2.35.0:
         # see https://github.com/git/git/blob/master/Documentation/RelNotes/2.35.0.txt#L81
-        if initial_current_directory and not utils.does_directory_exist(initial_current_directory):
+        if initial_current_directory and not fs.does_directory_exist(initial_current_directory):
             nearest_existing_parent_directory = initial_current_directory
-            while not utils.does_directory_exist(nearest_existing_parent_directory):
-                nearest_existing_parent_directory = utils.join_paths_posix(
+            while not fs.does_directory_exist(nearest_existing_parent_directory):
+                nearest_existing_parent_directory = paths.join_paths_posix(
                     nearest_existing_parent_directory, os.path.pardir)
             warn(f"current directory {initial_current_directory} no longer exists, "
-                 f"the nearest existing parent directory is {utils.abspath_posix(nearest_existing_parent_directory)}")
+                 f"the nearest existing parent directory is {paths.abspath_posix(nearest_existing_parent_directory)}")
 
 
 def main() -> None:

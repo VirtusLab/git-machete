@@ -11,7 +11,7 @@ from .shell import write_to_file
 class TestDiff(BaseTest):
 
     def test_diff(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.utils._run_cmd', mock__run_cmd_and_forward_stdout)  # to capture `git diff` outputs
+        self.patch_symbol(mocker, 'git_machete.utils._subproc._run_cmd', mock__run_cmd_and_forward_stdout)  # to capture `git diff` outputs
         create_repo_with_remote()
         new_branch("master")
         add_file_and_commit(message='master commit1')

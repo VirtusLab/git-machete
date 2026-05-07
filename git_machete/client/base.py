@@ -7,7 +7,6 @@ import textwrap
 from enum import Enum, auto
 from typing import Callable, Dict, Iterator, List, NoReturn, Optional, Tuple
 
-from git_machete import utils
 from git_machete.client import branch_layout
 from git_machete.client.state import MacheteState
 from git_machete.config import MacheteConfig, SquashMergeDetection
@@ -19,11 +18,14 @@ from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
                                         LocalBranchShortName,
                                         RemoteBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils import (InteractionStopped, MacheteException,
-                               UnexpectedMacheteException, debug, excluding,
-                               get_second, input_fmt, join_paths_posix,
-                               pretty_choices, print_fmt, relpath_posix,
-                               tupled, warn)
+from git_machete.utils.collections_utils import excluding, get_second, tupled
+from git_machete.utils.debug_log import debug
+from git_machete.utils.exceptions import (InteractionStopped, MacheteException,
+                                          UnexpectedMacheteException)
+from git_machete.utils.markup import input_fmt, pretty_choices, print_fmt, warn
+from git_machete.utils.paths import join_paths_posix, relpath_posix
+
+from ..utils import cmd, collections_utils, fs
 
 
 class PickRoot(Enum):
@@ -90,7 +92,7 @@ class MacheteClient:
         def strip_remote_name(remote_branch: RemoteBranchShortName) -> LocalBranchShortName:
             return LocalBranchShortName.of(re.sub("^[^/]+/", "", remote_branch))
 
-        remote_counterparts_of_local_branches = utils.map_truthy_only(
+        remote_counterparts_of_local_branches = collections_utils.map_truthy_only(
             self._git.get_combined_counterpart_for_fetching_of_branch,
             self._git.get_local_branches())
         qualifying_remote_branches: List[RemoteBranchShortName] = \
@@ -289,9 +291,9 @@ class MacheteClient:
     def __run_hook(self, *args: str, cwd: str) -> int:
         self._git.flush_caches()
         if sys.platform == "win32":
-            return utils.run_cmd("sh", *args, cwd=cwd)
+            return cmd.run_cmd("sh", *args, cwd=cwd)
         else:
-            return utils.run_cmd(*args, cwd=cwd)
+            return cmd.run_cmd(*args, cwd=cwd)
 
     def rebase(
             self, *,
@@ -386,7 +388,7 @@ class MacheteClient:
 
         command = default_editor_with_args[0]
         args = default_editor_with_args[1:] + [self._branch_layout_file_path]
-        return utils.run_cmd(command, *args)
+        return cmd.run_cmd(command, *args)
 
     def __get_editor_with_args(self) -> List[str]:
         # Based on the git's own algorithm for identifying the editor.
@@ -415,7 +417,7 @@ class MacheteClient:
                 editor_command = editor_parsed[0]
                 editor_repr = "'" + name + "'" + ((' (' + editor + ')') if editor_command != name else '')
 
-                if not utils.find_executable(editor_command):
+                if not fs.find_executable(editor_command):
                     debug(f"'{editor_command}' executable ('{name}') not found")
                     if name == "$" + git_machete_editor_var:
                         # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
@@ -489,7 +491,7 @@ class MacheteClient:
         else:
             debug(f"commit {computed_fork_point} is the most recent point in history of {branch} to occur on "
                   "filtered reflog of any other branch or its remote counterpart "
-                  f"(specifically: {' and '.join(map(utils.get_second, containing_branch_pairs))})")
+                  f"(specifically: {' and '.join(map(collections_utils.get_second, containing_branch_pairs))})")
 
             if parent and upstream_hash and \
                     self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()) and \

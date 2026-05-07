@@ -40,7 +40,7 @@ def temporary_home_directory() -> Iterator[str]:
     relative to `~` will see the temp dir for the duration of the
     with-block. The test can then drop real files (e.g. `.github-token`,
     `.config/hub`) into the yielded path - which is preferable to mocking
-    `os.path.isfile` / `git_machete.utils.slurp_file`."""
+    `os.path.isfile` / `git_machete.utils.fs.slurp_file`."""
     home = mkdtemp()
     with overridden_environment(HOME=home, USERPROFILE=home):
         yield home
@@ -90,7 +90,7 @@ def fake_executables_on_path(**executables: str) -> Iterator[str]:
 
 
 def mock__run_cmd_and_forward_stdout(cmd: str, *args: str, **kwargs: Any) -> int:
-    """Drop-in replacement for `git_machete.utils._run_cmd` that makes a
+    """Drop-in replacement for `git_machete.utils._subproc._run_cmd` that makes a
     subprocess's stdout observable to the `redirect_stdout(...)` context
     manager used by `launch_command()` in tests.
 

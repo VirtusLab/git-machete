@@ -3,8 +3,8 @@ import textwrap
 
 from pytest_mock import MockerFixture
 
-from git_machete.utils import (ExitCode, FullTerminalAnsiOutputCodes,
-                               UnderlyingGitException)
+from git_machete.utils.exceptions import ExitCode, UnderlyingGitException
+from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 
 from .base_test import BaseTest
 from .cli_runner import (assert_failure, assert_success, launch_command,
@@ -187,9 +187,9 @@ class TestAdvance(BaseTest):
         assert_failure(["advance"], "Invalid index: 3")
 
         E = FullTerminalAnsiOutputCodes
-        self.patch_symbol(mocker, "git_machete.utils.is_stdout_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_stderr_a_tty", lambda: True)
-        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stdout_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_stderr_a_tty", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_terminal_fully_fledged", lambda: True)
 
         pc_yn = f"({E.GREEN}y{E.ENDC}, {E.RED}N{E.ENDC})"
 

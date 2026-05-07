@@ -1,7 +1,7 @@
 import re
 from typing import Callable, NamedTuple
 
-from git_machete.utils import escape_markup
+from git_machete.utils.markup import escape_markup
 
 
 class Qualifiers(NamedTuple):

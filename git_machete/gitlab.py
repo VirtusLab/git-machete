@@ -9,7 +9,6 @@ import urllib.parse
 import urllib.request
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from git_machete import utils
 from git_machete.code_hosting import (CodeHostingClient,
                                       CodeHostingGitConfigKeys,
                                       CodeHostingSpec,
@@ -17,8 +16,13 @@ from git_machete.code_hosting import (CodeHostingClient,
                                       OrganizationAndRepositoryAndGitUrl,
                                       PullRequest)
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import (MacheteException, UnexpectedMacheteException,
-                               compact_dict, debug, map_truthy_only, popen_cmd)
+from git_machete.utils.cmd import popen_cmd
+from git_machete.utils.collections_utils import map_truthy_only
+from git_machete.utils.debug_log import compact_dict, debug
+from git_machete.utils.exceptions import (MacheteException,
+                                          UnexpectedMacheteException)
+
+from .utils import fs
 
 GITLAB_TOKEN_ENV_VAR = 'GITLAB_TOKEN'
 
@@ -57,7 +61,7 @@ class GitLabToken(NamedTuple):
             # glpat-mytoken_for_gitlab_com
             # glpat-myothertoken_for_git_example_org git.example.org
             # glpat-yetanothertoken_for_git_example_com git.example.com
-            for line in utils.slurp_file(file_full_path).splitlines():
+            for line in fs.slurp_file(file_full_path).splitlines():
                 if line.rstrip().endswith(" " + domain):
                     token = line.split(" ")[0]
                     return cls(value=token, provider=provider)

@@ -1,8 +1,8 @@
 """Debug-mode logging.
 
-`debug` is a no-op unless `git_machete.utils.debug_mode` is set (typically
-because `--debug` was passed on the command line). It pulls argument names
-and values directly from the caller's frame via `inspect`.
+`debug` is a no-op unless `debug_mode` is set (typically because `--debug`
+was passed on the command line). It pulls argument names and values
+directly from the caller's frame via `inspect`.
 """
 
 import inspect
@@ -14,8 +14,18 @@ from typing import Any, Dict
 from .collections_utils import excluding
 from .markup import escape_markup, print_fmt
 
-# Parent-package imports are intentionally lazy (inside function bodies); see
-# `markup.py` for the rationale.
+# === Mutable runtime flags ===
+#
+# Set by `cli.py` based on `--debug`; read here and (for command logging)
+# also by `cmd.py`.
+debug_mode: bool = False
+
+# === Token-redaction constants ===
+#
+# https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
+# https://docs.gitlab.com/ee/security/token_overview.html#gitlab-tokens
+CODE_HOSTING_TOKEN_PREFIXES = ['ghp_', 'gho_', 'ghu_', 'ghs_', 'ghr_', 'glpat-']
+CODE_HOSTING_TOKEN_PREFIX_REGEX = '(' + '|'.join(CODE_HOSTING_TOKEN_PREFIXES) + ')'
 
 
 def hex_repr(input: str) -> str:
@@ -27,9 +37,7 @@ def compact_dict(d: Dict[str, Any]) -> Dict[str, str]:
 
 
 def debug(msg: str) -> None:
-    from git_machete import utils as _utils
-
-    if not _utils.debug_mode:
+    if not debug_mode:
         return
 
     func = inspect.stack()[1].function
@@ -42,7 +50,7 @@ def debug(msg: str) -> None:
 
     args_to_be_redacted = {'access_token', 'password', 'secret', 'token'}
     for arg, value in values.items():
-        if arg in args_to_be_redacted or any(prefix in str(value) for prefix in _utils.CODE_HOSTING_TOKEN_PREFIXES):
+        if arg in args_to_be_redacted or any(prefix in str(value) for prefix in CODE_HOSTING_TOKEN_PREFIXES):
             values[arg] = '***'
         elif type(value) is dict:
             values[arg] = compact_dict(value)

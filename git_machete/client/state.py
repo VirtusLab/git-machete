@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 
 from git_machete.annotation import Annotation
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import flat_map
+from git_machete.utils.collections_utils import flat_map
 
 
 class MacheteState:

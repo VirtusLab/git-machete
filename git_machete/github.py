@@ -9,7 +9,6 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
-from git_machete import utils
 from git_machete.code_hosting import (CodeHostingClient,
                                       CodeHostingGitConfigKeys,
                                       CodeHostingSpec,
@@ -17,9 +16,14 @@ from git_machete.code_hosting import (CodeHostingClient,
                                       OrganizationAndRepositoryAndGitUrl,
                                       PullRequest)
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils import (MacheteException, UnexpectedMacheteException,
-                               compact_dict, debug, join_paths_posix,
-                               popen_cmd, warn)
+from git_machete.utils.cmd import popen_cmd
+from git_machete.utils.debug_log import compact_dict, debug
+from git_machete.utils.exceptions import (MacheteException,
+                                          UnexpectedMacheteException)
+from git_machete.utils.markup import warn
+from git_machete.utils.paths import join_paths_posix
+
+from .utils import fs
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
@@ -59,7 +63,7 @@ class GitHubToken(NamedTuple):
             # ghp_mytoken_for_github_com
             # ghp_myothertoken_for_git_example_org git.example.org
             # ghp_yetanothertoken_for_git_example_com git.example.com
-            for line in utils.slurp_file(file_full_path).splitlines():
+            for line in fs.slurp_file(file_full_path).splitlines():
                 if line.rstrip().endswith(" " + domain):
                     token = line.split(" ")[0]
                     return cls(value=token, provider=provider)
@@ -137,7 +141,7 @@ class GitHubToken(NamedTuple):
             #   oauth_token: *******************
             #   protocol: {protocol}
             found_host = False
-            for line in utils.slurp_file(config_hub_path).splitlines():
+            for line in fs.slurp_file(config_hub_path).splitlines():
                 if line.rstrip() == domain + ":":
                     found_host = True
                 elif found_host and line.lstrip().startswith("oauth_token:"):

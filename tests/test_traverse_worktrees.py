@@ -4,7 +4,8 @@ import subprocess
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils import UnderlyingGitException, abspath_posix
+from git_machete.utils.exceptions import UnderlyingGitException
+from git_machete.utils.paths import abspath_posix
 
 from .base_test import BaseTest
 from .cli_runner import (assert_failure, assert_success, launch_command,

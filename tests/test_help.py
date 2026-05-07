@@ -3,7 +3,7 @@ from typing import List
 from git_machete.generated_docs import long_docs
 from git_machete.help import (alias_by_command, command_groups,
                               commands_and_aliases)
-from git_machete.utils import ExitCode
+from git_machete.utils.exceptions import ExitCode
 
 from .base_test import BaseTest
 from .cli_runner import (launch_command,
