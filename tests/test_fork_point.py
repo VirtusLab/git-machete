@@ -1,5 +1,9 @@
 import os
 
+from pytest_mock import MockerFixture
+
+from git_machete.utils import FullTerminalAnsiOutputCodes
+
 from .base_test import BaseTest
 from .cli_runner import (assert_failure, assert_success, launch_command,
                          rewrite_branch_layout_file)
@@ -118,7 +122,9 @@ class TestForkPoint(BaseTest):
 
         assert_success(['fork-point', '--unset-override'], "")
 
-    def test_fork_point_override_to_parent_and_inferred(self) -> None:
+    def test_fork_point_override_to_parent_and_inferred(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
+
         with fixed_author_and_committer_date_in_past():
             create_repo_with_remote()
             new_branch("master")
@@ -205,6 +211,21 @@ class TestForkPoint(BaseTest):
               o-develop * (untracked)
             """
         )
+
+        # Validate the full ANSI rendering of the green `-> fork point` annotation:
+        # the arrow must be the non-ASCII `\u279a` and the marker must be RED.
+        E = FullTerminalAnsiOutputCodes
+        raw_output = launch_command("status", "-L", "--color=always")
+        expected_ansi = (
+            f"  {E.BOLD}master{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}\n"
+            f"  {E.GREEN}│{E.ENDC}\n"
+            f"  {E.GREEN}│{E.ENDC} {E.DIM}ad97c34{E.ENDC_BOLD_DIM}  {E.DIM}in-between commit{E.ENDC_BOLD_DIM} "
+            f"{E.RED}➔ fork point{E.ENDC}\n"
+            f"  {E.GREEN}│{E.ENDC} {E.DIM}989bd92{E.ENDC_BOLD_DIM}  {E.DIM}develop commit{E.ENDC_BOLD_DIM}\n"
+            f"  {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}develop{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}"
+            f"{E.ORANGE} (untracked){E.ENDC}\n"
+        )
+        assert raw_output == expected_ansi
 
     def test_fork_point_overridden_to_non_descendant_of_parent_while_branch_descendant_of_parent(self) -> None:
         create_repo()
