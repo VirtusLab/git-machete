@@ -244,6 +244,22 @@ class StatusMacheteClient(MacheteClient):
             )
         return f"{first_part}.\n\n{second_part}."
 
+    def _is_fork_point_on_parent_remote_counterpart(
+            self,
+            *,
+            parent_branch: LocalBranchShortName,
+            fork_point: FullCommitHash) -> bool:
+        # Suppresses the spurious yellow edge that appears when the parent branch is merely behind
+        # its remote counterpart and the child branch was forked from a commit on the remote
+        # that is ahead of parent's local HEAD. We require that the fork point lies strictly
+        # between parent's local HEAD and parent's remote counterpart, so that legitimate
+        # yellow edges (where the fork point is older than parent's local HEAD) are preserved.
+        parent_remote = self._git.get_combined_counterpart_for_fetching_of_branch(parent_branch)
+        if parent_remote is None:
+            return False
+        return self._git.is_ancestor(parent_branch.full_name(), fork_point) and \
+            self._git.is_ancestor_or_equal(fork_point, parent_remote.full_name())
+
     def compute_status_data(self, *, flags: StatusFlags) -> StatusData:
         managed_branches: List[LocalBranchShortName] = self._state.managed_branches  # already returns a copy
 
@@ -271,11 +287,23 @@ class StatusMacheteClient(MacheteClient):
                 sync_to_parent_status[branch] = SyncToParentStatus.MERGED_TO_PARENT
             elif not self._git.is_ancestor_or_equal(parent_branch.full_name(), branch.full_name()):
                 sync_to_parent_status[branch] = SyncToParentStatus.OUT_OF_SYNC
-            elif self._get_overridden_fork_point(branch) or \
-                    self._git.get_commit_hash_by_revision(parent_branch) == fork_point_hash(branch):
+            elif self._get_overridden_fork_point(branch):
                 sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC
             else:
-                sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF
+                fp = fork_point_hash(branch)
+                # `fork_point_hash` only returns None when `fork_point_and_containing_branch_pairs` raises
+                # `MacheteException`, which in turn requires reflog inference to fail AND one of:
+                # parent is missing, parent commit is unresolvable, or parent is not an ancestor of branch
+                # with no common merge-base (unrelated histories). All of these are ruled out by reaching
+                # this branch: parent exists (the early `continue` above) and parent is an ancestor of branch
+                # (the preceding `elif` would have classified it as OUT_OF_SYNC otherwise).
+                assert fp is not None
+                if self._git.get_commit_hash_by_revision(parent_branch) == fp:
+                    sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC
+                elif self._is_fork_point_on_parent_remote_counterpart(parent_branch=parent_branch, fork_point=fp):
+                    sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC
+                else:
+                    sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF
 
         currently_bisected_branch = self._git.get_currently_bisected_branch_or_none()
         currently_rebased_branch = self._git.get_currently_rebased_branch_or_none()

@@ -15,8 +15,8 @@ from .git_repository import (add_file_and_commit, add_remote, check_out,
                              commit, commit_n_times, create_repo,
                              create_repo_with_remote, delete_branch,
                              delete_remote_branch, new_branch,
-                             new_orphan_branch, push, set_git_config_key,
-                             unset_git_config_key)
+                             new_orphan_branch, push, reset_to,
+                             set_git_config_key, unset_git_config_key)
 from .mockers import (fixed_author_and_committer_date_in_past,
                       mock_input_returning, mock_input_returning_y,
                       overridden_environment)
@@ -735,6 +735,38 @@ class TestStatus(BaseTest):
             or reattaching the affected branches under different parent branches.
         """)
         assert raw_output == expected_ansi
+
+    def test_status_no_yellow_edge_when_parent_behind_remote(self) -> None:
+        # Reproduces a common false-positive yellow edge: the parent branch is just
+        # behind its remote counterpart, but the child branch was forked from the
+        # remote tip. The fork point of the child is then ahead of parent's local
+        # HEAD, which used to render as a yellow edge. The edge should be green.
+        create_repo_with_remote()
+        new_branch("master")
+        commit("master commit 1")
+        push()
+        commit("master commit 2")
+        push()
+        new_branch("develop")
+        commit("develop commit")
+        check_out("master")
+        reset_to("HEAD~")  # master is now behind origin/master
+
+        rewrite_branch_layout_file(
+            """
+            master
+                develop
+            """
+        )
+
+        assert_success(
+            ['status'],
+            """
+              master * (behind origin)
+              |
+              o-develop (untracked)
+            """,
+        )
 
     def test_status_ansi_escapes(self, mocker: MockerFixture) -> None:
         # Setup: develop (root); feature-in-sync behind develop=RED; feature-merged merged into develop=DIM;
