@@ -49,8 +49,8 @@ class StatusOngoingOperation(NamedTuple):
 class StatusBranch(NamedTuple):
     """Per-branch data for status output (tree structure, sync state, commits, annotations)."""
 
-    up_branch: Optional[LocalBranchShortName]
-    down_branches: List[LocalBranchShortName]
+    parent: Optional[LocalBranchShortName]
+    children: List[LocalBranchShortName]
     sync_to_parent_status: SyncToParentStatus
     commits: List[Tuple[GitLogEntry, str]]
     sync_status: str
@@ -110,7 +110,7 @@ class StatusMacheteClient(MacheteClient):
 
         def prefix_dfs(parent: LocalBranchShortName, accumulated_path: List[Optional[LocalBranchShortName]]) -> None:
             next_sibling_of_ancestor_by_branch[parent] = accumulated_path
-            children = data.branches[parent].down_branches
+            children = data.branches[parent].children
             if children:
                 shifted_children: List[Optional[LocalBranchShortName]] = children[1:]  # type: ignore[assignment]
                 for (v, nv) in zip(children, shifted_children + [None]):
@@ -138,7 +138,7 @@ class StatusMacheteClient(MacheteClient):
         for branch in data.branches_in_display_order:
             b = data.branches[branch]
             next_sibling_of_ancestor = next_sibling_of_ancestor_by_branch[branch]
-            if b.up_branch is not None:
+            if b.parent is not None:
                 write_line_prefix(branch, next_sibling_of_ancestor, "<vbar/>")
                 out.write("\n")
                 line_index += 1
@@ -215,7 +215,7 @@ class StatusMacheteClient(MacheteClient):
             first_part = (
                 f"yellow edge indicates that fork point for <b>{yellow_edge_branch}</b> "
                 f"is probably incorrectly inferred,\nor that some extra branch should be between "
-                f"<b>{data.branches[yellow_edge_branch].up_branch}</b> and <b>{yellow_edge_branch}</b>"
+                f"<b>{data.branches[yellow_edge_branch].parent}</b> and <b>{yellow_edge_branch}</b>"
             )
         else:
             affected_branches = ", ".join(f"<b>{b}</b>" for b in branches_in_sync_but_fork_point_off)
@@ -243,7 +243,7 @@ class StatusMacheteClient(MacheteClient):
         return f"{first_part}.\n\n{second_part}."
 
     def compute_status_data(self, *, flags: StatusFlags) -> StatusData:
-        managed_branches: List[LocalBranchShortName] = list(self._state.managed_branches)
+        managed_branches: List[LocalBranchShortName] = self._state.managed_branches  # already returns a copy
 
         sync_to_parent_status: Dict[LocalBranchShortName, SyncToParentStatus] = {}
         fork_point_hash_cached: Dict[LocalBranchShortName, Optional[FullCommitHash]] = {}
@@ -258,12 +258,13 @@ class StatusMacheteClient(MacheteClient):
                     fork_point_hash_cached[for_branch], fork_point_branches_cached[for_branch] = None, []
             return fork_point_hash_cached[for_branch]
 
-        for branch in self._state.up_branch_for:
-            parent_branch = self._state.up_branch_for[branch]
-            assert parent_branch is not None
+        for branch in managed_branches:
+            parent_branch = self._state.get_parent(branch)
+            if parent_branch is None:
+                continue
             if self.is_merged_to(
                     branch=branch,
-                    upstream=parent_branch,
+                    parent=parent_branch,
                     opt_squash_merge_detection=flags.opt_squash_merge_detection):
                 sync_to_parent_status[branch] = SyncToParentStatus.MERGED_TO_PARENT
             elif not self._git.is_ancestor_or_equal(parent_branch.full_name(), branch.full_name()):
@@ -283,16 +284,18 @@ class StatusMacheteClient(MacheteClient):
 
         commits_by_branch: Dict[LocalBranchShortName, List[Tuple[GitLogEntry, str]]] = {}
         if flags.opt_list_commits:
-            for branch in self._state.up_branch_for:
+            for branch in managed_branches:
+                if not self._state.has_parent(branch):
+                    continue
                 fork_point = fork_point_hash(branch)
                 if not fork_point:
                     commits: List[Tuple[GitLogEntry, str]] = []
                 elif sync_to_parent_status[branch] == SyncToParentStatus.MERGED_TO_PARENT:
                     commits = []
                 elif sync_to_parent_status[branch] == SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF:
-                    upstream = self._state.up_branch_for[branch]
-                    assert upstream is not None
-                    raw_commits = self._git.get_commits_between(upstream.full_name(), branch.full_name())
+                    parent = self._state.get_parent(branch)
+                    assert parent is not None
+                    raw_commits = self._git.get_commits_between(parent.full_name(), branch.full_name())
                     commits = []
                     for commit in raw_commits:
                         if commit.hash == fork_point:
@@ -313,7 +316,7 @@ class StatusMacheteClient(MacheteClient):
 
         sync_status_by_branch: Dict[LocalBranchShortName, str] = {}
         hook_output_by_branch: Dict[LocalBranchShortName, str] = {}
-        for branch in self._state.managed_branches:
+        for branch in managed_branches:
             s, remote = self._git.get_combined_remote_sync_status(branch)
             sync_status_by_branch[branch] = {
                 SyncToRemoteStatus.NO_REMOTES: "",
@@ -341,20 +344,20 @@ class StatusMacheteClient(MacheteClient):
         branches: Dict[LocalBranchShortName, StatusBranch] = {}
         for branch in managed_branches:
             branches[branch] = StatusBranch(
-                up_branch=self._state.up_branch_for.get(branch),
-                down_branches=self.down_branches_for(branch) or [],
+                parent=self._state.get_parent(branch),
+                children=self.children_of(branch) or [],
                 sync_to_parent_status=sync_to_parent_status.get(branch, SyncToParentStatus.IN_SYNC),
                 commits=commits_by_branch.get(branch, []),
                 sync_status=sync_status_by_branch[branch],
                 hook_output=hook_output_by_branch[branch],
-                annotation=self._state.annotations.get(branch),
+                annotation=self._state.get_annotation(branch),
             )
 
         return StatusData(
             flags=flags,
             branches=branches,
             branches_in_display_order=managed_branches,
-            roots=self._state.roots,
+            roots=self._state.roots,  # property returns a copy
             ongoing_operation=StatusOngoingOperation(
                 currently_bisected_branch=currently_bisected_branch,
                 currently_rebased_branch=currently_rebased_branch,

@@ -26,22 +26,22 @@ class DiscoverMacheteClient(StatusMacheteClient):
             raise MacheteException("No local branches found")
         for root in opt_roots:
             self.expect_in_local_branches(root)
+        initial_roots: List[LocalBranchShortName] = []
         if opt_roots:
-            self._state.roots = [LocalBranchShortName.of(opt_root) for opt_root in opt_roots]
+            initial_roots = [LocalBranchShortName.of(opt_root) for opt_root in opt_roots]
         else:
-            self._state.roots = []
             if "master" in self._git.get_local_branches():
-                self._state.roots += [LocalBranchShortName.of("master")]
+                initial_roots.append(LocalBranchShortName.of("master"))
             elif "main" in self._git.get_local_branches():
                 # See https://github.com/github/renaming
-                self._state.roots += [LocalBranchShortName.of("main")]
+                initial_roots.append(LocalBranchShortName.of("main"))
             if "develop" in self._git.get_local_branches():
-                self._state.roots += [LocalBranchShortName.of("develop")]
-        self._state.down_branches_for = {}
-        self._state.up_branch_for = {}
-        self.__indent = "  "
-        for branch in self.annotations.keys():
-            self.annotations[branch] = self.annotations[branch]._replace(text_without_qualifiers='')
+                initial_roots.append(LocalBranchShortName.of("develop"))
+        for branch in self._state.managed_branches:
+            anno = self._state.get_annotation(branch)
+            if anno is not None:
+                self._state.set_annotation(branch, anno._replace(text_without_qualifiers=''))
+        self._state.reset_tree(initial_roots)
 
         root_of = dict((branch, branch) for branch in all_local_branches)
 
@@ -50,7 +50,7 @@ class DiscoverMacheteClient(StatusMacheteClient):
                 root_of[branch] = get_root_of(root_of[branch])
             return root_of[branch]
 
-        non_root_fixed_branches = excluding(all_local_branches, self._state.roots)
+        non_root_fixed_branches = excluding(all_local_branches, self._state.roots)  # property returns a copy
         last_checkout_timestamps = self._git.get_latest_checkout_timestamps()
         non_root_fixed_branches_by_last_checkout_timestamps: List[Tuple[int, LocalBranchShortName]] = sorted(
             (last_checkout_timestamps.get(branch, 0), branch) for branch in non_root_fixed_branches)
@@ -80,35 +80,31 @@ class DiscoverMacheteClient(StatusMacheteClient):
             return
 
         for branch in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
-            upstream = self._infer_upstream(
+            parent = self._infer_upstream(
                 branch,
                 condition=lambda candidate: (get_root_of(candidate) != branch and candidate not in stale_non_root_fixed_branches),
                 reject_reason_message=("choosing this candidate would form a "
                                        "cycle in the resulting graph or the candidate is a stale branch"))
-            if upstream:
-                debug(f"inferred upstream of {branch} is {upstream}, attaching {branch} as a child of {upstream}")
-                self._state.up_branch_for[branch] = upstream
-                root_of[branch] = upstream
-                if upstream in self._state.down_branches_for:
-                    self._state.down_branches_for[upstream] += [branch]
-                else:
-                    self._state.down_branches_for[upstream] = [branch]
+            if parent:
+                debug(f"inferred parent of {branch} is {parent}, attaching {branch} as a child of {parent}")
+                self._state.wire_as_child(parent=parent, child=branch)
+                root_of[branch] = parent
             else:
-                debug(f"inferred no upstream for {branch}, attaching {branch} as a new root")
-                self._state.roots += [branch]
+                debug(f"inferred no parent for {branch}, attaching {branch} as a new root")
+                self._state.wire_as_root(branch)
 
         # Let's remove merged branches for which no downstream branch have been found.
         merged_branches_to_skip = []
         for branch in fresh_branches:
-            upstream = self.up_branch_for(branch)
-            if upstream and not self.down_branches_for(branch):
+            parent = self.parent_of(branch)
+            if parent and not self.children_of(branch):
                 if self.is_merged_to(
                         branch=branch,
-                        upstream=upstream,
+                        parent=parent,
                         opt_squash_merge_detection=SquashMergeDetection.SIMPLE
                 ):
-                    debug(f"inferred upstream of {branch} is {upstream}, but "
-                          f"{branch} is merged to {upstream}; skipping {branch} from discovered tree")
+                    debug(f"inferred parent of {branch} is {parent}, but "
+                          f"{branch} is merged to {parent}; skipping {branch} from discovered tree")
                     merged_branches_to_skip += [branch]
         if merged_branches_to_skip:
             warn(
@@ -117,24 +113,23 @@ class DiscoverMacheteClient(StatusMacheteClient):
                 % (", ".join(f"<b>{branch}</b>" for branch in merged_branches_to_skip),
                    "it's" if len(merged_branches_to_skip) == 1 else "they're"))
             for branch in merged_branches_to_skip:
-                upstream = self._state.up_branch_for[branch]
-                self._state.down_branches_for[upstream] = excluding(self._state.down_branches_for[upstream], [branch])
-                del self._state.up_branch_for[branch]
+                self._state.detach_leaf(branch)
             # We're NOT applying the removal process recursively,
             # so it's theoretically possible that some merged branches became childless
             # after removing the outer layer of childless merged branches.
             # This is rare enough, however, that we can pretty much ignore this corner case.
 
         # Order managed_branches by DFS from roots (same order as in .git/machete file)
-        self._state.managed_branches = []
+        dfs_branches: List[LocalBranchShortName] = []
 
         def collect_branches_dfs(parent: LocalBranchShortName) -> None:
-            self._state.managed_branches.append(parent)
-            for child in self.down_branches_for(parent) or []:
+            dfs_branches.append(parent)
+            for child in self._state.get_children(parent) or []:
                 collect_branches_dfs(child)
 
         for root in self._state.roots:
             collect_branches_dfs(root)
+        self._state.set_managed(dfs_branches)
 
         print_fmt("<b>Discovered tree of branch dependencies:</b>\n")
         self.status(

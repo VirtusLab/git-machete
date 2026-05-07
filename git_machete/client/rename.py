@@ -21,7 +21,7 @@ class RenameMacheteClient(MacheteClient):
         # so after rename the new branch keeps tracking the same remote branch as before.
         self._git.rename_local_branch(old_name=branch, new_name=new_name)
 
-        self._rename_branch_in_state(old_name=branch, new_name=new_name)
+        self._state.rename_branch(old_name=branch, new_name=new_name)
         self.save_branch_layout_file()
 
         if opt_repoint_tracking:
@@ -38,30 +38,3 @@ class RenameMacheteClient(MacheteClient):
                     print_fmt(f"Unset tracking (remote branch <b>{new_remote_branch}</b> does not exist)")
 
         print_fmt(f"Renamed branch <b>{branch}</b> to <b>{new_name}</b>")
-
-    def _rename_branch_in_state(self, *, old_name: LocalBranchShortName, new_name: LocalBranchShortName) -> None:
-        idx = self._state.managed_branches.index(old_name)
-        self._state.managed_branches[idx] = new_name
-
-        if old_name in self._state.roots:
-            ridx = self._state.roots.index(old_name)
-            self._state.roots[ridx] = new_name
-
-        if old_name in self._state.up_branch_for:
-            parent = self._state.up_branch_for.pop(old_name)
-            self._state.up_branch_for[new_name] = parent
-
-        for k in list(self._state.up_branch_for):
-            if self._state.up_branch_for[k] == old_name:
-                self._state.up_branch_for[k] = new_name
-
-        if old_name in self._state.down_branches_for:
-            children = self._state.down_branches_for.pop(old_name)
-            self._state.down_branches_for[new_name] = children
-
-        for children_list in self._state.down_branches_for.values():
-            if old_name in children_list:
-                children_list[children_list.index(old_name)] = new_name
-
-        if old_name in self._state.annotations:
-            self._state.annotations[new_name] = self._state.annotations.pop(old_name)

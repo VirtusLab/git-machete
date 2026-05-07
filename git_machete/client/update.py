@@ -14,9 +14,10 @@ class UpdateMacheteClient(MacheteClient):
         if opt_fork_point is not None:
             self.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                 fork_point=opt_fork_point, branch=current_branch)
-        use_merge = opt_merge or (current_branch in self.annotations and self.annotations[current_branch].qualifiers.update_with_merge)
+        anno = self._state.get_annotation(current_branch)
+        use_merge = opt_merge or (anno is not None and anno.qualifiers.update_with_merge)
         if use_merge:
-            with_branch = self.get_or_infer_up_branch_for(
+            with_branch = self.get_or_infer_parent_of(
                 current_branch,
                 prompt_if_inferred_msg=("Branch <b>%s</b> not found in the tree of branch dependencies. "
                                         "Merge with the inferred upstream <b>%s</b>?" + pretty_choices('y', 'N')),
@@ -24,7 +25,7 @@ class UpdateMacheteClient(MacheteClient):
                                                 "Merging with the inferred upstream <b>%s</b>..."))
             self._git.merge(branch=with_branch, into=current_branch, opt_no_edit_merge=opt_no_edit_merge)
         else:
-            onto_branch = self.get_or_infer_up_branch_for(
+            onto_branch = self.get_or_infer_parent_of(
                 current_branch,
                 prompt_if_inferred_msg=("Branch <b>%s</b> not found in the tree of branch dependencies. "
                                         "Rebase onto the inferred upstream <b>%s</b>?" + pretty_choices('y', 'N')),

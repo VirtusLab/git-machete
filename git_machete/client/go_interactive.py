@@ -180,12 +180,12 @@ class GoInteractiveMacheteClient(StatusMacheteClient):
                     selected_idx = len(branches) - 1
                 elif key == AI.KEY_LEFT:
                     selected_branch = branches[selected_idx]
-                    parent_branch = self.up_branch_for(selected_branch)
+                    parent_branch = self.parent_of(selected_branch)
                     if parent_branch is not None:
                         selected_idx = branches.index(parent_branch)
                 elif key == AI.KEY_RIGHT:
                     selected_branch = branches[selected_idx]
-                    child_branches = self.down_branches_for(selected_branch)
+                    child_branches = self.children_of(selected_branch)
                     if child_branches:
                         selected_idx = branches.index(child_branches[0])
                 elif key in AI.KEYS_ENTER or key == AI.KEY_SPACE:

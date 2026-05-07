@@ -817,15 +817,15 @@ def launch_internal(orig_args: List[str]) -> None:
             fork_point_client = ForkPointMacheteClient(git)
             fork_point_client.read_branch_layout_file()
             branch = cli_opts.opt_branch or git.get_current_branch()
-            upstream = fork_point_client.up_branch_for(branch)
+            parent = fork_point_client.parent_of(branch)
             fork_point_client.expect_in_local_branches(branch)
 
             def warn_on_deprecation(*, flag: str, revision: AnyRevision, revision_str: str) -> None:
-                if upstream:
+                if parent:
                     print()
                     warn(
                         f"`git machete fork-point {flag}` may lead to a confusing user experience and is deprecated.\n\n"
-                        f"If the commits between <b>{upstream}</b> (parent of <b>{branch}</b>) "
+                        f"If the commits between <b>{parent}</b> (parent of <b>{branch}</b>) "
                         f"and {revision_str} <b>{git.get_short_commit_hash_by_revision_or_none(revision) or ''}</b> "
                         f"do NOT belong to <b>{branch}</b>, consider using:\n"
                         f"    `git checkout {branch}`\n"
@@ -855,8 +855,8 @@ def launch_internal(orig_args: List[str]) -> None:
                     revision=fork_point,
                     revision_str="inferred commit")
             elif cli_opts.opt_override_to_parent:
-                if upstream:
-                    fork_point_client.set_fork_point_override(branch, upstream)
+                if parent:
+                    fork_point_client.set_fork_point_override(branch, parent)
                 else:
                     raise MacheteException(
                         f"Branch <b>{branch}</b> does not have upstream (parent) branch")

@@ -7,12 +7,13 @@ from git_machete.git_operations import LocalBranchShortName
 
 class AnnoMacheteClient(MacheteClientWithCodeHosting):
     def annotate(self, branch: LocalBranchShortName, words: List[str]) -> None:
-        if branch in self._state.annotations and words == ['']:
-            del self._state.annotations[branch]
+        if self._state.has_annotation(branch) and words == ['']:
+            self._state.delete_annotation(branch)
         else:
-            self._state.annotations[branch] = Annotation.parse(" ".join(words))
+            self._state.set_annotation(branch, Annotation.parse(" ".join(words)))
         self.save_branch_layout_file()
 
     def print_annotation(self, branch: LocalBranchShortName) -> None:
-        if branch in self._state.annotations:
-            print(self._state.annotations[branch].text_without_qualifiers)
+        anno = self._state.get_annotation(branch)
+        if anno is not None:
+            print(anno.text_without_qualifiers)

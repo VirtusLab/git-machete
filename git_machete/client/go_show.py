@@ -19,7 +19,7 @@ class GoShowMacheteClient(MacheteClient):
         elif param in ("d", "down"):
             if branch is None:
                 raise MacheteException("Not currently on any branch")
-            return self.get_or_pick_down_branch_for(branch, pick_if_multiple=pick_if_multiple)
+            return self.get_or_pick_child_of(branch, pick_if_multiple=pick_if_multiple)
         elif param in ("f", "first"):
             # If branch is None (detached HEAD), use first root then get first branch
             if branch is None:
@@ -49,6 +49,6 @@ class GoShowMacheteClient(MacheteClient):
         elif param in ("u", "up"):
             if branch is None:
                 raise MacheteException("Not currently on any branch")
-            return [self.get_or_infer_up_branch_for(branch, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)]
+            return [self.get_or_infer_parent_of(branch, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)]
         else:  # an unknown direction is handled by argparse
             raise UnexpectedMacheteException(f"Invalid direction: `{param}`.")

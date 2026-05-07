@@ -22,14 +22,14 @@ class SlideOutMacheteClient(MacheteClient):
         # Verify that all branches exist, are managed and are NOT annotated with slide-out=no qualifier.
         for branch in branches_to_slide_out:
             self.expect_in_managed_branches(branch)
-            anno = self.annotations.get(branch)
+            anno = self._state.get_annotation(branch)
             if anno and not anno.qualifiers.slide_out:
                 raise MacheteException(f"Branch <b>{branch}</b> is annotated with `slide-out=no` qualifier, aborting.\n"
                                        f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
 
         if opt_down_fork_point:
             last_branch_to_slide_out = branches_to_slide_out[-1]
-            children_of_the_last_branch_to_slide_out = self.down_branches_for(last_branch_to_slide_out)
+            children_of_the_last_branch_to_slide_out = self.children_of(last_branch_to_slide_out)
 
             if children_of_the_last_branch_to_slide_out and len(children_of_the_last_branch_to_slide_out) > 1:
                 raise MacheteException("Last branch to slide out can't have more than one child branch "
@@ -43,95 +43,68 @@ class SlideOutMacheteClient(MacheteClient):
                 raise MacheteException("Last branch to slide out must have a child branch "
                                        "if option `--down-fork-point` is passed")
 
-        # Verify that all "interior" slide-out branches have a single downstream pointing to the next slide-out
+        # Verify that all "interior" slide-out branches have a single child pointing to the next slide-out
         for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
-            dbs = self.down_branches_for(bu)
-            if not dbs or len(dbs) == 0:
+            children = self.children_of(bu)
+            if not children or len(children) == 0:
                 raise MacheteException(f"No downstream branch defined for <b>{bu}</b>, cannot slide out")
-            elif len(dbs) > 1:
-                flat_dbs = ", ".join(f"<b>{x}</b>" for x in dbs)
+            elif len(children) > 1:
+                flat_children = ", ".join(f"<b>{x}</b>" for x in children)
                 raise MacheteException(
-                    f"Multiple downstream branches defined for <b>{bu}</b>: {flat_dbs}; cannot slide out")
-            elif dbs != [bd]:
+                    f"Multiple downstream branches defined for <b>{bu}</b>: {flat_children}; cannot slide out")
+            elif children != [bd]:
                 raise MacheteException(f"<b>{bd}</b> is not downstream of <b>{bu}</b>, cannot slide out")
 
-        # Get new branches
-        new_upstream = self._state.up_branch_for.get(branches_to_slide_out[0])
-        new_downstreams = self.down_branches_for(branches_to_slide_out[-1]) or []
+        # Read the connections we need for post-hook and checkout logic before mutating state
+        new_parent = self._state.get_parent(branches_to_slide_out[0])
+        new_children = self._state.get_children(branches_to_slide_out[-1]) or []
 
-        # Remove the slid-out branches from the tree
         for branch in branches_to_slide_out:
-            if branch in self._state.up_branch_for:
-                del self._state.up_branch_for[branch]
-            if branch in self._state.down_branches_for:
-                del self._state.down_branches_for[branch]
-            self.managed_branches.remove(branch)
-
-        # Update the upstream's children list if the slid-out branch had an upstream
-        if new_upstream is not None:
-            self._state.down_branches_for[new_upstream] = [
-                branch for branch in (self.down_branches_for(new_upstream) or [])
-                if branch != branches_to_slide_out[0]]
-        else:
-            # If the slid-out branch was a root, remove it from roots and add its children as new roots
-            root_index = self._state.roots.index(branches_to_slide_out[0])
-            # Replace the slid-out root with its children in the same position
-            self._state.roots = (self._state.roots[:root_index] +
-                                 new_downstreams +
-                                 self._state.roots[root_index + 1:])
-
-        # Reconnect the downstreams to the new upstream in the tree
-        for new_downstream in new_downstreams:
-            if new_upstream is not None:
-                self._state.up_branch_for[new_downstream] = new_upstream
-                self._state.down_branches_for[new_upstream] += [new_downstream]
-            else:
-                # If there's no new upstream, the downstream becomes a root branch
-                del self._state.up_branch_for[new_downstream]
+            self._state.splice_out(branch)
 
         # Update definition, fire post-hook, and perform the branch update
         self.save_branch_layout_file()
         self._run_post_slide_out_hook(
-            new_upstream=new_upstream,
+            new_upstream=new_parent,
             slid_out_branch=branches_to_slide_out[-1],
-            new_downstreams=new_downstreams)
+            new_downstreams=new_children)
 
-        # Check out new upstream if we were on a slid-out branch, but only if there is an upstream
+        # Check out new parent if we were on a slid-out branch, but only if there is a parent
         if self._git.get_current_branch_or_none() in branches_to_slide_out:
-            if new_upstream is not None:
-                print_fmt(f"Checking out <b>{new_upstream}</b>... ", newline=False)
-                self._git.checkout(new_upstream)
+            if new_parent is not None:
+                print_fmt(f"Checking out <b>{new_parent}</b>... ", newline=False)
+                self._git.checkout(new_parent)
                 print_fmt(green_ok())
-            elif new_downstreams:
-                # If no upstream and there are downstreams, check out the first downstream
-                print_fmt(f"Checking out <b>{new_downstreams[0]}</b>... ", newline=False)
-                self._git.checkout(new_downstreams[0])
+            elif new_children:
+                # If no parent and there are children, check out the first child
+                print_fmt(f"Checking out <b>{new_children[0]}</b>... ", newline=False)
+                self._git.checkout(new_children[0])
                 print_fmt(green_ok())
             # Otherwise, stay on the current (slid-out) branch
 
-        # Only perform rebase/merge if there is a new upstream
-        if not opt_no_rebase and new_upstream is not None:
-            for new_downstream in new_downstreams:
-                anno = self.annotations.get(new_downstream)
+        # Only perform rebase/merge if there is a new parent
+        if not opt_no_rebase and new_parent is not None:
+            for child in new_children:
+                anno = self._state.get_annotation(child)
                 use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
                 use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
                 if use_merge or use_rebase:
-                    print_fmt(f"Checking out <b>{new_downstream}</b>... ", newline=False)
-                    self._git.checkout(new_downstream)
+                    print_fmt(f"Checking out <b>{child}</b>... ", newline=False)
+                    self._git.checkout(child)
                     print_fmt(green_ok())
                 if use_merge:
-                    print_fmt(f"Merging <b>{new_upstream}</b> into <b>{new_downstream}</b>...")
+                    print_fmt(f"Merging <b>{new_parent}</b> into <b>{child}</b>...")
                     self._git.merge(
-                        branch=new_upstream,
-                        into=new_downstream,
+                        branch=new_parent,
+                        into=child,
                         opt_no_edit_merge=opt_no_edit_merge)
                 elif use_rebase:
-                    print_fmt(f"Rebasing <b>{new_downstream}</b> onto <b>{new_upstream}</b>...")
-                    down_fork_point = opt_down_fork_point or self.fork_point(new_downstream, use_overrides=True)
+                    print_fmt(f"Rebasing <b>{child}</b> onto <b>{new_parent}</b>...")
+                    child_fork_point = opt_down_fork_point or self.fork_point(child, use_overrides=True)
                     self.rebase(
-                        onto=new_upstream.full_name(),
-                        from_exclusive=down_fork_point,
-                        branch=new_downstream,
+                        onto=new_parent.full_name(),
+                        from_exclusive=child_fork_point,
+                        branch=child,
                         opt_no_interactive_rebase=opt_no_interactive_rebase)
 
         if opt_delete:
@@ -143,8 +116,8 @@ class SlideOutMacheteClient(MacheteClient):
 
         slid_out_branches: List[LocalBranchShortName] = []
         for branch in self.managed_branches.copy():
-            if self._git.is_removed_from_remote(branch) and not self.down_branches_for(branch):
-                anno = self.annotations.get(branch)
+            if self._git.is_removed_from_remote(branch) and not self.children_of(branch):
+                anno = self._state.get_annotation(branch)
                 if anno and not anno.qualifiers.slide_out:
                     print_fmt(f"Skipping <b>{branch}</b> as it's marked as `slide-out=no`")
                 else:

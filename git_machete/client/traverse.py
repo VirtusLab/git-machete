@@ -13,8 +13,7 @@ from git_machete.git_operations import (GitContext, LocalBranchShortName,
                                         SyncToRemoteStatus)
 from git_machete.utils import (MacheteException, ParsableEnum,
                                UnexpectedMacheteException, abspath_posix,
-                               flat_map, green_ok, pretty_choices, print_fmt,
-                               warn)
+                               green_ok, pretty_choices, print_fmt, warn)
 
 
 class TraverseReturnTo(ParsableEnum):
@@ -200,7 +199,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 # Note that we already ensured that there is at least one managed branch.
                 dest = self.managed_branches[0]
                 self._ensure_blank_separator()
-                root_qualifier = "first root" if len(self._state.roots) > 1 else "root"
+                root_qualifier = "first root" if len(self._state.roots) > 1 else "root"  # property returns a copy
                 self._switch_branch(dest, custom_checkout_message=f"Checking out the {root_qualifier} branch (<b>{dest}</b>)")
                 current_branch = dest
             elif opt_start_from == TraverseStartFrom.HERE:
@@ -217,12 +216,14 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
             branch: LocalBranchShortName
             for branch in itertools.dropwhile(lambda x: x != current_branch, self.managed_branches.copy()):
-                upstream = self.up_branch_for(branch)
+                parent = self.parent_of(branch)
 
-                needs_slide_out: bool = self._is_merged_to_upstream(
+                branch_anno = self._state.get_annotation(branch)
+
+                needs_slide_out: bool = self._is_merged_to_parent(
                     branch, opt_squash_merge_detection=opt_squash_merge_detection)
-                if needs_slide_out and branch in self.annotations:
-                    needs_slide_out = self.annotations[branch].qualifiers.slide_out
+                if needs_slide_out and branch_anno is not None:
+                    needs_slide_out = branch_anno.qualifiers.slide_out
                 s, remote = self._git.get_combined_remote_sync_status(branch)
                 if s in (
                         SyncToRemoteStatus.BEHIND_REMOTE,
@@ -233,8 +234,8 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                         SyncToRemoteStatus.AHEAD_OF_REMOTE,
                         SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE):
                     needs_remote_sync = True
-                    if branch in self.annotations:
-                        needs_remote_sync = self.annotations[branch].qualifiers.push
+                    if branch_anno is not None:
+                        needs_remote_sync = branch_anno.qualifiers.push
                     if not opt_push_tracked and not opt_push_untracked:
                         needs_remote_sync = False
                 else:
@@ -249,16 +250,16 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                             f"Multiple {spec.pr_short_name}s have <b>{branch}</b> as its {spec.head_branch_name} branch: " +
                             ", ".join(_pr.short_display_text() for _pr in prs))
                     pr = prs[0] if prs else None
-                    needs_retarget_pr = pr is not None and upstream is not None and pr.base != upstream
+                    needs_retarget_pr = pr is not None and parent is not None and pr.base != parent
 
                 needs_create_pr = False
                 if opt_sync_github_prs or opt_sync_gitlab_mrs:
-                    if upstream:
+                    if parent:
                         prs = [_pr for _pr in self._get_all_open_prs() if _pr.head == branch]
                         if not prs:
                             needs_create_pr = True
 
-                use_merge = opt_merge or (branch in self.annotations and self.annotations[branch].qualifiers.update_with_merge)
+                use_merge = opt_merge or (branch_anno is not None and branch_anno.qualifiers.update_with_merge)
 
                 skipping_parent_sync = False
 
@@ -269,19 +270,19 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     needs_parent_sync: bool = False
                 elif s in (SyncToRemoteStatus.BEHIND_REMOTE, SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
                     needs_parent_sync = False
-                    skipping_parent_sync = bool(upstream)
+                    skipping_parent_sync = bool(parent)
                 elif use_merge:
                     needs_parent_sync = bool(
-                        upstream and not self._git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()))
+                        parent and not self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()))
                 else:  # using rebase
                     needs_parent_sync = bool(
-                        upstream and
-                        not (self._git.is_ancestor_or_equal(upstream.full_name(), branch.full_name()) and
-                             (self._git.get_commit_hash_by_revision(upstream) ==
+                        parent and
+                        not (self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()) and
+                             (self._git.get_commit_hash_by_revision(parent) ==
                               self.fork_point(branch, use_overrides=True)))
                     )
-                    if needs_parent_sync and branch in self.annotations:
-                        needs_parent_sync = self.annotations[branch].qualifiers.rebase
+                    if needs_parent_sync and branch_anno is not None:
+                        needs_parent_sync = branch_anno.qualifiers.rebase
 
                 needs_any_action = needs_slide_out or needs_parent_sync or needs_remote_sync or needs_retarget_pr or needs_create_pr
                 if branch != current_branch and needs_any_action:
@@ -299,30 +300,23 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 if needs_slide_out:
                     any_action_suggested = True
                     self._ensure_blank_separator()
-                    assert upstream is not None
-                    ans: str = self.ask_if(f"Branch <b>{branch}</b> is merged into <b>{upstream}</b>. "
+                    assert parent is not None
+                    ans: str = self.ask_if(f"Branch <b>{branch}</b> is merged into <b>{parent}</b>. "
                                            f"Slide <b>{branch}</b> out of the tree of branch dependencies?" +
                                            pretty_choices('y', 'N', 'q', 'yq'),
-                                           f"Branch <b>{branch}</b> is merged into <b>{upstream}</b>. "
+                                           f"Branch <b>{branch}</b> is merged into <b>{parent}</b>. "
                                            f"Sliding <b>{branch}</b> out of the tree of branch dependencies...",
                                            opt_yes=opt_yes)
                     if ans in ('y', 'yes', 'yq'):
-                        dbb = self.down_branches_for(branch) or []
+                        children = self._state.get_children(branch) or []
                         if nearest_remaining_branch == branch:
-                            if dbb:
-                                nearest_remaining_branch = dbb[0]
+                            if children:
+                                nearest_remaining_branch = children[0]
                             else:
-                                nearest_remaining_branch = upstream
-                        for down_branch in dbb:
-                            self._state.up_branch_for[down_branch] = upstream
-                        self._state.down_branches_for[upstream] = flat_map(
-                            lambda ud: dbb if ud == branch else [ud],
-                            self._state.down_branches_for[upstream] or [])
-                        if branch in self._state.annotations:
-                            del self._state.annotations[branch]
-                        self._state.managed_branches.remove(branch)
+                                nearest_remaining_branch = parent
+                        self._state.splice_out(branch)
                         self.save_branch_layout_file()
-                        self._run_post_slide_out_hook(new_upstream=upstream, slid_out_branch=branch, new_downstreams=dbb)
+                        self._run_post_slide_out_hook(new_upstream=parent, slid_out_branch=branch, new_downstreams=children)
                         if ans == 'yq':
                             return
                         else:
@@ -338,16 +332,16 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 elif needs_parent_sync:
                     any_action_suggested = True
                     self._ensure_blank_separator()
-                    assert upstream is not None
+                    assert parent is not None
                     if use_merge:
-                        ans = self.ask_if(f"Merge <b>{upstream}</b> into <b>{branch}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
-                                          f"Merging <b>{upstream}</b> into <b>{branch}</b>...", opt_yes=opt_yes)
+                        ans = self.ask_if(f"Merge <b>{parent}</b> into <b>{branch}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                          f"Merging <b>{parent}</b> into <b>{branch}</b>...", opt_yes=opt_yes)
                     else:
-                        ans = self.ask_if(f"Rebase <b>{branch}</b> onto <b>{upstream}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
-                                          f"Rebasing <b>{branch}</b> onto <b>{upstream}</b>...", opt_yes=opt_yes)
+                        ans = self.ask_if(f"Rebase <b>{branch}</b> onto <b>{parent}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
+                                          f"Rebasing <b>{branch}</b> onto <b>{parent}</b>...", opt_yes=opt_yes)
                     if ans in ('y', 'yes', 'yq'):
                         if use_merge:
-                            self._git.merge(branch=upstream, into=branch, opt_no_edit_merge=opt_no_edit_merge)
+                            self._git.merge(branch=parent, into=branch, opt_no_edit_merge=opt_no_edit_merge)
                             # It's clearly possible that merge can be in progress
                             # after 'git merge' returned non-zero exit code;
                             # this happens most commonly in case of conflicts.
@@ -364,7 +358,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                             fork_point = self.fork_point(branch, use_overrides=True)
 
                             self.rebase(
-                                onto=LocalBranchShortName.of(upstream).full_name(),
+                                onto=LocalBranchShortName.of(parent).full_name(),
                                 from_exclusive=fork_point,
                                 branch=branch,
                                 opt_no_interactive_rebase=opt_no_interactive_rebase)
@@ -399,8 +393,8 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                                 SyncToRemoteStatus.AHEAD_OF_REMOTE,
                                 SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE):
                             needs_remote_sync = True
-                            if branch in self.annotations:
-                                needs_remote_sync = self.annotations[branch].qualifiers.push
+                            if branch_anno is not None:
+                                needs_remote_sync = branch_anno.qualifiers.push
                         else:
                             needs_remote_sync = False
 
@@ -408,36 +402,37 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                         return
 
                 if skipping_parent_sync:
-                    assert upstream is not None
+                    assert parent is not None
                     self._ensure_blank_separator()
                     if s == SyncToRemoteStatus.BEHIND_REMOTE:
                         reason = "behind its remote counterpart"
                     else:
                         reason = "diverged from (and has older commits than) its remote counterpart"
-                    print_fmt(f"Skipping sync of <b>{branch}</b> with <b>{upstream}</b>; <b>{branch}</b> is {reason}")
+                    print_fmt(f"Skipping sync of <b>{branch}</b> with <b>{parent}</b>; <b>{branch}</b> is {reason}")
 
                 if needs_retarget_pr:
                     any_action_suggested = True
                     assert pr is not None
-                    assert upstream is not None
+                    assert parent is not None
                     spec = self.code_hosting_spec
                     self._ensure_blank_separator()
                     ans_intro = f"Branch <b>{branch}</b> has a different {spec.pr_short_name} {spec.base_branch_name} (<b>{pr.base}</b>) " \
-                        f"in {spec.display_name} than in machete file (<b>{upstream}</b>).\n"
+                        f"in {spec.display_name} than in machete file (<b>{parent}</b>).\n"
                     ans = self.ask_if(
-                        ans_intro + f"Retarget {pr.display_text()} to <b>{upstream}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
-                        ans_intro + f"Retargeting {pr.display_text()} to <b>{upstream}</b>...",
+                        ans_intro + f"Retarget {pr.display_text()} to <b>{parent}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
+                        ans_intro + f"Retargeting {pr.display_text()} to <b>{parent}</b>...",
                         opt_yes=opt_yes)
                     if ans in ('y', 'yes', 'yq'):
-                        self.code_hosting_client.set_base_of_pull_request(pr.number, base=upstream)
+                        self.code_hosting_client.set_base_of_pull_request(pr.number, base=parent)
                         print_fmt(
                             f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} '
-                            f'has been switched to <b>{upstream}</b>')
-                        pr.base = upstream
+                            f'has been switched to <b>{parent}</b>')
+                        pr.base = parent
 
-                        anno = self._state.annotations.get(branch)
-                        self._state.annotations[branch] = Annotation(self._pull_request_annotation(pr, current_user),
-                                                                     anno.qualifiers if anno else Qualifiers())
+                        anno = self._state.get_annotation(branch)
+                        self._state.set_annotation(branch, Annotation(
+                            self._pull_request_annotation(pr, current_user),
+                            anno.qualifiers if anno else Qualifiers()))
                         self.save_branch_layout_file()
 
                         new_description = self._get_updated_pull_request_description(pr)
@@ -495,16 +490,16 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
                 if needs_create_pr:
                     any_action_suggested = True
-                    assert upstream is not None
+                    assert parent is not None
                     spec = self.code_hosting_spec
                     self._ensure_blank_separator()
                     ans_intro = f"Branch <b>{branch}</b> does not have {spec.pr_short_name_article} {spec.pr_short_name}" \
                         f" in {spec.display_name}.\n"
                     ans = self.ask_if(
                         ans_intro + f"Create {spec.pr_short_name_article} {spec.pr_short_name} "
-                        f"from <b>{branch}</b> to <b>{upstream}</b>?" + pretty_choices('y', 'd[raft]', 'N', 'q', 'yq'),
+                        f"from <b>{branch}</b> to <b>{parent}</b>?" + pretty_choices('y', 'd[raft]', 'N', 'q', 'yq'),
                         ans_intro + f"Creating {spec.pr_short_name_article} {spec.pr_short_name} "
-                        f"from <b>{branch}</b> to <b>{upstream}</b>...",
+                        f"from <b>{branch}</b> to <b>{parent}</b>...",
                         opt_yes=opt_yes)
                     if ans in ('y', 'yes', 'yq', 'd', 'draft'):
                         self.create_pull_request(
@@ -545,7 +540,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     f"No successor of <b>{current_branch}</b> needs to be slid out or synced "
                     "with upstream branch or remote")
             print_fmt(f"{msg}; nothing left to update")
-            if not any_action_suggested and initial_branch not in self._state.roots:
+            if not any_action_suggested and initial_branch not in self._state.roots:  # property returns a copy
                 print_fmt("Tip: `traverse` by default starts from the current branch, "
                           "use flags (`--start-from=`, `--whole` or `-w`, `-W`) to change this behavior.\n"
                           "Further info under `git machete traverse --help`.")

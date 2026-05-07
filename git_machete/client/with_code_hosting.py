@@ -65,34 +65,35 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             if LocalBranchShortName.of(pr.head) in self.managed_branches:
                 debug(f'{pr} corresponds to a managed branch')
                 anno: str = self._pull_request_annotation(pr, current_user, include_url=include_urls)
-                upstream: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(pr.head))
-                if upstream is not None:
-                    counterpart = self._git.get_combined_counterpart_for_fetching_of_branch(upstream)
+                parent: Optional[LocalBranchShortName] = self.parent_of(LocalBranchShortName.of(pr.head))
+                if parent is not None:
+                    counterpart = self._git.get_combined_counterpart_for_fetching_of_branch(parent)
                 else:
                     counterpart = None
-                upstream_tracking_branch = upstream if counterpart is None else '/'.join(counterpart.split('/')[1:])
+                upstream_tracking_branch = parent if counterpart is None else '/'.join(counterpart.split('/')[1:])
 
                 if pr.base != upstream_tracking_branch:
                     warn(
                         f'branch <b>{pr.head}</b> has a different base in {pr.display_text()} (<b>{pr.base}</b>) '
-                        f'than in machete file ({f"<b>{upstream}</b>" if upstream else "<none, is a root>"})')
+                        f'than in machete file ({f"<b>{parent}</b>" if parent else "<none, is a root>"})')
                     anno += (f" WRONG {spec.pr_short_name} {spec.base_branch_name.upper()} or MACHETE PARENT? "
                              f"{spec.pr_short_name} has {pr.base}")
                 old_annotation_text = ''
                 old_annotation_qualifiers = Qualifiers()
-                if LocalBranchShortName.of(pr.head) in self._state.annotations:
-                    old_annotation = self._state.annotations[LocalBranchShortName.of(pr.head)]
+                head_branch = LocalBranchShortName.of(pr.head)
+                old_annotation = self._state.get_annotation(head_branch)
+                if old_annotation is not None:
                     old_annotation_text = old_annotation.text_without_qualifiers
                     old_annotation_qualifiers = old_annotation.qualifiers
 
                 if pr.user != current_user and old_annotation_qualifiers.is_default():
                     if verbose:
                         print_fmt(f'Annotating <b>{pr.head}</b> as `{anno} rebase=no push=no`')
-                    self._state.annotations[LocalBranchShortName.of(pr.head)] = Annotation(anno, Qualifiers(rebase=False, push=False))
+                    self._state.set_annotation(head_branch, Annotation(anno, Qualifiers(rebase=False, push=False)))
                 elif old_annotation_text != anno:
                     if verbose:
                         print_fmt(f'Annotating <b>{pr.head}</b> as `{anno}`')
-                    self._state.annotations[LocalBranchShortName.of(pr.head)] = Annotation(anno, old_annotation_qualifiers)
+                    self._state.set_annotation(head_branch, Annotation(anno, old_annotation_qualifiers))
             else:
                 debug(f'{pr} does NOT correspond to a managed branch')
         self.save_branch_layout_file()
@@ -139,7 +140,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                     "`discover` or `edit` or agree on adding the branch to the "
                     f"branch layout file during the execution of `{subcommand}` subcommand.")
 
-        up_branch: Optional[LocalBranchShortName] = self.up_branch_for(current_branch)
+        up_branch: Optional[LocalBranchShortName] = self.parent_of(current_branch)
         if not up_branch:
             raise MacheteException(
                 f'Branch <b>{current_branch}</b> does not have a parent branch (it is a root), '
@@ -156,7 +157,8 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             SyncToRemoteStatus.AHEAD_OF_REMOTE,
             SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
         if s in statuses_to_push:
-            if current_branch not in self.annotations or self.annotations[current_branch].qualifiers.push:
+            anno = self._state.get_annotation(current_branch)
+            if anno is None or anno.qualifiers.push:
                 if s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
                     assert remote is not None
                     self._handle_ahead_state(
@@ -231,8 +233,8 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             opt_update_related_descriptions: bool,
             opt_yes: bool
     ) -> None:
-        # Use provided base branch if --base flag is specified (undocumented), otherwise use upstream branch from .git/machete
-        base: Optional[LocalBranchShortName] = opt_base or self.up_branch_for(LocalBranchShortName.of(head))
+        # Use provided base branch if --base flag is specified (undocumented), otherwise use parent branch from .git/machete
+        base: Optional[LocalBranchShortName] = opt_base or self.parent_of(LocalBranchShortName.of(head))
         spec = self.code_hosting_spec
         if not base:
             raise UnexpectedMacheteException(f'could not determine {spec.base_branch_name} branch for {spec.pr_short_name}. '
@@ -411,7 +413,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             self.code_hosting_client.add_reviewers_to_pull_request(pr.number, reviewers)
             print_fmt(green_ok())
 
-        self._state.annotations[head] = Annotation(self._pull_request_annotation(pr, current_user), qualifiers=Qualifiers())
+        self._state.set_annotation(head, Annotation(self._pull_request_annotation(pr, current_user), qualifiers=Qualifiers()))
         self.save_branch_layout_file()
 
         if opt_update_related_descriptions:
@@ -436,7 +438,8 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             SyncToRemoteStatus.AHEAD_OF_REMOTE,
             SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE)
         if s in statuses_to_push:
-            if current_branch in self.annotations and not self.annotations[current_branch].qualifiers.push:
+            anno = self._state.get_annotation(current_branch)
+            if anno is not None and not anno.qualifiers.push:
                 subcommand = "retarget-" + spec.pr_short_name.lower()
                 raise MacheteException(
                     f'Branch <b>{current_branch}</b> is marked as `push=no`; aborting the restack.\n'
@@ -535,7 +538,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         if pr is None:
             return
 
-        new_base: Optional[LocalBranchShortName] = self.up_branch_for(LocalBranchShortName.of(head))
+        new_base: Optional[LocalBranchShortName] = self.parent_of(LocalBranchShortName.of(head))
         if not new_base:
             raise MacheteException(
                 f'Branch <b>{head}</b> does not have a parent branch (it is a root) '
@@ -559,9 +562,9 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             print_fmt(f'Description of {pr.display_text()} has been updated')
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
-        anno = self._state.annotations.get(head)
+        anno = self._state.get_annotation(head)
         qualifiers = anno.qualifiers if anno else Qualifiers()
-        self._state.annotations[head] = Annotation(self._pull_request_annotation(pr, current_user), qualifiers)
+        self._state.set_annotation(head, Annotation(self._pull_request_annotation(pr, current_user), qualifiers))
         self.save_branch_layout_file()
 
         if opt_update_related_descriptions:
@@ -735,7 +738,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             return ''
 
         prepend = f'{self.START_GIT_MACHETE_GENERATED_COMMENT}\n\n'
-        # In FULL mode, we're likely to generate a non-empty intro even when there are NO upstream PRs above
+        # In FULL mode, we're likely to generate a non-empty intro even when there are NO parent PRs above
         if len(prs_for_base_branch) >= 1:
             prepend += f'# Based on {prs_for_base_branch[0].display_text(fmt=False)}\n\n'
 
@@ -973,7 +976,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 return []
             return result
         elif related_to:
-            # Always update the entire stack (both upstream and downstream) when --related is used,
+            # Always update the entire stack (both parent and downstream) when --related is used,
             # regardless of prDescriptionIntroStyle setting.
             result = list(reversed(self.__get_upwards_path_including_pr(related_to)))
             result += [downstream_pr for downstream_pr, _ in self.__get_downwards_tree_excluding_pr(related_to)]

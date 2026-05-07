@@ -1,5 +1,3 @@
-from typing import Dict
-
 from git_machete.annotation import Annotation
 from git_machete.client.base import MacheteClient
 from git_machete.git_operations import GitContext, LocalBranchShortName
@@ -58,56 +56,53 @@ class TestClient(BaseTest):
         rewrite_branch_layout_file(body)
         machete_client = MacheteClient(GitContext())
         machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
-        annotations: Dict[LocalBranchShortName, Annotation] = machete_client.annotations
 
-        feature_2_branch = LocalBranchShortName.of('feature2')
-        assert annotations[feature_2_branch].unformatted_full_text == 'annotation'
-        assert annotations[feature_2_branch].qualifiers.rebase is True
-        assert annotations[feature_2_branch].qualifiers.push is True
-        assert annotations[feature_2_branch].text_without_qualifiers == 'annotation'
-        assert str(annotations[feature_2_branch].qualifiers) == ''
+        def anno(branch_name: str) -> Annotation:
+            result = machete_client._state.get_annotation(LocalBranchShortName.of(branch_name))
+            assert result is not None
+            return result
 
-        feature_3_branch = LocalBranchShortName.of('feature3')
-        assert annotations[feature_3_branch].unformatted_full_text == 'annotation rebase=no push=no'
-        assert annotations[feature_3_branch].qualifiers.rebase is False
-        assert annotations[feature_3_branch].qualifiers.push is False
-        assert annotations[feature_3_branch].text_without_qualifiers == 'annotation'
-        assert str(annotations[feature_3_branch].qualifiers) == 'rebase=no push=no'
+        assert anno('feature2').unformatted_full_text == 'annotation'
+        assert anno('feature2').qualifiers.rebase is True
+        assert anno('feature2').qualifiers.push is True
+        assert anno('feature2').text_without_qualifiers == 'annotation'
+        assert str(anno('feature2').qualifiers) == ''
 
-        feature_4_branch = LocalBranchShortName.of('feature4')
-        assert annotations[feature_4_branch].unformatted_full_text == 'annotation rebase=no push=no'
-        assert annotations[feature_4_branch].qualifiers.rebase is False
-        assert annotations[feature_4_branch].qualifiers.push is False
-        assert annotations[feature_4_branch].text_without_qualifiers == 'annotation'
-        assert str(annotations[feature_4_branch].qualifiers) == 'rebase=no push=no'
+        assert anno('feature3').unformatted_full_text == 'annotation rebase=no push=no'
+        assert anno('feature3').qualifiers.rebase is False
+        assert anno('feature3').qualifiers.push is False
+        assert anno('feature3').text_without_qualifiers == 'annotation'
+        assert str(anno('feature3').qualifiers) == 'rebase=no push=no'
 
-        feature_5_branch = LocalBranchShortName.of('feature5')
-        assert annotations[feature_5_branch].unformatted_full_text == 'annotation1 annotation2 annotation3 rebase=no push=no'
-        assert annotations[feature_5_branch].qualifiers.rebase is False
-        assert annotations[feature_5_branch].qualifiers.push is False
-        assert annotations[feature_5_branch].text_without_qualifiers == 'annotation1 annotation2 annotation3'
-        assert str(annotations[feature_5_branch].qualifiers) == 'rebase=no push=no'
+        assert anno('feature4').unformatted_full_text == 'annotation rebase=no push=no'
+        assert anno('feature4').qualifiers.rebase is False
+        assert anno('feature4').qualifiers.push is False
+        assert anno('feature4').text_without_qualifiers == 'annotation'
+        assert str(anno('feature4').qualifiers) == 'rebase=no push=no'
 
-        feature_6_branch = LocalBranchShortName.of('feature6')
-        assert annotations[feature_6_branch].unformatted_full_text == 'annotation1 rebase=nopush=no annotation2'
-        assert annotations[feature_6_branch].qualifiers.rebase is True
-        assert annotations[feature_6_branch].qualifiers.push is True
-        assert annotations[feature_6_branch].text_without_qualifiers == 'annotation1 rebase=nopush=no annotation2'
-        assert str(annotations[feature_6_branch].qualifiers) == ''
+        assert anno('feature5').unformatted_full_text == 'annotation1 annotation2 annotation3 rebase=no push=no'
+        assert anno('feature5').qualifiers.rebase is False
+        assert anno('feature5').qualifiers.push is False
+        assert anno('feature5').text_without_qualifiers == 'annotation1 annotation2 annotation3'
+        assert str(anno('feature5').qualifiers) == 'rebase=no push=no'
 
-        feature_7_branch = LocalBranchShortName.of('feature7')
-        assert annotations[feature_7_branch].unformatted_full_text == 'annotation1rebase=no push=noannotation2'
-        assert annotations[feature_7_branch].qualifiers.rebase is True
-        assert annotations[feature_7_branch].qualifiers.push is True
-        assert annotations[feature_7_branch].text_without_qualifiers == 'annotation1rebase=no push=noannotation2'
-        assert str(annotations[feature_7_branch].qualifiers) == ''
+        assert anno('feature6').unformatted_full_text == 'annotation1 rebase=nopush=no annotation2'
+        assert anno('feature6').qualifiers.rebase is True
+        assert anno('feature6').qualifiers.push is True
+        assert anno('feature6').text_without_qualifiers == 'annotation1 rebase=nopush=no annotation2'
+        assert str(anno('feature6').qualifiers) == ''
 
-        feature_8_branch = LocalBranchShortName.of('feature8')
-        assert annotations[feature_8_branch].unformatted_full_text == 'annotation rebase=no push=no'
-        assert annotations[feature_8_branch].qualifiers.rebase is False
-        assert annotations[feature_8_branch].qualifiers.push is False
-        assert annotations[feature_8_branch].text_without_qualifiers == 'annotation'
-        assert str(annotations[feature_8_branch].qualifiers) == 'rebase=no push=no'
+        assert anno('feature7').unformatted_full_text == 'annotation1rebase=no push=noannotation2'
+        assert anno('feature7').qualifiers.rebase is True
+        assert anno('feature7').qualifiers.push is True
+        assert anno('feature7').text_without_qualifiers == 'annotation1rebase=no push=noannotation2'
+        assert str(anno('feature7').qualifiers) == ''
+
+        assert anno('feature8').unformatted_full_text == 'annotation rebase=no push=no'
+        assert anno('feature8').qualifiers.rebase is False
+        assert anno('feature8').qualifiers.push is False
+        assert anno('feature8').text_without_qualifiers == 'annotation'
+        assert str(anno('feature8').qualifiers) == 'rebase=no push=no'
 
     def test_branch_layout_leading_hash_comment_lines_ignored(self) -> None:
         create_repo_with_remote()
@@ -133,7 +128,7 @@ class TestClient(BaseTest):
             LocalBranchShortName.of('master'),
             LocalBranchShortName.of('feature'),
         ]
-        assert machete_client.down_branches_for(LocalBranchShortName.of('master')) == [
+        assert machete_client.children_of(LocalBranchShortName.of('master')) == [
             LocalBranchShortName.of('feature')]
 
     def test_branch_layout_hash_not_leading_whitespace_is_branch_or_annotation(self) -> None:
@@ -158,7 +153,8 @@ class TestClient(BaseTest):
             LocalBranchShortName.of('master'),
             feature,
         ]
-        assert machete_client.annotations[feature].unformatted_full_text == 'note #123'
+        assert machete_client._state.get_annotation(feature) is not None
+        assert machete_client._state.get_annotation(feature).unformatted_full_text == 'note #123'  # type: ignore[union-attr]
 
     def test_save_branch_layout_file_does_not_preserve_hash_comment_lines(self) -> None:
         create_repo_with_remote()
