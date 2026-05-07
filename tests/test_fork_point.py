@@ -2,7 +2,7 @@ import os
 
 from pytest_mock import MockerFixture
 
-from git_machete.utils import FullTerminalAnsiOutputCodes
+from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 
 from .base_test import BaseTest
 from .cli_runner import (assert_failure, assert_success, launch_command,
@@ -123,7 +123,7 @@ class TestForkPoint(BaseTest):
         assert_success(['fork-point', '--unset-override'], "")
 
     def test_fork_point_override_to_parent_and_inferred(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, "git_machete.utils.is_terminal_fully_fledged", lambda: True)
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_terminal_fully_fledged", lambda: True)
 
         with fixed_author_and_committer_date_in_past():
             create_repo_with_remote()
@@ -226,6 +226,42 @@ class TestForkPoint(BaseTest):
             f"{E.ORANGE} (untracked){E.ENDC}\n"
         )
         assert raw_output == expected_ansi
+
+    def test_fork_point_override_marker_in_status(self) -> None:
+        # When fork point is overridden to a non-trivial commit (not at the parent's tip),
+        # `status -l` should still classify the edge as green and annotate the overridden
+        # fork-point commit with `-> fork point`.
+        with fixed_author_and_committer_date_in_past():
+            create_repo()
+            new_branch("master")
+            commit("master commit")
+            new_branch("develop")
+            commit("first develop commit")
+            first_develop_commit = get_current_commit_hash()
+            commit("second develop commit")
+            commit("third develop commit")
+
+        body: str = \
+            """
+            master
+                develop
+            """
+        rewrite_branch_layout_file(body)
+
+        launch_command("fork-point", f"--override-to={first_develop_commit}")
+        assert launch_command("fork-point").strip() == first_develop_commit
+
+        assert_success(
+            ["status", "-l"],
+            """
+            master
+            |
+            | first develop commit -> fork point
+            | second develop commit
+            | third develop commit
+            o-develop *
+            """
+        )
 
     def test_fork_point_overridden_to_non_descendant_of_parent_while_branch_descendant_of_parent(self) -> None:
         create_repo()
