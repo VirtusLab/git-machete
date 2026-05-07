@@ -158,6 +158,8 @@ class FullPatchId(str):
         return FullPatchId(value)
 
 
+# === Helper data classes ===
+
 class ForkPointOverrideData:
     def __init__(self, to_hash: FullCommitHash):
         self.to_hash: FullCommitHash = to_hash
@@ -179,6 +181,8 @@ class BranchPair(NamedTuple):
     local_or_remote_branch: AnyBranchName  # noqa: F841
 
 
+# === Constants ===
+
 HEAD = AnyRevision.of("HEAD")
 
 # Explicitly suppress showing GPG signatures in `git log`
@@ -191,6 +195,8 @@ HEAD = AnyRevision.of("HEAD")
 # prior to version 2.10.0. Fixes a bug documented in GitHub issue #1286.
 GIT_EXEC = ("git", "-c", "log.showSignature=false")
 
+
+# === Enums ===
 
 class SyncToRemoteStatus(Enum):
     NO_REMOTES = auto()
@@ -215,6 +221,8 @@ class GitFormatPatterns(Enum):
 
 
 class GitContext:
+
+    # === Initialization & cache management ===
 
     def __init__(self) -> None:
         self.owner: Optional[Any] = None
@@ -298,6 +306,8 @@ class GitContext:
                 raise UnexpectedMacheteException(f"Could not parse output of `git version`: `{version_stdout}`")
             self.__git_version = (int(raw.group(1)), int(raw.group(2)), int(raw.group(3)))
         return self.__git_version
+
+    # === Worktree & repository paths ===
 
     def __rev_parse_path(self, flag: str) -> str:
         # Let's use absolute paths for main/git directories.
@@ -422,12 +432,7 @@ class GitContext:
             shutil.rmtree(path)
             self._run_git("worktree", "prune", flush_caches=False)
 
-    def get_git_timespec_parsed_to_unix_timestamp(self, date: str) -> int:
-        try:
-            return int(self._popen_git("rev-parse", "--since=" + date).stdout.replace("--max-age=", "").strip())
-        # Apparently `git rev-parse --since` always prints out a result, even for gibberish inputs
-        except (UnderlyingGitException, ValueError):
-            raise UnexpectedMacheteException(f"Cannot parse timespec: `{date}`")
+    # === Config ===
 
     def __ensure_config_loaded(self) -> None:
         if self.__config_cached is None:
@@ -474,6 +479,8 @@ class GitContext:
         if self.get_config_attr_or_none(key):
             self._run_git("config", "--unset", key, flush_caches=False)
             del self.__config_cached[key.lower()]
+
+    # === Remotes ===
 
     def add_remote(self, name: str, url: str) -> None:  # noqa: KW
         self._run_git('remote', 'add', name, url, flush_caches=True)
@@ -526,6 +533,13 @@ class GitContext:
 
         return {branch: branch in existing_branches for branch in branches}
 
+    def get_sole_remote_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
+        remote_branches = self.get_remote_branches()
+        matching_remotes = [remote for remote in self.get_remotes() if (remote + "/" + branch) in remote_branches]
+        return RemoteBranchShortName(matching_remotes[0] + "/" + branch) if len(matching_remotes) == 1 else None
+
+    # === Branch upstream tracking & push/pull ===
+
     def rename_local_branch(self, *, old_name: LocalBranchShortName, new_name: LocalBranchShortName) -> None:
         self._run_git("branch", "-m", old_name, new_name, flush_caches=True)
 
@@ -563,6 +577,8 @@ class GitContext:
         # There's apparently no way to set remote automatically when doing 'git pull' (as opposed to 'git push'),
         # so a separate 'git branch --set-upstream-to' is needed.
         self.set_upstream_to(remote_branch)
+
+    # === Commit & tree hash resolution ===
 
     def __find_short_commit_hash_by_revision(self, revision: AnyRevision) -> ShortCommitHash:
         return ShortCommitHash.of(self._popen_git("rev-parse", "--short", revision + "^{commit}").stdout.rstrip())  # noqa: FS003
@@ -624,6 +640,8 @@ class GitContext:
         assert self.__committer_unix_timestamp_by_revision_cached is not None
         return self.__committer_unix_timestamp_by_revision_cached.get(revision.full_name(), 0)
 
+    # === Remote-of-branch inference ===
+
     def __get_remotes_containing_branch(self, branch: LocalBranchShortName, remotes: Optional[List[str]] = None) -> List[str]:
         remotes = remotes if remotes else self.get_remotes()
         remote_branches = self.get_remote_branches()
@@ -679,6 +697,8 @@ class GitContext:
         assert self.__removed_from_remote is not None
         return branch in self.__removed_from_remote
 
+    # === In-progress operation detection ===
+
     # Note that rebase/cherry-pick/merge/revert all happen on per-worktree basis,
     # so we need to check .git/worktrees/<worktree>/<file> rather than .git/<file>
 
@@ -697,6 +717,8 @@ class GitContext:
 
     def is_revert_in_progress(self) -> bool:
         return os.path.isfile(self.get_current_worktree_git_subpath("REVERT_HEAD"))
+
+    # === Branch listing & loading ===
 
     def checkout(self, branch: LocalBranchShortName) -> None:
         self._run_git("checkout", "--quiet", branch, "--", flush_caches=True)
@@ -766,6 +788,8 @@ class GitContext:
                 self.__counterparts_for_fetching_cached[b_stripped_local] = fetch_counterpart_stripped
             elif fetch_counterpart_stripped is not None:
                 self.__removed_from_remote.add(b_stripped_local)
+
+    # === Log & reflog ===
 
     def __get_log_hashes(self, revision: AnyRevision, max_count: Optional[int]) -> List[FullCommitHash]:
         opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", revision.full_name()]
@@ -846,6 +870,8 @@ class GitContext:
                                                  ]
             return self.__reflogs_cached[branch]
 
+    # === Branch creation & current-branch detection ===
+
     def create_branch(self, branch: LocalBranchShortName, out_of_revision: AnyRevision, *, switch_head: bool) -> None:  # noqa: KW101
         self._run_git("branch", branch, out_of_revision, flush_caches=True)
         if switch_head:
@@ -920,6 +946,8 @@ class GitContext:
         if not result:
             raise UnderlyingGitException("Not currently on any branch")
         return result
+
+    # === Merge-base & ancestry ===
 
     def __get_merge_base_cache_path(self) -> str:
         return os.path.join(self.get_main_worktree_git_dir(), "machete-merge-base-cache")
@@ -1038,6 +1066,8 @@ class GitContext:
             return None
         return self.__get_merge_base_for_commit_hashes(earlier_hash, later_hash)
 
+    # === Squash/rebase merge detection ===
+
     # Determine if reachable_from, or any ancestors of reachable_from that are NOT ancestors of equivalent_to,
     # contain a tree with identical contents to equivalent_to, indicating that
     # reachable_from contains a rebase or squash merge of equivalent_to.
@@ -1155,10 +1185,7 @@ class GitContext:
 
         return patch_id_for_commit
 
-    def get_sole_remote_branch(self, branch: LocalBranchShortName) -> Optional[RemoteBranchShortName]:
-        remote_branches = self.get_remote_branches()
-        matching_remotes = [remote for remote in self.get_remotes() if (remote + "/" + branch) in remote_branches]
-        return RemoteBranchShortName(matching_remotes[0] + "/" + branch) if len(matching_remotes) == 1 else None
+    # === Hooks ===
 
     def get_hook_path(self, hook_name: str) -> str:
         hook_dir: str = self.get_config_attr_or_none("core.hooksPath") or self.get_main_worktree_git_subpath("hooks")
@@ -1180,6 +1207,8 @@ class GitContext:
             return False
         else:
             return True
+
+    # === Merge & rebase ===
 
     def merge(
         self,
@@ -1233,6 +1262,8 @@ class GitContext:
                 # See https://github.com/VirtusLab/git-machete/issues/935 for why author-script needs to be saved in this manner
                 io.open(author_script, "w", newline="").write("".join(fixed_lines))
 
+    # === Commits & log/diff display ===
+
     def get_commits_between(self, earliest_exclusive: AnyRevision, latest_inclusive: AnyRevision) -> List[GitLogEntry]:  # noqa: KW
         # Reverse the list, since `git log` by default returns the commits from the latest to earliest.
         return list(reversed([
@@ -1241,6 +1272,40 @@ class GitContext:
                         subject=x.split(":", 2)[2]) for x in
             utils.get_non_empty_lines(self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--").stdout)
         ]))
+
+    def get_commit_data(self, commit: AnyRevision, pattern: GitFormatPatterns) -> str:
+        if pattern not in GitFormatPatterns:
+            raise UnexpectedMacheteException(
+                f"Retrieving {pattern} from commit is not supported. "
+                f"The currently supported patterns are: {', '.join(GitFormatPatterns._member_names_)}.")
+
+        return self._popen_git("log", "-1", f"--format={pattern.value}", commit).stdout.strip()
+
+    def display_log_between(
+            self,
+            *,
+            from_inclusive: LocalBranchFullName,
+            until_exclusive: FullCommitHash,
+            extra_git_log_args: List[str]
+    ) -> int:
+        return self._run_git("log", f"^{until_exclusive}", from_inclusive, *extra_git_log_args, flush_caches=False)
+
+    def display_diff(self, branch: Optional[LocalBranchShortName], against: AnyRevision,
+                     *, opt_stat: bool, extra_git_diff_args: List[str]) -> int:
+        params = []
+        if opt_stat:
+            params.append("--stat")
+        params.append(against)
+        if branch:
+            params.append(branch.full_name())
+        if extra_git_diff_args:
+            params += extra_git_diff_args
+        else:
+            params.append("--")
+
+        return self._run_git("diff", *params, flush_caches=False)
+
+    # === Sync-to-remote status ===
 
     def get_relation_to_remote_counterpart(  # noqa: KW
         self,
@@ -1267,6 +1332,30 @@ class GitContext:
             return SyncToRemoteStatus.UNTRACKED, None
         return self.get_relation_to_remote_counterpart(branch, remote_branch), self.get_combined_remote_for_fetching_of_branch(branch)
 
+    # === Branch & ref modifications ===
+
+    def delete_branch(self, branch_name: LocalBranchShortName, *, force: bool) -> int:
+        delete_option = '-D' if force else '-d'
+        return self._run_git('branch', delete_option, branch_name, flush_caches=True)
+
+    def commit_tree_with_given_parent_and_message_and_env(  # noqa: KW
+            self, parent_revision: AnyRevision, msg: str, env: Dict[str, str]) -> FullCommitHash:
+        # returns hash of the new commit
+        return FullCommitHash.of(self._popen_git(
+            "commit-tree", "HEAD^{tree}", "-p", parent_revision, "-m", msg, env=env).stdout.strip())  # noqa: FS003
+
+    def update_head_ref_to_new_hash_with_reflog_subject(self, hash: FullCommitHash, reflog_subject: str) -> int:  # noqa: KW
+        return self._run_git("update-ref", "HEAD", hash, "-m", reflog_subject, flush_caches=True)
+
+    # === Misc helpers ===
+
+    def get_git_timespec_parsed_to_unix_timestamp(self, date: str) -> int:
+        try:
+            return int(self._popen_git("rev-parse", "--since=" + date).stdout.replace("--max-age=", "").strip())
+        # Apparently `git rev-parse --since` always prints out a result, even for gibberish inputs
+        except (UnderlyingGitException, ValueError):
+            raise UnexpectedMacheteException(f"Cannot parse timespec: `{date}`")
+
     def get_latest_checkout_timestamps(self) -> Dict[str, int]:  # TODO (#110): default dict with 0
         # Entries are in the format '<branch_name>@{<unix_timestamp> <time-zone>}'
         result = {}
@@ -1287,48 +1376,3 @@ class GitContext:
                 if to_branch not in result:
                     result[to_branch] = int(match.group(1))
         return result
-
-    def get_commit_data(self, commit: AnyRevision, pattern: GitFormatPatterns) -> str:
-        if pattern not in GitFormatPatterns:
-            raise UnexpectedMacheteException(
-                f"Retrieving {pattern} from commit is not supported. "
-                f"The currently supported patterns are: {', '.join(GitFormatPatterns._member_names_)}.")
-
-        return self._popen_git("log", "-1", f"--format={pattern.value}", commit).stdout.strip()
-
-    def display_log_between(
-            self,
-            *,
-            from_inclusive: LocalBranchFullName,
-            until_exclusive: FullCommitHash,
-            extra_git_log_args: List[str]
-    ) -> int:
-        return self._run_git("log", f"^{until_exclusive}", from_inclusive, *extra_git_log_args, flush_caches=False)
-
-    def commit_tree_with_given_parent_and_message_and_env(  # noqa: KW
-            self, parent_revision: AnyRevision, msg: str, env: Dict[str, str]) -> FullCommitHash:
-        # returns hash of the new commit
-        return FullCommitHash.of(self._popen_git(
-            "commit-tree", "HEAD^{tree}", "-p", parent_revision, "-m", msg, env=env).stdout.strip())  # noqa: FS003
-
-    def delete_branch(self, branch_name: LocalBranchShortName, *, force: bool) -> int:
-        delete_option = '-D' if force else '-d'
-        return self._run_git('branch', delete_option, branch_name, flush_caches=True)
-
-    def display_diff(self, branch: Optional[LocalBranchShortName], against: AnyRevision,
-                     *, opt_stat: bool, extra_git_diff_args: List[str]) -> int:
-        params = []
-        if opt_stat:
-            params.append("--stat")
-        params.append(against)
-        if branch:
-            params.append(branch.full_name())
-        if extra_git_diff_args:
-            params += extra_git_diff_args
-        else:
-            params.append("--")
-
-        return self._run_git("diff", *params, flush_caches=False)
-
-    def update_head_ref_to_new_hash_with_reflog_subject(self, hash: FullCommitHash, reflog_subject: str) -> int:  # noqa: KW
-        return self._run_git("update-ref", "HEAD", hash, "-m", reflog_subject, flush_caches=True)

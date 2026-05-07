@@ -147,25 +147,19 @@ def escape_markup(s: str) -> str:
 
 def _fmt(s: str, *, use_ansi_escapes: bool) -> str:
 
-    # `GIT_MACHETE_DIM_AS_GRAY` remains undocumented as for now,
-    # is just needed for animated gifs to render correctly
-    # (`[2m`-style dimmed text is invisible in asciicinema renders).
-    __dim_as_gray = os.environ.get('GIT_MACHETE_DIM_AS_GRAY') == 'true'
-    dim = '\033[38;2;128;128;128m' if __dim_as_gray else '\033[2m'
-
     ao = FullTerminalAnsiOutputCodes if is_terminal_fully_fledged() else BasicTerminalAnsiOutputCodes
 
-    # pattern                                ansi replacement                            ascii replacement
+    # pattern                                  ansi replacement                            ascii replacement
     rules: List[Tuple[str, str, str]] = [
         ('`(.*?)`',                           f'{ao.UNDERLINE}\\1{ao.ENDC_UNDERLINE}',    r'\1'),              # noqa: E241
-        ('<b>(.*?)</b>',                      f'{ao.BOLD}\\1{ao.ENDC_BOLD_DIM}',          r'\1'),              # noqa: E241
         ('<u>(.*?)</u>',                      f'{ao.UNDERLINE}\\1{ao.ENDC_UNDERLINE}',    r'\1'),              # noqa: E241
-        ('<dim>(.*?)</dim>',                  f'{dim}\\1{ao.ENDC_BOLD_DIM}',              r'\1'),              # noqa: E241
-        ('<gray>(.*?)</gray>',                f'{dim}\\1{ao.ENDC_BOLD_DIM}',              r'\1'),              # noqa: E241
+        ('<b>(.*?)</b>',                      f'{ao.BOLD}\\1{ao.ENDC_BOLD_DIM}',          r'\1'),              # noqa: E241
+        ('<dim>(.*?)</dim>',                  f'{ao.DIM}\\1{ao.ENDC_BOLD_DIM}',           r'\1'),              # noqa: E241
+        ('<gray>(.*?)</gray>',                f'{ao.DIM}\\1{ao.ENDC_BOLD_DIM}',           r'\1'),              # noqa: E241
         ('<red>(.*?)</red>',                  f'{ao.RED}\\1{ao.ENDC}',                    r'\1'),              # noqa: E241
+        ('<orange>(.*?)</orange>',            f'{ao.ORANGE}\\1{ao.ENDC}',                 r'\1'),              # noqa: E241
         ('<yellow>(.*?)</yellow>',            f'{ao.YELLOW}\\1{ao.ENDC}',                 r'\1'),              # noqa: E241
         ('<green>(.*?)</green>',              f'{ao.GREEN}\\1{ao.ENDC}',                  r'\1'),              # noqa: E241
-        ('<orange>(.*?)</orange>',            f'{ao.ORANGE}\\1{ao.ENDC}',                 r'\1'),              # noqa: E241
         ('<reverse>(.*?)</reverse>',          f'{ao.REVERSE_VIDEO}\\1{ao.ENDC}',          r'\1'),              # noqa: E241
         ('<vbar/>',                            '│',                                        '|'),               # noqa: E241
         ('<rarrow/>',                          '➔',                                        '->'),              # noqa: E241
