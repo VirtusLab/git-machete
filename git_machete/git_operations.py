@@ -9,12 +9,13 @@ from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
                     Set, Tuple)
 
 from .constants import MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
-from .utils import cmd, collections_utils, fs
 from .utils._subproc import PopenResult
+from .utils.cmd import get_cmd_shell_repr, popen_cmd, run_cmd
+from .utils.collections import get_non_empty_lines
 from .utils.debug_log import debug, hex_repr
 from .utils.exceptions import (UnderlyingGitException,
                                UnexpectedMacheteException)
-from .utils.fs import slurp_file
+from .utils.fs import is_executable, slurp_file
 from .utils.markup import escape_markup, print_fmt
 from .utils.paths import abspath_posix, join_paths_posix
 
@@ -279,19 +280,19 @@ class GitContext:
         self.__current_worktree_git_dir = None
 
     def _run_git(self, git_cmd: str, *args: str, flush_caches: bool, allow_non_zero: bool = False) -> int:
-        exit_code = cmd.run_cmd(*GIT_EXEC, git_cmd, *args)
+        exit_code = run_cmd(*GIT_EXEC, git_cmd, *args)
         if flush_caches:
             self.flush_caches()
         if not allow_non_zero and exit_code != 0:
             raise UnderlyingGitException(
-                f"`{cmd.get_cmd_shell_repr(*GIT_EXEC, git_cmd, *args, env=None)}` returned {exit_code}")
+                f"`{get_cmd_shell_repr(*GIT_EXEC, git_cmd, *args, env=None)}` returned {exit_code}")
         return exit_code
 
     def _popen_git(self, git_cmd: str, *args: str,
                    allow_non_zero: bool = False, env: Optional[Dict[str, str]] = None, input: Optional[str] = None) -> PopenResult:
-        result = cmd.popen_cmd(*GIT_EXEC, git_cmd, *args, env=env, input=input)
+        result = popen_cmd(*GIT_EXEC, git_cmd, *args, env=env, input=input)
         if not allow_non_zero and result.exit_code != 0:
-            cmd_repr = escape_markup(cmd.get_cmd_shell_repr(*GIT_EXEC, git_cmd, *args, env=env))
+            cmd_repr = escape_markup(get_cmd_shell_repr(*GIT_EXEC, git_cmd, *args, env=env))
             exit_code_msg: str = f"`{cmd_repr}` returned {result.exit_code}\n"
             stdout_msg: str = f"\n<b>stdout</b>:\n<dim>{escape_markup(result.stdout)}</dim>" if result.stdout else ""
             stderr_msg: str = f"\n<b>stderr</b>:\n<dim>{escape_markup(result.stderr)}</dim>" if result.stderr else ""
@@ -490,7 +491,7 @@ class GitContext:
 
     def get_remotes(self) -> List[str]:
         if self.__remotes_cached is None:
-            self.__remotes_cached = collections_utils.get_non_empty_lines(self._popen_git("remote").stdout)
+            self.__remotes_cached = get_non_empty_lines(self._popen_git("remote").stdout)
         return self.__remotes_cached
 
     def get_url_of_remote(self, remote: str) -> Optional[str]:
@@ -748,7 +749,7 @@ class GitContext:
         self.__tree_hash_by_commit_hash_cached = {}
 
         # Using 'committerdate:raw' instead of 'committerdate:unix' since the latter isn't supported by some older versions of git.
-        raw_remote = collections_utils.get_non_empty_lines(
+        raw_remote = get_non_empty_lines(
             self._popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)", "refs/remotes").stdout)
         for line in raw_remote:
             values = line.split("\t")
@@ -764,7 +765,7 @@ class GitContext:
             self.__committer_unix_timestamp_by_revision_cached[RemoteBranchFullName.of(branch)] = int(
                 committer_unix_timestamp_and_time_zone.split(' ')[0])
 
-        raw_local = collections_utils.get_non_empty_lines(
+        raw_local = get_non_empty_lines(
             self._popen_git("for-each-ref", "--format=%(refname)\t%(objectname)\t%(tree)\t%(committerdate:raw)\t%(upstream)",
                             "refs/heads").stdout)
 
@@ -796,7 +797,7 @@ class GitContext:
 
     def __get_log_hashes(self, revision: AnyRevision, max_count: Optional[int]) -> List[FullCommitHash]:
         opts = ([f"--max-count={str(max_count)}"] if max_count else []) + ["--format=%H", revision.full_name()]
-        return [FullCommitHash.of(line) for line in collections_utils.get_non_empty_lines(self._popen_git("log", *opts).stdout)]
+        return [FullCommitHash.of(line) for line in get_non_empty_lines(self._popen_git("log", *opts).stdout)]
 
     # Since getting the full history of a branch can be an expensive operation for large repositories
     # (compared to all other underlying git operations), there are two optimizations in place:
@@ -832,7 +833,7 @@ class GitContext:
         all_branches: List[str] = local_branches + counterpart_branches
 
         # The trailing '--' is necessary to avoid ambiguity in case there is a file called just exactly like one of the branches.
-        entries = collections_utils.get_non_empty_lines(
+        entries = get_non_empty_lines(
             self._popen_git("reflog", "show", "--format=%gD\t%H\t%gs", *(all_branches + ["--"])).stdout)
         self.__reflogs_cached = {}
         for entry in entries:
@@ -867,7 +868,7 @@ class GitContext:
                 # %H - full hash
                 # %gs - reflog subject
                 self.__reflogs_cached[branch] = [GitReflogEntry(hash=FullCommitHash(x[0]), reflog_subject=x[1]) for x in
-                                                 [entry.split(":", 1) for entry in collections_utils.get_non_empty_lines(
+                                                 [entry.split(":", 1) for entry in get_non_empty_lines(
                                                      # The trailing '--' is necessary to avoid ambiguity in case there is a file
                                                      # called just exactly like the branch 'branch'.
                                                      self._popen_git("reflog", "show", "--format=%H:%gs", branch, "--").stdout)]
@@ -1098,7 +1099,7 @@ class GitContext:
 
         # `git log ^equivalent_to_commit_hash reachable_from_commit_hash`
         # shows all commits reachable from reachable_from_commit_hash but NOT from equivalent_to_commit_hash
-        tree_hashes_for_reachable_from = collections_utils.get_non_empty_lines(
+        tree_hashes_for_reachable_from = get_non_empty_lines(
             self._popen_git(
                 "log",
                 "--format=%T",  # full commit's tree hash
@@ -1158,7 +1159,7 @@ class GitContext:
         return result
 
     def __get_patch_id_for_diff(self, patch_contents: str) -> Optional[FullPatchId]:
-        lines = collections_utils.get_non_empty_lines(self._popen_git("patch-id", input=patch_contents).stdout)
+        lines = get_non_empty_lines(self._popen_git("patch-id", input=patch_contents).stdout)
 
         if len(lines) == 0:
             # Line uncovered by tests as we actually always pass a non-empty patch to this method.
@@ -1198,7 +1199,7 @@ class GitContext:
     def check_hook_executable(self, hook_path: str) -> bool:
         if not os.path.isfile(hook_path):
             return False
-        elif not fs.is_executable(hook_path):
+        elif not is_executable(hook_path):
             advice_ignored_hook = self.get_config_attr_or_none("advice.ignoredHook")
             if advice_ignored_hook != 'false':  # both empty and "true" is okay
                 # Yellow to match how git colors this advice for its built-in hooks.
@@ -1274,7 +1275,7 @@ class GitContext:
             GitLogEntry(hash=FullCommitHash(x.split(":", 2)[0]),
                         short_hash=ShortCommitHash(x.split(":", 2)[1]),
                         subject=x.split(":", 2)[2]) for x in
-            collections_utils.get_non_empty_lines(
+            get_non_empty_lines(
                 self._popen_git("log", "--format=%H:%h:%s", f"^{earliest_exclusive}", latest_inclusive, "--").stdout)
         ]))
 
@@ -1368,7 +1369,7 @@ class GitContext:
         #   `--date=unix` is not available on some older versions of git)
         # %gs - reflog subject
         output = self._popen_git("reflog", "show", "--format=%gd:%gs", "--date=raw").stdout
-        for entry in collections_utils.get_non_empty_lines(output):
+        for entry in get_non_empty_lines(output):
             pattern = "^HEAD@\\{([0-9]+) .+\\}:checkout: moving from (.+) to (.+)$"  # noqa: FS003
             match = re.search(pattern, entry)
             if match:

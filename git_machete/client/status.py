@@ -12,11 +12,12 @@ from git_machete.git_operations import (BranchPair, FullCommitHash,
                                         GitLogEntry, LocalBranchShortName,
                                         SyncToRemoteStatus)
 from git_machete.utils._subproc import PopenResult
+from git_machete.utils.cmd import popen_cmd
 from git_machete.utils.debug_log import debug
 from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.markup import escape_markup, print_fmt, warn
 
-from ..utils import cmd, markup
+from ..utils import markup
 from .base import MacheteClient
 
 
@@ -398,6 +399,6 @@ class StatusMacheteClient(MacheteClient):
     @staticmethod
     def _popen_hook(*args: str, cwd: str, env: Dict[str, str]) -> PopenResult:
         if sys.platform == "win32":
-            return cmd.popen_cmd("sh", *args, cwd=cwd, env=env)
+            return popen_cmd("sh", *args, cwd=cwd, env=env)
         else:
-            return cmd.popen_cmd(*args, cwd=cwd, env=env)
+            return popen_cmd(*args, cwd=cwd, env=env)

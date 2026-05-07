@@ -48,7 +48,7 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
         ]
         github_api_state = MockGitHubAPIState.with_prs(*prs)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
-        self.patch_symbol(mocker, 'git_machete.utils.fs.get_current_date', lambda: '2023-12-31')
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
 
         create_repo_with_remote()
         new_branch("root")
@@ -108,7 +108,7 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         github_api_state = MockGitHubAPIState.with_prs(*self.prs_for_test_update_pr_descriptions())
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
-        self.patch_symbol(mocker, 'git_machete.utils.fs.get_current_date', lambda: '2023-12-31')
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
 
         create_repo_with_remote()
         new_branch("root")

@@ -36,11 +36,13 @@ from git_machete.gitlab import GITLAB_CLIENT_SPEC
 from .git_operations import AnyRevision, GitContext, LocalBranchShortName
 from .help import (MacheteHelpAction, alias_by_command, commands_and_aliases,
                    get_help_description, version)
-from .utils import cmd, debug_log, fs, markup, paths, terminal
+from .utils import cmd, debug_log, markup, terminal
 from .utils.exceptions import (ExitCode, InteractionStopped, MacheteException,
                                UnderlyingGitException,
                                UnexpectedMacheteException)
+from .utils.fs import does_directory_exist, get_current_directory_or_none
 from .utils.markup import green_ok, print_fmt, warn
+from .utils.paths import abspath_posix, join_paths_posix
 
 T = TypeVar('T')
 
@@ -676,7 +678,7 @@ def launch(orig_args: List[str]) -> None:
 
 
 def launch_internal(orig_args: List[str]) -> None:
-    initial_current_directory: Optional[str] = fs.get_current_directory_or_none()
+    initial_current_directory: Optional[str] = get_current_directory_or_none()
 
     try:
         cli_opts = git_machete.options.CommandLineOptions()
@@ -813,7 +815,7 @@ def launch_internal(orig_args: List[str]) -> None:
         elif cmd == "file":
             # No need to read branch layout file.
             file_client = MacheteClient(git)
-            print(paths.abspath_posix(file_client.branch_layout_file_path))
+            print(abspath_posix(file_client.branch_layout_file_path))
         elif cmd == "fork-point":
             fork_point_client = ForkPointMacheteClient(git)
             fork_point_client.read_branch_layout_file()
@@ -1127,13 +1129,13 @@ def launch_internal(orig_args: List[str]) -> None:
         # Note that this problem (current directory no longer existing due to e.g. underlying git checkouts)
         # has been fixed in git itself as of 2.35.0:
         # see https://github.com/git/git/blob/master/Documentation/RelNotes/2.35.0.txt#L81
-        if initial_current_directory and not fs.does_directory_exist(initial_current_directory):
+        if initial_current_directory and not does_directory_exist(initial_current_directory):
             nearest_existing_parent_directory = initial_current_directory
-            while not fs.does_directory_exist(nearest_existing_parent_directory):
-                nearest_existing_parent_directory = paths.join_paths_posix(
+            while not does_directory_exist(nearest_existing_parent_directory):
+                nearest_existing_parent_directory = join_paths_posix(
                     nearest_existing_parent_directory, os.path.pardir)
             warn(f"current directory {initial_current_directory} no longer exists, "
-                 f"the nearest existing parent directory is {paths.abspath_posix(nearest_existing_parent_directory)}")
+                 f"the nearest existing parent directory is {abspath_posix(nearest_existing_parent_directory)}")
 
 
 def main() -> None:

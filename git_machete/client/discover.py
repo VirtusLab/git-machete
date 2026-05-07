@@ -7,7 +7,7 @@ from git_machete.client.status import StatusMacheteClient
 from git_machete.config import SquashMergeDetection
 from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
 from git_machete.git_operations import LocalBranchShortName
-from git_machete.utils.collections_utils import excluding, tupled
+from git_machete.utils.collections import excluding, tupled
 from git_machete.utils.debug_log import debug
 from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.fs import slurp_file

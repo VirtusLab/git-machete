@@ -48,7 +48,7 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
         ]
         gitlab_api_state = MockGitLabAPIState.with_mrs(*mrs)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
-        self.patch_symbol(mocker, 'git_machete.utils.fs.get_current_date', lambda: '2023-12-31')
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
 
         create_repo_with_remote()
         new_branch("root")
@@ -108,7 +108,7 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         gitlab_api_state = MockGitLabAPIState.with_mrs(*self.mrs_for_test_update_mr_descriptions())
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
-        self.patch_symbol(mocker, 'git_machete.utils.fs.get_current_date', lambda: '2023-12-31')
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
 
         create_repo_with_remote()
         new_branch("root")

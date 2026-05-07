@@ -23,7 +23,7 @@ from git_machete.utils.exceptions import (MacheteException,
 from git_machete.utils.markup import warn
 from git_machete.utils.paths import join_paths_posix
 
-from .utils import fs
+from .utils.fs import slurp_file
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
@@ -63,7 +63,7 @@ class GitHubToken(NamedTuple):
             # ghp_mytoken_for_github_com
             # ghp_myothertoken_for_git_example_org git.example.org
             # ghp_yetanothertoken_for_git_example_com git.example.com
-            for line in fs.slurp_file(file_full_path).splitlines():
+            for line in slurp_file(file_full_path).splitlines():
                 if line.rstrip().endswith(" " + domain):
                     token = line.split(" ")[0]
                     return cls(value=token, provider=provider)
@@ -141,7 +141,7 @@ class GitHubToken(NamedTuple):
             #   oauth_token: *******************
             #   protocol: {protocol}
             found_host = False
-            for line in fs.slurp_file(config_hub_path).splitlines():
+            for line in slurp_file(config_hub_path).splitlines():
                 if line.rstrip() == domain + ":":
                     found_host = True
                 elif found_host and line.lstrip().startswith("oauth_token:"):

@@ -18,14 +18,16 @@ from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
                                         LocalBranchShortName,
                                         RemoteBranchShortName,
                                         SyncToRemoteStatus)
-from git_machete.utils.collections_utils import excluding, get_second, tupled
+from git_machete.utils.cmd import run_cmd
+from git_machete.utils.collections import (excluding, get_second,
+                                           map_truthy_only, tupled)
 from git_machete.utils.debug_log import debug
 from git_machete.utils.exceptions import (InteractionStopped, MacheteException,
                                           UnexpectedMacheteException)
 from git_machete.utils.markup import input_fmt, pretty_choices, print_fmt, warn
 from git_machete.utils.paths import join_paths_posix, relpath_posix
 
-from ..utils import cmd, collections_utils, fs
+from ..utils import fs
 
 
 class PickRoot(Enum):
@@ -92,7 +94,7 @@ class MacheteClient:
         def strip_remote_name(remote_branch: RemoteBranchShortName) -> LocalBranchShortName:
             return LocalBranchShortName.of(re.sub("^[^/]+/", "", remote_branch))
 
-        remote_counterparts_of_local_branches = collections_utils.map_truthy_only(
+        remote_counterparts_of_local_branches = map_truthy_only(
             self._git.get_combined_counterpart_for_fetching_of_branch,
             self._git.get_local_branches())
         qualifying_remote_branches: List[RemoteBranchShortName] = \
@@ -291,9 +293,9 @@ class MacheteClient:
     def __run_hook(self, *args: str, cwd: str) -> int:
         self._git.flush_caches()
         if sys.platform == "win32":
-            return cmd.run_cmd("sh", *args, cwd=cwd)
+            return run_cmd("sh", *args, cwd=cwd)
         else:
-            return cmd.run_cmd(*args, cwd=cwd)
+            return run_cmd(*args, cwd=cwd)
 
     def rebase(
             self, *,
@@ -388,7 +390,7 @@ class MacheteClient:
 
         command = default_editor_with_args[0]
         args = default_editor_with_args[1:] + [self._branch_layout_file_path]
-        return cmd.run_cmd(command, *args)
+        return run_cmd(command, *args)
 
     def __get_editor_with_args(self) -> List[str]:
         # Based on the git's own algorithm for identifying the editor.
@@ -491,7 +493,7 @@ class MacheteClient:
         else:
             debug(f"commit {computed_fork_point} is the most recent point in history of {branch} to occur on "
                   "filtered reflog of any other branch or its remote counterpart "
-                  f"(specifically: {' and '.join(map(collections_utils.get_second, containing_branch_pairs))})")
+                  f"(specifically: {' and '.join(map(get_second, containing_branch_pairs))})")
 
             if parent and upstream_hash and \
                     self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()) and \

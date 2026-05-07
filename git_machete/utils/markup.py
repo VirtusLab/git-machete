@@ -16,7 +16,7 @@ import sys
 from typing import Any, List, Optional, Tuple
 
 from . import terminal
-from .collections_utils import map_truthy_only
+from .collections import map_truthy_only
 from .terminal import BasicTerminalAnsiOutputCodes, FullTerminalAnsiOutputCodes
 
 # === Mutable runtime flags ===

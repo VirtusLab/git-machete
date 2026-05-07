@@ -11,7 +11,7 @@ import sys
 import textwrap
 from typing import Any, Dict
 
-from .collections_utils import excluding
+from .collections import excluding
 from .markup import escape_markup, print_fmt
 
 # === Mutable runtime flags ===

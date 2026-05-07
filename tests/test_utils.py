@@ -6,7 +6,11 @@ import tempfile
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils import debug_log, fs, markup, paths
+from git_machete.utils import debug_log
+from git_machete.utils.date import get_current_date
+from git_machete.utils.debug_log import debug, hex_repr
+from git_machete.utils.markup import _fmt
+from git_machete.utils.paths import abspath_posix
 from git_machete.utils.terminal import (BasicTerminalAnsiOutputCodes,
                                         FullTerminalAnsiOutputCodes)
 
@@ -19,7 +23,7 @@ class TestUtils(BaseTest):
         foo = {"foo": 1}
         try:
             debug_log.debug_mode = True
-            debug_log.debug("")
+            debug("")
         finally:
             debug_log.debug_mode = False
         assert foo["foo"] == 1  # and not string "1"
@@ -38,7 +42,7 @@ class TestUtils(BaseTest):
             F.UNDERLINE + 'green_underlined' + F.ENDC_UNDERLINE + F.ENDC + ' default' + F.ENDC
         )
         self.patch_symbol(mocker, 'git_machete.utils.terminal.is_terminal_fully_fledged', lambda: True)
-        assert markup._fmt(input_string, use_ansi_escapes=True) == expected_full_terminal
+        assert _fmt(input_string, use_ansi_escapes=True) == expected_full_terminal
 
         expected_basic_terminal = (
             B.RED + ' red ' + B.YELLOW + 'yellow ' + B.BOLD + 'yellow_bold' + B.ENDC_BOLD_DIM + ' ' +
@@ -47,22 +51,22 @@ class TestUtils(BaseTest):
             B.UNDERLINE + 'green_underlined' + B.ENDC_UNDERLINE + B.ENDC + ' default' + B.ENDC
         )
         self.patch_symbol(mocker, 'git_machete.utils.terminal.is_terminal_fully_fledged', lambda: False)
-        assert markup._fmt(input_string, use_ansi_escapes=True) == expected_basic_terminal
+        assert _fmt(input_string, use_ansi_escapes=True) == expected_basic_terminal
 
         expected_ascii = ' red yellow yellow_bold yellow_underlined yellow green  default  dimmed  green green_underlined default'
-        assert markup._fmt(input_string, use_ansi_escapes=False) == expected_ascii
+        assert _fmt(input_string, use_ansi_escapes=False) == expected_ascii
 
     def test_get_current_date(self) -> None:
-        assert re.fullmatch("20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]", fs.get_current_date())
+        assert re.fullmatch("20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]", get_current_date())
 
     def test_hex_repr(self) -> None:
-        assert debug_log.hex_repr("Hello, world!") == "48:65:6c:6c:6f:2c:20:77:6f:72:6c:64:21"
+        assert hex_repr("Hello, world!") == "48:65:6c:6c:6f:2c:20:77:6f:72:6c:64:21"
 
     def test_abspath_posix_general(self) -> None:
         """Test that abspath_posix returns an absolute path with forward slashes."""
         # Create a temporary directory to ensure we're working with real paths
         with tempfile.TemporaryDirectory() as tmpdir:
-            normalized = paths.abspath_posix(tmpdir)
+            normalized = abspath_posix(tmpdir)
             # Should be absolute
             assert os.path.isabs(normalized)
             # Should use forward slashes (no backslashes)
@@ -79,7 +83,7 @@ class TestUtils(BaseTest):
             # Verify it contains backslashes before normalization
             assert '\\' in tmpdir or '/' in tmpdir  # Windows paths have one or the other
 
-            normalized = paths.abspath_posix(tmpdir)
+            normalized = abspath_posix(tmpdir)
 
             # After normalization, should have forward slashes only
             assert '\\' not in normalized
@@ -96,7 +100,7 @@ class TestUtils(BaseTest):
             # tmpdir is in /tmp or /var on macOS
             # It might be returned as /var/folders/... or /private/var/folders/...
 
-            normalized = paths.abspath_posix(tmpdir)
+            normalized = abspath_posix(tmpdir)
 
             # After normalization with resolve(), should have /private prefix if in /var or /tmp
             # (resolve resolves the symlink)
@@ -109,7 +113,7 @@ class TestUtils(BaseTest):
     def test_abspath_posix_unix_absolute_paths(self) -> None:
         """Test that paths start with / on Unix systems."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            normalized = paths.abspath_posix(tmpdir)
+            normalized = abspath_posix(tmpdir)
             # Should start with / on Unix
             assert normalized.startswith('/')
             # Should not contain backslashes

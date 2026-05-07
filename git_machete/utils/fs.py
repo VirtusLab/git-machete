@@ -5,7 +5,6 @@ quirks that bit us in the wild (e.g., `os.path.isdir` returning a false
 positive for the current directory after the directory has been deleted).
 """
 
-import datetime
 import os
 import sys
 from typing import Optional
@@ -56,7 +55,3 @@ def find_executable(executable: str) -> Optional[str]:
 def slurp_file(path: str) -> str:
     with open(path, 'r') as file:
         return file.read()
-
-
-def get_current_date() -> str:
-    return datetime.datetime.now().strftime("%Y-%m-%d")

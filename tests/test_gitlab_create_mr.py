@@ -34,7 +34,7 @@ class TestGitLabCreateMR(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'git_machete.utils.fs.get_current_date', lambda: '2023-12-31')
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
         gitlab_api_state = self.gitlab_api_state_for_test_create_mr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
@@ -371,7 +371,7 @@ class TestGitLabCreateMR(BaseTest):
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         gitlab_api_state = self.gitlab_api_state_for_test_create_mr_for_chain_in_description()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
-        self.patch_symbol(mocker, 'git_machete.utils.fs.get_current_date', lambda: '2023-12-31')
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
 
         create_repo_with_remote()
         new_branch("develop")
@@ -501,7 +501,7 @@ class TestGitLabCreateMR(BaseTest):
     def test_gitlab_create_mr_with_multiple_non_origin_remotes(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-        self.patch_symbol(mocker, 'git_machete.utils.fs.get_current_date', lambda: '2023-12-31')
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
         gitlab_api_state = self.gitlab_api_state_for_test_gitlab_create_mr_with_multiple_non_origin_remotes()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
 
