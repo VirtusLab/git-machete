@@ -1,4 +1,3 @@
-import itertools
 import os
 import re
 import shlex
@@ -9,7 +8,7 @@ from enum import Enum, auto
 from typing import Callable, Dict, Iterator, List, NoReturn, Optional, Tuple
 
 from git_machete import utils
-from git_machete.annotation import Annotation
+from git_machete.client import branch_layout
 from git_machete.client.state import MacheteState
 from git_machete.config import MacheteConfig, SquashMergeDetection
 from git_machete.constants import (INITIAL_COMMIT_COUNT_FOR_LOG,
@@ -141,61 +140,12 @@ class MacheteClient:
                 * `git machete gitlab checkout-mrs --mine`"""[1:]))
 
     def read_branch_layout_file(self, *, interactively_slide_out_invalid_branches: bool = False, verify_branches: bool = True) -> None:
-        with open(self._branch_layout_file_path) as file:
-            lines: List[str] = [line.rstrip() for line in file.readlines()]
+        self._state, self.__indent = branch_layout.parse(self._branch_layout_file_path)
 
-        at_depth = {}
-        last_depth = -1
-        hint = "Edit the branch layout file manually with `git machete edit`"
-
-        invalid_branches: List[LocalBranchShortName] = []
-        for index, line in enumerate(lines):
-            if line == "":
-                continue
-            # Undocumented: lines whose first non-whitespace character is `#` are ignored as comments.
-            # They are not preserved when git-machete writes the branch layout file;
-            # supporting that would need an explicit strategy for comment placement and merging with programmatic edits.
-            if line.lstrip().startswith("#"):
-                continue
-            prefix = "".join(itertools.takewhile(str.isspace, line))
-            if prefix and not self.__indent:
-                self.__indent = prefix
-
-            branch_and_maybe_annotation: List[LocalBranchShortName] = [LocalBranchShortName.of(entry) for entry in
-                                                                       line.strip().split(" ", 1)]
-            branch = branch_and_maybe_annotation[0]
-            annotation = Annotation.parse(branch_and_maybe_annotation[1]) if len(branch_and_maybe_annotation) > 1 else None
-            if self._state.is_managed(branch):
-                raise MacheteException(
-                    f"{self._branch_layout_file_path}, line {index + 1}: branch "
-                    f"<b>{branch}</b> re-appears in the branch layout. {hint}")
-            if verify_branches and branch not in self._git.get_local_branches():
-                invalid_branches += [branch]
-
-            if prefix:
-                assert self.__indent is not None
-                depth: int = len(prefix) // len(self.__indent)
-                if prefix != self.__indent * depth:
-                    mapping: Dict[str, str] = {" ": "<SPACE>", "\t": "<TAB>"}
-                    prefix_expanded: str = "".join(mapping[c] for c in prefix)
-                    indent_expanded: str = "".join(mapping[c] for c in self.__indent)
-                    raise MacheteException(
-                        f"{self._branch_layout_file_path}, line {index + 1}: "
-                        f"invalid indent <b>{prefix_expanded}</b>, expected a multiply"
-                        f" of <b>{indent_expanded}</b>. {hint}")
-            else:
-                depth = 0
-
-            if depth > last_depth + 1:
-                raise MacheteException(
-                    f"{self._branch_layout_file_path}, line {index + 1}: too much "
-                    f"indent (level {depth}, expected at most {last_depth + 1}) "
-                    f"for the branch <b>{branch}</b>. {hint}")
-            last_depth = depth
-
-            at_depth[depth] = branch
-            parent = at_depth[depth - 1] if depth else None
-            self._state.add_branch(branch, parent=parent, annotation=annotation)
+        if not verify_branches:
+            return
+        local_branches = self._git.get_local_branches()
+        invalid_branches = [b for b in self._state.managed_branches if b not in local_branches]
 
         if not invalid_branches:
             return
@@ -230,26 +180,11 @@ class MacheteClient:
             self.__init_state()
             self.read_branch_layout_file(verify_branches=verify_branches)
 
-    def render_branch_layout_file(self, indent: str) -> List[str]:
-        def render_dfs(branch: LocalBranchShortName, depth: int) -> List[str]:
-            anno = self._state.get_annotation(branch)
-            annotation = (" " + anno.unformatted_full_text) if anno is not None else ""
-            res: List[str] = [depth * indent + branch + annotation]
-            for child in self.children_of(branch) or []:
-                res += render_dfs(child, depth + 1)
-            return res
-
-        result: List[str] = []
-        for root in self._state.roots:  # property returns a copy
-            result += render_dfs(root, depth=0)
-        return result
-
     def back_up_branch_layout_file(self) -> None:
         shutil.copyfile(self._branch_layout_file_path, self._branch_layout_file_path + "~")
 
     def save_branch_layout_file(self) -> None:
-        with open(self._branch_layout_file_path, "w") as file:
-            file.write("\n".join(self.render_branch_layout_file(indent=self.__indent or "  ")) + "\n")
+        branch_layout.save(self._branch_layout_file_path, self._state, indent=self.__indent or "  ")
 
     def add(self,
             *,
