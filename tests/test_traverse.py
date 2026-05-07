@@ -719,6 +719,9 @@ class TestTraverse(BaseTest):
             | Call web service
             o-call-ws * (diverged from origin)
               |
+              | Call web service
+              | 1st round of fixes
+              | 2nd round of fixes -> fork point
               | Drop unneeded SQL constraints
               x-drop-constraint
 

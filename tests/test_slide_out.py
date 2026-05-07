@@ -362,6 +362,7 @@ class TestSlideOut(BaseTest):
             """
             branch-0 *
             |
+            | Commit on branch-0. -> fork point
             | Commit on branch-1.
             | Commit on branch-2.
             x-branch-2  rebase=no

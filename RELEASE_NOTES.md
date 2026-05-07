@@ -5,6 +5,7 @@
 - added: `git machete rename <new-name>` command to rename a branch both in git and in the branch layout file
 - improved: CLI error messages now suggest close matches for typo'd subcommands, flags and choices
 - fixed: spurious yellow edge no longer appears in `status` when the parent branch is merely behind its remote counterpart and the child branch was forked from the remote tip
+- changed: `git machete status -l` now lists all commits between the parent branch and the branch tip (rather than just between the fork point and the branch tip), with the fork point commit annotated `-> fork point`
 - fixed: minor glitches in shell completions
 - fixed: parsing of `gh --version` output for custom/devel `gh` builds (e.g. `gh version 2.92.0-7-ga3efb25a`)
 

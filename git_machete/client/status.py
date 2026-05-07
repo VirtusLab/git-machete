@@ -322,13 +322,17 @@ class StatusMacheteClient(MacheteClient):
                     commits: List[Tuple[GitLogEntry, str]] = []
                 elif sync_to_parent_status[branch] == SyncToParentStatus.MERGED_TO_PARENT:
                     commits = []
-                elif sync_to_parent_status[branch] == SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF:
+                else:
                     parent = self._state.get_parent(branch)
                     assert parent is not None
                     raw_commits = self._git.get_commits_between(parent.full_name(), branch.full_name())
+                    is_fork_point_off = \
+                        sync_to_parent_status[branch] == SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF
                     commits = []
                     for commit in raw_commits:
-                        if commit.hash == fork_point:
+                        if commit.hash != fork_point:
+                            fp_suffix = ''
+                        elif is_fork_point_off:
                             fp_branches_formatted = " and ".join(
                                 sorted(f"<u>{lb_or_rb}</u>" for lb, lb_or_rb in fork_point_branches_cached[branch]))
                             fp_suffix = (
@@ -337,11 +341,8 @@ class StatusMacheteClient(MacheteClient):
                                 f' seems to be a part of the unique history of {fp_branches_formatted}'
                             )
                         else:
-                            fp_suffix = ''
+                            fp_suffix = ' <red><rarrow/> fork point</red>'
                         commits.append((commit, fp_suffix))
-                else:
-                    raw_commits = self._git.get_commits_between(fork_point, branch.full_name())
-                    commits = [(commit, '') for commit in raw_commits]
                 commits_by_branch[branch] = commits
 
         sync_status_by_branch: Dict[LocalBranchShortName, str] = {}

@@ -200,6 +200,7 @@ class TestForkPoint(BaseTest):
             """
               master (untracked)
               |
+              | ad97c34  in-between commit -> fork point
               | 989bd92  develop commit
               o-develop * (untracked)
             """
