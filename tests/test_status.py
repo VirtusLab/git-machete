@@ -768,6 +768,19 @@ class TestStatus(BaseTest):
             """,
         )
 
+        # `status -l` should list both commits between local master and develop's tip,
+        # with the fork point (= origin/master's tip) annotated.
+        assert_success(
+            ['status', '-l'],
+            """
+              master * (behind origin)
+              |
+              | master commit 2 -> fork point
+              | develop commit
+              o-develop (untracked)
+            """,
+        )
+
     def test_status_ansi_escapes(self, mocker: MockerFixture) -> None:
         # Setup: develop (root); feature-in-sync behind develop=RED; feature-merged merged into develop=DIM;
         # feature-out-of-sync ahead of develop=GREEN (current branch, underlined).
