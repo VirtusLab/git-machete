@@ -167,6 +167,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
         self._mark_trailing_blank_line()
         any_action_suggested: bool = False
+        status_shown_already: bool = False
 
         if opt_fetch:
             for rem in self._git.get_remotes():
@@ -291,10 +292,11 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     current_branch = branch
                     self._ensure_blank_separator()
                     self.status(
-                        warn_when_branch_in_sync_but_fork_point_off=True,
+                        warn_when_branch_in_sync_but_fork_point_off=not status_shown_already,
                         opt_list_commits=opt_list_commits,
                         opt_list_commits_with_hashes=False,
                         opt_squash_merge_detection=opt_squash_merge_detection)
+                    status_shown_already = True
                     self._ensure_blank_separator()
                     self._mark_trailing_blank_line()
                 if needs_slide_out:
@@ -528,7 +530,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
             self._ensure_blank_separator()
             self.status(
-                warn_when_branch_in_sync_but_fork_point_off=True,
+                warn_when_branch_in_sync_but_fork_point_off=not status_shown_already,
                 opt_list_commits=opt_list_commits,
                 opt_list_commits_with_hashes=False,
                 opt_squash_merge_detection=opt_squash_merge_detection)

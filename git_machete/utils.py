@@ -10,15 +10,12 @@ import time
 from enum import Enum, IntEnum
 from pathlib import Path, PurePosixPath
 from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, Optional,
-                    Sequence, Set, Tuple, Type, TypeVar)
+                    Sequence, Tuple, Type, TypeVar)
 
 T = TypeVar('T')
 U = TypeVar('U')
 E = TypeVar('E', bound=Enum)
 
-
-# To avoid displaying the same warning multiple times during a single run.
-displayed_warnings: Set[str] = set()
 
 # Let's keep the flag to avoid checking for current directory's existence
 # every time any command is being popened or run.
@@ -197,13 +194,8 @@ def input_fmt(prompt: str) -> str:
     return input(_fmt(prompt, use_ansi_escapes=use_ansi_escapes_in_stdout))
 
 
-def warn(msg: str, *, extra_newline: bool = False) -> None:
-    if msg not in displayed_warnings:
-        line = f"<orange>Warn: </orange>{msg}"
-        if extra_newline:
-            line += "\n"
-        print_fmt(line, file=sys.stderr)
-        displayed_warnings.add(msg)
+def warn(msg: str) -> None:
+    print_fmt(f"<orange>Warn: </orange>{msg}", file=sys.stderr)
 
 
 def green_ok() -> str:

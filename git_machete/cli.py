@@ -569,8 +569,7 @@ def update_cli_options_using_parsed_args(
         elif opt == "n":
             cli_opts.opt_n = True
         elif opt == "no_detect_squash_merges":
-            warn("`--no-detect-squash-merges` is deprecated, use `--squash-merge-detection=none` instead",
-                 extra_newline=True)
+            warn("`--no-detect-squash-merges` is deprecated, use `--squash-merge-detection=none` instead\n")
             cli_opts.opt_squash_merge_detection_string = "none"
             cli_opts.opt_squash_merge_detection_origin = "`--no-detect-squash-merges` flag"
         elif opt == "no_edit_merge":

@@ -4,7 +4,7 @@ import textwrap
 from contextlib import redirect_stderr, redirect_stdout
 from typing import Iterable, Optional, Tuple, Type
 
-from git_machete import cli, utils
+from git_machete import cli
 from git_machete.utils import MacheteException
 
 
@@ -13,7 +13,6 @@ def launch_command_capturing_output_and_exception(*cmd_and_args: str) -> Tuple[O
         try:
             with redirect_stdout(out):
                 with redirect_stderr(out):
-                    utils.displayed_warnings = set()
                     cli.launch(list(cmd_and_args))
                 output = out.getvalue()
                 return output, None
@@ -26,7 +25,6 @@ def launch_command(*cmd_and_args: str) -> str:
     with io.StringIO() as out:
         with redirect_stdout(out):
             with redirect_stderr(out):
-                utils.displayed_warnings = set()
                 cli.launch(list(cmd_and_args))
         output = out.getvalue()
         return output

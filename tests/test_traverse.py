@@ -1952,7 +1952,6 @@ class TestTraverse(BaseTest):
               {E.YELLOW}│{E.ENDC}
               {E.YELLOW}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-2{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
 
-
             Rebase {E.BOLD}feature-2{E.ENDC_BOLD_DIM} onto {E.BOLD}master{E.ENDC_BOLD_DIM}? {pc}
 
               {E.BOLD}master{E.ENDC_BOLD_DIM}
@@ -1960,7 +1959,6 @@ class TestTraverse(BaseTest):
               {E.YELLOW}├─{E.ENDC}{E.BOLD}feature-1{E.ENDC_BOLD_DIM}
               {E.YELLOW}│{E.ENDC}
               {E.YELLOW}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}feature-2{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}
-
 
             Reached branch {E.BOLD}feature-2{E.ENDC_BOLD_DIM} which has no successor; nothing left to update
             Returned to the initial branch {E.BOLD}feature-2{E.ENDC_BOLD_DIM}
