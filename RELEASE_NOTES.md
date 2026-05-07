@@ -3,7 +3,7 @@
 ## New in git-machete 3.41.0
 
 - added: `git machete rename <new-name>` command to rename a branch both in git and in the branch layout file
-- changed: `git machete status -l` now lists all commits between the parent branch and the branch tip (rather than just between the fork point and the branch tip), with the fork point commit annotated `-> fork point`
+- changed: `git machete status -l` now lists, for green and yellow edges, all commits between the parent branch and the branch tip (rather than just between the fork point and the branch tip), with the fork point commit annotated `-> fork point`; red edges still list only the unique commits of the branch (`fork-point..branch`, exclusive)
 - fixed: spurious yellow edge no longer appears in `status` when the parent branch is merely behind its remote counterpart and the child branch was forked from the remote tip
 - fixed: minor glitches in shell completions
 - fixed: parsing of `gh --version` output for custom/devel `gh` builds (e.g. `gh version 2.92.0-7-ga3efb25a`)

@@ -322,6 +322,13 @@ class StatusMacheteClient(MacheteClient):
                     commits: List[Tuple[GitLogEntry, str]] = []
                 elif sync_to_parent_status[branch] == SyncToParentStatus.MERGED_TO_PARENT:
                     commits = []
+                elif sync_to_parent_status[branch] == SyncToParentStatus.OUT_OF_SYNC:
+                    # For red edges the branch has diverged from its parent: there is no clean linear
+                    # `parent..branch` range. List only the commits unique to the branch
+                    # (`fork_point..branch`, exclusive). The fork point itself is not shown, so no
+                    # `-> fork point` marker is needed.
+                    raw_commits = self._git.get_commits_between(fork_point, branch.full_name())
+                    commits = [(commit, '') for commit in raw_commits]
                 else:
                     parent = self._state.get_parent(branch)
                     assert parent is not None

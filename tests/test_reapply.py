@@ -69,8 +69,6 @@ class TestReapply(BaseTest):
             | 4bc2902  First level-1 commit.
             x-level-1-branch *
               |
-              | 9562e34  First level-1 commit.
-              | 7af07f4  Second level-1 commit. -> fork point
               | 96ab6f4  First level-2 commit.
               | dcc4641  Second level-2 commit.
               | ae40f61  Third level-2 commit.
@@ -93,8 +91,6 @@ class TestReapply(BaseTest):
             | 4bc2902  First level-1 commit.
             x-level-1-branch
               |
-              | 9562e34  First level-1 commit.
-              | 7af07f4  Second level-1 commit. -> fork point
               | 96ab6f4  First level-2 commit.
               | 1c4cc02  Second level-2 commit.
               x-level-2-branch *
