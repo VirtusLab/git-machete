@@ -60,8 +60,12 @@ _terminal_fully_fledged: Optional[bool] = None
 def is_terminal_fully_fledged() -> bool:
     global _terminal_fully_fledged
     if _terminal_fully_fledged is None:
+        # Note: we deliberately use the lower-level `_popen_cmd` here (rather than `popen_cmd`)
+        # to avoid an infinite recursion in verbose/debug mode: `popen_cmd` would log the command
+        # via `print_fmt` -> `_fmt` -> `is_terminal_fully_fledged`, which is exactly the function
+        # we're inside (and the cache hasn't been populated yet at that point).
         try:
-            stdout = popen_cmd('tput', 'colors')[1]
+            stdout = _popen_cmd('tput', 'colors').stdout
             # In CI, this line is only covered by tests on macOS, which don't run on PRs by default.
             # Let's skip to keep coverage results consistent between develop/master and PRs.
             number_of_supported_colors = int(stdout)  # pragma: no cover
