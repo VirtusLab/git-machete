@@ -35,6 +35,8 @@ class PickRoot(Enum):
 
 class MacheteClient:
 
+    # === Initialization ===
+
     def __init__(self, git: Git) -> None:
         self._git: Git = git
         self._config: MacheteConfig = MacheteConfig(git)
@@ -79,9 +81,7 @@ class MacheteClient:
         self.__has_trailing_blank_line: Optional[bool] = None
         self.__branch_pairs_by_hash_in_reflog: Optional[Dict[FullCommitHash, List[BranchPair]]] = None
 
-    @property
-    def branch_layout_file_path(self) -> str:
-        return self._branch_layout_file_path
+    # === Branch listing ===
 
     @property
     def managed_branches(self) -> List[LocalBranchShortName]:
@@ -118,6 +118,8 @@ class MacheteClient:
     def children_of(self, branch: LocalBranchShortName) -> Optional[List[LocalBranchShortName]]:
         return self._state.get_children(branch)
 
+    # === Branch existence assertions ===
+
     def expect_in_managed_branches(self, branch: LocalBranchShortName) -> None:
         if branch not in self.managed_branches:
             raise MacheteException(
@@ -140,6 +142,12 @@ class MacheteClient:
                 * `git machete edit` or edit {self._branch_layout_file_path} manually
                 * `git machete github checkout-prs --mine`
                 * `git machete gitlab checkout-mrs --mine`"""[1:]))
+
+    # === Branch layout file I/O ===
+
+    @property
+    def branch_layout_file_path(self) -> str:
+        return self._branch_layout_file_path
 
     def read_branch_layout_file(self, *, interactively_slide_out_invalid_branches: bool = False, verify_branches: bool = True) -> None:
         self._state, self.__indent = branch_layout.parse(self._branch_layout_file_path)
@@ -188,255 +196,135 @@ class MacheteClient:
     def save_branch_layout_file(self) -> None:
         branch_layout.save(self._branch_layout_file_path, self._state, indent=self.__indent or "  ")
 
-    def add(self,
-            *,
-            branch: LocalBranchShortName,
-            opt_onto: Optional[LocalBranchShortName],
-            opt_as_first_child: bool,
-            opt_as_root: bool,
-            opt_yes: bool,
-            verbose: bool,
-            switch_head_if_new_branch: bool
-            ) -> None:
-        if branch in self.managed_branches:
-            raise MacheteException(f"Branch <b>{branch}</b> already exists in the tree of branch dependencies")
-
-        if opt_onto:
-            self.expect_in_managed_branches(opt_onto)
-
-        if branch not in self._git.get_local_branches():
-            remote_branch: Optional[RemoteBranchShortName] = self._git.get_sole_remote_branch(branch)
-            if remote_branch:
-                common_line = (
-                    f"A local branch <b>{branch}</b> does not exist, but a remote "
-                    f"branch <b>{remote_branch}</b> exists.\n")
-                msg = common_line + f"Check out <b>{branch}</b> locally?" + pretty_choices('y', 'N')
-                opt_yes_msg = common_line + f"Checking out <b>{branch}</b> locally..."
-                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
-                    self._git.create_branch(branch, remote_branch.full_name(), switch_head=switch_head_if_new_branch)
-                else:
-                    return
-                # Not dealing with `onto` here. If it hasn't been explicitly
-                # specified via `--onto`, we'll try to infer it now.
-            else:
-                out_of = LocalBranchShortName.of(opt_onto).full_name() if opt_onto else HEAD
-                out_of_str = f"<b>{opt_onto}</b>" if opt_onto else "the current HEAD"
-                msg = (f"A local branch <b>{branch}</b> does not exist. Create out "
-                       f"of {out_of_str}?" + pretty_choices('y', 'N'))
-                opt_yes_msg = (f"A local branch <b>{branch}</b> does not exist. "
-                               f"Creating out of {out_of_str}")
-                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
-                    # If `--onto` hasn't been explicitly specified, let's try to
-                    # assess if the current branch would be a good `onto`.
-                    if not opt_onto:
-                        current_branch = self._git.get_current_branch_or_none()
-                        if self._state.roots:
-                            if current_branch and current_branch in self.managed_branches:
-                                opt_onto = current_branch
-                        else:
-                            if current_branch:
-                                # In this case (empty .git/machete, creating a new branch with `git machete add`)
-                                # it's usually pretty obvious that the current branch needs to be added as root first.
-                                # Let's skip interactive questions so as not to confuse new users.
-                                self._state.bootstrap_as_single_managed(current_branch)
-                                # This section of code is only ever executed in verbose mode, but let's leave the `if` for consistency
-                                if verbose:  # pragma: no branch
-                                    print_fmt(f"Added branch <b>{current_branch}</b> as a new root")
-                                opt_onto = current_branch
-                    self._git.create_branch(branch, out_of, switch_head=switch_head_if_new_branch)
-                else:
-                    return
-
-        if opt_as_root or not self._state.roots:
-            self._state.add_as_root(branch)
-            if verbose:
-                print_fmt(f"Added branch <b>{branch}</b> as a new root")
-        else:
-            if not opt_onto:
-                parent = self._infer_upstream(
-                    branch,
-                    condition=lambda x: x in self.managed_branches,
-                    reject_reason_message="this candidate is not a managed branch")
-                if not parent:
-                    raise MacheteException(
-                        f"Could not automatically infer upstream (parent) branch for <b>{branch}</b>.\n"
-                        "You can either:\n"
-                        "1) specify the desired upstream branch with `--onto` or\n"
-                        f"2) pass `--as-root` to attach <b>{branch}</b> as a new root or\n"
-                        "3) edit the branch layout file manually with `git machete edit`")
-                else:
-                    msg = (f"Add <b>{branch}</b> onto the inferred upstream (parent) "
-                           f"branch <b>{parent}</b>?" + pretty_choices('y', 'N'))
-                    opt_yes_msg = (f"Adding <b>{branch}</b> onto the inferred upstream"
-                                   f" (parent) branch <b>{parent}</b>")
-                    if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
-                        opt_onto = parent
-                    else:
-                        return
-
-            self._state.add_as_child(branch=branch, parent=opt_onto, as_first_child=opt_as_first_child)
-            if verbose:
-                print_fmt(f"Added branch <b>{branch}</b> onto <b>{opt_onto}</b>")
-
+    def _remove_branches_from_layout(self, branches_to_delete: List[LocalBranchShortName]) -> None:
+        for branch in branches_to_delete:
+            self._state.remove_leaf(branch)
         self.save_branch_layout_file()
 
-    def _mark_trailing_blank_line(self) -> None:
-        self.__has_trailing_blank_line = True
+    # === Branch navigation ===
 
-    def _ensure_blank_separator(self) -> None:
-        if not self.__has_trailing_blank_line:
-            print("")
-        self.__has_trailing_blank_line = False
+    def first_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
+        root = self.root_branch_for(branch, if_unmanaged=PickRoot.FIRST)
+        root_children = self.children_of(root)
+        return root_children[0] if root_children else root
 
-    def __run_hook(self, *args: str, cwd: str) -> int:
-        self._git.flush_caches()
-        if sys.platform == "win32":
-            return run_cmd("sh", *args, cwd=cwd)
+    def last_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
+        destination = self.root_branch_for(branch, if_unmanaged=PickRoot.LAST)
+        while True:
+            children = self._state.get_children(destination)
+            if not children:
+                break
+            destination = children[-1]
+        return destination
+
+    def next_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
+        self.expect_in_managed_branches(branch)
+        index: int = self.managed_branches.index(branch) + 1
+        if index == len(self.managed_branches):
+            raise MacheteException(f"Branch <b>{branch}</b> has no successor")
+        return self.managed_branches[index]
+
+    def prev_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
+        self.expect_in_managed_branches(branch)
+        index: int = self.managed_branches.index(branch) - 1
+        if index == -1:
+            raise MacheteException(f"Branch <b>{branch}</b> has no predecessor")
+        return self.managed_branches[index]
+
+    def first_root_branch(self) -> LocalBranchShortName:
+        roots = self._state.roots
+        if roots:
+            return roots[0]
         else:
-            return run_cmd(*args, cwd=cwd)
+            self.__raise_no_branches_error()  # pragma: no cover; this case should never happen
 
-    def rebase(
-            self, *,
-            onto: AnyRevision,
-            from_exclusive: AnyRevision,
-            branch: LocalBranchShortName,
-            opt_no_interactive_rebase: bool
-    ) -> None:
-        self._git.expect_no_operation_in_progress()
+    def last_root_branch(self) -> LocalBranchShortName:
+        roots = self._state.roots
+        if roots:
+            return roots[-1]
+        else:
+            self.__raise_no_branches_error()  # pragma: no cover; this case should never happen
 
-        anno = self._state.get_annotation(branch)
-        if anno and not anno.qualifiers.rebase:
-            raise MacheteException(f"Branch <b>{branch}</b> is annotated with `rebase=no` qualifier, aborting.\n"
-                                   f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
-        # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
-        extra_rebase_opts = os.environ.get('GIT_MACHETE_REBASE_OPTS', '').split()
+    def root_branch_for(self, branch: LocalBranchShortName, if_unmanaged: PickRoot) -> LocalBranchShortName:
+        if branch not in self.managed_branches:
+            roots = self._state.roots
+            if roots:
+                if if_unmanaged == PickRoot.FIRST:
+                    warn(
+                        f"<b>{branch}</b> is not a managed branch, assuming "
+                        f"{roots[0]}{' (the first root)' if len(roots) > 1 else ''} instead as root")
+                    return roots[0]
+                else:  # if_unmanaged == PickRoot.LAST
+                    warn(
+                        f"<b>{branch}</b> is not a managed branch, assuming "
+                        f"{roots[-1]}{' (the last root)' if len(roots) > 1 else ''} instead as root")
+                    return roots[-1]
+            else:
+                self.__raise_no_branches_error()
+        parent = self.parent_of(branch)
+        while parent:
+            branch = parent
+            parent = self.parent_of(branch)
+        return branch
 
-        hook_path = self._git.get_hook_path("machete-pre-rebase")
-        if self._git.check_hook_executable(hook_path):
-            debug(f"running machete-pre-rebase hook ({hook_path})")
-            exit_code = self.__run_hook(hook_path, onto, from_exclusive, branch, cwd=self._git.get_current_worktree_root_dir())
-            if exit_code == 0:
-                self._git.rebase(
-                    onto, from_exclusive, branch,
-                    opt_no_interactive_rebase=opt_no_interactive_rebase,
-                    extra_rebase_opts=extra_rebase_opts)
+    def get_or_pick_child_of(self, branch: LocalBranchShortName, *, pick_if_multiple: bool) -> List[LocalBranchShortName]:
+        self.expect_in_managed_branches(branch)
+        children = self.children_of(branch)
+        if not children:
+            raise MacheteException(f"Branch <b>{branch}</b> has no downstream branch")
+        elif len(children) == 1:
+            return [children[0]]
+        elif pick_if_multiple:
+            return [self.pick(children, "downstream branch")]
+        else:
+            return children
+
+    def get_or_infer_parent_of(self,
+                               branch: LocalBranchShortName,
+                               prompt_if_inferred_msg: Optional[str],
+                               prompt_if_inferred_yes_opt_msg: Optional[str]) -> LocalBranchShortName:
+        if branch in self.managed_branches:
+            parent = self.parent_of(branch)
+            if parent:
+                return parent
+            else:
+                raise MacheteException(f"Branch <b>{branch}</b> has no upstream branch")
+        else:
+            parent = self._infer_upstream(branch)
+            if parent:
+                if prompt_if_inferred_msg and prompt_if_inferred_yes_opt_msg:
+                    if self.ask_if(
+                            prompt_if_inferred_msg % (branch, parent),
+                            prompt_if_inferred_yes_opt_msg % (branch, parent),
+                            opt_yes=False
+                    ) in ('y', 'yes'):
+                        return parent
+                    raise MacheteException("Aborting.")
+                else:
+                    warn(
+                        f"branch <b>{branch}</b> not found in the tree of branch "
+                        f"dependencies; the upstream has been inferred to <b>{parent}</b>")
+                    return parent
             else:
                 raise MacheteException(
-                    f"The machete-pre-rebase hook refused to rebase. Error code: {exit_code}")
-        else:
-            self._git.rebase(
-                onto, from_exclusive, branch,
-                opt_no_interactive_rebase=opt_no_interactive_rebase,
-                extra_rebase_opts=extra_rebase_opts)
+                    f"Branch <b>{branch}</b> not found in the tree of branch "
+                    f"dependencies and its upstream could not be inferred")
 
-    def delete_unmanaged(self, *, opt_squash_merge_detection: SquashMergeDetection, opt_yes: bool) -> None:
-        print('Checking for unmanaged branches...')
-        branches_to_delete = sorted(excluding(self._git.get_local_branches(), self.managed_branches))
-        self._delete_branches(branches_to_delete=branches_to_delete,
-                              opt_squash_merge_detection=opt_squash_merge_detection, opt_yes=opt_yes)
+    # === Slide-out support ===
 
-    def _delete_branches(
-        self,
-        branches_to_delete: List[LocalBranchShortName],
-        *,
-        opt_squash_merge_detection: SquashMergeDetection,
-        opt_yes: bool
-    ) -> None:
-        current_branch = self._git.get_current_branch_or_none()
-        if current_branch and current_branch in branches_to_delete:
-            branches_to_delete = excluding(branches_to_delete, [current_branch])
-            print_fmt(f"Skipping current branch <b>{current_branch}</b>")
-        if not branches_to_delete:
-            print("No branches to delete")
-            return
+    @property
+    def slidable_branches(self) -> List[LocalBranchShortName]:
+        # All managed branches can be slid out, including root branches
+        return self.managed_branches
 
-        if opt_yes:
-            for branch in branches_to_delete:
-                print_fmt(f"Deleting branch <b>{branch}</b>...")
-                self._git.delete_branch(branch, force=True)
-        else:
-            for branch in branches_to_delete:
-                if self.is_merged_to(branch=branch, parent=AnyBranchName('HEAD'), opt_squash_merge_detection=opt_squash_merge_detection):
-                    remote_branch = self._git.get_strict_counterpart_for_fetching_of_branch(branch)
-                    if remote_branch:
-                        is_merged_to_remote = self.is_merged_to(
-                            branch=branch,
-                            parent=remote_branch,
-                            opt_squash_merge_detection=opt_squash_merge_detection)
-                    else:
-                        is_merged_to_remote = True
-                    if is_merged_to_remote:
-                        msg_core_suffix = ''
-                    else:
-                        msg_core_suffix = f', but not merged to <b>{remote_branch}</b>'
-                    msg_core = f"<b>{branch}</b> (merged to HEAD{msg_core_suffix})"
-                else:
-                    msg_core = f"<b>{branch}</b> (unmerged to HEAD)"
-                msg = f"Delete branch {msg_core}?" + pretty_choices('y', 'N', 'q')
-                ans = self.ask_if(msg, msg_if_opt_yes=None, opt_yes=False)
-                if ans in ('y', 'yes'):
-                    self._git.delete_branch(branch, force=True)
-                elif ans in ('q', 'quit'):
-                    return
-
-    def edit(self) -> int:
-        default_editor_with_args: List[str] = self.__get_editor_with_args()
-        if not default_editor_with_args:
-            raise MacheteException(
-                f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment "
-                f"variable or edit {self._branch_layout_file_path} directly.")
-
-        command = default_editor_with_args[0]
-        args = default_editor_with_args[1:] + [self._branch_layout_file_path]
-        return run_cmd(command, *args)
-
-    def __get_editor_with_args(self) -> List[str]:
-        # Based on the git's own algorithm for identifying the editor.
-        # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
-        git_machete_editor_var = "GIT_MACHETE_EDITOR"
-        proposed_editor_funs: List[Tuple[str, Callable[[], Optional[str]]]] = [
-            ("$" + git_machete_editor_var, lambda: os.environ.get(git_machete_editor_var)),
-            ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
-            ("git config core.editor", lambda: self._config.core_editor()),
-            ("$VISUAL", lambda: os.environ.get("VISUAL")),
-            ("$EDITOR", lambda: os.environ.get("EDITOR")),
-            ("editor", lambda: "editor"),
-            ("nano", lambda: "nano"),
-            ("vi", lambda: "vi"),
-        ]
-
-        for name, fun in proposed_editor_funs:
-            editor = fun()
-            if not editor:
-                debug(f"'{name}' is undefined")
-            else:
-                editor_parsed = shlex.split(editor)
-                if not editor_parsed:
-                    debug(f"'{name}' shlexes into an empty list")
-                    continue
-                editor_command = editor_parsed[0]
-                editor_repr = "'" + name + "'" + ((' (' + editor + ')') if editor_command != name else '')
-
-                if not fs.find_executable(editor_command):
-                    debug(f"'{editor_command}' executable ('{name}') not found")
-                    if name == "$" + git_machete_editor_var:
-                        # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
-                        # it's more reasonable/less confusing to raise an error and exit without opening anything.
-                        raise MacheteException(f"<b>{editor_repr}</b> is not available")
-                else:
-                    debug(f"'{editor_command}' executable ('{name}') found")
-                    if name != "$" + git_machete_editor_var and self._config.advice_machete_editor_selection():
-                        sample_alternative = 'nano' if editor_command.startswith('vi') else 'vi'
-                        print_fmt(f"Opening <b>{editor_repr}</b>.\n"
-                                  f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export "
-                                  f"{git_machete_editor_var}={sample_alternative}`.\n\n"
-                                  "See `git machete help edit` and `git machete edit --debug` for more details.\n\n"
-                                  "Use `git config --global advice.macheteEditorSelection false` to suppress this message.",
-                                  file=sys.stderr)
-                    return editor_parsed
-
-        # This case is extremely unlikely on a modern Unix-like system.
+    def get_slidable_after(self, branch: LocalBranchShortName) -> List[LocalBranchShortName]:
+        if self._state.has_parent(branch):
+            children = self.children_of(branch)
+            if children and len(children) == 1:
+                return children
         return []
+
+    # === Fork-point computation ===
 
     def fork_point_and_containing_branch_pairs(
         self,
@@ -543,149 +431,14 @@ class MacheteClient:
         except MacheteException:
             return None
 
-    def get_or_pick_child_of(self, branch: LocalBranchShortName, *, pick_if_multiple: bool) -> List[LocalBranchShortName]:
-        self.expect_in_managed_branches(branch)
-        children = self.children_of(branch)
-        if not children:
-            raise MacheteException(f"Branch <b>{branch}</b> has no downstream branch")
-        elif len(children) == 1:
-            return [children[0]]
-        elif pick_if_multiple:
-            return [self.pick(children, "downstream branch")]
-        else:
-            return children
-
-    def first_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        root = self.root_branch_for(branch, if_unmanaged=PickRoot.FIRST)
-        root_children = self.children_of(root)
-        return root_children[0] if root_children else root
-
-    def last_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        destination = self.root_branch_for(branch, if_unmanaged=PickRoot.LAST)
-        while True:
-            children = self._state.get_children(destination)
-            if not children:
-                break
-            destination = children[-1]
-        return destination
-
-    def next_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        self.expect_in_managed_branches(branch)
-        index: int = self.managed_branches.index(branch) + 1
-        if index == len(self.managed_branches):
-            raise MacheteException(f"Branch <b>{branch}</b> has no successor")
-        return self.managed_branches[index]
-
-    def prev_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        self.expect_in_managed_branches(branch)
-        index: int = self.managed_branches.index(branch) - 1
-        if index == -1:
-            raise MacheteException(f"Branch <b>{branch}</b> has no predecessor")
-        return self.managed_branches[index]
-
-    def first_root_branch(self) -> LocalBranchShortName:
-        roots = self._state.roots
-        if roots:
-            return roots[0]
-        else:
-            self.__raise_no_branches_error()  # pragma: no cover; this case should never happen
-
-    def last_root_branch(self) -> LocalBranchShortName:
-        roots = self._state.roots
-        if roots:
-            return roots[-1]
-        else:
-            self.__raise_no_branches_error()  # pragma: no cover; this case should never happen
-
-    def root_branch_for(self, branch: LocalBranchShortName, if_unmanaged: PickRoot) -> LocalBranchShortName:
-        if branch not in self.managed_branches:
-            roots = self._state.roots
-            if roots:
-                if if_unmanaged == PickRoot.FIRST:
-                    warn(
-                        f"<b>{branch}</b> is not a managed branch, assuming "
-                        f"{roots[0]}{' (the first root)' if len(roots) > 1 else ''} instead as root")
-                    return roots[0]
-                else:  # if_unmanaged == PickRoot.LAST
-                    warn(
-                        f"<b>{branch}</b> is not a managed branch, assuming "
-                        f"{roots[-1]}{' (the last root)' if len(roots) > 1 else ''} instead as root")
-                    return roots[-1]
-            else:
-                self.__raise_no_branches_error()
-        parent = self.parent_of(branch)
-        while parent:
-            branch = parent
-            parent = self.parent_of(branch)
-        return branch
-
-    def get_or_infer_parent_of(self,
-                               branch: LocalBranchShortName,
-                               prompt_if_inferred_msg: Optional[str],
-                               prompt_if_inferred_yes_opt_msg: Optional[str]) -> LocalBranchShortName:
-        if branch in self.managed_branches:
-            parent = self.parent_of(branch)
-            if parent:
-                return parent
-            else:
-                raise MacheteException(f"Branch <b>{branch}</b> has no upstream branch")
-        else:
-            parent = self._infer_upstream(branch)
-            if parent:
-                if prompt_if_inferred_msg and prompt_if_inferred_yes_opt_msg:
-                    if self.ask_if(
-                            prompt_if_inferred_msg % (branch, parent),
-                            prompt_if_inferred_yes_opt_msg % (branch, parent),
-                            opt_yes=False
-                    ) in ('y', 'yes'):
-                        return parent
-                    raise MacheteException("Aborting.")
-                else:
-                    warn(
-                        f"branch <b>{branch}</b> not found in the tree of branch "
-                        f"dependencies; the upstream has been inferred to <b>{parent}</b>")
-                    return parent
-            else:
-                raise MacheteException(
-                    f"Branch <b>{branch}</b> not found in the tree of branch "
-                    f"dependencies and its upstream could not be inferred")
-
-    @property
-    def slidable_branches(self) -> List[LocalBranchShortName]:
-        # All managed branches can be slid out, including root branches
-        return self.managed_branches
-
-    def get_slidable_after(self, branch: LocalBranchShortName) -> List[LocalBranchShortName]:
-        if self._state.has_parent(branch):
-            children = self.children_of(branch)
-            if children and len(children) == 1:
-                return children
-        return []
-
-    def _is_merged_to_parent(
-            self, branch: LocalBranchShortName, *, opt_squash_merge_detection: SquashMergeDetection) -> bool:
-        parent = self.parent_of(branch)
-        if not parent:
-            return False
-        return self.is_merged_to(branch=branch, parent=parent, opt_squash_merge_detection=opt_squash_merge_detection)
-
-    def _run_post_slide_out_hook(
-        self,
-        *,
-        new_upstream: Optional[LocalBranchShortName],
-        slid_out_branch: LocalBranchShortName,
-        new_downstreams: List[LocalBranchShortName]
-    ) -> None:
-        hook_path = self._git.get_hook_path("machete-post-slide-out")
-        if self._git.check_hook_executable(hook_path):
-            debug(f"running machete-post-slide-out hook ({hook_path})")
-            new_downstreams_strings: List[str] = [str(db) for db in new_downstreams]
-            # When sliding out root branches, new_upstream is None; pass empty string to the hook
-            new_upstream_str = str(new_upstream) if new_upstream is not None else ""
-            exit_code = self.__run_hook(hook_path, new_upstream_str, slid_out_branch, *new_downstreams_strings,
-                                        cwd=self._git.get_current_worktree_root_dir())
-            if exit_code != 0:
-                raise MacheteException(f"The machete-post-slide-out hook exited with {exit_code}, aborting.")
+    def check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
+            self, *, fork_point: AnyRevision, branch: AnyBranchName) -> None:
+        if not self._git.is_ancestor_or_equal(
+                earlier_revision=fork_point.full_name(),
+                later_revision=branch.full_name()):
+            raise MacheteException(
+                f"Fork point <b>{fork_point}</b> is not ancestor of or the tip "
+                f"of the <b>{branch}</b> branch.")
 
     def filtered_reflog(self, branch: AnyBranchName) -> List[FullCommitHash]:
         def is_excluded_reflog_subject(entry_hash: str, reflog_subject: str) -> bool:
@@ -808,10 +561,8 @@ class MacheteClient:
                     debug(f"upstream candidate {candidate} rejected ({reject_reason_message})")
         return None
 
-    def remote_enabled_for_traverse_fetch(self, remote: str) -> bool:
-        return self._config.traverse_fetch_for_remote(remote)
+    # === Fork-point overrides ===
 
-    # Also includes config that is invalid (corresponding to a non-existent/GCed commit etc.).
     def has_any_fork_point_override_config(self, branch: LocalBranchShortName) -> bool:
         return (self._config.fork_point_override_to_value(branch) or
                 self._config.fork_point_override_while_descendant_of_value(branch)) is not None
@@ -839,6 +590,328 @@ class MacheteClient:
             return None
         debug(f"since branch {branch} is descendant of {to}, fork point of {branch} is overridden to {to}")
         return to
+
+    # === Merge detection ===
+
+    def is_merged_to(
+            self,
+            *,
+            branch: AnyBranchName,
+            parent: AnyBranchName,
+            opt_squash_merge_detection: SquashMergeDetection
+    ) -> bool:
+        if self._git.is_ancestor_or_equal(branch.full_name(), parent.full_name()):
+            # If branch is ancestor of or equal to the parent, we need to distinguish between the
+            # case of branch being "recently" created from the parent and the case of
+            # branch being fast-forward-merged to the parent.
+            # The applied heuristics is to check if the filtered reflog of the branch
+            # (reflog stripped of trivial events like branch creation, reset etc.)
+            # is non-empty.
+            return bool(self.filtered_reflog(branch))
+        elif opt_squash_merge_detection == SquashMergeDetection.NONE:
+            return False
+        elif opt_squash_merge_detection == SquashMergeDetection.SIMPLE:
+            # In the default mode.
+            # If a commit with an identical tree state to branch is reachable from parent,
+            # then branch may have been squashed or rebase-merged into parent.
+            return self._git.is_equivalent_tree_reachable(equivalent_to=branch, reachable_from=parent)
+        elif opt_squash_merge_detection == SquashMergeDetection.EXACT:
+            # Let's try another way, a little more complex but takes into account the possibility
+            # that there were other commits between the common ancestor of the two branches and the squashed merge.
+            return self._git.is_equivalent_tree_reachable(equivalent_to=branch, reachable_from=parent) or \
+                self._git.is_equivalent_patch_reachable(equivalent_to=branch, reachable_from=parent)
+        else:  # pragma: no cover
+            raise UnexpectedMacheteException(f"Invalid squash merged detection mode: {opt_squash_merge_detection}.")
+
+    def _is_merged_to_parent(
+            self, branch: LocalBranchShortName, *, opt_squash_merge_detection: SquashMergeDetection) -> bool:
+        parent = self.parent_of(branch)
+        if not parent:
+            return False
+        return self.is_merged_to(branch=branch, parent=parent, opt_squash_merge_detection=opt_squash_merge_detection)
+
+    # === Branch addition ===
+
+    def add(self,
+            *,
+            branch: LocalBranchShortName,
+            opt_onto: Optional[LocalBranchShortName],
+            opt_as_first_child: bool,
+            opt_as_root: bool,
+            opt_yes: bool,
+            verbose: bool,
+            switch_head_if_new_branch: bool
+            ) -> None:
+        if branch in self.managed_branches:
+            raise MacheteException(f"Branch <b>{branch}</b> already exists in the tree of branch dependencies")
+
+        if opt_onto:
+            self.expect_in_managed_branches(opt_onto)
+
+        if branch not in self._git.get_local_branches():
+            remote_branch: Optional[RemoteBranchShortName] = self._git.get_sole_remote_branch(branch)
+            if remote_branch:
+                common_line = (
+                    f"A local branch <b>{branch}</b> does not exist, but a remote "
+                    f"branch <b>{remote_branch}</b> exists.\n")
+                msg = common_line + f"Check out <b>{branch}</b> locally?" + pretty_choices('y', 'N')
+                opt_yes_msg = common_line + f"Checking out <b>{branch}</b> locally..."
+                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
+                    self._git.create_branch(branch, remote_branch.full_name(), switch_head=switch_head_if_new_branch)
+                else:
+                    return
+                # Not dealing with `onto` here. If it hasn't been explicitly
+                # specified via `--onto`, we'll try to infer it now.
+            else:
+                out_of = LocalBranchShortName.of(opt_onto).full_name() if opt_onto else HEAD
+                out_of_str = f"<b>{opt_onto}</b>" if opt_onto else "the current HEAD"
+                msg = (f"A local branch <b>{branch}</b> does not exist. Create out "
+                       f"of {out_of_str}?" + pretty_choices('y', 'N'))
+                opt_yes_msg = (f"A local branch <b>{branch}</b> does not exist. "
+                               f"Creating out of {out_of_str}")
+                if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
+                    # If `--onto` hasn't been explicitly specified, let's try to
+                    # assess if the current branch would be a good `onto`.
+                    if not opt_onto:
+                        current_branch = self._git.get_current_branch_or_none()
+                        if self._state.roots:
+                            if current_branch and current_branch in self.managed_branches:
+                                opt_onto = current_branch
+                        else:
+                            if current_branch:
+                                # In this case (empty .git/machete, creating a new branch with `git machete add`)
+                                # it's usually pretty obvious that the current branch needs to be added as root first.
+                                # Let's skip interactive questions so as not to confuse new users.
+                                self._state.bootstrap_as_single_managed(current_branch)
+                                # This section of code is only ever executed in verbose mode, but let's leave the `if` for consistency
+                                if verbose:  # pragma: no branch
+                                    print_fmt(f"Added branch <b>{current_branch}</b> as a new root")
+                                opt_onto = current_branch
+                    self._git.create_branch(branch, out_of, switch_head=switch_head_if_new_branch)
+                else:
+                    return
+
+        if opt_as_root or not self._state.roots:
+            self._state.add_as_root(branch)
+            if verbose:
+                print_fmt(f"Added branch <b>{branch}</b> as a new root")
+        else:
+            if not opt_onto:
+                parent = self._infer_upstream(
+                    branch,
+                    condition=lambda x: x in self.managed_branches,
+                    reject_reason_message="this candidate is not a managed branch")
+                if not parent:
+                    raise MacheteException(
+                        f"Could not automatically infer upstream (parent) branch for <b>{branch}</b>.\n"
+                        "You can either:\n"
+                        "1) specify the desired upstream branch with `--onto` or\n"
+                        f"2) pass `--as-root` to attach <b>{branch}</b> as a new root or\n"
+                        "3) edit the branch layout file manually with `git machete edit`")
+                else:
+                    msg = (f"Add <b>{branch}</b> onto the inferred upstream (parent) "
+                           f"branch <b>{parent}</b>?" + pretty_choices('y', 'N'))
+                    opt_yes_msg = (f"Adding <b>{branch}</b> onto the inferred upstream"
+                                   f" (parent) branch <b>{parent}</b>")
+                    if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
+                        opt_onto = parent
+                    else:
+                        return
+
+            self._state.add_as_child(branch=branch, parent=opt_onto, as_first_child=opt_as_first_child)
+            if verbose:
+                print_fmt(f"Added branch <b>{branch}</b> onto <b>{opt_onto}</b>")
+
+        self.save_branch_layout_file()
+
+    # === Branch deletion ===
+
+    def delete_unmanaged(self, *, opt_squash_merge_detection: SquashMergeDetection, opt_yes: bool) -> None:
+        print('Checking for unmanaged branches...')
+        branches_to_delete = sorted(excluding(self._git.get_local_branches(), self.managed_branches))
+        self._delete_branches(branches_to_delete=branches_to_delete,
+                              opt_squash_merge_detection=opt_squash_merge_detection, opt_yes=opt_yes)
+
+    def delete_untracked(self, *, opt_yes: bool) -> None:
+        print_fmt("<b>Checking for untracked managed branches with no downstream...</b>")
+        branches_to_delete: List[LocalBranchShortName] = []
+        for branch in self.managed_branches.copy():
+            status, _ = self._git.get_combined_remote_sync_status(branch)
+            if status == SyncToRemoteStatus.UNTRACKED and not self.children_of(branch):
+                branches_to_delete.append(branch)
+
+        self._remove_branches_from_layout(branches_to_delete)
+        self._delete_branches(branches_to_delete, opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=opt_yes)
+
+    def _delete_branches(
+        self,
+        branches_to_delete: List[LocalBranchShortName],
+        *,
+        opt_squash_merge_detection: SquashMergeDetection,
+        opt_yes: bool
+    ) -> None:
+        current_branch = self._git.get_current_branch_or_none()
+        if current_branch and current_branch in branches_to_delete:
+            branches_to_delete = excluding(branches_to_delete, [current_branch])
+            print_fmt(f"Skipping current branch <b>{current_branch}</b>")
+        if not branches_to_delete:
+            print("No branches to delete")
+            return
+
+        if opt_yes:
+            for branch in branches_to_delete:
+                print_fmt(f"Deleting branch <b>{branch}</b>...")
+                self._git.delete_branch(branch, force=True)
+        else:
+            for branch in branches_to_delete:
+                if self.is_merged_to(branch=branch, parent=AnyBranchName('HEAD'), opt_squash_merge_detection=opt_squash_merge_detection):
+                    remote_branch = self._git.get_strict_counterpart_for_fetching_of_branch(branch)
+                    if remote_branch:
+                        is_merged_to_remote = self.is_merged_to(
+                            branch=branch,
+                            parent=remote_branch,
+                            opt_squash_merge_detection=opt_squash_merge_detection)
+                    else:
+                        is_merged_to_remote = True
+                    if is_merged_to_remote:
+                        msg_core_suffix = ''
+                    else:
+                        msg_core_suffix = f', but not merged to <b>{remote_branch}</b>'
+                    msg_core = f"<b>{branch}</b> (merged to HEAD{msg_core_suffix})"
+                else:
+                    msg_core = f"<b>{branch}</b> (unmerged to HEAD)"
+                msg = f"Delete branch {msg_core}?" + pretty_choices('y', 'N', 'q')
+                ans = self.ask_if(msg, msg_if_opt_yes=None, opt_yes=False)
+                if ans in ('y', 'yes'):
+                    self._git.delete_branch(branch, force=True)
+                elif ans in ('q', 'quit'):
+                    return
+
+    # === Rebase ===
+
+    def rebase(
+            self, *,
+            onto: AnyRevision,
+            from_exclusive: AnyRevision,
+            branch: LocalBranchShortName,
+            opt_no_interactive_rebase: bool
+    ) -> None:
+        self._git.expect_no_operation_in_progress()
+
+        anno = self._state.get_annotation(branch)
+        if anno and not anno.qualifiers.rebase:
+            raise MacheteException(f"Branch <b>{branch}</b> is annotated with `rebase=no` qualifier, aborting.\n"
+                                   f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
+        # Let's use `OPTS` suffix for consistency with git's built-in env var `GIT_DIFF_OPTS`
+        extra_rebase_opts = os.environ.get('GIT_MACHETE_REBASE_OPTS', '').split()
+
+        hook_path = self._git.get_hook_path("machete-pre-rebase")
+        if self._git.check_hook_executable(hook_path):
+            debug(f"running machete-pre-rebase hook ({hook_path})")
+            exit_code = self.__run_hook(hook_path, onto, from_exclusive, branch, cwd=self._git.get_current_worktree_root_dir())
+            if exit_code == 0:
+                self._git.rebase(
+                    onto, from_exclusive, branch,
+                    opt_no_interactive_rebase=opt_no_interactive_rebase,
+                    extra_rebase_opts=extra_rebase_opts)
+            else:
+                raise MacheteException(
+                    f"The machete-pre-rebase hook refused to rebase. Error code: {exit_code}")
+        else:
+            self._git.rebase(
+                onto, from_exclusive, branch,
+                opt_no_interactive_rebase=opt_no_interactive_rebase,
+                extra_rebase_opts=extra_rebase_opts)
+
+    # === Editor (edit subcommand) ===
+
+    def edit(self) -> int:
+        default_editor_with_args: List[str] = self.__get_editor_with_args()
+        if not default_editor_with_args:
+            raise MacheteException(
+                f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment "
+                f"variable or edit {self._branch_layout_file_path} directly.")
+
+        command = default_editor_with_args[0]
+        args = default_editor_with_args[1:] + [self._branch_layout_file_path]
+        return run_cmd(command, *args)
+
+    def __get_editor_with_args(self) -> List[str]:
+        # Based on the git's own algorithm for identifying the editor.
+        # '$GIT_MACHETE_EDITOR', 'editor' (to please Debian-based systems) and 'nano' have been added.
+        git_machete_editor_var = "GIT_MACHETE_EDITOR"
+        proposed_editor_funs: List[Tuple[str, Callable[[], Optional[str]]]] = [
+            ("$" + git_machete_editor_var, lambda: os.environ.get(git_machete_editor_var)),
+            ("$GIT_EDITOR", lambda: os.environ.get("GIT_EDITOR")),
+            ("git config core.editor", lambda: self._config.core_editor()),
+            ("$VISUAL", lambda: os.environ.get("VISUAL")),
+            ("$EDITOR", lambda: os.environ.get("EDITOR")),
+            ("editor", lambda: "editor"),
+            ("nano", lambda: "nano"),
+            ("vi", lambda: "vi"),
+        ]
+
+        for name, fun in proposed_editor_funs:
+            editor = fun()
+            if not editor:
+                debug(f"'{name}' is undefined")
+            else:
+                editor_parsed = shlex.split(editor)
+                if not editor_parsed:
+                    debug(f"'{name}' shlexes into an empty list")
+                    continue
+                editor_command = editor_parsed[0]
+                editor_repr = "'" + name + "'" + ((' (' + editor + ')') if editor_command != name else '')
+
+                if not fs.find_executable(editor_command):
+                    debug(f"'{editor_command}' executable ('{name}') not found")
+                    if name == "$" + git_machete_editor_var:
+                        # In this specific case, when GIT_MACHETE_EDITOR is defined but doesn't point to a valid executable,
+                        # it's more reasonable/less confusing to raise an error and exit without opening anything.
+                        raise MacheteException(f"<b>{editor_repr}</b> is not available")
+                else:
+                    debug(f"'{editor_command}' executable ('{name}') found")
+                    if name != "$" + git_machete_editor_var and self._config.advice_machete_editor_selection():
+                        sample_alternative = 'nano' if editor_command.startswith('vi') else 'vi'
+                        print_fmt(f"Opening <b>{editor_repr}</b>.\n"
+                                  f"To override this choice, use <b>{git_machete_editor_var}</b> env var, e.g. `export "
+                                  f"{git_machete_editor_var}={sample_alternative}`.\n\n"
+                                  "See `git machete help edit` and `git machete edit --debug` for more details.\n\n"
+                                  "Use `git config --global advice.macheteEditorSelection false` to suppress this message.",
+                                  file=sys.stderr)
+                    return editor_parsed
+
+        # This case is extremely unlikely on a modern Unix-like system.
+        return []
+
+    # === Hooks ===
+
+    def __run_hook(self, *args: str, cwd: str) -> int:
+        self._git.flush_caches()
+        if sys.platform == "win32":
+            return run_cmd("sh", *args, cwd=cwd)
+        else:
+            return run_cmd(*args, cwd=cwd)
+
+    def _run_post_slide_out_hook(
+        self,
+        *,
+        new_upstream: Optional[LocalBranchShortName],
+        slid_out_branch: LocalBranchShortName,
+        new_downstreams: List[LocalBranchShortName]
+    ) -> None:
+        hook_path = self._git.get_hook_path("machete-post-slide-out")
+        if self._git.check_hook_executable(hook_path):
+            debug(f"running machete-post-slide-out hook ({hook_path})")
+            new_downstreams_strings: List[str] = [str(db) for db in new_downstreams]
+            # When sliding out root branches, new_upstream is None; pass empty string to the hook
+            new_upstream_str = str(new_upstream) if new_upstream is not None else ""
+            exit_code = self.__run_hook(hook_path, new_upstream_str, slid_out_branch, *new_downstreams_strings,
+                                        cwd=self._git.get_current_worktree_root_dir())
+            if exit_code != 0:
+                raise MacheteException(f"The machete-post-slide-out hook exited with {exit_code}, aborting.")
+
+    # === Sync-to-remote state handlers ===
 
     def __pick_remote(
             self,
@@ -1000,110 +1073,6 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise InteractionStopped
 
-    def is_merged_to(
-            self,
-            *,
-            branch: AnyBranchName,
-            parent: AnyBranchName,
-            opt_squash_merge_detection: SquashMergeDetection
-    ) -> bool:
-        if self._git.is_ancestor_or_equal(branch.full_name(), parent.full_name()):
-            # If branch is ancestor of or equal to the parent, we need to distinguish between the
-            # case of branch being "recently" created from the parent and the case of
-            # branch being fast-forward-merged to the parent.
-            # The applied heuristics is to check if the filtered reflog of the branch
-            # (reflog stripped of trivial events like branch creation, reset etc.)
-            # is non-empty.
-            return bool(self.filtered_reflog(branch))
-        elif opt_squash_merge_detection == SquashMergeDetection.NONE:
-            return False
-        elif opt_squash_merge_detection == SquashMergeDetection.SIMPLE:
-            # In the default mode.
-            # If a commit with an identical tree state to branch is reachable from parent,
-            # then branch may have been squashed or rebase-merged into parent.
-            return self._git.is_equivalent_tree_reachable(equivalent_to=branch, reachable_from=parent)
-        elif opt_squash_merge_detection == SquashMergeDetection.EXACT:
-            # Let's try another way, a little more complex but takes into account the possibility
-            # that there were other commits between the common ancestor of the two branches and the squashed merge.
-            return self._git.is_equivalent_tree_reachable(equivalent_to=branch, reachable_from=parent) or \
-                self._git.is_equivalent_patch_reachable(equivalent_to=branch, reachable_from=parent)
-        else:  # pragma: no cover
-            raise UnexpectedMacheteException(f"Invalid squash merged detection mode: {opt_squash_merge_detection}.")
-
-    @staticmethod
-    def ask_if(
-            msg: str,
-            msg_if_opt_yes: Optional[str],
-            *,
-            opt_yes: bool,
-            override_answer: Optional[str] = None,
-            verbose: bool = True
-    ) -> str:
-        if override_answer:
-            return override_answer
-        if opt_yes and msg_if_opt_yes:
-            if verbose:
-                print_fmt(msg_if_opt_yes)
-            return 'y'
-        try:
-            ans: str = input_fmt(msg).lower().strip()
-        except InterruptedError:
-            sys.exit(1)
-        return ans
-
-    @staticmethod
-    def pick(choices: List[LocalBranchShortName], name: str) -> LocalBranchShortName:
-        xs: str = "".join(f"[{index + 1}] {x}\n" for index, x in enumerate(choices))
-        msg: str = xs + f"Specify {name} or hit <return> to skip: "
-        try:
-            ans: str = input_fmt(msg)
-            if not ans:
-                sys.exit(0)
-            index: int = int(ans) - 1
-        except ValueError:
-            sys.exit(1)
-        if index not in range(len(choices)):
-            raise MacheteException(f"Invalid index: {index + 1}")
-        return choices[index]
-
-    def flush_caches(self) -> None:
-        self.__branch_pairs_by_hash_in_reflog = None
-
-    def check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-            self, *, fork_point: AnyRevision, branch: AnyBranchName) -> None:
-        if not self._git.is_ancestor_or_equal(
-                earlier_revision=fork_point.full_name(),
-                later_revision=branch.full_name()):
-            raise MacheteException(
-                f"Fork point <b>{fork_point}</b> is not ancestor of or the tip "
-                f"of the <b>{branch}</b> branch.")
-
-    def _handle_diverged_and_newer_state(
-            self,
-            *,
-            current_branch: LocalBranchShortName,
-            remote: str,
-            is_called_from_traverse: bool = True,
-            opt_push_tracked: bool,
-            opt_yes: bool
-    ) -> None:
-        self._ensure_blank_separator()
-        remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(current_branch)
-        assert remote_branch is not None
-        choices = pretty_choices(*('y', 'N', 'q', 'yq') if is_called_from_traverse else ('y', 'N', 'q'))
-        ans = self.ask_if(
-            f"Branch <b>{current_branch}</b> diverged from (and has newer commits than) its remote counterpart <b>{remote_branch}</b>.\n"
-            f"Push <b>{current_branch}</b> with force-with-lease to <b>{remote}</b>?" + choices,
-            f"Branch <b>{current_branch}</b> diverged from (and has newer commits than) its remote counterpart <b>{remote_branch}</b>.\n"
-            f"Pushing <b>{current_branch}</b> with force-with-lease to <b>{remote}</b>...",
-            override_answer=None if opt_push_tracked else "N", opt_yes=opt_yes)
-        if ans in ('y', 'yes', 'yq'):
-            self._git.push(remote, current_branch, force_with_lease=True)
-            if ans == 'yq':
-                raise InteractionStopped
-        elif ans in ('q', 'quit'):
-            raise InteractionStopped
-
     def _handle_untracked_state(
             self,
             *,
@@ -1169,23 +1138,6 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise InteractionStopped
 
-    def _handle_diverged_and_older_state(self, branch: LocalBranchShortName, *, opt_yes: bool) -> None:
-        self._ensure_blank_separator()
-        remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(branch)
-        assert remote_branch is not None
-        ans = self.ask_if(
-            f"Branch <b>{branch}</b> diverged from (and has older commits than) its remote counterpart <b>{remote_branch}</b>.\n"
-            f"Reset branch <b>{branch}</b> to the commit pointed by <b>{remote_branch}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
-            f"Branch <b>{branch}</b> diverged from (and has older commits than) its remote counterpart <b>{remote_branch}</b>.\n"
-            f"Resetting branch <b>{branch}</b> to the commit pointed by <b>{remote_branch}</b>...",
-            opt_yes=opt_yes)
-        if ans in ('y', 'yes', 'yq'):
-            self._git.reset_keep(remote_branch)
-            if ans == 'yq':
-                raise InteractionStopped
-        elif ans in ('q', 'quit'):
-            raise InteractionStopped
-
     def _handle_behind_state(self, *, branch: LocalBranchShortName, remote: str, opt_yes: bool) -> None:
         self._ensure_blank_separator()
         remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(branch)
@@ -1203,18 +1155,105 @@ class MacheteClient:
         elif ans in ('q', 'quit'):
             raise InteractionStopped
 
-    def delete_untracked(self, *, opt_yes: bool) -> None:
-        print_fmt("<b>Checking for untracked managed branches with no downstream...</b>")
-        branches_to_delete: List[LocalBranchShortName] = []
-        for branch in self.managed_branches.copy():
-            status, _ = self._git.get_combined_remote_sync_status(branch)
-            if status == SyncToRemoteStatus.UNTRACKED and not self.children_of(branch):
-                branches_to_delete.append(branch)
+    def _handle_diverged_and_newer_state(
+            self,
+            *,
+            current_branch: LocalBranchShortName,
+            remote: str,
+            is_called_from_traverse: bool = True,
+            opt_push_tracked: bool,
+            opt_yes: bool
+    ) -> None:
+        self._ensure_blank_separator()
+        remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(current_branch)
+        assert remote_branch is not None
+        choices = pretty_choices(*('y', 'N', 'q', 'yq') if is_called_from_traverse else ('y', 'N', 'q'))
+        ans = self.ask_if(
+            f"Branch <b>{current_branch}</b> diverged from (and has newer commits than) its remote counterpart <b>{remote_branch}</b>.\n"
+            f"Push <b>{current_branch}</b> with force-with-lease to <b>{remote}</b>?" + choices,
+            f"Branch <b>{current_branch}</b> diverged from (and has newer commits than) its remote counterpart <b>{remote_branch}</b>.\n"
+            f"Pushing <b>{current_branch}</b> with force-with-lease to <b>{remote}</b>...",
+            override_answer=None if opt_push_tracked else "N", opt_yes=opt_yes)
+        if ans in ('y', 'yes', 'yq'):
+            self._git.push(remote, current_branch, force_with_lease=True)
+            if ans == 'yq':
+                raise InteractionStopped
+        elif ans in ('q', 'quit'):
+            raise InteractionStopped
 
-        self._remove_branches_from_layout(branches_to_delete)
-        self._delete_branches(branches_to_delete, opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=opt_yes)
+    def _handle_diverged_and_older_state(self, branch: LocalBranchShortName, *, opt_yes: bool) -> None:
+        self._ensure_blank_separator()
+        remote_branch = self._git.get_combined_counterpart_for_fetching_of_branch(branch)
+        assert remote_branch is not None
+        ans = self.ask_if(
+            f"Branch <b>{branch}</b> diverged from (and has older commits than) its remote counterpart <b>{remote_branch}</b>.\n"
+            f"Reset branch <b>{branch}</b> to the commit pointed by <b>{remote_branch}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
+            f"Branch <b>{branch}</b> diverged from (and has older commits than) its remote counterpart <b>{remote_branch}</b>.\n"
+            f"Resetting branch <b>{branch}</b> to the commit pointed by <b>{remote_branch}</b>...",
+            opt_yes=opt_yes)
+        if ans in ('y', 'yes', 'yq'):
+            self._git.reset_keep(remote_branch)
+            if ans == 'yq':
+                raise InteractionStopped
+        elif ans in ('q', 'quit'):
+            raise InteractionStopped
 
-    def _remove_branches_from_layout(self, branches_to_delete: List[LocalBranchShortName]) -> None:
-        for branch in branches_to_delete:
-            self._state.remove_leaf(branch)
-        self.save_branch_layout_file()
+    # === Output formatting ===
+
+    def _mark_trailing_blank_line(self) -> None:
+        self.__has_trailing_blank_line = True
+
+    def _ensure_blank_separator(self) -> None:
+        if not self.__has_trailing_blank_line:
+            print("")
+        self.__has_trailing_blank_line = False
+
+    # === User prompts ===
+
+    @staticmethod
+    def ask_if(
+            msg: str,
+            msg_if_opt_yes: Optional[str],
+            *,
+            opt_yes: bool,
+            override_answer: Optional[str] = None,
+            verbose: bool = True
+    ) -> str:
+        if override_answer:
+            return override_answer
+        if opt_yes and msg_if_opt_yes:
+            if verbose:
+                print_fmt(msg_if_opt_yes)
+            return 'y'
+        try:
+            ans: str = input_fmt(msg).lower().strip()
+        except InterruptedError:
+            sys.exit(1)
+        return ans
+
+    @staticmethod
+    def pick(choices: List[LocalBranchShortName], name: str) -> LocalBranchShortName:
+        xs: str = "".join(f"[{index + 1}] {x}\n" for index, x in enumerate(choices))
+        msg: str = xs + f"Specify {name} or hit <return> to skip: "
+        try:
+            ans: str = input_fmt(msg)
+            if not ans:
+                sys.exit(0)
+            index: int = int(ans) - 1
+        except ValueError:
+            sys.exit(1)
+        if index not in range(len(choices)):
+            raise MacheteException(f"Invalid index: {index + 1}")
+        return choices[index]
+
+    # === Cache management ===
+
+    def flush_caches(self) -> None:
+        self.__branch_pairs_by_hash_in_reflog = None
+
+    # === Miscellaneous ===
+
+    def remote_enabled_for_traverse_fetch(self, remote: str) -> bool:
+        return self._config.traverse_fetch_for_remote(remote)
+
+    # Also includes config that is invalid (corresponding to a non-existent/GCed commit etc.).
