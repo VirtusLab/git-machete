@@ -9,10 +9,9 @@ from git_machete.code_hosting import (CodeHostingClient, CodeHostingSpec,
                                       OrganizationAndRepositoryAndRemote,
                                       PullRequest, is_matching_remote_url)
 from git_machete.config import PRDescriptionIntroStyle, SquashMergeDetection
-from git_machete.git_operations import (GitContext, GitFormatPatterns,
-                                        GitLogEntry, LocalBranchShortName,
-                                        RemoteBranchShortName,
-                                        SyncToRemoteStatus)
+from git_machete.git import (Git, GitFormatPatterns, GitLogEntry,
+                             LocalBranchShortName, RemoteBranchShortName,
+                             SyncToRemoteStatus)
 from git_machete.utils.collections import find_or_none, get_non_empty_lines
 from git_machete.utils.debug_log import debug
 from git_machete.utils.exceptions import (MacheteException,
@@ -26,7 +25,7 @@ from ..utils import date
 
 
 class MacheteClientWithCodeHosting(StatusMacheteClient):
-    def __init__(self, git: GitContext, spec: CodeHostingSpec):
+    def __init__(self, git: Git, spec: CodeHostingSpec):
         super().__init__(git)
         self.__code_hosting_spec: CodeHostingSpec = spec
         self.__code_hosting_client: Optional[CodeHostingClient] = None

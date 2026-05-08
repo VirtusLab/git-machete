@@ -1,7 +1,7 @@
 from typing import List
 
 from git_machete.client.base import MacheteClient
-from git_machete.git_operations import LocalBranchShortName
+from git_machete.git import LocalBranchShortName
 
 
 class LogMacheteClient(MacheteClient):

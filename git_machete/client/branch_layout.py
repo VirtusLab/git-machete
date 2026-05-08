@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Tuple
 
 from git_machete.annotation import Annotation
 from git_machete.client.state import MacheteState
-from git_machete.git_operations import LocalBranchShortName
+from git_machete.git import LocalBranchShortName
 from git_machete.utils.exceptions import MacheteException
 
 

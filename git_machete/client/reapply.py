@@ -1,7 +1,7 @@
 from typing import Optional
 
 from git_machete.client.base import MacheteClient
-from git_machete.git_operations import AnyRevision
+from git_machete.git import AnyRevision
 
 
 class ReapplyMacheteClient(MacheteClient):

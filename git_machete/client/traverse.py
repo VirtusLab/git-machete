@@ -9,8 +9,7 @@ from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.code_hosting import CodeHostingSpec, PullRequest
 from git_machete.config import (SquashMergeDetection,
                                 TraverseWhenBranchNotCheckedOutInAnyWorktree)
-from git_machete.git_operations import (GitContext, LocalBranchShortName,
-                                        SyncToRemoteStatus)
+from git_machete.git import Git, LocalBranchShortName, SyncToRemoteStatus
 from git_machete.utils.exceptions import (MacheteException, ParsableEnum,
                                           UnexpectedMacheteException)
 from git_machete.utils.markup import green_ok, pretty_choices, print_fmt, warn
@@ -30,7 +29,7 @@ class TraverseStartFrom(ParsableEnum):
 
     @classmethod
     def from_string_or_branch(cls: Type['TraverseStartFrom'], value: str,
-                              git_context: GitContext) -> Union['TraverseStartFrom', LocalBranchShortName]:
+                              git_context: Git) -> Union['TraverseStartFrom', LocalBranchShortName]:
         """Parse value as enum (case-insensitive) or as branch name.
         If value matches both a special value and an existing branch name, the branch takes priority."""
         local_branches = git_context.get_local_branches()
@@ -50,7 +49,7 @@ class TraverseStartFrom(ParsableEnum):
 
 class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
-    def __init__(self, git: GitContext, spec: CodeHostingSpec):
+    def __init__(self, git: Git, spec: CodeHostingSpec):
         super().__init__(git, spec)
         self.__temporary_worktree_path: Optional[str] = None
         self.__dir_before_temporary_worktree: Optional[str] = None

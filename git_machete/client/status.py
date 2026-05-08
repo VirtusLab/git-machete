@@ -8,9 +8,8 @@ from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from git_machete.annotation import Annotation
 from git_machete.config import SquashMergeDetection
-from git_machete.git_operations import (BranchPair, FullCommitHash,
-                                        GitLogEntry, LocalBranchShortName,
-                                        SyncToRemoteStatus)
+from git_machete.git import (BranchPair, FullCommitHash, GitLogEntry,
+                             LocalBranchShortName, SyncToRemoteStatus)
 from git_machete.utils._subproc import PopenResult
 from git_machete.utils.cmd import popen_cmd
 from git_machete.utils.debug_log import debug

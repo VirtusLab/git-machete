@@ -570,7 +570,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         )
 
     def test_gitlab_checkout_mrs_remote_already_added(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
+        self.patch_symbol(mocker, 'git_machete.git.Git.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         gitlab_api_state = self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
@@ -583,7 +583,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         )
 
     def test_gitlab_checkout_mrs_org_and_repo_from_config(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
+        self.patch_symbol(mocker, 'git_machete.git.Git.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
             self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()))
@@ -607,7 +607,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         )
 
     def test_gitlab_checkout_mrs_remote_from_config(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
+        self.patch_symbol(mocker, 'git_machete.git.Git.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(
             self.gitlab_api_state_for_test_gitlab_checkout_mrs_single_mr()))
@@ -637,7 +637,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         ]
 
     def test_gitlab_checkout_mrs_main_to_main_mr(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.git_operations.GitContext.fetch_remote', lambda _self, _remote: None)
+        self.patch_symbol(mocker, 'git_machete.git.Git.fetch_remote', lambda _self, _remote: None)
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
 

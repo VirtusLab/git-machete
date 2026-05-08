@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from .git_operations import AnyRevision, LocalBranchShortName
+from .git import AnyRevision, LocalBranchShortName
 
 
 class CommandLineOptions:

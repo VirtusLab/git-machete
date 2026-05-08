@@ -224,7 +224,7 @@ class GitFormatPatterns(Enum):
     MESSAGE_BODY = "%b"
 
 
-class GitContext:
+class Git:
 
     # === Initialization & cache management ===
 

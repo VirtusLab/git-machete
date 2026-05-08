@@ -1,7 +1,7 @@
 from typing import Optional
 
 from git_machete.client.base import MacheteClient
-from git_machete.git_operations import AnyRevision, LocalBranchShortName
+from git_machete.git import AnyRevision, LocalBranchShortName
 from git_machete.utils.markup import pretty_choices
 
 

@@ -12,12 +12,10 @@ from git_machete.client.state import MacheteState
 from git_machete.config import MacheteConfig, SquashMergeDetection
 from git_machete.constants import (INITIAL_COMMIT_COUNT_FOR_LOG,
                                    TOTAL_COMMIT_COUNT_FOR_LOG)
-from git_machete.git_operations import (HEAD, AnyBranchName, AnyRevision,
-                                        BranchPair, ForkPointOverrideData,
-                                        FullCommitHash, GitContext,
-                                        LocalBranchShortName,
-                                        RemoteBranchShortName,
-                                        SyncToRemoteStatus)
+from git_machete.git import (HEAD, AnyBranchName, AnyRevision, BranchPair,
+                             ForkPointOverrideData, FullCommitHash, Git,
+                             LocalBranchShortName, RemoteBranchShortName,
+                             SyncToRemoteStatus)
 from git_machete.utils.cmd import run_cmd
 from git_machete.utils.collections import (excluding, get_second,
                                            map_truthy_only, tupled)
@@ -37,8 +35,8 @@ class PickRoot(Enum):
 
 class MacheteClient:
 
-    def __init__(self, git: GitContext) -> None:
-        self._git: GitContext = git
+    def __init__(self, git: Git) -> None:
+        self._git: Git = git
         self._config: MacheteConfig = MacheteConfig(git)
         git.owner = self
 

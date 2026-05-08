@@ -1,6 +1,5 @@
 from git_machete.client.base import MacheteClient
-from git_machete.git_operations import (LocalBranchShortName,
-                                        RemoteBranchShortName)
+from git_machete.git import LocalBranchShortName, RemoteBranchShortName
 from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.markup import print_fmt
 

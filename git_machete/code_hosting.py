@@ -3,7 +3,7 @@ import ssl
 from abc import ABCMeta, abstractmethod
 from typing import Dict, List, NamedTuple, Optional
 
-from git_machete.git_operations import GitContext, LocalBranchShortName
+from git_machete.git import Git, LocalBranchShortName
 
 
 class PullRequest:
@@ -201,7 +201,7 @@ class CodeHostingClient(metaclass=ABCMeta):  # pragma: no cover
     @staticmethod
     def __create_ssl_context() -> ssl.SSLContext:
         ctx = ssl.create_default_context()
-        ssl_verify = GitContext().get_boolean_config_attr_or_none("http.sslVerify")
+        ssl_verify = Git().get_boolean_config_attr_or_none("http.sslVerify")
         if not ssl_verify:
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE

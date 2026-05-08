@@ -2,7 +2,7 @@ from typing import List
 
 from git_machete.annotation import Annotation
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
-from git_machete.git_operations import LocalBranchShortName
+from git_machete.git import LocalBranchShortName
 
 
 class AnnoMacheteClient(MacheteClientWithCodeHosting):

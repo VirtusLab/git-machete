@@ -1,6 +1,6 @@
 from git_machete.annotation import Annotation
 from git_machete.client.base import MacheteClient
-from git_machete.git_operations import GitContext, LocalBranchShortName
+from git_machete.git import Git, LocalBranchShortName
 
 from .base_test import BaseTest
 from .cli_runner import read_branch_layout_file, rewrite_branch_layout_file
@@ -54,7 +54,7 @@ class TestClient(BaseTest):
             feature8 annotation rebase=no push=no rebase=no push=no
             """
         rewrite_branch_layout_file(body)
-        machete_client = MacheteClient(GitContext())
+        machete_client = MacheteClient(Git())
         machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
 
         def anno(branch_name: str) -> Annotation:
@@ -121,7 +121,7 @@ class TestClient(BaseTest):
             # develop
               feature
             """)
-        machete_client = MacheteClient(GitContext())
+        machete_client = MacheteClient(Git())
         machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
 
         assert machete_client.managed_branches == [
@@ -145,7 +145,7 @@ class TestClient(BaseTest):
             master
             feature  note #123
             """)
-        machete_client = MacheteClient(GitContext())
+        machete_client = MacheteClient(Git())
         machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
 
         feature = LocalBranchShortName.of('feature')
@@ -170,7 +170,7 @@ class TestClient(BaseTest):
             master
             # feature
             """)
-        machete_client = MacheteClient(GitContext())
+        machete_client = MacheteClient(Git())
         machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
         machete_client.save_branch_layout_file()
 

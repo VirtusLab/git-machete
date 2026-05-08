@@ -1,8 +1,7 @@
 import os
 
-from git_machete.git_operations import (AnyBranchName, AnyRevision,
-                                        FullCommitHash, GitContext,
-                                        LocalBranchShortName)
+from git_machete.git import (AnyBranchName, AnyRevision, FullCommitHash, Git,
+                             LocalBranchShortName)
 
 from .base_test import BaseTest
 from .git_repository import (add_worktree, check_out, commit, create_repo,
@@ -20,7 +19,7 @@ class TestGitOperations(BaseTest):
         commit("master first commit")
         master_branch_first_commit_hash = get_current_commit_hash()
 
-        git = GitContext()
+        git = Git()
         assert git._run_git("rev-parse", "--verify", "--quiet",
                             master_branch_first_commit_hash + "^{commit}", allow_non_zero=True, flush_caches=False) == 0  # noqa: FS003
         assert git._run_git("rev-parse", "HEAD", flush_caches=False) == 0
@@ -36,7 +35,7 @@ class TestGitOperations(BaseTest):
         new_branch("feature")
         commit("feature commit")
 
-        git = GitContext()
+        git = Git()
 
         def is_commit_present_in_repository(revision: AnyRevision) -> bool:
             return git._popen_git("rev-parse", "--verify", "--quiet",
@@ -58,7 +57,7 @@ class TestGitOperations(BaseTest):
         commit("feature commit")
         check_out("master")
 
-        git = GitContext()
+        git = Git()
         assert git._run_git("merge", "--squash", "feature", flush_caches=False) == 0
         assert git._run_git("commit", "-m", "squashed", flush_caches=False) == 0
 
@@ -78,7 +77,7 @@ class TestGitOperations(BaseTest):
         check_out("master")
         commit("extra commit")
 
-        git = GitContext()
+        git = Git()
         assert git._run_git("merge", "--squash", "feature", flush_caches=False) == 0
         assert git._run_git("commit", "-m", "squashed", flush_caches=False) == 0
 
@@ -105,7 +104,7 @@ class TestGitOperations(BaseTest):
         commit("feature commit")
         check_out("master")
 
-        git = GitContext()
+        git = Git()
         assert git._run_git("rebase", "feature", flush_caches=False) == 0
 
         feature = AnyRevision("feature")
@@ -133,7 +132,7 @@ class TestGitOperations(BaseTest):
         check_out("master")
         commit("extra commit")
 
-        git = GitContext()
+        git = Git()
         assert git._run_git("rebase", "feature", flush_caches=False) == 0
 
         feature = AnyRevision("feature")
@@ -160,7 +159,7 @@ class TestGitOperations(BaseTest):
         new_orphan_branch("feature")
         commit("feature commit")
 
-        git = GitContext()
+        git = Git()
         feature = AnyRevision("feature")
         master = AnyRevision("master")
 
@@ -170,7 +169,7 @@ class TestGitOperations(BaseTest):
     def test_git_config_with_newlines(self) -> None:
         create_repo()
         write_to_file(".git/config", '[foo]\n  bar = "hello\\nworld"')
-        git = GitContext()
+        git = Git()
         assert git.get_config_attr_or_none("foo.bar") == "hello\nworld"
 
     def test_get_reflog_when_log_showsignature_is_true(self) -> None:
@@ -183,7 +182,7 @@ class TestGitOperations(BaseTest):
         commit("extra commit")
         set_git_config_key("log.showSignature", "true")
 
-        git = GitContext()
+        git = Git()
 
         # If the bug reported in GitHub issue #1286 is not fixed, this method call
         # should raise an UnexpectedMacheteException.
@@ -194,7 +193,7 @@ class TestGitOperations(BaseTest):
         new_branch("feature@foo")
         commit("feature commit")
 
-        git = GitContext()
+        git = Git()
         # If the bug reported in GitHub issue #1481 is not fixed, this method call
         # should raise an UnexpectedMacheteException.
         git.get_reflog(AnyBranchName.of("feature@foo"))
@@ -214,7 +213,7 @@ class TestGitOperations(BaseTest):
         new_branch("feature-3")
         commit("feature-3 commit")
 
-        git = GitContext()
+        git = Git()
         main_worktree_path = git.get_current_worktree_root_dir()
 
         # Test 1: Main worktree on a branch, no linked worktrees
@@ -312,7 +311,7 @@ class TestGitOperations(BaseTest):
         commit("master second commit")
         master_hash2 = FullCommitHash.of(get_current_commit_hash())
 
-        git = GitContext()
+        git = Git()
         cache_path = os.path.join(git.get_main_worktree_git_dir(), "machete-merge-base-cache")
 
         # Test 1: Cache file doesn't exist - should work normally
@@ -330,7 +329,7 @@ class TestGitOperations(BaseTest):
         valid_hash2 = "b" * 40
         valid_merge_base = "c" * 40
         write_to_file(cache_path, f"{valid_hash1} {valid_hash2} {valid_merge_base}\n")
-        git = GitContext()  # New instance to test cache loading
+        git = Git()  # New instance to test cache loading
         # Access cache by calling get_merge_base (which triggers cache load)
         git.get_merge_base(master_hash, feature_hash)
         # Check that valid entry was loaded (even though these are fake hashes, they should be in cache)
@@ -347,7 +346,7 @@ class TestGitOperations(BaseTest):
         orphan_hash1 = "d" * 40
         orphan_hash2 = "e" * 40
         write_to_file(cache_path, f"{orphan_hash1} {orphan_hash2}\n")
-        git = GitContext()
+        git = Git()
         git.get_merge_base(master_hash, feature_hash)  # Trigger cache load
         assert git._merge_base_cached is not None
         # Normalize hash order
@@ -375,7 +374,7 @@ class TestGitOperations(BaseTest):
         valid_entry = f"{valid_hash1} {valid_hash2} {valid_merge_base}"
         cache_content_with_invalid = "\n".join(invalid_entries) + "\n" + valid_entry + "\n"
         write_to_file(cache_path, cache_content_with_invalid)
-        git = GitContext()
+        git = Git()
         git.get_merge_base(master_hash, feature_hash)  # Trigger cache load
         # Should still have the valid entry loaded
         assert git._merge_base_cached is not None
@@ -389,7 +388,7 @@ class TestGitOperations(BaseTest):
 
         # Test 5: Cache with empty lines and whitespace
         write_to_file(cache_path, f"\n  \n\t\n{valid_hash1} {valid_hash2} {valid_merge_base}\n\n")
-        git = GitContext()
+        git = Git()
         git.get_merge_base(master_hash, feature_hash)  # Trigger cache load
         assert git._merge_base_cached is not None
         # Normalize hash order
@@ -404,7 +403,7 @@ class TestGitOperations(BaseTest):
         hash_smaller = "a" * 40
         merge_base_normalized = "0" * 40
         write_to_file(cache_path, f"{hash_larger} {hash_smaller} {merge_base_normalized}\n")
-        git = GitContext()
+        git = Git()
         git.get_merge_base(master_hash, feature_hash)  # Trigger cache load
         assert git._merge_base_cached is not None
         # Should be normalized to (smaller, larger)
@@ -441,7 +440,7 @@ class TestGitOperations(BaseTest):
         # We'll test this by ensuring the cached value is returned
         # First, write a cache entry for real commits
         write_to_file(cache_path, f"{master_hash.full_name()} {feature_hash.full_name()} {merge_base1.full_name()}\n")
-        git2 = GitContext()
+        git2 = Git()
         # Load cache and get merge-base - should use cached value
         cached_merge_base = git2.get_merge_base(master_hash, feature_hash)
         # The result should match what we put in cache

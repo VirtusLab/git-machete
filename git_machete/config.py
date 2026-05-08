@@ -4,7 +4,7 @@ from enum import auto
 from typing import Optional
 
 from git_machete.code_hosting import CodeHostingGitConfigKeys
-from git_machete.git_operations import GitContext
+from git_machete.git import Git
 from git_machete.utils.exceptions import ParsableEnum
 
 
@@ -50,8 +50,8 @@ class MacheteConfig:
     _TRAVERSE_WHEN_BRANCH_NOT_CHECKED_OUT_IN_ANY_WORKTREE = 'machete.traverse.whenBranchNotCheckedOutInAnyWorktree'
     _WORKTREE_USE_TOP_LEVEL_MACHETE_FILE = 'machete.worktree.useTopLevelMacheteFile'
 
-    def __init__(self, git: GitContext) -> None:
-        self._git: GitContext = git
+    def __init__(self, git: Git) -> None:
+        self._git: Git = git
 
     def advice_machete_editor_selection(self) -> bool:
         return self._git.get_config_attr_or_none(self._ADVICE_MACHETE_EDITOR_SELECTION) != 'false'

@@ -33,7 +33,7 @@ from git_machete.config import MacheteConfig, SquashMergeDetection
 from git_machete.github import GITHUB_CLIENT_SPEC
 from git_machete.gitlab import GITLAB_CLIENT_SPEC
 
-from .git_operations import AnyRevision, GitContext, LocalBranchShortName
+from .git import AnyRevision, Git, LocalBranchShortName
 from .help import (MacheteHelpAction, alias_by_command, commands_and_aliases,
                    get_help_description, version)
 from .utils import cmd, debug_log, markup, terminal
@@ -654,7 +654,7 @@ def update_cli_options_using_parsed_args(
 
 def update_cli_options_using_config_keys(
         cli_opts: git_machete.options.CommandLineOptions,
-        git: GitContext
+        git: Git
 ) -> None:
     traverse_push = MacheteConfig(git).traverse_push()
     if traverse_push is not None:
@@ -682,7 +682,7 @@ def launch_internal(orig_args: List[str]) -> None:
 
     try:
         cli_opts = git_machete.options.CommandLineOptions()
-        git = GitContext()
+        git = Git()
 
         direct_args = list(itertools.takewhile(lambda arg: arg != "--", orig_args))
         pass_through_args = list(itertools.dropwhile(lambda arg: arg != "--", orig_args))

@@ -2,9 +2,8 @@ import os
 from typing import List, Optional
 
 from git_machete.client.base import MacheteClient
-from git_machete.git_operations import (AnyRevision, FullCommitHash,
-                                        GitFormatPatterns, GitLogEntry,
-                                        LocalBranchShortName)
+from git_machete.git import (AnyRevision, FullCommitHash, GitFormatPatterns,
+                             GitLogEntry, LocalBranchShortName)
 from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.markup import print_fmt
 

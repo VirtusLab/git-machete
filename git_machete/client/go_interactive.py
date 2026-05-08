@@ -11,7 +11,7 @@ except ImportError:  # pragma: no cover; Windows-specific
 
 from git_machete.client.status import (StatusData, StatusFlags,
                                        StatusMacheteClient)
-from git_machete.git_operations import LocalBranchShortName
+from git_machete.git import LocalBranchShortName
 from git_machete.utils.collections import index_or_none
 from git_machete.utils.exceptions import (MacheteException,
                                           UnexpectedMacheteException)

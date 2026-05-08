@@ -15,7 +15,7 @@ from git_machete.code_hosting import (CodeHostingClient,
                                       OrganizationAndRepository,
                                       OrganizationAndRepositoryAndGitUrl,
                                       PullRequest)
-from git_machete.git_operations import LocalBranchShortName
+from git_machete.git import LocalBranchShortName
 from git_machete.utils.cmd import popen_cmd
 from git_machete.utils.debug_log import compact_dict, debug
 from git_machete.utils.exceptions import (MacheteException,
