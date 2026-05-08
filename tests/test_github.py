@@ -447,7 +447,8 @@ class TestGitHub(BaseTest):
         assert_failure(["github", "checkout-prs", "--related"],
                        "--related option is only valid with update-pr-descriptions subcommand.")
         assert_failure(["github", "update-pr-descriptions", "--all", "--related"],
-                       "update-pr-descriptions subcommand must take exactly one "
-                       "of the following options: --all, --by=..., --mine, --related")
+                       "update-pr-descriptions subcommand takes at most one "
+                       "of the following options: --all, --by=..., --mine, --related; "
+                       "--related is assumed if none of these is provided.")
         assert_failure(["github", "update-pr-descriptions", "--update-related-descriptions"],
                        "--update-related-descriptions option is only valid with create-pr, restack-pr and retarget-pr subcommands.")

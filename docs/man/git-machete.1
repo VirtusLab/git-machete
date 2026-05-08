@@ -1116,6 +1116,8 @@ delete untracked managed branches that have no downstream branch.
 Update the generated sections (\(dqintros\(dq) of PR descriptions that list the upstream and/or downstream PRs
 (depending on \fBmachete.github.prDescriptionIntroStyle\fP git config key).
 .sp
+When no flag is provided, \fB\-\-related\fP is assumed.
+.sp
 \fBOptions:\fP
 .INDENT 7.0
 .TP
@@ -1129,7 +1131,7 @@ Update PR descriptions for all PRs authored by the given GitHub user, where \fB<
 Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
 .TP
 .B  \-\-related
-Update PR descriptions for all PRs both upstream and downstream of the PR for the current branch (the entire stack).
+Update PR descriptions for all PRs both upstream and downstream of the PR for the current branch (the entire stack). This is the default if no flag is given.
 .UNINDENT
 .UNINDENT
 .sp
@@ -1382,6 +1384,8 @@ See help for \fBgit machete gitlab update\-mr\-descriptions \-\-related\fP for d
 Update the generated sections (\(dqintros\(dq) of MR descriptions that list the upstream and/or downstream MRs
 (depending on \fBmachete.gitlab.mrDescriptionIntroStyle\fP git config key).
 .sp
+When no flag is provided, \fB\-\-related\fP is assumed.
+.sp
 \fBOptions:\fP
 .INDENT 7.0
 .TP
@@ -1395,7 +1399,7 @@ Update MR descriptions for all MRs authored by the given GitLab user, where \fB<
 Update MR descriptions for all MRs opened by the current user associated with the GitLab token.
 .TP
 .B  \-\-related
-Update MR descriptions for all MRs both upstream and downstream of the MR for the current branch (the entire stack).
+Update MR descriptions for all MRs both upstream and downstream of the MR for the current branch (the entire stack). This is the default if no flag is given.
 .UNINDENT
 .UNINDENT
 .sp

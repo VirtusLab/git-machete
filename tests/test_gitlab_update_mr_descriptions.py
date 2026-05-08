@@ -89,6 +89,56 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             """
         )
 
+    def test_gitlab_update_mr_descriptions_no_flag_defaults_to_related(self, mocker: MockerFixture) -> None:
+        """
+        With no `--all`/`--by`/`--mine`/`--related` flag, `update-mr-descriptions` defaults to `--related`:
+        only MRs in the stack of the current branch are touched, unrelated MRs are left alone.
+        """
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        mrs = [
+            mock_mr_json(head='branch1', base='root', number=1, body='# Summary\n'),
+            mock_mr_json(head='branch2', base='branch1', number=2, body='# Summary\n'),
+            mock_mr_json(head='unrelated', base='root', number=99, body='# Summary\n'),
+        ]
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs(*mrs)))
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        push()
+        new_branch("branch1")
+        commit("branch1 commit")
+        push()
+        new_branch("branch2")
+        commit("branch2 commit")
+        push()
+        check_out("root")
+        new_branch("unrelated")
+        commit("unrelated commit")
+        push()
+
+        rewrite_branch_layout_file("""
+            root
+              branch1
+                branch2
+              unrelated
+            """)
+        check_out('branch2')
+        # `full` style ensures every MR in the stack (incl. the topmost) has an intro
+        # to add, so all three of the related MRs surface a "has been updated" line.
+        set_git_config_key("machete.gitlab.mrDescriptionIntroStyle", "full")
+
+        assert_success(
+            ['gitlab', 'update-mr-descriptions'],
+            """
+            Checking for open GitLab MRs... OK
+            Description of MR !1 (branch1 -> root) has been updated
+            Description of MR !2 (branch2 -> branch1) has been updated
+            """
+        )
+
     @staticmethod
     def mrs_for_test_update_mr_descriptions() -> List[Dict[str, Any]]:
         return [

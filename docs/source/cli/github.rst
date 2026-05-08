@@ -151,6 +151,8 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
     Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs
     (depending on ``machete.github.prDescriptionIntroStyle`` git config key).
 
+    When no flag is provided, ``--related`` is assumed.
+
     **Options:**
 
     --all                Update PR descriptions for all PRs in the repository.
@@ -159,7 +161,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
 
     --mine               Update PR descriptions for all PRs opened by the current user associated with the GitHub token.
 
-    --related            Update PR descriptions for all PRs both upstream and downstream of the PR for the current branch (the entire stack).
+    --related            Update PR descriptions for all PRs both upstream and downstream of the PR for the current branch (the entire stack). This is the default if no flag is given.
 
 **Git config keys:**
 

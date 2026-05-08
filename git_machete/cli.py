@@ -942,12 +942,15 @@ def launch_internal(orig_args: List[str]) -> None:
                 github_or_gitlab_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=False)
                 github_or_gitlab_client.delete_untracked(opt_yes=cli_opts.opt_yes)
             elif subcommand == f"update-{pr_or_mr}-descriptions":
-                if len(set(parsed_cli_as_dict.keys()).intersection({'all', 'by', 'mine', 'related'})) != 1:
+                selectors = set(parsed_cli_as_dict.keys()).intersection({'all', 'by', 'mine', 'related'})
+                if len(selectors) > 1:
                     raise MacheteException(
-                        f"`update-{pr_or_mr}-descriptions` subcommand must take exactly one of the following options: "
-                        '`--all`, `--by=...`, `--mine`, `--related`')
+                        f"`update-{pr_or_mr}-descriptions` subcommand takes at most one of the following options: "
+                        '`--all`, `--by=...`, `--mine`, `--related`; '
+                        '`--related` is assumed if none of these is provided.')
+                related = cli_opts.opt_related or not selectors
                 github_or_gitlab_client.update_pull_request_descriptions(
-                    all=cli_opts.opt_all, by=cli_opts.opt_by, mine=cli_opts.opt_mine, related=cli_opts.opt_related)
+                    all=cli_opts.opt_all, by=cli_opts.opt_by, mine=cli_opts.opt_mine, related=related)
             else:  # an unknown subcommand is handled by argparse
                 raise UnexpectedMacheteException(f"Unknown subcommand: `{subcommand}`")
         elif cmd in {"go", alias_by_command["go"]}:

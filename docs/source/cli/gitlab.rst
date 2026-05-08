@@ -142,6 +142,8 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
     Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs
     (depending on ``machete.gitlab.mrDescriptionIntroStyle`` git config key).
 
+    When no flag is provided, ``--related`` is assumed.
+
     **Options:**
 
     --all                Update MR descriptions for all MRs in the project.
@@ -150,7 +152,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 
     --mine               Update MR descriptions for all MRs opened by the current user associated with the GitLab token.
 
-    --related            Update MR descriptions for all MRs both upstream and downstream of the MR for the current branch (the entire stack).
+    --related            Update MR descriptions for all MRs both upstream and downstream of the MR for the current branch (the entire stack). This is the default if no flag is given.
 
 **Git config keys:**
 

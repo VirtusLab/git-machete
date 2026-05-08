@@ -89,6 +89,56 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             """
         )
 
+    def test_github_update_pr_descriptions_no_flag_defaults_to_related(self, mocker: MockerFixture) -> None:
+        """
+        With no `--all`/`--by`/`--mine`/`--related` flag, `update-pr-descriptions` defaults to `--related`:
+        only PRs in the stack of the current branch are touched, unrelated PRs are left alone.
+        """
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        prs = [
+            mock_pr_json(head='branch1', base='root', number=1, body='# Summary\n'),
+            mock_pr_json(head='branch2', base='branch1', number=2, body='# Summary\n'),
+            mock_pr_json(head='unrelated', base='root', number=99, body='# Summary\n'),
+        ]
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs(*prs)))
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        push()
+        new_branch("branch1")
+        commit("branch1 commit")
+        push()
+        new_branch("branch2")
+        commit("branch2 commit")
+        push()
+        check_out("root")
+        new_branch("unrelated")
+        commit("unrelated commit")
+        push()
+
+        rewrite_branch_layout_file("""
+            root
+              branch1
+                branch2
+              unrelated
+            """)
+        check_out('branch2')
+        # `full` style ensures every PR in the stack (incl. the topmost) has an intro
+        # to add, so all three of the related PRs surface a "has been updated" line.
+        set_git_config_key("machete.github.prDescriptionIntroStyle", "full")
+
+        assert_success(
+            ['github', 'update-pr-descriptions'],
+            """
+            Checking for open GitHub PRs... OK
+            Description of PR #1 (branch1 -> root) has been updated
+            Description of PR #2 (branch2 -> branch1) has been updated
+            """
+        )
+
     @staticmethod
     def prs_for_test_update_pr_descriptions() -> List[Dict[str, Any]]:
         return [
