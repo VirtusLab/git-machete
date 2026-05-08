@@ -382,6 +382,7 @@ def create_cli_parser() -> argparse.ArgumentParser:
 
     fork_point_parser = create_subparser('fork-point')
     fork_point_parser.add_argument('branch', nargs='?')
+    fork_point_parser.add_argument('--explain', action='store_true')
     fork_point_exclusive_optional_args = fork_point_parser.add_mutually_exclusive_group()
     fork_point_exclusive_optional_args.add_argument('--inferred', action='store_true')
     fork_point_exclusive_optional_args.add_argument('--override-to')
@@ -555,6 +556,8 @@ def update_cli_options_using_parsed_args(
             cli_opts.opt_down_fork_point = AnyRevision.of(arg) if arg else None
         elif opt == "draft":
             cli_opts.opt_draft = True
+        elif opt == "explain":
+            cli_opts.opt_explain = True
         elif opt == "fetch":
             cli_opts.opt_fetch = True
         elif opt == "fork_point":
@@ -841,8 +844,15 @@ def launch_internal(orig_args: List[str]) -> None:
                 # It's unlikely that anyone overrides fork point for a branch that doesn't have a parent,
                 # also it's unclear what the suggested action should even be - let's skip this case.
 
+            if cli_opts.opt_override_to or cli_opts.opt_override_to_inferred or \
+                    cli_opts.opt_override_to_parent or cli_opts.opt_unset_override:
+                if cli_opts.opt_explain:
+                    raise MacheteException(
+                        "`--explain` cannot be combined with "
+                        "`--override-to`/`--override-to-inferred`/`--override-to-parent`/`--unset-override`.")
+
             if cli_opts.opt_inferred:
-                print(fork_point_client.fork_point(branch=branch, use_overrides=False))
+                fork_point_client.print_fork_point(branch=branch, use_overrides=False, explain=cli_opts.opt_explain)
             elif cli_opts.opt_override_to:
                 override_to = AnyRevision.of(cli_opts.opt_override_to)
                 fork_point_client.set_fork_point_override(branch, override_to)
@@ -867,7 +877,7 @@ def launch_internal(orig_args: List[str]) -> None:
             elif cli_opts.opt_unset_override:
                 fork_point_client.unset_fork_point_override(branch)
             else:
-                print(fork_point_client.fork_point(branch=branch, use_overrides=True))
+                fork_point_client.print_fork_point(branch=branch, use_overrides=True, explain=cli_opts.opt_explain)
         elif cmd in {"github", "gitlab"}:
             subcommand = parsed_cli.subcommand
             spec = GITHUB_API_SPEC if cmd == "github" else GITLAB_API_SPEC

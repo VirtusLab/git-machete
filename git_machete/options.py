@@ -16,6 +16,7 @@ class CommandLineOptions:
         self.opt_delete: bool = False
         self.opt_down_fork_point: Optional[AnyRevision] = None
         self.opt_draft: bool = False
+        self.opt_explain: bool = False
         self.opt_fetch: bool = False
         self.opt_fork_point: Optional[AnyRevision] = None
         self.opt_ignore_if_missing: bool = False

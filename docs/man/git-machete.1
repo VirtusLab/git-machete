@@ -824,7 +824,7 @@ if \fBgit machete\fP is executed from a \fBsubmodule\fP, this file is located in
 .INDENT 3.5
 .sp
 .EX
-git machete fork\-point [\-\-inferred] [<branch>]
+git machete fork\-point [\-\-inferred] [\-\-explain] [<branch>]
 git machete fork\-point \-\-override\-to=<revision>|\-\-override\-to\-inferred|\-\-override\-to\-parent [<branch>]
 git machete fork\-point \-\-unset\-override [<branch>]
 .EE
@@ -873,6 +873,12 @@ With \fB\-\-inferred\fP, displays the commit that \fBgit machete fork\-point\fP 
 If there is \fBno\fP fork point override for \fB<branch>\fP, this is identical to the output of \fBgit machete fork\-point\fP\&.
 If there is a fork point override for \fB<branch>\fP, this is identical to the what the output of \fBgit machete fork\-point\fP would be if the override was \fBnot\fP present.
 Note: this piece of information is also displayed by \fBgit machete status \-\-list\-commits\fP in case a yellow edge occurs.
+.sp
+With \fB\-\-explain\fP, prints the fork point hash on stdout and, on stderr, an explanation of the form
+\fBthis commit seems to be a part of the unique history of <branch1> and <branch2>\fP \-\-\- mirroring the wording of the
+\fB\-> fork point ???\fP annotation that \fBgit machete status \-\-list\-commits\fP shows on a yellow edge.
+If a fork point override is active, the inference is short\-circuited and the stderr line falls back to \fBfork point of <branch> is overridden\fP\&.
+This flag may be combined with \fB\-\-inferred\fP but not with the \fB\-\-override\-to\fP/\fB\-\-override\-to\-inferred\fP/\fB\-\-override\-to\-parent\fP/\fB\-\-unset\-override\fP flags.
 .sp
 With \fB\-\-override\-to\-inferred\fP option, overrides fork point of \fB<branch>\fP to the result of \fBgit machete fork\-point \-\-inferred\fP for \fB<branch>\fP\&.
 Note: similarly to \fB\-\-override\-to=<revision>\fP, this option is \fBdeprecated\fP\&.

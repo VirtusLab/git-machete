@@ -66,7 +66,7 @@ _git_machete() {
   local delete_unmanaged_opts="-y --yes"
   local diff_opts="-s --stat"
   local discover_opts="-C --checked-out-since= -l --list-commits -r --roots= -y --yes"
-  local fork_point_opts="--inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
+  local fork_point_opts="--explain --inferred --override-to= --override-to-inferred --override-to-parent --unset-override"
   local githublab_anno_opts="--with-urls"
   local githublab_create_opts="--draft --title= -U --update-related-descriptions -y --yes"
   local githublab_checkout_opts="--all --by= --mine"
@@ -114,7 +114,8 @@ _git_machete() {
         fork-point)
           local filtered_fork_point_opts
           filtered_fork_point_opts=$(_git_machete_filter_mutex_groups "$fork_point_opts" \
-            "--inferred --override-to= --override-to-inferred --override-to-parent --unset-override")
+            "--inferred --override-to= --override-to-inferred --override-to-parent --unset-override" \
+            "--explain --override-to= --override-to-inferred --override-to-parent --unset-override")
           __gitcomp "$common_opts $filtered_fork_point_opts"
           ;;
         github)

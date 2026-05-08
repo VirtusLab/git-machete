@@ -75,22 +75,29 @@ test_cases: Dict[str, str] = {
     "git machete fork-point ":
         "develop feature master",
     "git machete fork-point -":
-        "--debug -h --help --inferred --override-to --override-to-inferred --override-to-parent --unset-override -v --verbose",
+        "--debug --explain -h --help --inferred --override-to "
+        "--override-to-inferred --override-to-parent --unset-override -v --verbose",
     "git machete fork-point --inferred ":
         "develop feature master",
     # Mutex: with --inferred on the cmdline,
     # `--override-to=`, `--override-to-parent`, `--override-to-inferred`,
     # `--unset-override` MUST NOT be suggested.
+    # `--explain` IS allowed alongside `--inferred`.
     "git machete fork-point --inferred -":
-        "--debug -h --help -v --verbose",
-    # Mutex: with --override-to-parent on the cmdline,
-    # `--inferred`, `--override-to=`, `--override-to-inferred`,
+        "--debug --explain -h --help -v --verbose",
+    # Mutex: with --explain on the cmdline,
+    # `--override-to=`, `--override-to-parent`, `--override-to-inferred`,
     # `--unset-override` MUST NOT be suggested.
+    "git machete fork-point --explain -":
+        "--debug -h --help --inferred -v --verbose",
+    # Mutex: with --override-to-parent on the cmdline,
+    # `--explain`, `--inferred`, `--override-to=`,
+    # `--override-to-inferred`, `--unset-override` MUST NOT be suggested.
     "git machete fork-point --override-to-parent -":
         "--debug -h --help -v --verbose",
     # Mutex: with --override-to-inferred on the cmdline,
-    # `--inferred`, `--override-to=`, `--override-to-parent`,
-    # `--unset-override` MUST NOT be suggested.
+    # `--explain`, `--inferred`, `--override-to=`,
+    # `--override-to-parent`, `--unset-override` MUST NOT be suggested.
     "git machete fork-point --override-to-inferred -":
         "--debug -h --help -v --verbose",
     "git machete fork-point --override-to=":

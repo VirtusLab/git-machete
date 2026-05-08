@@ -46,6 +46,77 @@ class TestForkPoint(BaseTest):
 
         assert_success(["fork-point", 'refs/heads/develop'], "3ce566089cda4d3303309cf93883ab75f531c855\n")
 
+    def test_fork_point_explain(self) -> None:
+        with fixed_author_and_committer_date_in_past():
+            create_repo()
+            new_branch("master")
+            commit(message="master commit.")
+            new_branch("develop")
+            commit(message="develop commit.")
+            new_branch("feature")
+            commit('feature commit.')
+
+        rewrite_branch_layout_file("""
+            master
+            develop
+                feature
+            """)
+
+        # The fork point of `feature` is the tip of `develop`; `--explain`
+        # mirrors the `-> fork point ???` wording from `status -l` to spell
+        # out which branches the algorithm inferred the fork point from.
+        # The hash goes to stdout, the explanation to stderr (the test
+        # helper merges both streams in order).
+        assert_success(
+            ["fork-point", "feature", "--explain"],
+            "22a73eb0478439391949c6d544938a8aeee684c5\n"
+            "this commit seems to be a part of the unique history of develop\n"
+        )
+
+        # Fork point of `develop` is the tip of `master`.
+        assert_success(
+            ["fork-point", "develop", "--explain"],
+            "3ce566089cda4d3303309cf93883ab75f531c855\n"
+            "this commit seems to be a part of the unique history of master\n"
+        )
+
+        # `--inferred --explain` combination is allowed.
+        assert_success(
+            ["fork-point", "feature", "--inferred", "--explain"],
+            "22a73eb0478439391949c6d544938a8aeee684c5\n"
+            "this commit seems to be a part of the unique history of develop\n"
+        )
+
+        # When an override is active, `--explain` (without `--inferred`)
+        # surfaces the override rather than running the inference: the user
+        # gets a clear "this came from the override" signal instead of being
+        # silently shown reflog-derived branches that don't actually drive
+        # the answer.
+        launch_command("fork-point", "feature", "--override-to-parent")
+        assert_success(
+            ["fork-point", "feature", "--explain"],
+            "22a73eb0478439391949c6d544938a8aeee684c5\n"
+            "fork point of feature is overridden\n"
+        )
+
+        # `--inferred --explain` ignores the override and explains the
+        # inferred fork point regardless. Here the override happens to point
+        # at the same commit (parent's tip) that inference would land on, so
+        # the hash is unchanged - but the explanation now reports the
+        # branches the inference ran against, not the override.
+        assert_success(
+            ["fork-point", "feature", "--inferred", "--explain"],
+            "22a73eb0478439391949c6d544938a8aeee684c5\n"
+            "this commit seems to be a part of the unique history of develop\n"
+        )
+
+        # Combining with override-* / --unset-override is rejected.
+        assert_failure(
+            ["fork-point", "feature", "--override-to-parent", "--explain"],
+            "--explain cannot be combined with "
+            "--override-to/--override-to-inferred/--override-to-parent/--unset-override."
+        )
+
     def test_fork_point_override_for_invalid_branch(self) -> None:
         create_repo()
         new_branch("master")

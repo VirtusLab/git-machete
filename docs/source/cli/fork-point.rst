@@ -15,7 +15,7 @@ fork-point
 
 .. code-block:: shell
 
-    git machete fork-point [--inferred] [<branch>]
+    git machete fork-point [--inferred] [--explain] [<branch>]
     git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent [<branch>]
     git machete fork-point --unset-override [<branch>]
 
@@ -58,6 +58,12 @@ With ``--inferred``, displays the commit that ``git machete fork-point`` infers 
 If there is **no** fork point override for ``<branch>``, this is identical to the output of ``git machete fork-point``.
 If there is a fork point override for ``<branch>``, this is identical to the what the output of ``git machete fork-point`` would be if the override was **not** present.
 Note: this piece of information is also displayed by ``git machete status --list-commits`` in case a :yellow:`yellow` edge occurs.
+
+With ``--explain``, prints the fork point hash on stdout and, on stderr, an explanation of the form
+``this commit seems to be a part of the unique history of <branch1> and <branch2>`` --- mirroring the wording of the
+``-> fork point ???`` annotation that ``git machete status --list-commits`` shows on a :yellow:`yellow` edge.
+If a fork point override is active, the inference is short-circuited and the stderr line falls back to ``fork point of <branch> is overridden``.
+This flag may be combined with ``--inferred`` but not with the ``--override-to``/``--override-to-inferred``/``--override-to-parent``/``--unset-override`` flags.
 
 With ``--override-to-inferred`` option, overrides fork point of ``<branch>`` to the result of ``git machete fork-point --inferred`` for ``<branch>``.
 Note: similarly to ``--override-to=<revision>``, this option is **deprecated**.

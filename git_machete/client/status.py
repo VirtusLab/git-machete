@@ -271,7 +271,7 @@ class StatusMacheteClient(MacheteClient):
             if for_branch not in fork_point_hash_cached:
                 try:
                     fork_point_hash_cached[for_branch], fork_point_branches_cached[for_branch] = \
-                        self.fork_point_and_containing_branch_pairs(for_branch, use_overrides=True)
+                        self.fork_point_and_inferring_branch_pairs(for_branch, use_overrides=True)
                 except MacheteException:
                     fork_point_hash_cached[for_branch], fork_point_branches_cached[for_branch] = None, []
             return fork_point_hash_cached[for_branch]
@@ -291,7 +291,7 @@ class StatusMacheteClient(MacheteClient):
                 sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC
             else:
                 fp = fork_point_hash(branch)
-                # `fork_point_hash` only returns None when `fork_point_and_containing_branch_pairs` raises
+                # `fork_point_hash` only returns None when `fork_point_and_inferring_branch_pairs` raises
                 # `MacheteException`, which in turn requires reflog inference to fail AND one of:
                 # parent is missing, parent commit is unresolvable, or parent is not an ancestor of branch
                 # with no common merge-base (unrelated histories). All of these are ruled out by reaching

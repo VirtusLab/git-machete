@@ -88,14 +88,16 @@ complete -c git-machete -n "__fish_seen_subcommand_from fork-point; and not __fi
 complete -c git-machete -n "__fish_seen_subcommand_from fork-point; and __fish_seen_subcommand_from --unset-override"                                                                          -f                          -a '(__machete_with_overridden_fork_point_branches)'
 # form 1
 complete -c git-machete -n "__fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred --unset-override --override-to --override-to-inferred --override-to-parent" -f -l inferred
+# --explain may be combined with --inferred but not with the override-* / --unset-override flags
+complete -c git-machete -n "__fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --explain --unset-override --override-to --override-to-inferred --override-to-parent" -f -l explain
 # form 2
-complete -c git-machete -n "__fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred --unset-override               --override-to-inferred --override-to-parent" -x -l override-to           -a '(__fish_git_refs)'
-complete -c git-machete -n "__fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred --unset-override --override-to --override-to-inferred --override-to-parent" -f -l override-to-inferred
-complete -c git-machete -n "__fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred --unset-override --override-to --override-to-inferred --override-to-parent" -f -l override-to-parent
+complete -c git-machete -n "__fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --explain --inferred --unset-override               --override-to-inferred --override-to-parent" -x -l override-to           -a '(__fish_git_refs)'
+complete -c git-machete -n "__fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --explain --inferred --unset-override --override-to --override-to-inferred --override-to-parent" -f -l override-to-inferred
+complete -c git-machete -n "__fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --explain --inferred --unset-override --override-to --override-to-inferred --override-to-parent" -f -l override-to-parent
 # form 3
 # --unset-override is a boolean flag; the positional <branch> (handled above) is the
 # branch whose override gets unset, hence no -x and no value completer here.
-complete -c git-machete -n "__fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --inferred                  --override-to --override-to-inferred --override-to-parent" -f -l unset-override
+complete -c git-machete -n "__fish_seen_subcommand_from fork-point; and not __fish_seen_subcommand_from --explain --inferred                  --override-to --override-to-inferred --override-to-parent" -f -l unset-override
 
 # git machete github
 complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands"                                                                                                           -f -a github                                               -d 'Create, check out and manage GitHub PRs while keeping them reflected in git machete'

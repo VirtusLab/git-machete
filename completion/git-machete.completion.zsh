@@ -67,11 +67,12 @@ _git-machete() {
           ;;
         (fork-point)
           _arguments '1:: :__git_machete_fork_point_branch_arg' \
+            '(--explain --override-to --override-to-inferred --override-to-parent --unset-override)'--explain'[Also list the branches the fork point was inferred from]' \
             '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--inferred'[Display the fork point ignoring any potential override]' \
-            '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--override-to='[Override fork point to the given revision]: :__git_references' \
-            '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--override-to-inferred'[Override fork point to the inferred location]' \
-            '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--override-to-parent'[Override fork point to the upstream (parent) branch]' \
-            '(--inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--unset-override'[Unset fork point override by removing machete.overrideForkPoint.<branch>.* configs]' \
+            '(--explain --inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--override-to='[Override fork point to the given revision]: :__git_references' \
+            '(--explain --inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--override-to-inferred'[Override fork point to the inferred location]' \
+            '(--explain --inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--override-to-parent'[Override fork point to the upstream (parent) branch]' \
+            '(--explain --inferred --override-to --override-to-inferred --override-to-parent --unset-override)'--unset-override'[Unset fork point override by removing machete.overrideForkPoint.<branch>.* configs]' \
             "${common_flags[@]}"
           ;;
         (g|go)

@@ -1,3 +1,5 @@
+import sys
+
 from git_machete.client.base import MacheteClient
 from git_machete.git import AnyRevision, LocalBranchShortName
 from git_machete.utils.exceptions import MacheteException
@@ -5,6 +7,21 @@ from git_machete.utils.markup import print_fmt
 
 
 class ForkPointMacheteClient(MacheteClient):
+    def print_fork_point(self, branch: LocalBranchShortName, *, use_overrides: bool, explain: bool) -> None:
+        if explain:
+            fork_point, pairs = self.fork_point_and_inferring_branch_pairs(branch=branch, use_overrides=use_overrides)
+            print(fork_point)
+            if pairs:
+                # Same wording as the `-> fork point ???` annotation rendered by `status -l` on yellow edges.
+                formatted = " and ".join(sorted(f"<b>{lb_or_rb}</b>" for _, lb_or_rb in pairs))
+                print_fmt(f"this commit seems to be a part of the unique history of {formatted}", file=sys.stderr)
+            else:
+                # Empty `pairs` is only reachable when an override short-circuits the inference;
+                # otherwise `fork_point_and_inferring_branch_pairs` would have raised `MacheteException`.
+                print_fmt(f"fork point of <b>{branch}</b> is overridden", file=sys.stderr)
+        else:
+            print(self.fork_point(branch=branch, use_overrides=use_overrides))
+
     def unset_fork_point_override(self, branch: LocalBranchShortName) -> None:
         self._config.unset_fork_point_override_to(branch)
         # We still unset the now-deprecated `whileDescendantOf` key.

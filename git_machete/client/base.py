@@ -227,7 +227,7 @@ class MacheteClient:
 
     # === Fork-point computation ===
 
-    def fork_point_and_containing_branch_pairs(
+    def fork_point_and_inferring_branch_pairs(
         self,
         branch: LocalBranchShortName,
         *,
@@ -260,7 +260,7 @@ class MacheteClient:
                     return overridden_fork_point, []
 
         try:
-            computed_fork_point, containing_branch_pairs = next(self.__match_log_to_filtered_reflogs(branch))
+            computed_fork_point, inferring_branch_pairs = next(self.__match_log_to_filtered_reflogs(branch))
         except StopIteration:
             if parent and upstream_hash:
                 if self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()):
@@ -280,7 +280,7 @@ class MacheteClient:
         else:
             debug(f"commit {computed_fork_point} is the most recent point in history of {branch} to occur on "
                   "filtered reflog of any other branch or its remote counterpart "
-                  f"(specifically: {' and '.join(map(get_second, containing_branch_pairs))})")
+                  f"(specifically: {' and '.join(map(get_second, inferring_branch_pairs))})")
 
             if parent and upstream_hash and \
                     self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()) and \
@@ -309,8 +309,8 @@ class MacheteClient:
                 return common_ancestor_hash, []
             else:
                 improved_fork_point = computed_fork_point
-                improved_containing_branch_pairs = containing_branch_pairs
-                for candidate_branch, original_matched_branch in containing_branch_pairs:
+                improved_inferring_branch_pairs = inferring_branch_pairs
+                for candidate_branch, original_matched_branch in inferring_branch_pairs:
                     merge_base = self._git.get_merge_base(original_matched_branch, branch)
                     debug(f"improving fork point {improved_fork_point} "
                           f"by checking for merge_base({original_matched_branch}, {branch}) = {merge_base}")
@@ -318,12 +318,12 @@ class MacheteClient:
                         if self._git.is_ancestor(improved_fork_point, merge_base):
                             debug(f"improving fork point {improved_fork_point} to {merge_base}")
                             improved_fork_point = merge_base
-                            improved_containing_branch_pairs = [BranchPair(candidate_branch, original_matched_branch)]
+                            improved_inferring_branch_pairs = [BranchPair(candidate_branch, original_matched_branch)]
                 debug(f"effective fork point of {branch} is {improved_fork_point}")
-                return improved_fork_point, improved_containing_branch_pairs
+                return improved_fork_point, improved_inferring_branch_pairs
 
     def fork_point(self, branch: LocalBranchShortName, *, use_overrides: bool) -> FullCommitHash:
-        hash, containing_branch_pairs = self.fork_point_and_containing_branch_pairs(branch, use_overrides=use_overrides)
+        hash, inferring_branch_pairs = self.fork_point_and_inferring_branch_pairs(branch, use_overrides=use_overrides)
         return FullCommitHash.of(hash)
 
     def fork_point_or_none(self, branch: LocalBranchShortName, *, use_overrides: bool) -> Optional[FullCommitHash]:
@@ -433,10 +433,10 @@ class MacheteClient:
                 def lb_is_not_b(lb: str, _lb_or_rb: str) -> bool:
                     return lb != branch
 
-                containing_branch_pairs = sorted(filter(tupled(lb_is_not_b), branch_pairs), key=get_second)
-                if containing_branch_pairs:
+                inferring_branch_pairs = sorted(filter(tupled(lb_is_not_b), branch_pairs), key=get_second)
+                if inferring_branch_pairs:
                     debug(f"commit {hash} found in filtered reflog of {' and '.join(map(get_second, branch_pairs))}")
-                    yield hash, containing_branch_pairs
+                    yield hash, inferring_branch_pairs
                 else:
                     debug(f"commit {hash} found only in filtered reflog of {' and '.join(map(get_second, branch_pairs))}; ignoring")
             else:
@@ -448,10 +448,10 @@ class MacheteClient:
                         *,
                         reject_reason_message: str = ""
                         ) -> Optional[LocalBranchShortName]:
-        for hash, containing_branch_pairs in self.__match_log_to_filtered_reflogs(branch):
-            debug(f"commit {hash} found in filtered reflog of {' and '.join(map(get_second, containing_branch_pairs))}")
+        for hash, inferring_branch_pairs in self.__match_log_to_filtered_reflogs(branch):
+            debug(f"commit {hash} found in filtered reflog of {' and '.join(map(get_second, inferring_branch_pairs))}")
 
-            for candidate, original_matched_branch in containing_branch_pairs:
+            for candidate, original_matched_branch in inferring_branch_pairs:
                 if candidate != original_matched_branch:
                     debug(f"upstream candidate is {candidate}, which is the local counterpart of {original_matched_branch}")
 
