@@ -1,6 +1,7 @@
 import datetime
 import itertools
 import os
+import shutil
 from typing import List, Optional, Tuple
 
 from git_machete.client.status import StatusMacheteClient
@@ -15,6 +16,9 @@ from git_machete.utils.markup import pretty_choices, print_fmt, warn
 
 
 class DiscoverMacheteClient(StatusMacheteClient):
+    def back_up_branch_layout_file(self) -> None:
+        shutil.copyfile(self._branch_layout_file_path, self._branch_layout_file_path + "~")
+
     def discover(
             self,
             *,

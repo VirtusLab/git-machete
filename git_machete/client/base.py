@@ -1,6 +1,5 @@
 import os
 import shlex
-import shutil
 import sys
 import textwrap
 from enum import Enum, auto
@@ -105,9 +104,9 @@ class MacheteClient:
 
     def expect_at_least_one_managed_branch(self) -> None:
         if not self._state.roots:  # property returns a copy; falsy check works fine
-            self.__raise_no_branches_error()
+            self._raise_no_branches_error()
 
-    def __raise_no_branches_error(self) -> NoReturn:
+    def _raise_no_branches_error(self) -> NoReturn:
         raise MacheteException(
             textwrap.dedent(f"""
                 No branches listed in {self._branch_layout_file_path}. Consider one of:
@@ -163,9 +162,6 @@ class MacheteClient:
             self.__init_state()
             self.read_branch_layout_file(verify_branches=verify_branches)
 
-    def back_up_branch_layout_file(self) -> None:
-        shutil.copyfile(self._branch_layout_file_path, self._branch_layout_file_path + "~")
-
     def save_branch_layout_file(self) -> None:
         branch_layout.save(self._branch_layout_file_path, self._state, indent=self.__indent or "  ")
 
@@ -175,48 +171,6 @@ class MacheteClient:
         self.save_branch_layout_file()
 
     # === Branch navigation ===
-
-    def first_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        root = self.root_branch_for(branch, if_unmanaged=PickRoot.FIRST)
-        root_children = self.children_of(root)
-        return root_children[0] if root_children else root
-
-    def last_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        destination = self.root_branch_for(branch, if_unmanaged=PickRoot.LAST)
-        while True:
-            children = self._state.get_children(destination)
-            if not children:
-                break
-            destination = children[-1]
-        return destination
-
-    def next_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        self.expect_in_managed_branches(branch)
-        index: int = self.managed_branches.index(branch) + 1
-        if index == len(self.managed_branches):
-            raise MacheteException(f"Branch <b>{branch}</b> has no successor")
-        return self.managed_branches[index]
-
-    def prev_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        self.expect_in_managed_branches(branch)
-        index: int = self.managed_branches.index(branch) - 1
-        if index == -1:
-            raise MacheteException(f"Branch <b>{branch}</b> has no predecessor")
-        return self.managed_branches[index]
-
-    def first_root_branch(self) -> LocalBranchShortName:
-        roots = self._state.roots
-        if roots:
-            return roots[0]
-        else:
-            self.__raise_no_branches_error()  # pragma: no cover; this case should never happen
-
-    def last_root_branch(self) -> LocalBranchShortName:
-        roots = self._state.roots
-        if roots:
-            return roots[-1]
-        else:
-            self.__raise_no_branches_error()  # pragma: no cover; this case should never happen
 
     def root_branch_for(self, branch: LocalBranchShortName, if_unmanaged: PickRoot) -> LocalBranchShortName:
         if branch not in self.managed_branches:
@@ -233,24 +187,12 @@ class MacheteClient:
                         f"{roots[-1]}{' (the last root)' if len(roots) > 1 else ''} instead as root")
                     return roots[-1]
             else:
-                self.__raise_no_branches_error()
+                self._raise_no_branches_error()
         parent = self.parent_of(branch)
         while parent:
             branch = parent
             parent = self.parent_of(branch)
         return branch
-
-    def get_or_pick_child_of(self, branch: LocalBranchShortName, *, pick_if_multiple: bool) -> List[LocalBranchShortName]:
-        self.expect_in_managed_branches(branch)
-        children = self.children_of(branch)
-        if not children:
-            raise MacheteException(f"Branch <b>{branch}</b> has no downstream branch")
-        elif len(children) == 1:
-            return [children[0]]
-        elif pick_if_multiple:
-            return [self.pick(children, "downstream branch")]
-        else:
-            return children
 
     def get_or_infer_parent_of(self,
                                branch: LocalBranchShortName,

@@ -7,6 +7,60 @@ from git_machete.utils.exceptions import (MacheteException,
 
 
 class GoShowMacheteClient(MacheteClient):
+    def first_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
+        root = self.root_branch_for(branch, if_unmanaged=PickRoot.FIRST)
+        root_children = self.children_of(root)
+        return root_children[0] if root_children else root
+
+    def last_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
+        destination = self.root_branch_for(branch, if_unmanaged=PickRoot.LAST)
+        while True:
+            children = self._state.get_children(destination)
+            if not children:
+                break
+            destination = children[-1]
+        return destination
+
+    def next_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
+        self.expect_in_managed_branches(branch)
+        index: int = self.managed_branches.index(branch) + 1
+        if index == len(self.managed_branches):
+            raise MacheteException(f"Branch <b>{branch}</b> has no successor")
+        return self.managed_branches[index]
+
+    def prev_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
+        self.expect_in_managed_branches(branch)
+        index: int = self.managed_branches.index(branch) - 1
+        if index == -1:
+            raise MacheteException(f"Branch <b>{branch}</b> has no predecessor")
+        return self.managed_branches[index]
+
+    def first_root_branch(self) -> LocalBranchShortName:
+        roots = self._state.roots
+        if roots:
+            return roots[0]
+        else:
+            self._raise_no_branches_error()  # pragma: no cover; this case should never happen
+
+    def last_root_branch(self) -> LocalBranchShortName:
+        roots = self._state.roots
+        if roots:
+            return roots[-1]
+        else:
+            self._raise_no_branches_error()  # pragma: no cover; this case should never happen
+
+    def get_or_pick_child_of(self, branch: LocalBranchShortName, *, pick_if_multiple: bool) -> List[LocalBranchShortName]:
+        self.expect_in_managed_branches(branch)
+        children = self.children_of(branch)
+        if not children:
+            raise MacheteException(f"Branch <b>{branch}</b> has no downstream branch")
+        elif len(children) == 1:
+            return [children[0]]
+        elif pick_if_multiple:
+            return [self.pick(children, "downstream branch")]
+        else:
+            return children
+
     def parse_direction(
         self,
         param: str,
