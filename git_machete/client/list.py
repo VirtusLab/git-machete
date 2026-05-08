@@ -7,8 +7,6 @@ from git_machete.utils.collections import excluding, map_truthy_only
 
 
 class ListMacheteClient(MacheteClient):
-
-    @property
     def addable_branches(self) -> List[LocalBranchShortName]:
         def strip_remote_name(remote_branch: RemoteBranchShortName) -> LocalBranchShortName:
             return LocalBranchShortName.of(re.sub("^[^/]+/", "", remote_branch))
@@ -21,19 +19,15 @@ class ListMacheteClient(MacheteClient):
         return excluding(self._git.get_local_branches(), self.managed_branches) + [
             strip_remote_name(branch) for branch in qualifying_remote_branches]
 
-    @property
     def unmanaged_branches(self) -> List[LocalBranchShortName]:
         return excluding(self._git.get_local_branches(), self.managed_branches)
 
-    @property
     def childless_managed_branches(self) -> List[LocalBranchShortName]:
         return [b for b in self._state.managed_branches if not self._state.get_children(b)]
 
-    @property
     def branches_with_overridden_fork_point(self) -> List[LocalBranchShortName]:
         return [branch for branch in self._git.get_local_branches() if self.has_any_fork_point_override_config(branch)]
 
-    @property
     def slidable_branches(self) -> List[LocalBranchShortName]:
         # All managed branches can be slid out, including root branches
         return self.managed_branches

@@ -34,7 +34,7 @@ FAKE_GH_ALWAYS_FAILS = 'import sys; sys.exit(1)'
 
 class TestGitHub(BaseTest):
 
-    def test_github_client_constructor(self) -> None:
+    def test_github_api_constructor(self) -> None:
         # This is solely to make mypy check if the class correctly implements abstract methods from CodeHostingApi.
         GitHubApi(domain="github.com", organization="my-org", repository="my-repo")
 

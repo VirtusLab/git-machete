@@ -992,20 +992,20 @@ def launch_internal(orig_args: List[str]) -> None:
             list_client.read_branch_layout_file()
             res = []
             if category == "addable":
-                res = list_client.addable_branches
+                res = list_client.addable_branches()
             elif category == "childless":
-                res = list_client.childless_managed_branches
+                res = list_client.childless_managed_branches()
             elif category == "managed":
                 res = list_client.managed_branches
             elif category == "slidable":
-                res = list_client.slidable_branches
+                res = list_client.slidable_branches()
             elif category == "slidable-after":
                 list_client.expect_in_managed_branches(parsed_cli.branch)
                 res = list_client.get_slidable_after(parsed_cli.branch)
             elif category == "unmanaged":
-                res = list_client.unmanaged_branches
+                res = list_client.unmanaged_branches()
             elif category == "with-overridden-fork-point":
-                res = list_client.branches_with_overridden_fork_point
+                res = list_client.branches_with_overridden_fork_point()
             else:  # an unknown category is handled by argparse
                 raise UnexpectedMacheteException(f"Invalid category: `{category}`")
 
