@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
-from git_machete.github import GitHubClient
+from git_machete.github import GitHubApi
 from tests.base_test import BaseTest
 from tests.cli_runner import (assert_failure, assert_success, launch_command,
                               rewrite_branch_layout_file)
@@ -245,7 +245,7 @@ class TestGitHubCheckoutPRs(BaseTest):
 
         # check against wrong PR number
         org_repo = OrganizationAndRepository.from_url(
-            domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
+            domain=GitHubApi.DEFAULT_GITHUB_DOMAIN,
             url=remote_path)
 
         assert org_repo is not None

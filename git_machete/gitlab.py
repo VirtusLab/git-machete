@@ -9,8 +9,7 @@ import urllib.parse
 import urllib.request
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from git_machete.code_hosting import (CodeHostingClient,
-                                      CodeHostingGitConfigKeys,
+from git_machete.code_hosting import (CodeHostingApi, CodeHostingGitConfigKeys,
                                       CodeHostingSpec,
                                       OrganizationAndRepository,
                                       OrganizationAndRepositoryAndGitUrl,
@@ -65,7 +64,7 @@ class GitLabToken(NamedTuple):
                 if line.rstrip().endswith(" " + domain):
                     token = line.split(" ")[0]
                     return cls(value=token, provider=provider)
-                elif domain == GitLabClient.DEFAULT_GITLAB_DOMAIN and " " not in line.rstrip():
+                elif domain == GitLabApi.DEFAULT_GITLAB_DOMAIN and " " not in line.rstrip():
                     return cls(value=line.rstrip(), provider=provider)
         return None
 
@@ -101,7 +100,7 @@ class GitLabToken(NamedTuple):
         return None
 
 
-class GitLabClient(CodeHostingClient):
+class GitLabApi(CodeHostingApi):
     DEFAULT_GITLAB_DOMAIN = "gitlab.com"
     MAX_PULLS_PER_PAGE_COUNT = 100
 
@@ -178,7 +177,7 @@ class GitLabClient(CodeHostingClient):
                 # TODO (#164): make a dedicated exception here
                 raise MacheteException(
                     f'`{method} {url}` request ended up in 404 response from GitLab. A valid GitLab API token is required.\n'
-                    f'Provide a GitLab API token with `api` access via one of the: {GITLAB_CLIENT_SPEC.token_providers_message} '
+                    f'Provide a GitLab API token with `api` access via one of the: {GITLAB_API_SPEC.token_providers_message} '
                     f'Visit `https://{self.domain}/-/user_settings/personal_access_tokens` to generate a new one.')
             elif err.code == http.HTTPStatus.METHOD_NOT_ALLOWED:
                 error_response = json.loads(err.read().decode())
@@ -336,10 +335,10 @@ class GitLabClient(CodeHostingClient):
         return f"merge-requests/{mr_number}/head"
 
 
-GITLAB_CLIENT_SPEC = CodeHostingSpec(
+GITLAB_API_SPEC = CodeHostingSpec(
     base_branch_name='target',
-    client_class=GitLabClient,
-    default_domain=GitLabClient.DEFAULT_GITLAB_DOMAIN,
+    client_class=GitLabApi,
+    default_domain=GitLabApi.DEFAULT_GITLAB_DOMAIN,
     display_name='GitLab',
     git_machete_command='gitlab',
     head_branch_name='source',

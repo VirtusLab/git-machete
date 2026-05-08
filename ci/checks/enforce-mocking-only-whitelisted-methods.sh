@@ -12,9 +12,9 @@ git_machete.client.go_interactive.GoInteractiveMacheteClient._get_stdin_fd
 git_machete.client.go_interactive.GoInteractiveMacheteClient._read_stdin
 git_machete.code_hosting.OrganizationAndRepository.from_url
 git_machete.git.Git.fetch_remote
-git_machete.github.GitHubClient.MAX_PULLS_PER_PAGE_COUNT
+git_machete.github.GitHubApi.MAX_PULLS_PER_PAGE_COUNT
 git_machete.github.GitHubToken.for_domain
-git_machete.gitlab.GitLabClient.MAX_PULLS_PER_PAGE_COUNT
+git_machete.gitlab.GitLabApi.MAX_PULLS_PER_PAGE_COUNT
 git_machete.gitlab.GitLabToken.for_domain
 git_machete.utils._subproc._run_cmd
 git_machete.utils.date.get_current_date

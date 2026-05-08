@@ -9,8 +9,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
-from git_machete.code_hosting import (CodeHostingClient,
-                                      CodeHostingGitConfigKeys,
+from git_machete.code_hosting import (CodeHostingApi, CodeHostingGitConfigKeys,
                                       CodeHostingSpec,
                                       OrganizationAndRepository,
                                       OrganizationAndRepositoryAndGitUrl,
@@ -67,7 +66,7 @@ class GitHubToken(NamedTuple):
                 if line.rstrip().endswith(" " + domain):
                     token = line.split(" ")[0]
                     return cls(value=token, provider=provider)
-                elif domain == GitHubClient.DEFAULT_GITHUB_DOMAIN and " " not in line.rstrip():
+                elif domain == GitHubApi.DEFAULT_GITHUB_DOMAIN and " " not in line.rstrip():
                     return cls(value=line.rstrip(), provider=provider)
         return None
 
@@ -151,7 +150,7 @@ class GitHubToken(NamedTuple):
         return None
 
 
-class GitHubClient(CodeHostingClient):
+class GitHubApi(CodeHostingApi):
     DEFAULT_GITHUB_DOMAIN = "github.com"
     # As of Dec 2022, GitHub API never returns more than 100 PRs, even if per_page query param is above 100.
     MAX_PULLS_PER_PAGE_COUNT = 100
@@ -239,7 +238,7 @@ class GitHubClient(CodeHostingClient):
                 # TODO (#164): make a dedicated exception here
                 raise MacheteException(
                     f'`{method} {url}` request ended up in 404 response from GitHub. A valid GitHub API token is required.\n'
-                    f'Provide a GitHub API token with `repo` access via one of the: {GITHUB_CLIENT_SPEC.token_providers_message} '
+                    f'Provide a GitHub API token with `repo` access via one of the: {GITHUB_API_SPEC.token_providers_message} '
                     f'Visit `https://{self.domain}/settings/tokens` to generate a new one.')
             # See https://stackoverflow.com/a/62385184 for why 307 for POST/PATCH isn't automatically followed by urllib,
             # unlike 307 for GET, or 301/302 for all HTTP methods.
@@ -429,10 +428,10 @@ class GitHubClient(CodeHostingClient):
         return f"pull/{pr_number}/head"
 
 
-GITHUB_CLIENT_SPEC = CodeHostingSpec(
+GITHUB_API_SPEC = CodeHostingSpec(
     base_branch_name='base',
-    client_class=GitHubClient,
-    default_domain=GitHubClient.DEFAULT_GITHUB_DOMAIN,
+    client_class=GitHubApi,
+    default_domain=GitHubApi.DEFAULT_GITHUB_DOMAIN,
     display_name='GitHub',
     git_machete_command='github',
     head_branch_name='head',

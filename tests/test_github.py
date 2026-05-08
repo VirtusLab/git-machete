@@ -7,7 +7,7 @@ from typing import Iterator
 from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
-from git_machete.github import GitHubClient, GitHubToken
+from git_machete.github import GitHubApi, GitHubToken
 from tests.base_test import BaseTest
 from tests.cli_runner import (assert_failure, assert_success, launch_command,
                               rewrite_branch_layout_file)
@@ -35,8 +35,8 @@ FAKE_GH_ALWAYS_FAILS = 'import sys; sys.exit(1)'
 class TestGitHub(BaseTest):
 
     def test_github_client_constructor(self) -> None:
-        # This is solely to make mypy check if the class correctly implements abstract methods from CodeHostingClient.
-        GitHubClient(domain="github.com", organization="my-org", repository="my-repo")
+        # This is solely to make mypy check if the class correctly implements abstract methods from CodeHostingApi.
+        GitHubApi(domain="github.com", organization="my-org", repository="my-repo")
 
     def test_github_remote_patterns(self) -> None:
         organization = 'virtuslab'
@@ -48,7 +48,7 @@ class TestGitHub(BaseTest):
         urls = urls + [url + '.git' for url in urls]
 
         for url in urls:
-            org_and_repo = OrganizationAndRepository.from_url(domain=GitHubClient.DEFAULT_GITHUB_DOMAIN, url=url)
+            org_and_repo = OrganizationAndRepository.from_url(domain=GitHubApi.DEFAULT_GITHUB_DOMAIN, url=url)
             assert org_and_repo is not None, f"for {url}"
             assert org_and_repo.organization == organization
             assert org_and_repo.repository == repository
@@ -64,7 +64,7 @@ class TestGitHub(BaseTest):
 
     def test_github_api_pagination(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
-        self.patch_symbol(mocker, 'git_machete.github.GitHubClient.MAX_PULLS_PER_PAGE_COUNT', 3)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubApi.MAX_PULLS_PER_PAGE_COUNT', 3)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_github_api_pagination()))
@@ -248,7 +248,7 @@ class TestGitHub(BaseTest):
         with temporary_home_directory() as home, fake_executables_on_path(gh=FAKE_GH_ALWAYS_FAILS):
             write_to_file(os.path.join(home, '.github-token'), github_token_contents)
 
-            domain = GitHubClient.DEFAULT_GITHUB_DOMAIN
+            domain = GitHubApi.DEFAULT_GITHUB_DOMAIN
             github_token = GitHubToken.for_domain(domain=domain)
             assert github_token is not None
             assert github_token.provider == f'auth token for {domain} from `~/.github-token`'
@@ -364,7 +364,7 @@ class TestGitHub(BaseTest):
     # `__get_token_from_gh` (step 3) returning None so step 4 (hub) is reached;
     # FAKE_GH_ALWAYS_FAILS achieves that by failing the very first `gh --version` call.
 
-    HUB_DEFAULT_DOMAIN = GitHubClient.DEFAULT_GITHUB_DOMAIN
+    HUB_DEFAULT_DOMAIN = GitHubApi.DEFAULT_GITHUB_DOMAIN
     HUB_CUSTOM_DOMAIN = 'git.example.org'
     CONFIG_HUB_CONTENTS = textwrap.dedent(f'''\
         {HUB_DEFAULT_DOMAIN}:

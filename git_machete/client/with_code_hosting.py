@@ -4,7 +4,7 @@ from typing import Dict, Iterator, List, Optional, Set, Tuple
 
 from git_machete.annotation import Annotation, Qualifiers
 from git_machete.client.status import StatusMacheteClient
-from git_machete.code_hosting import (CodeHostingClient, CodeHostingSpec,
+from git_machete.code_hosting import (CodeHostingApi, CodeHostingSpec,
                                       OrganizationAndRepository,
                                       OrganizationAndRepositoryAndRemote,
                                       PullRequest, is_matching_remote_url)
@@ -28,7 +28,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
     def __init__(self, git: Git, spec: CodeHostingSpec):
         super().__init__(git)
         self.__code_hosting_spec: CodeHostingSpec = spec
-        self.__code_hosting_client: Optional[CodeHostingClient] = None
+        self.__code_hosting_client: Optional[CodeHostingApi] = None
         self.__all_open_prs: Optional[List[PullRequest]] = None
 
     @property
@@ -36,13 +36,13 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         return self.__code_hosting_spec
 
     @property
-    def code_hosting_client(self) -> CodeHostingClient:
+    def code_hosting_client(self) -> CodeHostingApi:
         if self.__code_hosting_client is None:
             raise UnexpectedMacheteException("Code hosting client has not been initialized, this is an unexpected state.")
         return self.__code_hosting_client
 
     @code_hosting_client.setter
-    def code_hosting_client(self, value: CodeHostingClient) -> None:
+    def code_hosting_client(self, value: CodeHostingApi) -> None:
         self.__code_hosting_client = value
 
     def _get_all_open_prs(self) -> List[PullRequest]:

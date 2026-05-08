@@ -184,13 +184,13 @@ class CodeHostingSpec(NamedTuple):
     def __str__(self) -> str:
         return f"CodeHostingSpec({self.display_name})"
 
-    def create_client(self, domain: str, organization: str, repository: str) -> "CodeHostingClient":
+    def create_client(self, domain: str, organization: str, repository: str) -> "CodeHostingApi":
         return self.client_class(domain=domain, organization=organization, repository=repository)  # type: ignore[no-any-return]
 
 
 # flake8: noqa U100
 # So that flake8 doesn't complain about unused params in abstract class.
-class CodeHostingClient(metaclass=ABCMeta):  # pragma: no cover
+class CodeHostingApi(metaclass=ABCMeta):  # pragma: no cover
     def __init__(self, domain: str, organization: str, repository: str) -> None:
         self.domain: str = domain
         self.organization: str = organization

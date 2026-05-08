@@ -30,8 +30,8 @@ from git_machete.client.traverse import (TraverseMacheteClient,
 from git_machete.client.update import UpdateMacheteClient
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.config import MacheteConfig, SquashMergeDetection
-from git_machete.github import GITHUB_CLIENT_SPEC
-from git_machete.gitlab import GITLAB_CLIENT_SPEC
+from git_machete.github import GITHUB_API_SPEC
+from git_machete.gitlab import GITLAB_API_SPEC
 
 from .git import AnyRevision, Git, LocalBranchShortName
 from .help import (MacheteHelpAction, alias_by_command, commands_and_aliases,
@@ -771,7 +771,7 @@ def launch_internal(orig_args: List[str]) -> None:
             advance_client.read_branch_layout_file()
             advance_client.advance(opt_yes=cli_opts.opt_yes)
         elif cmd == "anno":
-            spec = GITHUB_CLIENT_SPEC if cli_opts.opt_sync_github_prs else GITLAB_CLIENT_SPEC
+            spec = GITHUB_API_SPEC if cli_opts.opt_sync_github_prs else GITLAB_API_SPEC
             anno_client = AnnoMacheteClient(git, spec)
             anno_client.read_branch_layout_file(verify_branches=False)
             if cli_opts.opt_sync_github_prs or cli_opts.opt_sync_gitlab_mrs:
@@ -784,7 +784,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 else:
                     anno_client.print_annotation(branch)
         elif cmd == "clean":
-            clean_client = MacheteClientWithCodeHosting(git, GITHUB_CLIENT_SPEC)
+            clean_client = MacheteClientWithCodeHosting(git, GITHUB_API_SPEC)
             clean_client.read_branch_layout_file()
             if 'checkout_my_github_prs' in parsed_cli:
                 clean_client.checkout_pull_requests(pr_numbers=[], mine=True)
@@ -869,7 +869,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 print(fork_point_client.fork_point(branch=branch, use_overrides=True))
         elif cmd in {"github", "gitlab"}:
             subcommand = parsed_cli.subcommand
-            spec = GITHUB_CLIENT_SPEC if cmd == "github" else GITLAB_CLIENT_SPEC
+            spec = GITHUB_API_SPEC if cmd == "github" else GITLAB_API_SPEC
             pr_or_mr = spec.pr_short_name.lower()
 
             if "request_id" in parsed_cli and subcommand != f"checkout-{pr_or_mr}s":
@@ -1097,7 +1097,7 @@ def launch_internal(orig_args: List[str]) -> None:
             opt_return_to = TraverseReturnTo.from_string(cli_opts.opt_return_to, "`--return-to` flag")
             opt_start_from = TraverseStartFrom.from_string_or_branch(cli_opts.opt_start_from, git)
 
-            spec = GITHUB_CLIENT_SPEC if cli_opts.opt_sync_github_prs else GITLAB_CLIENT_SPEC
+            spec = GITHUB_API_SPEC if cli_opts.opt_sync_github_prs else GITLAB_API_SPEC
             traverse_client = TraverseMacheteClient(git, spec)
             traverse_client.read_branch_layout_file(interactively_slide_out_invalid_branches=terminal.is_stdout_a_tty())
             traverse_client.traverse(

@@ -7,7 +7,7 @@ from typing import Iterator
 from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
-from git_machete.gitlab import GitLabClient, GitLabToken
+from git_machete.gitlab import GitLabApi, GitLabToken
 from tests.base_test import BaseTest
 from tests.cli_runner import (assert_failure, assert_success, launch_command,
                               rewrite_branch_layout_file)
@@ -35,8 +35,8 @@ FAKE_GLAB_ALWAYS_FAILS = 'import sys; sys.exit(1)'
 class TestGitLab(BaseTest):
 
     def test_gitlab_client_constructor(self) -> None:
-        # This is solely to make mypy check if the class correctly implements abstract methods from CodeHostingClient.
-        GitLabClient(domain="gitlab.com", organization="my-org", repository="my-repo")
+        # This is solely to make mypy check if the class correctly implements abstract methods from CodeHostingApi.
+        GitLabApi(domain="gitlab.com", organization="my-org", repository="my-repo")
 
     def test_gitlab_remote_patterns(self) -> None:
         organization = 'virtuslab'
@@ -48,7 +48,7 @@ class TestGitLab(BaseTest):
         urls = urls + [url + '.git' for url in urls]
 
         for url in urls:
-            org_and_repo = OrganizationAndRepository.from_url(domain=GitLabClient.DEFAULT_GITLAB_DOMAIN, url=url)
+            org_and_repo = OrganizationAndRepository.from_url(domain=GitLabApi.DEFAULT_GITLAB_DOMAIN, url=url)
             assert org_and_repo is not None
             assert org_and_repo.organization == organization
             assert org_and_repo.repository == repository
@@ -64,7 +64,7 @@ class TestGitLab(BaseTest):
 
     def test_gitlab_api_pagination(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
-        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabClient.MAX_PULLS_PER_PAGE_COUNT', 3)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabApi.MAX_PULLS_PER_PAGE_COUNT', 3)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_gitlab_api_pagination()))
@@ -249,7 +249,7 @@ class TestGitLab(BaseTest):
         with temporary_home_directory() as home, fake_executables_on_path(glab=FAKE_GLAB_ALWAYS_FAILS):
             write_to_file(os.path.join(home, '.gitlab-token'), gitlab_token_contents)
 
-            domain = GitLabClient.DEFAULT_GITLAB_DOMAIN
+            domain = GitLabApi.DEFAULT_GITLAB_DOMAIN
             gitlab_token = GitLabToken.for_domain(domain=domain)
             assert gitlab_token is not None
             assert gitlab_token.provider == f'auth token for {domain} from `~/.gitlab-token`'
