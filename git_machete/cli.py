@@ -19,6 +19,7 @@ from git_machete.client.discover import DiscoverMacheteClient
 from git_machete.client.fork_point import ForkPointMacheteClient
 from git_machete.client.go_interactive import GoInteractiveMacheteClient
 from git_machete.client.go_show import GoShowMacheteClient
+from git_machete.client.list import ListMacheteClient
 from git_machete.client.log import LogMacheteClient
 from git_machete.client.reapply import ReapplyMacheteClient
 from git_machete.client.rename import RenameMacheteClient
@@ -987,7 +988,7 @@ def launch_internal(orig_args: List[str]) -> None:
             elif category != 'slidable-after' and cli_opts.opt_branch:
                 raise MacheteException(f"`git machete list {category}` does not expect extra arguments")
 
-            list_client = MacheteClient(git)
+            list_client = ListMacheteClient(git)
             list_client.read_branch_layout_file()
             res = []
             if category == "addable":

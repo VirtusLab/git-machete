@@ -171,7 +171,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
         if opt_fetch:
             for rem in self._git.get_remotes():
-                if self.remote_enabled_for_traverse_fetch(rem):
+                if self._config.traverse_fetch_for_remote(rem):
                     print_fmt(f"Fetching <b>{rem}</b>...")
                     self._git.fetch_remote(rem)
             if self._git.get_remotes():

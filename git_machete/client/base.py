@@ -1,5 +1,4 @@
 import os
-import re
 import shlex
 import shutil
 import sys
@@ -17,8 +16,7 @@ from git_machete.git import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              LocalBranchShortName, RemoteBranchShortName,
                              SyncToRemoteStatus)
 from git_machete.utils.cmd import run_cmd
-from git_machete.utils.collections import (excluding, get_second,
-                                           map_truthy_only, tupled)
+from git_machete.utils.collections import excluding, get_second, tupled
 from git_machete.utils.debug_log import debug
 from git_machete.utils.exceptions import (InteractionStopped, MacheteException,
                                           UnexpectedMacheteException)
@@ -86,31 +84,6 @@ class MacheteClient:
     @property
     def managed_branches(self) -> List[LocalBranchShortName]:
         return self._state.managed_branches  # returns a copy
-
-    @property
-    def addable_branches(self) -> List[LocalBranchShortName]:
-        def strip_remote_name(remote_branch: RemoteBranchShortName) -> LocalBranchShortName:
-            return LocalBranchShortName.of(re.sub("^[^/]+/", "", remote_branch))
-
-        remote_counterparts_of_local_branches = map_truthy_only(
-            self._git.get_combined_counterpart_for_fetching_of_branch,
-            self._git.get_local_branches())
-        qualifying_remote_branches: List[RemoteBranchShortName] = \
-            excluding(self._git.get_remote_branches(), remote_counterparts_of_local_branches)
-        return excluding(self._git.get_local_branches(), self.managed_branches) + [
-            strip_remote_name(branch) for branch in qualifying_remote_branches]
-
-    @property
-    def unmanaged_branches(self) -> List[LocalBranchShortName]:
-        return excluding(self._git.get_local_branches(), self.managed_branches)
-
-    @property
-    def childless_managed_branches(self) -> List[LocalBranchShortName]:
-        return [b for b in self._state.managed_branches if not self._state.get_children(b)]
-
-    @property
-    def branches_with_overridden_fork_point(self) -> List[LocalBranchShortName]:
-        return [branch for branch in self._git.get_local_branches() if self.has_any_fork_point_override_config(branch)]
 
     def parent_of(self, branch: LocalBranchShortName) -> Optional[LocalBranchShortName]:
         return self._state.get_parent(branch)
@@ -309,20 +282,6 @@ class MacheteClient:
                 raise MacheteException(
                     f"Branch <b>{branch}</b> not found in the tree of branch "
                     f"dependencies and its upstream could not be inferred")
-
-    # === Slide-out support ===
-
-    @property
-    def slidable_branches(self) -> List[LocalBranchShortName]:
-        # All managed branches can be slid out, including root branches
-        return self.managed_branches
-
-    def get_slidable_after(self, branch: LocalBranchShortName) -> List[LocalBranchShortName]:
-        if self._state.has_parent(branch):
-            children = self.children_of(branch)
-            if children and len(children) == 1:
-                return children
-        return []
 
     # === Fork-point computation ===
 
@@ -563,6 +522,7 @@ class MacheteClient:
 
     # === Fork-point overrides ===
 
+    # Also includes config that is invalid (corresponding to a non-existent/GCed commit etc.).
     def has_any_fork_point_override_config(self, branch: LocalBranchShortName) -> bool:
         return (self._config.fork_point_override_to_value(branch) or
                 self._config.fork_point_override_while_descendant_of_value(branch)) is not None
@@ -1250,10 +1210,3 @@ class MacheteClient:
 
     def flush_caches(self) -> None:
         self.__branch_pairs_by_hash_in_reflog = None
-
-    # === Miscellaneous ===
-
-    def remote_enabled_for_traverse_fetch(self, remote: str) -> bool:
-        return self._config.traverse_fetch_for_remote(remote)
-
-    # Also includes config that is invalid (corresponding to a non-existent/GCed commit etc.).
