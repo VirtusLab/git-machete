@@ -353,8 +353,9 @@ def create_cli_parser() -> argparse.ArgumentParser:
     # possible values of 'annotation_text' include: [], [''], ['some_val'], ['text_1', 'text_2']
     anno_parser.add_argument('annotation_text', nargs='*')
     anno_parser.add_argument('-b', '--branch')
-    anno_parser.add_argument('-H', '--sync-github-prs', action='store_true')
-    anno_parser.add_argument('-L', '--sync-gitlab-mrs', action='store_true')
+    anno_sync_group = anno_parser.add_mutually_exclusive_group()
+    anno_sync_group.add_argument('-H', '--sync-github-prs', action='store_true')
+    anno_sync_group.add_argument('-L', '--sync-gitlab-mrs', action='store_true')
 
     clean_parser = create_subparser('clean')
     clean_parser.add_argument('-H', '--checkout-my-github-prs', action='store_true')
@@ -488,9 +489,10 @@ def create_cli_parser() -> argparse.ArgumentParser:
 
     traverse_parser = create_subparser('traverse', alias='t')
     traverse_parser.add_argument('-F', '--fetch', action='store_true')
-    traverse_parser.add_argument('-H', '--sync-github-prs', action='store_true')
+    traverse_sync_group = traverse_parser.add_mutually_exclusive_group()
+    traverse_sync_group.add_argument('-H', '--sync-github-prs', action='store_true')
+    traverse_sync_group.add_argument('-L', '--sync-gitlab-mrs', action='store_true')
     traverse_parser.add_argument('-l', '--list-commits', action='store_true')
-    traverse_parser.add_argument('-L', '--sync-gitlab-mrs', action='store_true')
     traverse_parser.add_argument('-M', '--merge', action='store_true')
     traverse_parser.add_argument('-n', action='store_true')
     traverse_parser.add_argument('--no-detect-squash-merges', action='store_true')
@@ -707,9 +709,6 @@ def launch_internal(orig_args: List[str]) -> None:
             raise MacheteException(
                 "Option `-f/--fork-point` only makes sense when using rebase and"
                 " cannot be specified together with `-M/--merge`.")
-        if cli_opts.opt_sync_github_prs and cli_opts.opt_sync_gitlab_mrs:
-            raise MacheteException(
-                "Option `-H/--sync-github-prs` cannot be specified together with `-L/--sync-gitlab-mrs`.")
 
         cmd = parsed_cli.command
         if not cmd:

@@ -1,6 +1,5 @@
 import os
 from tempfile import mkdtemp
-from typing import List
 
 import pytest
 from pytest_mock import MockerFixture
@@ -9,25 +8,9 @@ from git_machete.cli import main
 from git_machete.utils.exceptions import ExitCode
 
 from .base_test import BaseTest
-from .cli_runner import launch_command_capturing_output_and_exception
+from .cli_runner import (assert_argparse_failure,
+                         launch_command_capturing_output_and_exception)
 from .git_repository import create_repo
-
-
-def assert_argparse_failure(cmd_and_args: List[str], expected_output: str) -> None:
-    """Run the CLI and assert it exits with `ARGUMENT_ERROR` after emitting
-    exactly `expected_output` (a literal multi-line string) on stdout/stderr.
-
-    The shared `assert_failure` helper from `tests.cli_runner` reads the failure
-    text from `MacheteException.msg`, but argparse failures bubble up as
-    `SystemExit` (which carries only an exit code) with the actual message
-    written to stdout/stderr - hence this dedicated helper for `test_cli`.
-    """
-    output, e = launch_command_capturing_output_and_exception(*cmd_and_args)
-    assert type(e) is SystemExit
-    assert e.code == ExitCode.ARGUMENT_ERROR
-    assert output is not None
-    expected = expected_output if expected_output.endswith("\n") else expected_output + "\n"
-    assert output == expected
 
 
 class TestCLI(BaseTest):

@@ -5,7 +5,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from typing import Iterable, Optional, Tuple, Type
 
 from git_machete import cli
-from git_machete.utils.exceptions import MacheteException
+from git_machete.utils.exceptions import ExitCode, MacheteException
 
 
 def launch_command_capturing_output_and_exception(*cmd_and_args: str) -> Tuple[Optional[str], Optional[BaseException]]:
@@ -64,6 +64,24 @@ def assert_failure(cmd_and_args: Iterable[str], expected_message: str, expected_
     if expected_output is not None:
         actual_output = strip_trailing_spaces(textwrap.dedent(output or ""))
         assert actual_output == expected_output
+
+
+def assert_argparse_failure(cmd_and_args: Iterable[str], expected_output: str) -> None:
+    """Run the CLI and assert it exits with `ARGUMENT_ERROR` after emitting
+    exactly `expected_output` (a literal multi-line string) on stdout/stderr.
+
+    `assert_failure` reads the failure text from `MacheteException.msg`, but
+    argparse failures bubble up as `SystemExit` (which carries only an exit
+    code) with the actual message written to stdout/stderr - hence this
+    dedicated helper for argparse-driven errors (mutex groups, invalid
+    choices, missing required, ...).
+    """
+    output, e = launch_command_capturing_output_and_exception(*cmd_and_args)
+    assert type(e) is SystemExit
+    assert e.code == ExitCode.ARGUMENT_ERROR
+    assert output is not None
+    expected = expected_output if expected_output.endswith("\n") else expected_output + "\n"
+    assert output == expected
 
 
 def read_branch_layout_file() -> str:

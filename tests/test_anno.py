@@ -2,8 +2,8 @@ from pytest_mock import MockerFixture
 
 from . import mockers_github, mockers_gitlab
 from .base_test import BaseTest
-from .cli_runner import (assert_failure, assert_success, launch_command,
-                         rewrite_branch_layout_file)
+from .cli_runner import (assert_argparse_failure, assert_success,
+                         launch_command, rewrite_branch_layout_file)
 from .git_repository import (add_remote, check_out, commit, create_repo,
                              create_repo_with_remote, new_branch)
 from .mockers_github import (MockGitHubAPIState,
@@ -160,9 +160,9 @@ class TestAnno(BaseTest):
         )
 
     def test_anno_sync_both_github_and_gitlab(self) -> None:
-        assert_failure(
+        assert_argparse_failure(
             ['anno', '--sync-github-prs', '--sync-gitlab-mrs'],
-            "Option -H/--sync-github-prs cannot be specified together with -L/--sync-gitlab-mrs."
+            "argument -L/--sync-gitlab-mrs: not allowed with argument -H/--sync-github-prs"
         )
 
     @staticmethod

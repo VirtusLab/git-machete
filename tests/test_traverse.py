@@ -9,7 +9,8 @@ from git_machete.utils.exceptions import UnderlyingGitException
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 
 from .base_test import BaseTest
-from .cli_runner import (assert_failure, assert_success, launch_command,
+from .cli_runner import (assert_argparse_failure, assert_failure,
+                         assert_success, launch_command,
                          rewrite_branch_layout_file)
 from .git_repository import (add_file_and_commit, add_remote, amend_commit,
                              check_out, commit, create_repo,
@@ -150,6 +151,15 @@ class TestTraverse(BaseTest):
 
             No successor of {E.BOLD}feature{E.ENDC_BOLD_DIM} needs to be slid out or synced with upstream branch or remote; nothing left to update
             """)
+        )
+
+    def test_traverse_sync_both_github_and_gitlab(self) -> None:
+        # `-H/--sync-github-prs` and `-L/--sync-gitlab-mrs` are pairwise
+        # mutually exclusive on `traverse` - enforced via an argparse
+        # mutex group, so the failure carries argparse's standard wording.
+        assert_argparse_failure(
+            ["traverse", "--sync-github-prs", "--sync-gitlab-mrs"],
+            "argument -L/--sync-gitlab-mrs: not allowed with argument -H/--sync-github-prs"
         )
 
     def test_traverse_no_remotes(self) -> None:
