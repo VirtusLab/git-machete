@@ -5,6 +5,7 @@
 - added: `git machete rename <new-name>` command to rename a branch both in git and in the branch layout file
 - improved: CLI error messages now suggest close matches for typo'd subcommands, flags and choices
 - fixed: minor glitches in shell completions
+- fixed: parsing of `gh --version` output for custom/devel `gh` builds (e.g. `gh version 2.92.0-7-ga3efb25a`)
 
 ## New in git-machete 3.40.1
 

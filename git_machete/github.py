@@ -86,8 +86,15 @@ class GitHubToken(NamedTuple):
         #
         # gh version 2.18.0 (2022-10-18)
         # https://github.com/cli/cli/releases/tag/v2.18.0
-
-        gh_version_match = re.search(r"gh version (\d+).(\d+).(\d+) ", gh_version_stdout)
+        #
+        # Custom/devel builds (e.g. Homebrew `--HEAD`, Arch's `gh-git`,
+        # built-from-source) append a `git describe`-style suffix directly
+        # after the patch number, with no space before the date:
+        #
+        # gh version 2.92.0-7-ga3efb25a (2026-04-30)
+        #
+        # so the trailing context isn't required to anchor the match.
+        gh_version_match = re.search(r"gh version (\d+)\.(\d+)\.(\d+)", gh_version_stdout)
         gh_version: Optional[Tuple[int, int, int]] = None
         if gh_version_match:
             gh_version = int(gh_version_match.group(1)), int(gh_version_match.group(2)), int(gh_version_match.group(3))
