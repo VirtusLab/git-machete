@@ -360,6 +360,28 @@ class TestGitHub(BaseTest):
             assert github_token.provider == 'auth token for git.example.com from `gh` GitHub CLI'
             assert github_token.value == 'ghp_mytoken_for_github_com_from_gh_cli'
 
+    # Regression test for custom/devel `gh` builds (Homebrew `--HEAD`, Arch's
+    # `gh-git`, built-from-source), whose `--version` output appends a
+    # `git describe`-style suffix directly after the patch number.
+    def test_github_get_token_from_gh_devel_build_version(self) -> None:
+        fake_gh = textwrap.dedent("""\
+            import sys
+            args = sys.argv[1:]
+            if args == ['--version']:
+                print('gh version 2.92.0-7-ga3efb25a (2026-04-30)')
+                print('https://github.com/cli/cli/releases/latest')
+                sys.exit(0)
+            if args[:2] == ['auth', 'token']:
+                print('ghp_mytoken_from_devel_gh_build')
+                sys.exit(0)
+            sys.exit(99)
+        """)
+        with temporary_home_directory(), fake_executables_on_path(gh=fake_gh):
+            github_token = GitHubToken.for_domain(domain='git.example.com')
+            assert github_token is not None
+            assert github_token.provider == 'auth token for git.example.com from `gh` GitHub CLI'
+            assert github_token.value == 'ghp_mytoken_from_devel_gh_build'
+
     # ~/.config/hub fallback - the three split tests below all rely on
     # `__get_token_from_gh` (step 3) returning None so step 4 (hub) is reached;
     # FAKE_GH_ALWAYS_FAILS achieves that by failing the very first `gh --version` call.
