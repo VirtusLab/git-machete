@@ -42,16 +42,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             2: {'owner': {'login': 'tester'}, 'name': 'repo_sandbox', 'clone_url': second_remote_path},
         }
 
-    def test_github_checkout_prs(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
-        (local_path, remote_path) = create_repo_with_remote()
-        second_remote_path = create_repo("second-remote", bare=True, switch_dir_to_new_repo=False)
-        github_api_state = MockGitHubAPIState(
-            self.repositories_for_test_github_checkout_prs(second_remote_path),
-            *self.prs_for_test_checkout_prs())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
-
+    def setup_checkout_tree(self) -> None:
         new_branch("root")
         commit("initial commit")
         new_branch("develop")
@@ -115,6 +106,18 @@ class TestGitHubCheckoutPRs(BaseTest):
                 enhance/feature
             """
         rewrite_branch_layout_file(body)
+
+    def test_github_checkout_prs(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        (local_path, remote_path) = create_repo_with_remote()
+        second_remote_path = create_repo("second-remote", bare=True, switch_dir_to_new_repo=False)
+        github_api_state = MockGitHubAPIState(
+            self.repositories_for_test_github_checkout_prs(second_remote_path),
+            *self.prs_for_test_checkout_prs())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+
+        self.setup_checkout_tree()
 
         # not broken chain of pull requests (root found in dependency tree)
         launch_command('github', 'checkout-prs', '18')
@@ -350,69 +353,7 @@ class TestGitHubCheckoutPRs(BaseTest):
                           mock_urlopen(self.github_api_state_for_test_github_checkout_prs_of_current_user_and_other_users()))
 
         create_repo_with_remote()
-        new_branch("root")
-        commit("initial commit")
-        new_branch("develop")
-        commit("first commit")
-        push()
-        new_branch("enhance/feature")
-        commit("introduce feature")
-        push()
-        new_branch("bugfix/feature")
-        commit("bugs removed")
-        push()
-        new_branch("allow-ownership-link")
-        commit("fixes")
-        push()
-        new_branch('restrict_access')
-        commit('authorized users only')
-        push()
-        new_branch("chore/redundant_checks")
-        commit('remove some checks')
-        push()
-        check_out("root")
-        new_branch("master")
-        commit("Master commit")
-        push()
-        new_branch("hotfix/add-trigger")
-        commit("HOTFIX Add the trigger")
-        push()
-        new_branch("ignore-trailing")
-        commit("Ignore trailing data")
-        push()
-        delete_branch("root")
-        new_branch('chore/fields')
-        commit("remove outdated fields")
-        push()
-        check_out('develop')
-        new_branch('enhance/add_user')
-        commit('allow externals to add users')
-        push()
-        new_branch('bugfix/add_user')
-        commit('first round of fixes')
-        push()
-        new_branch('testing/add_user')
-        commit('add test set for add_user feature')
-        push()
-        new_branch('chore/comments')
-        commit('code maintenance')
-        push()
-        check_out('master')
-
-        for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user',
-                       'testing/add_user', 'chore/comments', 'bugfix/add_user'):
-            delete_branch(branch)
-
-        body: str = \
-            """
-            master
-                hotfix/add-trigger
-                    ignore-trailing
-                        chore/fields
-            develop
-                enhance/feature
-            """
-        rewrite_branch_layout_file(body)
+        self.setup_checkout_tree()
 
         # test that `checkout-prs` add `rebase=no push=no` qualifiers to branches associated with the PRs whose owner
         # is different than the current user

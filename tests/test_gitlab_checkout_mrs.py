@@ -44,17 +44,7 @@ class TestGitLabCheckoutMRs(BaseTest):
                 'http_url_to_repo': second_remote_path},
         }
 
-    def test_gitlab_checkout_mrs(self, mocker: MockerFixture) -> None:
-        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
-        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
-
-        (local_path, remote_path) = create_repo_with_remote()
-        second_remote_path = create_repo("second-remote", bare=True, switch_dir_to_new_repo=False)
-        gitlab_api_state = MockGitLabAPIState(
-            self.projects_for_test_gitlab_checkout_prs(second_remote_path),
-            *self.mrs_for_test_checkout_mrs())
-        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
-
+    def setup_checkout_tree(self) -> None:
         new_branch("root")
         commit("initial commit")
         new_branch("develop")
@@ -118,6 +108,19 @@ class TestGitLabCheckoutMRs(BaseTest):
                 enhance/feature
             """
         rewrite_branch_layout_file(body)
+
+    def test_gitlab_checkout_mrs(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
+
+        (local_path, remote_path) = create_repo_with_remote()
+        second_remote_path = create_repo("second-remote", bare=True, switch_dir_to_new_repo=False)
+        gitlab_api_state = MockGitLabAPIState(
+            self.projects_for_test_gitlab_checkout_prs(second_remote_path),
+            *self.mrs_for_test_checkout_mrs())
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
+
+        self.setup_checkout_tree()
 
         # not broken chain of merge requests (root found in dependency tree)
         launch_command('gitlab', 'checkout-mrs', '18')
@@ -352,69 +355,7 @@ class TestGitLabCheckoutMRs(BaseTest):
                           mock_urlopen(self.gitlab_api_state_for_test_gitlab_checkout_mrs_of_current_user_and_other_users()))
 
         create_repo_with_remote()
-        new_branch("root")
-        commit("initial commit")
-        new_branch("develop")
-        commit("first commit")
-        push()
-        new_branch("enhance/feature")
-        commit("introduce feature")
-        push()
-        new_branch("bugfix/feature")
-        commit("bugs removed")
-        push()
-        new_branch("allow-ownership-link")
-        commit("fixes")
-        push()
-        new_branch('restrict_access')
-        commit('authorized users only')
-        push()
-        new_branch("chore/redundant_checks")
-        commit('remove some checks')
-        push()
-        check_out("root")
-        new_branch("master")
-        commit("Master commit")
-        push()
-        new_branch("hotfix/add-trigger")
-        commit("HOTFIX Add the trigger")
-        push()
-        new_branch("ignore-trailing")
-        commit("Ignore trailing data")
-        push()
-        delete_branch("root")
-        new_branch('chore/fields')
-        commit("remove outdated fields")
-        push()
-        check_out('develop')
-        new_branch('enhance/add_user')
-        commit('allow externals to add users')
-        push()
-        new_branch('bugfix/add_user')
-        commit('first round of fixes')
-        push()
-        new_branch('testing/add_user')
-        commit('add test set for add_user feature')
-        push()
-        new_branch('chore/comments')
-        commit('code maintenance')
-        push()
-        check_out('master')
-
-        for branch in ('chore/redundant_checks', 'restrict_access', 'allow-ownership-link', 'bugfix/feature', 'enhance/add_user',
-                       'testing/add_user', 'chore/comments', 'bugfix/add_user'):
-            delete_branch(branch)
-
-        body: str = \
-            """
-            master
-                hotfix/add-trigger
-                    ignore-trailing
-                        chore/fields
-            develop
-                enhance/feature
-            """
-        rewrite_branch_layout_file(body)
+        self.setup_checkout_tree()
 
         # test that `checkout-mrs` add `rebase=no push=no` qualifiers to branches associated with the MRs whose owner
         # is different than the current user

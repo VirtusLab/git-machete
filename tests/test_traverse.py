@@ -1,6 +1,9 @@
 # flake8: noqa: E501
 import os
+import shutil
+import tempfile
 import textwrap
+from typing import ClassVar, Optional, Tuple
 
 import pytest
 from pytest_mock import MockerFixture
@@ -17,7 +20,8 @@ from .git_repository import (add_file_and_commit, add_remote, amend_commit,
                              create_repo_with_remote, delete_branch,
                              get_current_branch, get_git_version, merge,
                              new_branch, push, remove_remote, reset_to,
-                             set_git_config_key, wait_to_bump_commit_timestamp)
+                             set_git_config_key, set_remote_url,
+                             wait_to_bump_commit_timestamp)
 from .mockers import (fixed_author_and_committer_date_in_past,
                       mock_input_returning, mock_input_returning_y,
                       overridden_environment)
@@ -26,58 +30,90 @@ from .shell import write_to_file
 
 class TestTraverse(BaseTest):
 
-    def setup_standard_tree(self) -> None:
-        create_repo_with_remote()
-        new_branch("root")
-        commit("root")
-        new_branch("develop")
-        commit("develop commit")
-        new_branch("allow-ownership-link")
-        commit("Allow ownership links")
-        push()
-        new_branch("build-chain")
-        commit("Build arbitrarily long chains")
-        check_out("allow-ownership-link")
-        commit("1st round of fixes")
-        check_out("develop")
-        commit("Other develop commit")
-        push()
-        new_branch("call-ws")
-        commit("Call web service")
-        commit("1st round of fixes")
-        push()
-        new_branch("drop-constraint")
-        commit("Drop unneeded SQL constraints")
-        check_out("call-ws")
-        commit("2nd round of fixes")
-        check_out("root")
-        new_branch("master")
-        commit("Master commit")
-        push()
-        new_branch("hotfix/add-trigger")
-        commit("HOTFIX Add the trigger")
-        push()
-        amend_commit("HOTFIX Add the trigger (amended)")
-        new_branch("ignore-trailing")
-        commit("Ignore trailing data")
-        wait_to_bump_commit_timestamp()
-        amend_commit("Ignore trailing data (amended)")
-        push()
-        reset_to("ignore-trailing@{1}")  # noqa: FS003
-        delete_branch("root")
+    # Building the "standard tree" from scratch takes ~4.3 s per test, dominated
+    # by ~25 git subprocess invocations plus a hard 1.5 s `time.sleep` in
+    # `wait_to_bump_commit_timestamp`. Since the tree is identical across every
+    # test that uses it, we build it once per process and let each test
+    # `shutil.copytree` it into a fresh temp directory. The copy of a small
+    # bare/non-bare repo pair is sub-10 ms, so ~18 call sites in this file
+    # collectively save tens of seconds of CI time.
+    _standard_tree_template: ClassVar[Optional[Tuple[str, str]]] = None
 
-        body: str = \
-            """
-            develop
-                allow-ownership-link
-                    build-chain
-                call-ws
-                    drop-constraint
-            master
-                hotfix/add-trigger
-                    ignore-trailing
-            """
-        rewrite_branch_layout_file(body)
+    @classmethod
+    def _build_standard_tree_template(cls) -> Tuple[str, str]:
+        previous_cwd = os.getcwd()
+        try:
+            local_path, remote_path = create_repo_with_remote()
+            new_branch("root")
+            commit("root")
+            new_branch("develop")
+            commit("develop commit")
+            new_branch("allow-ownership-link")
+            commit("Allow ownership links")
+            push()
+            new_branch("build-chain")
+            commit("Build arbitrarily long chains")
+            check_out("allow-ownership-link")
+            commit("1st round of fixes")
+            check_out("develop")
+            commit("Other develop commit")
+            push()
+            new_branch("call-ws")
+            commit("Call web service")
+            commit("1st round of fixes")
+            push()
+            new_branch("drop-constraint")
+            commit("Drop unneeded SQL constraints")
+            check_out("call-ws")
+            commit("2nd round of fixes")
+            check_out("root")
+            new_branch("master")
+            commit("Master commit")
+            push()
+            new_branch("hotfix/add-trigger")
+            commit("HOTFIX Add the trigger")
+            push()
+            amend_commit("HOTFIX Add the trigger (amended)")
+            new_branch("ignore-trailing")
+            commit("Ignore trailing data")
+            wait_to_bump_commit_timestamp()
+            amend_commit("Ignore trailing data (amended)")
+            push()
+            reset_to("ignore-trailing@{1}")  # noqa: FS003
+            delete_branch("root")
+
+            body: str = \
+                """
+                develop
+                    allow-ownership-link
+                        build-chain
+                    call-ws
+                        drop-constraint
+                master
+                    hotfix/add-trigger
+                        ignore-trailing
+                """
+            rewrite_branch_layout_file(body)
+            return local_path, remote_path
+        finally:
+            os.chdir(previous_cwd)
+
+    def setup_standard_tree(self) -> None:
+        if TestTraverse._standard_tree_template is None:
+            TestTraverse._standard_tree_template = TestTraverse._build_standard_tree_template()
+        template_local, template_remote = TestTraverse._standard_tree_template
+
+        new_root = tempfile.mkdtemp()
+        new_local = os.path.join(new_root, "local")
+        new_remote = os.path.join(new_root, "remote")
+        shutil.copytree(template_local, new_local)
+        shutil.copytree(template_remote, new_remote)
+
+        os.chdir(new_local)
+        # The local repo's `origin` URL still points at the template's remote
+        # path (baked in by `add_remote` during template build); repoint it
+        # so that any further push/fetch in the test exercises this copy.
+        set_remote_url("origin", new_remote)
 
     def test_traverse_slide_out(self, mocker: MockerFixture) -> None:
         E = FullTerminalAnsiOutputCodes
