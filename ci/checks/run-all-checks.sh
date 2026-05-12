@@ -39,7 +39,7 @@ _ prohibit-deploy-step-in-circleci
 _ prohibit-double-backticks-in-python
 _ prohibit-exempli-gratia-in-rst
 _ prohibit-fish-completion-repetition-checks-for-long-options
-_ prohibit-fork-point-in-git-context
+_ prohibit-fork-point-in-git
 _ prohibit-github-in-gitlab-files
 _ prohibit-github-mr-or-gitlab-pr
 _ prohibit-gitlab-in-github-files
