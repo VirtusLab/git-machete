@@ -40,6 +40,14 @@ class MacheteClient:
         git.owner = self
 
         self._branch_layout_file_path: str = self.__get_git_machete_branch_layout_file_path()
+        # Cwd-relative rendition of the layout path, captured at init time
+        # for use in user-facing messages (compact, points at the file as
+        # the user invoked us from). I/O always uses the absolute path so
+        # it survives any mid-run `chdir` (e.g. into a linked worktree).
+        try:
+            self._branch_layout_file_path_for_display: str = relpath_posix(self._branch_layout_file_path)
+        except Exception:  # pragma: no cover
+            self._branch_layout_file_path_for_display = self._branch_layout_file_path
         if not os.path.exists(self._branch_layout_file_path):
             # We're opening in "append" and not "write" mode to avoid a race condition:
             # if other process writes to the file between we check the
@@ -52,7 +60,7 @@ class MacheteClient:
             # Extremely unlikely case, basically checking if anybody
             # tampered with the repository.
             raise MacheteException(
-                f"{self._branch_layout_file_path} is a directory "
+                f"{self._branch_layout_file_path_for_display} is a directory "
                 "rather than a regular file, aborting")
 
         self.__init_state()
@@ -62,15 +70,13 @@ class MacheteClient:
             machete_file_directory = self._git.get_main_worktree_git_dir()
         else:
             machete_file_directory = self._git.get_current_worktree_git_dir()
-        abs_path = join_paths_posix(machete_file_directory, 'machete')
-        # Make the path relative to the current working directory, if possible.
-        # This is more convenient for display purposes, and shouldn't introduce any problems in traverse
-        # (since machete file path is only retrieved at the start, before any potential CWD changes)
-        try:
-            return relpath_posix(abs_path)
-        except Exception:  # pragma: no cover
-            # If for some reason relpath fails, fall back to absolute path.
-            return abs_path
+        # Keep the path absolute: `traverse` and other commands may `chdir` into
+        # linked worktrees mid-run, and a stored cwd-relative path would then
+        # resolve against the wrong directory - inside a linked worktree `.git`
+        # is a gitdir-pointer file, so `.git/machete` no longer points at the
+        # layout file. The underlying `get_SOMETHING_worktree_git_dir()` helpers already
+        # return absolute paths (via `git rev-parse` + `abspath_posix`).
+        return join_paths_posix(machete_file_directory, 'machete')
 
     def __init_state(self) -> None:
         self._state = MacheteState()
@@ -109,9 +115,9 @@ class MacheteClient:
     def _raise_no_branches_error(self) -> NoReturn:
         raise MacheteException(
             textwrap.dedent(f"""
-                No branches listed in {self._branch_layout_file_path}. Consider one of:
+                No branches listed in {self._branch_layout_file_path_for_display}. Consider one of:
                 * `git machete discover`
-                * `git machete edit` or edit {self._branch_layout_file_path} manually
+                * `git machete edit` or edit {self._branch_layout_file_path_for_display} manually
                 * `git machete github checkout-prs --mine`
                 * `git machete gitlab checkout-mrs --mine`"""[1:]))
 
@@ -122,7 +128,9 @@ class MacheteClient:
         return self._branch_layout_file_path
 
     def read_branch_layout_file(self, *, interactively_slide_out_invalid_branches: bool = False, verify_branches: bool = True) -> None:
-        self._state, self.__indent = branch_layout.parse(self._branch_layout_file_path)
+        self._state, self.__indent = branch_layout.parse(
+            self._branch_layout_file_path,
+            display_path=self._branch_layout_file_path_for_display)
 
         if not verify_branches:
             return
@@ -732,10 +740,10 @@ class MacheteClient:
         if not default_editor_with_args:
             raise MacheteException(
                 f"Cannot determine editor. Set `GIT_MACHETE_EDITOR` environment "
-                f"variable or edit {self._branch_layout_file_path} directly.")
+                f"variable or edit {self._branch_layout_file_path_for_display} directly.")
 
         command = default_editor_with_args[0]
-        args = default_editor_with_args[1:] + [self._branch_layout_file_path]
+        args = default_editor_with_args[1:] + [self._branch_layout_file_path_for_display]
         return run_cmd(command, *args)
 
     def __get_editor_with_args(self) -> List[str]:

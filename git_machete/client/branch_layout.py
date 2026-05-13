@@ -7,7 +7,7 @@ from git_machete.git import LocalBranchShortName
 from git_machete.utils.exceptions import MacheteException
 
 
-def parse(path: str) -> Tuple[MacheteState, Optional[str]]:
+def parse(path: str, *, display_path: Optional[str] = None) -> Tuple[MacheteState, Optional[str]]:
     """Parse the branch layout file at *path*.
 
     Returns a new `MacheteState` populated from the file together with
@@ -15,8 +15,12 @@ def parse(path: str) -> Tuple[MacheteState, Optional[str]]:
     line was found, e.g. a single-root flat layout).
 
     Raises `MacheteException` for structural errors (duplicate branch,
-    bad indent, excess depth).
+    bad indent, excess depth). The `display_path` argument, if provided,
+    is used in error messages in place of `path` - useful when `path` is
+    an absolute internal location and the caller wants a more compact
+    cwd-relative form shown to the user.
     """
+    msg_path: str = display_path if display_path is not None else path
     with open(path) as f:
         lines: List[str] = [line.rstrip() for line in f.readlines()]
 
@@ -51,7 +55,7 @@ def parse(path: str) -> Tuple[MacheteState, Optional[str]]:
 
         if state.is_managed(branch):
             raise MacheteException(
-                f"{path}, line {index + 1}: branch "
+                f"{msg_path}, line {index + 1}: branch "
                 f"<b>{branch}</b> re-appears in the branch layout. {hint}")
 
         if prefix:
@@ -62,7 +66,7 @@ def parse(path: str) -> Tuple[MacheteState, Optional[str]]:
                 prefix_expanded = "".join(mapping[c] for c in prefix)
                 indent_expanded = "".join(mapping[c] for c in indent)
                 raise MacheteException(
-                    f"{path}, line {index + 1}: "
+                    f"{msg_path}, line {index + 1}: "
                     f"invalid indent <b>{prefix_expanded}</b>, expected a multiply"
                     f" of <b>{indent_expanded}</b>. {hint}")
         else:
@@ -70,7 +74,7 @@ def parse(path: str) -> Tuple[MacheteState, Optional[str]]:
 
         if depth > last_depth + 1:
             raise MacheteException(
-                f"{path}, line {index + 1}: too much "
+                f"{msg_path}, line {index + 1}: too much "
                 f"indent (level {depth}, expected at most {last_depth + 1}) "
                 f"for the branch <b>{branch}</b>. {hint}")
         last_depth = depth
