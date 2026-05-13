@@ -780,3 +780,68 @@ class TestTraverseWorktrees(BaseTest):
               cd {normalized_feature_worktree}
             """
         )
+
+    # Regression test for https://github.com/VirtusLab/git-machete/issues/1681.
+    #
+    # When `traverse` auto-slides out a branch that's checked out in a
+    # linked worktree, it `os.chdir`s into that worktree first. Previously
+    # the layout file path was computed at client construction time as a
+    # cwd-relative path (e.g. `.git/machete`); inside a linked worktree
+    # `.git` is a gitdir-pointer file, so `save_branch_layout_file`'s
+    # subsequent `open(path, "w")` raised `NotADirectoryError`. The path is
+    # now stored as absolute, so it survives any mid-traverse `chdir`.
+    def test_traverse_auto_slide_out_in_worktree(self) -> None:
+        from .shell import execute
+
+        create_repo_with_remote()
+        new_branch("main")
+        commit("M1")
+        push()
+        # Create `a` as a plain branch ref at M1 (no checkout, so it doesn't
+        # diverge from `main`), then advance `main` to M2 and fast-forward
+        # `a` in its worktree to match. After this `a` is at M2 (== main),
+        # which makes traverse classify it as "merged into main" and
+        # auto-slide-out eligible.
+        execute("git branch a")
+        commit("M2")
+        push()
+
+        body: str = \
+            """
+            main
+                a
+            """
+        rewrite_branch_layout_file(body)
+
+        # Put `a` in a linked worktree so traverse `chdir`s into it on
+        # visit. Pre-fix, the subsequent layout-file save would have
+        # raised `NotADirectoryError` because the path was cached as
+        # `.git/machete` relative to the main-worktree cwd.
+        a_worktree = add_worktree("a")
+
+        initial_dir = os.getcwd()
+        os.chdir(a_worktree)
+        execute("git merge --ff-only main")
+        os.chdir(initial_dir)
+
+        normalized_a_worktree = abspath_posix(a_worktree)
+
+        assert_success(
+            ["traverse", "-y"],
+            f"""
+            Changing directory to {normalized_a_worktree} worktree where a is checked out
+
+              main
+              |
+              m-a * (untracked)
+
+            Branch a is merged into main. Sliding a out of the tree of branch dependencies...
+
+              main
+
+            No successor of a needs to be slid out or synced with upstream branch or remote; nothing left to update
+            Warn: branch a is checked out in worktree at {normalized_a_worktree}
+            You may want to change directory with:
+              cd {normalized_a_worktree}
+            """
+        )

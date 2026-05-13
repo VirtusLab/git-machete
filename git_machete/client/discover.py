@@ -146,10 +146,10 @@ class DiscoverMacheteClient(StatusMacheteClient):
         print("")
         do_backup = os.path.isfile(self._branch_layout_file_path) and slurp_file(self._branch_layout_file_path).strip()
         backup_msg = (
-            f"\nThe existing branch layout file will be backed up as {self._branch_layout_file_path}~"
+            f"\nThe existing branch layout file will be backed up as {self._branch_layout_file_path_for_display}~"
             if do_backup else "")
-        msg = f"Save the above tree to {self._branch_layout_file_path}?{backup_msg}" + pretty_choices('y', 'e[dit]', 'N')
-        opt_yes_msg = f"Saving the above tree to {self._branch_layout_file_path}...{backup_msg}"
+        msg = f"Save the above tree to {self._branch_layout_file_path_for_display}?{backup_msg}" + pretty_choices('y', 'e[dit]', 'N')
+        opt_yes_msg = f"Saving the above tree to {self._branch_layout_file_path_for_display}...{backup_msg}"
         ans = self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes)
         if ans in ('y', 'yes'):
             if do_backup:
