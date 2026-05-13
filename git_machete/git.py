@@ -4,7 +4,7 @@ import re
 import string
 import sys
 from enum import Enum, auto
-from pathlib import Path
+from pathlib import Path as PyPath
 from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
                     Set, Tuple)
 
@@ -17,7 +17,7 @@ from .utils.exceptions import (UnderlyingGitException,
                                UnexpectedMacheteException)
 from .utils.fs import is_executable, slurp_file
 from .utils.markup import escape_markup, print_fmt
-from .utils.paths import abspath_posix, join_paths_posix
+from .utils.paths import AbsPath, Path, abs_path, join_paths
 
 
 class AnyRevision(str):
@@ -232,10 +232,10 @@ class Git:
         self.owner: Optional[Any] = None
 
         self.__git_version: Optional[Tuple[int, int, int]] = None
-        self.__main_worktree_root_dir: Optional[str] = None
-        self.__main_worktree_git_dir: Optional[str] = None
-        self.__current_worktree_root_dir: Optional[str] = None
-        self.__current_worktree_git_dir: Optional[str] = None
+        self.__main_worktree_root_dir: Optional[AbsPath] = None
+        self.__main_worktree_git_dir: Optional[AbsPath] = None
+        self.__current_worktree_root_dir: Optional[AbsPath] = None
+        self.__current_worktree_git_dir: Optional[AbsPath] = None
 
         self.__commit_hash_by_revision_cached: Optional[Dict[AnyRevision, Optional[FullCommitHash]]] = None
         self.__committer_unix_timestamp_by_revision_cached: Optional[Dict[AnyRevision, int]] = None
@@ -270,7 +270,7 @@ class Git:
         self.__short_commit_hash_by_revision_cached = {}
         self.__flush_current_worktree_caches()
 
-    def chdir(self, path: str) -> None:
+    def chdir(self, path: Path) -> None:
         os.chdir(path)
         self.__flush_current_worktree_caches()
 
@@ -312,13 +312,17 @@ class Git:
         return self.__git_version
 
     # === Worktree & repository paths ===
+    #
+    # All path-returning helpers in this section return `AbsPath`: relative
+    # paths can lead to subtle bugs when CWD changes between worktrees
+    # mid-run (e.g. `traverse` chdir-ing into a linked worktree - the latent
+    # source of issue #1681 and similar). The conversion happens once here,
+    # in `__rev_parse_path`, via `abs_path`.
 
-    def __rev_parse_path(self, flag: str) -> str:
-        # Let's use absolute paths for main/git directories.
-        # Relative paths can lead to subtle bugs when CWD changes between worktrees in traverse.
-        return abspath_posix(self._popen_git("rev-parse", flag).stdout.strip())
+    def __rev_parse_path(self, flag: str) -> AbsPath:
+        return abs_path(self._popen_git("rev-parse", flag).stdout.strip())
 
-    def get_current_worktree_root_dir(self) -> str:
+    def get_current_worktree_root_dir(self) -> AbsPath:
         if not self.__current_worktree_root_dir:
             try:
                 self.__current_worktree_root_dir = self.__rev_parse_path("--show-toplevel")
@@ -326,7 +330,7 @@ class Git:
                 raise UnderlyingGitException("Not a git repository")
         return self.__current_worktree_root_dir
 
-    def get_current_worktree_git_dir(self) -> str:
+    def get_current_worktree_git_dir(self) -> AbsPath:
         if not self.__current_worktree_git_dir:
             try:
                 self.__current_worktree_git_dir = self.__rev_parse_path("--git-dir")
@@ -334,10 +338,10 @@ class Git:
                 raise UnderlyingGitException("Not a git repository")
         return self.__current_worktree_git_dir
 
-    def get_current_worktree_git_subpath(self, *fragments: str) -> str:
-        return join_paths_posix(self.get_current_worktree_git_dir(), *fragments)
+    def get_current_worktree_git_subpath(self, *fragments: str) -> AbsPath:
+        return self.get_current_worktree_git_dir().join_fragments(*fragments)
 
-    def get_main_worktree_root_dir(self) -> str:
+    def get_main_worktree_root_dir(self) -> AbsPath:
         """
         Returns the path to the main worktree (not a linked worktree).
         """
@@ -356,19 +360,19 @@ class Git:
                 # The first worktree in the list is always the main worktree
                 first_entry = result.stdout.splitlines()[0]
                 if first_entry.startswith('worktree '):
-                    self.__main_worktree_root_dir = first_entry[len('worktree '):]
+                    self.__main_worktree_root_dir = AbsPath.of(first_entry[len('worktree '):])
                 else:
                     raise UnexpectedMacheteException("Could not obtain the main worktree path from "
                                                      f"`git worktree list --porcelain` output (first line: `{first_entry}`)")
         return self.__main_worktree_root_dir
 
-    def get_main_worktree_git_dir(self) -> str:
+    def get_main_worktree_git_dir(self) -> AbsPath:
         if not self.__main_worktree_git_dir:
             try:
-                git_dir: str = self.__rev_parse_path("--git-dir")
-                git_dir_parts = Path(git_dir).parts
+                git_dir: AbsPath = self.__rev_parse_path("--git-dir")
+                git_dir_parts = PyPath(git_dir).parts
                 if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees':
-                    self.__main_worktree_git_dir = join_paths_posix(*git_dir_parts[:-2])
+                    self.__main_worktree_git_dir = AbsPath.of(join_paths(*git_dir_parts[:-2]))
                     debug(f'git dir pointing to {git_dir} - we are in a worktree; '
                           f'using {self.__main_worktree_git_dir} as the effective git dir instead')
                 else:
@@ -377,11 +381,11 @@ class Git:
                 raise UnderlyingGitException("Not a git repository")
         return self.__main_worktree_git_dir
 
-    def get_main_worktree_git_subpath(self, *fragments: str) -> str:
+    def get_main_worktree_git_subpath(self, *fragments: str) -> AbsPath:
         # Let's use /-style paths even on Windows, for consistency with what git itself returns.
-        return join_paths_posix(self.get_main_worktree_git_dir(), *fragments)
+        return self.get_main_worktree_git_dir().join_fragments(*fragments)
 
-    def get_worktree_root_dirs_by_branch(self) -> Dict[LocalBranchShortName, str]:
+    def get_worktree_root_dirs_by_branch(self) -> Dict[LocalBranchShortName, AbsPath]:
         """
         Returns a dict mapping branch names to their worktree paths.
         The main worktree's current branch is included if it's on a branch.
@@ -393,15 +397,15 @@ class Git:
             return {}
 
         result = self._popen_git("worktree", "list", "--porcelain")
-        worktrees: Dict[LocalBranchShortName, str] = {}
+        worktrees: Dict[LocalBranchShortName, AbsPath] = {}
 
-        latest_worktree_path: Optional[str] = None
+        latest_worktree_path: Optional[AbsPath] = None
         latest_branch: Optional[LocalBranchShortName] = None
         is_detached: bool = False
 
         for line in result.stdout.strip().splitlines():
             if line.startswith('worktree '):
-                latest_worktree_path = line[len('worktree '):]
+                latest_worktree_path = AbsPath.of(line[len('worktree '):])
             elif line.startswith('branch '):
                 # Format: "branch refs/heads/<branch-name>"
                 branch_ref = line[len('branch '):]
@@ -425,10 +429,10 @@ class Git:
 
         return worktrees
 
-    def worktree_add(self, path: str, branch: 'LocalBranchShortName') -> None:
+    def worktree_add(self, path: Path, branch: 'LocalBranchShortName') -> None:
         self._run_git("worktree", "add", path, branch, flush_caches=False)
 
-    def worktree_remove(self, path: str) -> None:
+    def worktree_remove(self, path: Path) -> None:
         if self.get_git_version() >= (2, 17):
             self._run_git("worktree", "remove", "-f", path, flush_caches=False)
         else:
@@ -954,8 +958,8 @@ class Git:
 
     # === Merge-base & ancestry ===
 
-    def __get_merge_base_cache_path(self) -> str:
-        return os.path.join(self.get_main_worktree_git_dir(), "machete-merge-base-cache")
+    def __get_merge_base_cache_path(self) -> AbsPath:
+        return self.get_main_worktree_git_dir().join_fragments("machete-merge-base-cache")
 
     def __load_merge_base_cache(self) -> None:
         """Load merge-base cache from file. Called lazily on first use."""
@@ -1192,11 +1196,15 @@ class Git:
 
     # === Hooks ===
 
-    def get_hook_path(self, hook_name: str) -> str:
-        hook_dir: str = self.get_config_attr_or_none("core.hooksPath") or self.get_main_worktree_git_subpath("hooks")
-        return join_paths_posix(hook_dir, hook_name)
+    def get_hook_path(self, hook_name: str) -> Path:
+        # `core.hooksPath` may be unset, relative, or absolute - so the
+        # combined result is only ever known to be a `Path`, not `AbsPath`.
+        # `core.hooksPath` may be unset, relative, or absolute - the joined
+        # `hook_dir` is therefore only ever known to be a `Path`.
+        hook_dir: Path = Path(self.get_config_attr_or_none("core.hooksPath") or self.get_main_worktree_git_subpath("hooks"))
+        return join_paths(hook_dir, hook_name)
 
-    def check_hook_executable(self, hook_path: str) -> bool:
+    def check_hook_executable(self, hook_path: Path) -> bool:
         if not os.path.isfile(hook_path):
             return False
         elif not is_executable(hook_path):

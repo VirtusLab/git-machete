@@ -23,6 +23,7 @@ from ._subproc import PopenResult, _popen_cmd
 from .debug_log import debug
 from .fs import get_current_directory_or_none
 from .markup import escape_markup, print_fmt
+from .paths import AbsPath, Path
 
 # === Mutable runtime flags ===
 #
@@ -35,7 +36,7 @@ measure_command_time: bool = os.environ.get('GIT_MACHETE_MEASURE_COMMAND_TIME') 
 verbose_mode: bool = False
 
 
-def run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> int:
+def run_cmd(cmd: str, *args: str, cwd: Optional[Path] = None, env: Optional[Dict[str, str]] = None) -> int:
     chdir_upwards_until_current_directory_exists()
 
     flat_cmd: str = get_cmd_shell_repr(cmd, *args, env=env)
@@ -79,7 +80,7 @@ def mark_current_directory_as_possibly_non_existent() -> None:
 def chdir_upwards_until_current_directory_exists() -> None:
     global current_directory_confirmed_to_exist
     if not current_directory_confirmed_to_exist:
-        current_directory: Optional[str] = get_current_directory_or_none()
+        current_directory: Optional[AbsPath] = get_current_directory_or_none()
         if not current_directory:
             while not current_directory:
                 # Note: 'os.chdir' only affects the current process and its subprocesses;
@@ -90,7 +91,7 @@ def chdir_upwards_until_current_directory_exists() -> None:
         current_directory_confirmed_to_exist = True
 
 
-def popen_cmd(cmd: str, *args: str, cwd: Optional[str] = None,
+def popen_cmd(cmd: str, *args: str, cwd: Optional[Path] = None,
               env: Optional[Dict[str, str]] = None, hide_debug_output: bool = False, input: Optional[str] = None) -> PopenResult:
     chdir_upwards_until_current_directory_exists()
 

@@ -13,7 +13,7 @@ from git_machete.git import Git, LocalBranchShortName, SyncToRemoteStatus
 from git_machete.utils.exceptions import (MacheteException, ParsableEnum,
                                           UnexpectedMacheteException)
 from git_machete.utils.markup import green_ok, pretty_choices, print_fmt, warn
-from git_machete.utils.paths import abspath_posix
+from git_machete.utils.paths import AbsPath, abs_path
 
 
 class TraverseReturnTo(ParsableEnum):
@@ -51,9 +51,9 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
     def __init__(self, git: Git, spec: CodeHostingSpec):
         super().__init__(git, spec)
-        self.__temporary_worktree_path: Optional[str] = None
-        self.__dir_before_temporary_worktree: Optional[str] = None
-        self.__worktree_root_dir_for_branch: Dict[LocalBranchShortName, str] = {}
+        self.__temporary_worktree_path: Optional[AbsPath] = None
+        self.__dir_before_temporary_worktree: Optional[AbsPath] = None
+        self.__worktree_root_dir_for_branch: Dict[LocalBranchShortName, AbsPath] = {}
 
     def _update_worktrees_cache_after_checkout(self, checked_out_branch: LocalBranchShortName) -> None:
         """
@@ -111,7 +111,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             config_value = self._config.traverse_when_branch_not_checked_out_in_any_worktree()
 
             if config_value == TraverseWhenBranchNotCheckedOutInAnyWorktree.CD_INTO_TEMPORARY_WORKTREE:
-                temp_worktree_path = tempfile.mkdtemp(prefix="git-machete-worktree-")
+                temp_worktree_path = abs_path(tempfile.mkdtemp(prefix="git-machete-worktree-"))
                 print_fmt(f"Creating a temporary worktree to check out <b>{target_branch}</b>... ",
                           newline=False)
                 self._git.worktree_add(temp_worktree_path, target_branch)
@@ -561,7 +561,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             final_worktree_path = self.__worktree_root_dir_for_branch.get(final_branch)
             if final_worktree_path and initial_worktree_root != final_worktree_path:
                 # Final branch is checked out in a worktree different from where we started
-                normalized_path = abspath_posix(final_worktree_path)
+                normalized_path = abs_path(final_worktree_path)
                 warn(
                     f"branch <b>{final_branch}</b> is checked out in worktree at <b>{normalized_path}</b>\n"
                     f"You may want to change directory with:\n"

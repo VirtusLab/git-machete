@@ -6,7 +6,6 @@ import shutil
 import urllib.error
 # Deliberately NOT using much more convenient `requests` to avoid external dependencies in production code
 import urllib.request
-from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from git_machete.code_hosting import (CodeHostingApi, CodeHostingGitConfigKeys,
@@ -20,7 +19,7 @@ from git_machete.utils.debug_log import compact_dict, debug
 from git_machete.utils.exceptions import (MacheteException,
                                           UnexpectedMacheteException)
 from git_machete.utils.markup import warn
-from git_machete.utils.paths import join_paths_posix
+from git_machete.utils.paths import AbsPath
 
 from .utils.fs import slurp_file
 
@@ -52,7 +51,7 @@ class GitHubToken(NamedTuple):
         debug("2. Trying to find token in `~/.github-token`...")
         required_file_name = '.github-token'
         provider = f'auth token for {domain} from `~/.github-token`'
-        file_full_path = os.path.expanduser(f'~/{required_file_name}')
+        file_full_path: AbsPath = AbsPath.home().join_fragments(required_file_name)
 
         if os.path.isfile(file_full_path):
             debug(f"  File `{file_full_path}` exists")
@@ -132,8 +131,7 @@ class GitHubToken(NamedTuple):
     @classmethod
     def __get_token_from_hub(cls, domain: str) -> Optional["GitHubToken"]:
         debug("4. Trying to find token via `hub` GitHub CLI...")
-        home_path: str = str(Path.home())
-        config_hub_path: str = join_paths_posix(home_path, ".config", "hub")
+        config_hub_path: AbsPath = AbsPath.home().join_fragments(".config", "hub")
         if os.path.isfile(config_hub_path):
             # ~/.config/hub is a yaml file, with a structure similar to:
             #
