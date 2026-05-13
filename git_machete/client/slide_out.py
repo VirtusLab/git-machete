@@ -66,9 +66,9 @@ class SlideOutMacheteClient(MacheteClient):
         # Update definition, fire post-hook, and perform the branch update
         self.save_branch_layout_file()
         self._run_post_slide_out_hook(
-            new_upstream=new_parent,
+            new_parent=new_parent,
             slid_out_branch=branches_to_slide_out[-1],
-            new_downstreams=new_children)
+            new_children=new_children)
 
         # Check out new parent if we were on a slid-out branch, but only if there is a parent
         if self._git.get_current_branch_or_none() in branches_to_slide_out:

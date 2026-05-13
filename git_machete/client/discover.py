@@ -86,7 +86,7 @@ class DiscoverMacheteClient(StatusMacheteClient):
             return
 
         for branch in excluding(non_root_fixed_branches, stale_non_root_fixed_branches):
-            parent = self._infer_upstream(
+            parent = self._infer_parent(
                 branch,
                 condition=lambda candidate: (get_root_of(candidate) != branch and candidate not in stale_non_root_fixed_branches),
                 reject_reason_message=("choosing this candidate would form a "
@@ -99,7 +99,7 @@ class DiscoverMacheteClient(StatusMacheteClient):
                 debug(f"inferred no parent for {branch}, attaching {branch} as a new root")
                 self._state.wire_as_root(branch)
 
-        # Let's remove merged branches for which no downstream branch have been found.
+        # Let's remove merged branches for which no child branch have been found.
         merged_branches_to_skip = []
         for branch in fresh_branches:
             parent = self.parent_of(branch)

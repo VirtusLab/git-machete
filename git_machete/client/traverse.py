@@ -318,7 +318,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                                 nearest_remaining_branch = parent
                         self._state.splice_out(branch)
                         self.save_branch_layout_file()
-                        self._run_post_slide_out_hook(new_upstream=parent, slid_out_branch=branch, new_downstreams=children)
+                        self._run_post_slide_out_hook(new_parent=parent, slid_out_branch=branch, new_children=children)
                         if ans == 'yq':
                             return
                         else:

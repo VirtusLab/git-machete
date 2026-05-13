@@ -100,4 +100,4 @@ class AdvanceMacheteClient(MacheteClient):
                 grandchildren = self._state.get_children(LocalBranchShortName.of(child_branch)) or []
                 self._state.splice_out(child_branch)
                 self.save_branch_layout_file()
-                self._run_post_slide_out_hook(new_upstream=branch, slid_out_branch=child_branch, new_downstreams=grandchildren)
+                self._run_post_slide_out_hook(new_parent=branch, slid_out_branch=child_branch, new_children=grandchildren)

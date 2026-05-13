@@ -213,7 +213,7 @@ class MacheteClient:
             else:
                 raise MacheteException(f"Branch <b>{branch}</b> has no upstream branch")
         else:
-            parent = self._infer_upstream(branch)
+            parent = self._infer_parent(branch)
             if parent:
                 if prompt_if_inferred_msg and prompt_if_inferred_yes_opt_msg:
                     if self.ask_if(
@@ -242,12 +242,12 @@ class MacheteClient:
         use_overrides: bool
     ) -> Tuple[FullCommitHash, List[BranchPair]]:
         parent = self.parent_of(branch)
-        upstream_hash = self._git.get_commit_hash_by_revision(parent) if parent else None
+        parent_hash = self._git.get_commit_hash_by_revision(parent) if parent else None
 
         if use_overrides:
             overridden_fork_point = self._get_overridden_fork_point(branch)
             if overridden_fork_point:
-                if parent and upstream_hash and \
+                if parent and parent_hash and \
                         self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()) and \
                         not self._git.is_ancestor_or_equal(parent.full_name(), overridden_fork_point):
                     # We need to handle the case when branch is a descendant of parent,
@@ -256,7 +256,7 @@ class MacheteClient:
                     debug(
                         f"{branch} is descendant of its parent {parent}, but overridden fork point commit {overridden_fork_point} "
                         f"is NOT a descendant of {parent}; falling back to {parent} as fork point")
-                    return upstream_hash, []
+                    return parent_hash, []
                 elif parent and \
                         self._git.is_ancestor_or_equal(overridden_fork_point, parent.full_name()):
                     common_ancestor = self._git.get_merge_base(parent.full_name(), branch.full_name())
@@ -270,12 +270,12 @@ class MacheteClient:
         try:
             computed_fork_point, inferring_branch_pairs = next(self.__match_log_to_filtered_reflogs(branch))
         except StopIteration:
-            if parent and upstream_hash:
+            if parent and parent_hash:
                 if self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()):
                     debug(
                         f"cannot find fork point, but {branch} is a descendant of its parent {parent}; "
                         f"falling back to {parent} as fork point")
-                    return upstream_hash, []
+                    return parent_hash, []
                 else:
                     common_ancestor_hash = self._git.get_merge_base(parent.full_name(), branch.full_name())
                     if common_ancestor_hash:
@@ -290,7 +290,7 @@ class MacheteClient:
                   "filtered reflog of any other branch or its remote counterpart "
                   f"(specifically: {' and '.join(map(get_second, inferring_branch_pairs))})")
 
-            if parent and upstream_hash and \
+            if parent and parent_hash and \
                     self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()) and \
                     not self._git.is_ancestor_or_equal(parent.full_name(), computed_fork_point):
                 # That happens very rarely in practice (typically current head
@@ -302,7 +302,7 @@ class MacheteClient:
                     f"{parent} is an ancestor of {branch}, "
                     f"but the inferred fork point commit {computed_fork_point} is NOT a descendant of {parent}; "
                     f"falling back to {parent} as fork point")
-                return upstream_hash, []
+                return parent_hash, []
             elif parent and \
                     not self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()) and \
                     self._git.is_ancestor_or_equal(computed_fork_point, parent.full_name()):
@@ -450,24 +450,24 @@ class MacheteClient:
             else:
                 debug(f"commit {hash} not found in any filtered reflog")
 
-    def _infer_upstream(self,
-                        branch: LocalBranchShortName,
-                        condition: Callable[[LocalBranchShortName], bool] = lambda parent: True,
-                        *,
-                        reject_reason_message: str = ""
-                        ) -> Optional[LocalBranchShortName]:
+    def _infer_parent(self,
+                      branch: LocalBranchShortName,
+                      condition: Callable[[LocalBranchShortName], bool] = lambda parent: True,
+                      *,
+                      reject_reason_message: str = ""
+                      ) -> Optional[LocalBranchShortName]:
         for hash, inferring_branch_pairs in self.__match_log_to_filtered_reflogs(branch):
             debug(f"commit {hash} found in filtered reflog of {' and '.join(map(get_second, inferring_branch_pairs))}")
 
             for candidate, original_matched_branch in inferring_branch_pairs:
                 if candidate != original_matched_branch:
-                    debug(f"upstream candidate is {candidate}, which is the local counterpart of {original_matched_branch}")
+                    debug(f"parent candidate is {candidate}, which is the local counterpart of {original_matched_branch}")
 
                 if condition(candidate):
-                    debug(f"upstream candidate {candidate} accepted")
+                    debug(f"parent candidate {candidate} accepted")
                     return candidate
                 else:
-                    debug(f"upstream candidate {candidate} rejected ({reject_reason_message})")
+                    debug(f"parent candidate {candidate} rejected ({reject_reason_message})")
         return None
 
     # === Fork-point overrides ===
@@ -607,7 +607,7 @@ class MacheteClient:
                 print_fmt(f"Added branch <b>{branch}</b> as a new root")
         else:
             if not opt_onto:
-                parent = self._infer_upstream(
+                parent = self._infer_parent(
                     branch,
                     condition=lambda x: x in self.managed_branches,
                     reject_reason_message="this candidate is not a managed branch")
@@ -806,17 +806,20 @@ class MacheteClient:
     def _run_post_slide_out_hook(
         self,
         *,
-        new_upstream: Optional[LocalBranchShortName],
+        new_parent: Optional[LocalBranchShortName],
         slid_out_branch: LocalBranchShortName,
-        new_downstreams: List[LocalBranchShortName]
+        new_children: List[LocalBranchShortName]
     ) -> None:
         hook_path = self._git.get_hook_path("machete-post-slide-out")
         if self._git.check_hook_executable(hook_path):
             debug(f"running machete-post-slide-out hook ({hook_path})")
-            new_downstreams_strings: List[str] = [str(db) for db in new_downstreams]
-            # When sliding out root branches, new_upstream is None; pass empty string to the hook
-            new_upstream_str = str(new_upstream) if new_upstream is not None else ""
-            exit_code = self.__run_hook(hook_path, new_upstream_str, slid_out_branch, *new_downstreams_strings,
+            new_children_strings: List[str] = [str(c) for c in new_children]
+            # When sliding out root branches, new_parent is None; pass empty string to the hook.
+            # Note: the hook protocol's CLI arguments are still called `<new-upstream>` and
+            # `<new-downstreams>` for backwards compatibility - only the internal Python
+            # keyword args have been renamed.
+            new_parent_str = str(new_parent) if new_parent is not None else ""
+            exit_code = self.__run_hook(hook_path, new_parent_str, slid_out_branch, *new_children_strings,
                                         cwd=self._git.get_current_worktree_root_dir())
             if exit_code != 0:
                 raise MacheteException(f"The machete-post-slide-out hook exited with {exit_code}, aborting.")

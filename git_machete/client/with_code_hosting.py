@@ -982,7 +982,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 return []
             return result
         elif related_to:
-            # Always update the entire stack (both parent and downstream) when --related is used,
+            # Always update the entire stack (both parents and children) when --related is used,
             # regardless of prDescriptionIntroStyle setting.
             result = list(reversed(self.__get_upwards_path_including_pr(related_to)))
             result += [downstream_pr for downstream_pr, _ in self.__get_downwards_tree_excluding_pr(related_to)]
