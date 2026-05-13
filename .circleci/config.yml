@@ -258,19 +258,19 @@ jobs:
           name: 'Publish snap to the stable channel'
           command: bash ci/snap/ci-deploy.sh
 
-  "create github release and close milestone":
+  "create github release":
     executor: ubuntu_executor
     steps:
       - checkout: {method: blobless}
       - run:
-          name: 'Create GitHub release and close milestone'
+          name: 'Create GitHub release, close milestone and open version-bump PR'
           # language=sh
           command: |
             sudo apt-get update
             sudo apt-get install gh
             bash ci/github/create-release.sh
             bash ci/github/close-milestone.sh
-
+            bash ci/github/open-version-bump-pr.sh
 
 # Note that these top-level keys are NOT consumed by CircleCI,
 # they're just to introduce reusable anchors to be referenced further down the line.
@@ -344,7 +344,7 @@ workflows:
             - dry run releases
       # Let's create a GitHub release even if some of the other release steps failed,
       # to keep GitHub release history consistent
-      - create github release and close milestone:
+      - create github release:
           <<: *only_master
           requires:
             - dry run releases
