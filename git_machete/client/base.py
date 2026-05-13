@@ -20,7 +20,7 @@ from git_machete.utils.debug_log import debug
 from git_machete.utils.exceptions import (InteractionStopped, MacheteException,
                                           UnexpectedMacheteException)
 from git_machete.utils.markup import input_fmt, pretty_choices, print_fmt, warn
-from git_machete.utils.paths import join_paths_posix, relpath_posix
+from git_machete.utils.paths import AbsPath, Path
 
 from ..utils import fs
 
@@ -39,13 +39,13 @@ class MacheteClient:
         self._config: MacheteConfig = MacheteConfig(git)
         git.owner = self
 
-        self._branch_layout_file_path: str = self.__get_git_machete_branch_layout_file_path()
+        self._branch_layout_file_path: AbsPath = self.__get_git_machete_branch_layout_file_path()
         # Cwd-relative rendition of the layout path, captured at init time
         # for use in user-facing messages (compact, points at the file as
         # the user invoked us from). I/O always uses the absolute path so
         # it survives any mid-run `chdir` (e.g. into a linked worktree).
         try:
-            self._branch_layout_file_path_for_display: str = relpath_posix(self._branch_layout_file_path)
+            self._branch_layout_file_path_for_display: Path = Path.relative(self._branch_layout_file_path)
         except Exception:  # pragma: no cover
             self._branch_layout_file_path_for_display = self._branch_layout_file_path
         if not os.path.exists(self._branch_layout_file_path):
@@ -65,7 +65,7 @@ class MacheteClient:
 
         self.__init_state()
 
-    def __get_git_machete_branch_layout_file_path(self) -> str:
+    def __get_git_machete_branch_layout_file_path(self) -> AbsPath:
         if self._config.worktree_use_top_level_machete_file():
             machete_file_directory = self._git.get_main_worktree_git_dir()
         else:
@@ -75,8 +75,8 @@ class MacheteClient:
         # resolve against the wrong directory - inside a linked worktree `.git`
         # is a gitdir-pointer file, so `.git/machete` no longer points at the
         # layout file. The underlying `get_SOMETHING_worktree_git_dir()` helpers already
-        # return absolute paths (via `git rev-parse` + `abspath_posix`).
-        return join_paths_posix(machete_file_directory, 'machete')
+        # return absolute paths (via `git rev-parse` + `abs_path`).
+        return machete_file_directory.join_fragments('machete')
 
     def __init_state(self) -> None:
         self._state = MacheteState()
@@ -124,7 +124,7 @@ class MacheteClient:
     # === Branch layout file I/O ===
 
     @property
-    def branch_layout_file_path(self) -> str:
+    def branch_layout_file_path(self) -> AbsPath:
         return self._branch_layout_file_path
 
     def read_branch_layout_file(self, *, interactively_slide_out_invalid_branches: bool = False, verify_branches: bool = True) -> None:
@@ -796,7 +796,7 @@ class MacheteClient:
 
     # === Hooks ===
 
-    def __run_hook(self, *args: str, cwd: str) -> int:
+    def __run_hook(self, *args: str, cwd: Path) -> int:
         self._git.flush_caches()
         if sys.platform == "win32":
             return run_cmd("sh", *args, cwd=cwd)

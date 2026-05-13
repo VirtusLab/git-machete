@@ -10,7 +10,7 @@ from git_machete.utils import debug_log
 from git_machete.utils.date import get_current_date
 from git_machete.utils.debug_log import debug, hex_repr
 from git_machete.utils.markup import _fmt
-from git_machete.utils.paths import abspath_posix
+from git_machete.utils.paths import AbsPath
 from git_machete.utils.terminal import (BasicTerminalAnsiOutputCodes,
                                         FullTerminalAnsiOutputCodes)
 
@@ -62,11 +62,11 @@ class TestUtils(BaseTest):
     def test_hex_repr(self) -> None:
         assert hex_repr("Hello, world!") == "48:65:6c:6c:6f:2c:20:77:6f:72:6c:64:21"
 
-    def test_abspath_posix_general(self) -> None:
-        """Test that abspath_posix returns an absolute path with forward slashes."""
+    def test_abs_path_general(self) -> None:
+        """Test that abs_path returns an absolute path with forward slashes."""
         # Create a temporary directory to ensure we're working with real paths
         with tempfile.TemporaryDirectory() as tmpdir:
-            normalized = abspath_posix(tmpdir)
+            normalized = AbsPath(tmpdir)
             # Should be absolute
             assert os.path.isabs(normalized)
             # Should use forward slashes (no backslashes)
@@ -75,7 +75,7 @@ class TestUtils(BaseTest):
             assert os.path.exists(normalized)
 
     @pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific test for backslash conversion")
-    def test_abspath_posix_windows_backslashes(self) -> None:
+    def test_abs_path_windows_backslashes(self) -> None:
         """Test that backslashes are converted to forward slashes on Windows."""
         # On Windows, Path.resolve() returns paths with backslashes
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -83,7 +83,7 @@ class TestUtils(BaseTest):
             # Verify it contains backslashes before normalization
             assert '\\' in tmpdir or '/' in tmpdir  # Windows paths have one or the other
 
-            normalized = abspath_posix(tmpdir)
+            normalized = AbsPath(tmpdir)
 
             # After normalization, should have forward slashes only
             assert '\\' not in normalized
@@ -92,7 +92,7 @@ class TestUtils(BaseTest):
             assert normalized[1:3] == ':/'
 
     @pytest.mark.skipif(sys.platform != "darwin", reason="macOS-specific test for /private prefix")
-    def test_abspath_posix_macos_private_prefix(self) -> None:
+    def test_abs_path_macos_private_prefix(self) -> None:
         """Test that /private prefix is consistently added on macOS for /tmp and /var paths."""
         # On macOS, /tmp and /var are symlinks to /private/tmp and /private/var
         # tempfile.mkdtemp() may return paths with or without /private prefix
@@ -100,7 +100,7 @@ class TestUtils(BaseTest):
             # tmpdir is in /tmp or /var on macOS
             # It might be returned as /var/folders/... or /private/var/folders/...
 
-            normalized = abspath_posix(tmpdir)
+            normalized = AbsPath(tmpdir)
 
             # After normalization with resolve(), should have /private prefix if in /var or /tmp
             # (resolve resolves the symlink)
@@ -110,10 +110,10 @@ class TestUtils(BaseTest):
                     f"Expected path to start with /private/ or /nix/ (for Nix builds), got: {normalized}"
 
     @pytest.mark.skipif(sys.platform == "win32", reason="Unix-specific test for absolute paths")
-    def test_abspath_posix_unix_absolute_paths(self) -> None:
+    def test_abs_path_unix_absolute_paths(self) -> None:
         """Test that paths start with / on Unix systems."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            normalized = abspath_posix(tmpdir)
+            normalized = AbsPath(tmpdir)
             # Should start with / on Unix
             assert normalized.startswith('/')
             # Should not contain backslashes

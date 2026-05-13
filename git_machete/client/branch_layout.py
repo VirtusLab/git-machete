@@ -5,9 +5,10 @@ from git_machete.annotation import Annotation
 from git_machete.client.state import MacheteState
 from git_machete.git import LocalBranchShortName
 from git_machete.utils.exceptions import MacheteException
+from git_machete.utils.paths import AbsPath, Path
 
 
-def parse(path: str, *, display_path: Optional[str] = None) -> Tuple[MacheteState, Optional[str]]:
+def parse(path: AbsPath, *, display_path: Optional[Path] = None) -> Tuple[MacheteState, Optional[str]]:
     """Parse the branch layout file at *path*.
 
     Returns a new `MacheteState` populated from the file together with
@@ -20,7 +21,7 @@ def parse(path: str, *, display_path: Optional[str] = None) -> Tuple[MacheteStat
     an absolute internal location and the caller wants a more compact
     cwd-relative form shown to the user.
     """
-    msg_path: str = display_path if display_path is not None else path
+    msg_path: Path = display_path if display_path is not None else path
     with open(path) as f:
         lines: List[str] = [line.rstrip() for line in f.readlines()]
 
@@ -102,7 +103,7 @@ def render(state: MacheteState, indent: str) -> List[str]:
     return lines
 
 
-def save(path: str, state: MacheteState, *, indent: str) -> None:
+def save(path: AbsPath, state: MacheteState, *, indent: str) -> None:
     """Write *state* to the branch layout file at *path*."""
     with open(path, "w") as f:
         f.write("\n".join(render(state, indent)) + "\n")

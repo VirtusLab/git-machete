@@ -3,7 +3,6 @@
 import argparse
 import difflib
 import itertools
-import os
 import pkgutil
 import sys
 from typing import (Any, Dict, FrozenSet, Iterable, Iterator, List, NoReturn,
@@ -43,7 +42,7 @@ from .utils.exceptions import (ExitCode, InteractionStopped, MacheteException,
                                UnexpectedMacheteException)
 from .utils.fs import does_directory_exist, get_current_directory_or_none
 from .utils.markup import green_ok, print_fmt, warn
-from .utils.paths import abspath_posix, join_paths_posix
+from .utils.paths import AbsPath
 
 T = TypeVar('T')
 
@@ -684,7 +683,7 @@ def launch(orig_args: List[str]) -> None:
 
 
 def launch_internal(orig_args: List[str]) -> None:
-    initial_current_directory: Optional[str] = get_current_directory_or_none()
+    initial_current_directory: Optional[AbsPath] = get_current_directory_or_none()
 
     try:
         cli_opts = git_machete.options.CommandLineOptions()
@@ -818,7 +817,7 @@ def launch_internal(orig_args: List[str]) -> None:
         elif cmd == "file":
             # No need to read branch layout file.
             file_client = MacheteClient(git)
-            print(abspath_posix(file_client.branch_layout_file_path))
+            print(file_client.branch_layout_file_path)
         elif cmd == "fork-point":
             fork_point_client = ForkPointMacheteClient(git)
             fork_point_client.read_branch_layout_file()
@@ -1143,12 +1142,11 @@ def launch_internal(orig_args: List[str]) -> None:
         # has been fixed in git itself as of 2.35.0:
         # see https://github.com/git/git/blob/master/Documentation/RelNotes/2.35.0.txt#L81
         if initial_current_directory and not does_directory_exist(initial_current_directory):
-            nearest_existing_parent_directory = initial_current_directory
+            nearest_existing_parent_directory: AbsPath = initial_current_directory
             while not does_directory_exist(nearest_existing_parent_directory):
-                nearest_existing_parent_directory = join_paths_posix(
-                    nearest_existing_parent_directory, os.path.pardir)
+                nearest_existing_parent_directory = nearest_existing_parent_directory.parent_dir()
             warn(f"current directory {initial_current_directory} no longer exists, "
-                 f"the nearest existing parent directory is {abspath_posix(nearest_existing_parent_directory)}")
+                 f"the nearest existing parent directory is {nearest_existing_parent_directory}")
 
 
 def main() -> None:

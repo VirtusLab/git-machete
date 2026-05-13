@@ -22,6 +22,7 @@ from git_machete.utils.exceptions import (MacheteException,
                                           UnexpectedMacheteException)
 
 from .utils.fs import slurp_file
+from .utils.paths import AbsPath
 
 GITLAB_TOKEN_ENV_VAR = 'GITLAB_TOKEN'
 
@@ -50,7 +51,7 @@ class GitLabToken(NamedTuple):
         debug("2. Trying to find token in `~/.gitlab-token`...")
         required_file_name = '.gitlab-token'
         provider = f'auth token for {domain} from `~/.gitlab-token`'
-        file_full_path = os.path.expanduser(f'~/{required_file_name}')
+        file_full_path: AbsPath = AbsPath.home().join_fragments(required_file_name)
 
         if os.path.isfile(file_full_path):
             debug(f"  File `{file_full_path}` exists")

@@ -15,6 +15,7 @@ from git_machete.utils.cmd import popen_cmd
 from git_machete.utils.debug_log import debug
 from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.markup import escape_markup, print_fmt, warn
+from git_machete.utils.paths import Path
 
 from ..utils import markup
 from .base import MacheteClient
@@ -432,7 +433,7 @@ class StatusMacheteClient(MacheteClient):
                 warn(warning_msg)
 
     @staticmethod
-    def _popen_hook(*args: str, cwd: str, env: Dict[str, str]) -> PopenResult:
+    def _popen_hook(*args: str, cwd: Path, env: Dict[str, str]) -> PopenResult:
         if sys.platform == "win32":
             return popen_cmd("sh", *args, cwd=cwd, env=env)
         else:

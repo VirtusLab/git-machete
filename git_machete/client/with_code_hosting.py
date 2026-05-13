@@ -19,7 +19,7 @@ from git_machete.utils.exceptions import (MacheteException,
 from git_machete.utils.fs import slurp_file
 from git_machete.utils.markup import (colored_yes_no, green_ok, pretty_choices,
                                       print_fmt, warn)
-from git_machete.utils.paths import join_paths_posix
+from git_machete.utils.paths import AbsPath
 
 from ..utils import date
 
@@ -351,12 +351,14 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         if self._config.code_hosting_force_description_from_commit_message(spec.git_config_keys):
             description = self._git.get_commit_data(commits[0].hash, GitFormatPatterns.MESSAGE_BODY) if commits else ''
         else:
-            machete_description_path = self._git.get_main_worktree_git_subpath('info', 'description')
+            machete_description_path: AbsPath = self._git.get_main_worktree_git_subpath('info', 'description')
             if os.path.isfile(machete_description_path):
                 description = slurp_file(machete_description_path)
             else:
-                code_hosting_description_paths = [join_paths_posix(self._git.get_current_worktree_root_dir(), *path)
-                                                  for path in spec.pr_description_paths]
+                code_hosting_description_paths: List[AbsPath] = [
+                    self._git.get_current_worktree_root_dir().join_fragments(*path)
+                    for path in spec.pr_description_paths
+                ]
                 existing = find_or_none(os.path.isfile, code_hosting_description_paths)
                 if existing:
                     description = slurp_file(existing)
@@ -388,7 +390,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 self.code_hosting_client.set_description_of_pull_request(pr.number, new_description)
                 print_fmt(green_ok())
 
-        milestone_path: str = self._git.get_main_worktree_git_subpath('info', 'milestone')
+        milestone_path: AbsPath = self._git.get_main_worktree_git_subpath('info', 'milestone')
         if os.path.isfile(milestone_path):
             milestone = slurp_file(milestone_path).strip()
         else:

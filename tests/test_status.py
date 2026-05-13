@@ -5,7 +5,7 @@ import textwrap
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils.paths import abspath_posix
+from git_machete.utils.paths import AbsPath
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 
 from .base_test import BaseTest
@@ -183,7 +183,7 @@ class TestStatus(BaseTest):
 
     @pytest.mark.skipif(sys.platform == "win32", reason="Windows doesn't distinguish between executable and non-executable files")
     def test_status_advice_ignored_non_executable_hook(self) -> None:
-        repo_path = abspath_posix(create_repo())
+        repo_path = AbsPath(create_repo())
         new_branch('master')
         commit()
         new_branch('develop')
