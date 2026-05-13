@@ -6,9 +6,10 @@ from .base_test import BaseTest
 from .cli_runner import (assert_failure, assert_success, launch_command,
                          read_branch_layout_file, rewrite_branch_layout_file)
 from .git_repository import (amend_commit, check_out, commit, create_repo,
-                             create_repo_with_remote, delete_remote_branch,
-                             get_current_branch, get_current_commit_hash,
-                             get_local_branches, new_branch, push)
+                             create_repo_with_remote, delete_branch,
+                             delete_remote_branch, get_current_branch,
+                             get_current_commit_hash, get_local_branches,
+                             new_branch, push)
 from .mockers import (fixed_author_and_committer_date_in_past,
                       mock_input_returning_y)
 from .shell import read_file, set_file_executable, write_to_file
@@ -756,3 +757,35 @@ class TestSlideOut(BaseTest):
 
         # Verify we're still on root-2 (the slid-out branch, since it has no downstreams to check out)
         assert get_current_branch() == "root-2"
+
+    def test_slide_out_branch_already_deleted_from_git(self) -> None:
+        """Regression test: `slide-out <branch>` for a branch that has already been
+        deleted from git must succeed cleanly, without first auto-pruning the branch
+        with a `Warning: sliding invalid branch ... out` message and then failing
+        with `Branch ... not found in the tree of branch dependencies`.
+        """
+        create_repo()
+        new_branch('branch-0')
+        commit()
+        new_branch('branch-1')
+        commit()
+        check_out('branch-0')
+        new_branch('branch-2')
+        commit()
+
+        body: str = \
+            """
+            branch-0
+                branch-1
+                branch-2
+            """
+        rewrite_branch_layout_file(body)
+
+        delete_branch('branch-1')
+
+        # The explicit slide-out should produce no output (no warning, no error)
+        # and remove the (now-orphaned-in-git) branch from the layout.
+        assert_success(["slide-out", "branch-1"], "")
+
+        expected_layout = ["branch-0", "    branch-2"]
+        assert read_branch_layout_file().splitlines() == expected_layout

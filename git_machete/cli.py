@@ -1071,7 +1071,13 @@ def launch_internal(orig_args: List[str]) -> None:
                     "merge and cannot be specified together with `--no-rebase`.")
 
             slide_out_client = SlideOutMacheteClient(git)
-            slide_out_client.read_branch_layout_file()
+            # `verify_branches=False` so that a branch the user is *explicitly* asking
+            # to slide out doesn't first trigger the "Warning: sliding invalid branch ..."
+            # auto-prune (which then makes the explicit slide-out fail with
+            # "not found in the tree of branch dependencies"). The auto-prune is useful
+            # for commands that just *read* the layout (e.g. `status`, `traverse`); for
+            # `slide-out` it's redundant with the user's own intent.
+            slide_out_client.read_branch_layout_file(verify_branches=False)
             branches_to_slide_out: Optional[List[str]] = parsed_cli_as_dict.get('branches')
             if cli_opts.opt_removed_from_remote:
                 if (branches_to_slide_out or cli_opts.opt_down_fork_point or cli_opts.opt_merge or

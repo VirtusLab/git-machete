@@ -7,6 +7,7 @@
 - changed: `git machete github update-pr-descriptions` and `git machete gitlab update-mr-descriptions` now default to `--related` when no flag (`--all`/`--by`/`--mine`/`--related`) is provided
 - changed: `git machete status -l` now lists, for green and yellow edges, all commits between the parent branch and the branch tip (rather than just between the fork point and the branch tip), with the fork point commit annotated `-> fork point`; red edges still list only the unique commits of the branch (`fork-point..branch`, exclusive)
 - fixed: spurious yellow edge no longer appears in `status` when the parent branch is merely behind its remote counterpart and the child branch was forked from the remote tip
+- fixed: `git machete slide-out <branch>` no longer prints a confusing "Warning: sliding invalid branch ... out" followed by "Branch ... not found in the tree" when the branch was already deleted from git; the explicit slide-out is now honored cleanly
 - fixed: `git machete traverse` no longer crashes with `NotADirectoryError: '.git/machete'` when auto-slide-out fires inside a linked worktree (reported by @BertPluymersTR)
 - fixed: minor glitches in shell completions
 - fixed: parsing of `gh --version` output for custom/devel `gh` builds (e.g. `gh version 2.92.0-7-ga3efb25a`)
