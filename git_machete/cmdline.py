@@ -28,9 +28,8 @@ import difflib
 import getopt
 import itertools
 import sys
-from dataclasses import dataclass, field
-from typing import (Any, Callable, Dict, FrozenSet, Iterable, List, NoReturn,
-                    Optional, Tuple)
+from typing import (Any, Callable, Dict, FrozenSet, Iterable, List, NamedTuple,
+                    NoReturn, Optional, Tuple)
 
 from git_machete.help import commands_and_aliases
 from git_machete.utils.exceptions import ExitCode, MacheteException
@@ -44,8 +43,7 @@ _MAX_SUGGESTIONS = 3
 # ────────────────────────────────────────────────────────────────────────────
 
 
-@dataclass(frozen=True)
-class OptSpec:
+class OptSpec(NamedTuple):
     """One option (long, short or both).
 
     `takes_value` is True iff the option requires an argument (e.g. `--onto
@@ -56,9 +54,6 @@ class OptSpec:
     long: Optional[str] = None
     short: Optional[str] = None
     takes_value: bool = False
-
-    def __post_init__(self) -> None:
-        assert self.long or self.short, "OptSpec needs at least one of long/short"
 
     @property
     def canonical_name(self) -> str:
@@ -76,8 +71,7 @@ class OptSpec:
         return self.long if self.long else (self.short or "")
 
 
-@dataclass(frozen=True)
-class PositionalSpec:
+class PositionalSpec(NamedTuple):
     """One positional argument.
 
     `multiple=True` collects every remaining positional into a list (the
@@ -112,8 +106,7 @@ class PositionalSpec:
         return self.display_name or self.name
 
 
-@dataclass(frozen=True)
-class MutexGroup:
+class MutexGroup(NamedTuple):
     """A set of options that may not be used together.
 
     `options` lists `OptSpec.storage_key`s. If two or more of them are
@@ -137,8 +130,7 @@ class MutexGroup:
     message: Optional[str] = None
 
 
-@dataclass(frozen=True)
-class SubcommandSpec:
+class SubcommandSpec(NamedTuple):
     """One second-level subcommand of a command that dispatches on its
     first positional (currently `github` and `gitlab`).
 
@@ -155,8 +147,7 @@ class SubcommandSpec:
     hidden: bool = False
 
 
-@dataclass(frozen=True)
-class CommandSpec:
+class CommandSpec(NamedTuple):
     """One git-machete command.
 
     `options`, `positionals` and `mutex_groups` describe what's accepted
@@ -182,8 +173,7 @@ class CommandSpec:
         return f"{self.name} subcommand"
 
 
-@dataclass
-class ParsedCmd:
+class ParsedCmd(NamedTuple):
     """The output of `parse_cmdline`.
 
     `opts` keys are `OptSpec.storage_key` (the long name, or short if
@@ -197,9 +187,9 @@ class ParsedCmd:
     `pass_through` is everything after a literal `--` in argv.
     """
     command: Optional[str]  # canonical command name (alias resolved). None for "no command"
-    opts: Dict[str, str] = field(default_factory=dict)
-    positionals: Dict[str, Any] = field(default_factory=dict)
-    pass_through: List[str] = field(default_factory=list)
+    opts: Dict[str, str]
+    positionals: Dict[str, Any]
+    pass_through: List[str]
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -616,7 +606,7 @@ def parse_cmdline(argv: List[str]) -> ParsedCmd:
         opts, _, unknowns = _scan(direct, COMMON_OPTIONS)
         if unknowns:
             _fail_unrecognized(unknowns, command=None)
-        return ParsedCmd(command=None, opts=opts, pass_through=pass_through)
+        return ParsedCmd(command=None, opts=opts, positionals={}, pass_through=pass_through)
 
     cmd_name_typed = direct[cmd_pos]
     cmd = COMMAND_BY_NAME_OR_ALIAS.get(cmd_name_typed)
@@ -641,7 +631,7 @@ def parse_cmdline(argv: List[str]) -> ParsedCmd:
     # page without first complaining that the `shell` positional was
     # missing.
     if "help" in opts or "version" in opts:
-        return ParsedCmd(command=cmd.name, opts=opts, pass_through=pass_through)
+        return ParsedCmd(command=cmd.name, opts=opts, positionals={}, pass_through=pass_through)
 
     effective_positionals = _effective_positionals(cmd)
     parsed_positionals = _validate_positionals(positionals, cmd, effective_positionals)
