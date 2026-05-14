@@ -70,11 +70,11 @@ def assert_argparse_failure(cmd_and_args: Iterable[str], expected_output: str) -
     """Run the CLI and assert it exits with `ARGUMENT_ERROR` after emitting
     exactly `expected_output` (a literal multi-line string) on stdout/stderr.
 
-    `assert_failure` reads the failure text from `MacheteException.msg`, but
-    argparse failures bubble up as `SystemExit` (which carries only an exit
-    code) with the actual message written to stdout/stderr - hence this
-    dedicated helper for argparse-driven errors (mutex groups, invalid
-    choices, missing required, ...).
+    `assert_failure` reads the failure text from `MacheteException.msg`,
+    but syntactic argument errors (mutex groups, invalid choices, missing
+    required, unrecognized flags, ...) bubble up as `SystemExit`
+    (carrying only an exit code) with the actual message written to
+    stdout/stderr - hence this dedicated helper.
     """
     output, e = launch_command_capturing_output_and_exception(*cmd_and_args)
     assert type(e) is SystemExit

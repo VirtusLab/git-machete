@@ -293,8 +293,7 @@ class TestCLI(BaseTest):
 
     def test_excess_positionals_after_last_scalar(self) -> None:
         """`add` accepts at most one positional (`<branch>`). Extras must be
-        reported as unrecognized arguments, matching argparse-era behaviour.
-        """
+        reported as unrecognized arguments."""
         assert_argparse_failure(
             ["add", "foo", "bar"],
             "Unrecognized arguments: bar\n"
@@ -312,18 +311,18 @@ class TestCLI(BaseTest):
 
     def test_invalid_int_positional_for_github_pr_number(self) -> None:
         """`github checkout-prs` takes one or more PR numbers (`type_conv=int`).
-        A non-integer must surface argparse-style "invalid int value"
-        wording with the user-facing `PR number` label, not the internal
-        `request_id` storage key."""
+        A non-integer must surface as "invalid int value" with the
+        user-facing `PR number` label, not the internal `request_id`
+        storage key."""
         assert_argparse_failure(
             ["github", "checkout-prs", "not-a-number"],
             "Argument PR number: invalid int value: 'not-a-number'")
 
     # ─── Mutex group WITHOUT a custom message ────────────────────────────────
 
-    def test_mutex_group_default_argparse_style_message(self) -> None:
-        """`fork-point` declares a 5-way mutex group on the override flags with
-        NO custom message; that path emits the argparse-style
+    def test_mutex_group_default_message(self) -> None:
+        """`fork-point` declares a 5-way mutex group on the override flags
+        with NO custom message; that path emits the generic
         `Argument X: not allowed with argument Y` wording. Picking two
         long-only flags here also covers `OptSpec.canonical_name`'s
         long-only branch."""
@@ -340,8 +339,8 @@ class TestCLI(BaseTest):
 
     def test_boolean_flag_passed_with_value(self) -> None:
         """`--yes` is a boolean flag (no `takes_value`). Passing `--yes=true`
-        must produce an argparse-style argument error, not let getopt's
-        raw `GetoptError` propagate."""
+        must surface a sane argument error, not let getopt's raw
+        `GetoptError` propagate."""
         assert_argparse_failure(
             ["add", "--yes=true"],
             "Argument -y/--yes: must not have an argument")
@@ -350,9 +349,9 @@ class TestCLI(BaseTest):
 
     def test_value_taking_flag_without_value(self) -> None:
         """`getopt` raises "option requires argument" for `-o` / `--onto` with
-        no value after it. The parser must catch this rather than let the
-        raw `GetoptError` propagate, and re-cast it in argparse-style
-        wording with the canonical option label."""
+        no value after it. The parser must catch this rather than let
+        the raw `GetoptError` propagate, and re-cast it with the
+        canonical option label."""
         # Short form.
         assert_argparse_failure(
             ["add", "-o"],

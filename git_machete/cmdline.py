@@ -1,14 +1,9 @@
 """Command-line parser for git-machete.
 
-A small hand-rolled parser that lives on top of `getopt.gnu_getopt`. We did
-use `argparse` here for years, but every interesting failure mode (typo
-suggestions, scoped close-match hints, hidden-but-still-accepted choices,
-required-positional listings, ...) ended up replaced by custom logic in
-`CustomArgumentParser`, and the only thing argparse was still buying us
-was the option-parsing primitive itself. Spelling that one out directly
-turned out to be both shorter and easier to reason about than the
-`argparse.ArgumentParser` + `_SubParsersAction` + `_check_value` machinery
-we were overriding.
+A small hand-rolled parser layered on top of `getopt.gnu_getopt`. The
+heavy-lifting features (typo suggestions, scoped close-match hints,
+hidden-but-still-accepted choices, required-positional listings, ...)
+all live here; `getopt` is only used for the option-parsing primitive.
 
 The module exposes:
 
@@ -51,7 +46,7 @@ class OptSpec(NamedTuple):
     `takes_value` is True iff the option requires an argument (e.g. `--onto
     foo` or `-o foo`). The display name used in error messages is built
     from whichever of `short`/`long` is set (preferring `-short/--long` if
-    both are present, mirroring argparse).
+    both are present).
     """
     long: Optional[str] = None
     short: Optional[str] = None
@@ -79,9 +74,8 @@ class OptSpec(NamedTuple):
 class PositionalSpec(NamedTuple):
     """One positional argument.
 
-    `multiple=True` collects every remaining positional into a list (the
-    argparse `nargs='*'` case); `required=False` makes a single-valued
-    positional optional (argparse's `nargs='?'`).
+    `multiple=True` collects every remaining positional into a list;
+    `required=False` makes a single-valued positional optional.
 
     `choices` constrains the allowed values; `hidden_choices` is the
     subset that's still accepted by the parser but never surfaced in
@@ -117,19 +111,15 @@ class MutexGroup(NamedTuple):
     `options` lists `OptSpec.storage_key`s. If two or more of them are
     set, the group fires.
 
-    If `message` is None, the default argparse-style wording is emitted:
-    `Argument X: not allowed with argument Y` (exit code
-    `ARGUMENT_ERROR`). This is what argparse's
-    `add_mutually_exclusive_group()` used to produce.
+    If `message` is None, a generic wording is emitted: `Argument X: not
+    allowed with argument Y` (exit code `ARGUMENT_ERROR`).
 
     If `message` is a string, it's raised verbatim as a
     `MacheteException` (exit code `MACHETE_EXCEPTION`). Use this for
     semantic rejections like "Option `-d/--down-fork-point` only makes
     sense when using rebase and cannot be specified together with
-    `-M/--merge`." - the message is fully owned by the spec, doesn't
-    depend on which option came first on the command line, and surfaces
-    through the same `MacheteException` channel as the rest of the
-    dispatcher's "Option X conflicts with Y" checks.
+    `-M/--merge`." - the message is fully owned by the spec and doesn't
+    depend on which option came first on the command line.
     """
     options: Tuple[str, ...]
     message: Optional[str] = None
@@ -198,8 +188,7 @@ class ParsedCmd(NamedTuple):
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# Common options (accepted before AND after the command, like argparse's
-# `parents=[common_args_parser]` machinery used to do)
+# Common options - accepted both before and after the command name.
 # ────────────────────────────────────────────────────────────────────────────
 
 COMMON_OPTIONS: Tuple[OptSpec, ...] = (
@@ -636,11 +625,10 @@ def parse_cmdline(argv: List[str]) -> ParsedCmd:
     if unknowns:
         _fail_unrecognized(unknowns, command=cmd.name)
 
-    # `--help` and `--version` are processed before positional/mutex
-    # validation: argparse used to trigger their actions mid-parse, so
-    # e.g. `git machete completion --help` printed the completion help
-    # page without first complaining that the `shell` positional was
-    # missing.
+    # `--help` and `--version` short-circuit positional/mutex validation
+    # so that e.g. `git machete completion --help` prints the completion
+    # help page instead of complaining about the missing `shell`
+    # positional.
     if "help" in opts or "version" in opts:
         return ParsedCmd(command=cmd.name, opts=opts, positionals={}, pass_through=pass_through)
 
@@ -772,9 +760,9 @@ def _scan(
         for lng, spec in long_specs.items()
     ]
 
-    # `getopt` treats `-b=foo` as `-b` with value `"=foo"`, but argparse
-    # (and historical git-machete) treat it as `-b foo`. Normalize the
-    # `-X=value` form so callers can use either syntax.
+    # `getopt` treats `-b=foo` as `-b` with value `"=foo"`, but we want
+    # `-b foo` semantics so callers can write either `-b foo`, `-bfoo`
+    # or `-b=foo` interchangeably. Normalize the `-X=value` form here.
     normalized_argv = []
     for a in argv:
         if (len(a) >= 4 and a.startswith("-") and not a.startswith("--") and
@@ -813,8 +801,8 @@ def _humanize_getopt_error(
         short_specs: Dict[str, OptSpec],
 ) -> str:
     """Re-cast getopt's lowercase, hard-coded "option X requires argument"
-    style message into the argparse-flavoured "Argument -X/--long:
-    expected one argument" wording the rest of the parser uses."""
+    style message into the "Argument -X/--long: expected one argument"
+    wording the rest of the parser uses."""
     opt = err.opt
     # `err.opt` carries the short letter or long name WITHOUT the leading
     # dashes; promote it back to whichever canonical form we recognise.
@@ -938,7 +926,7 @@ def _fail_invalid_command(typed: str) -> NoReturn:
         lines.append(_format_suggestions(suggestions))
     else:
         # With ~30 commands the full listing would dwarf the error, so
-        # steer the user to `help` instead - same trade-off as argparse-era.
+        # steer the user to `help` instead.
         lines.append("Run `git machete help` to see all available commands.")
     _argument_error("\n".join(lines))
 
@@ -1006,8 +994,7 @@ def _validate_positionals(
                 _fail_invalid_choice(pspec, value)
             result[pspec.name] = _convert_positional(pspec, value)
         if is_last and remaining:
-            # Excess positionals → reported as unrecognized arguments,
-            # matching argparse-era behaviour.
+            # Excess positionals are reported as unrecognized arguments.
             _fail_unrecognized(remaining, command=cmd.name)
 
     if remaining:
@@ -1023,8 +1010,6 @@ def _convert_positional(pspec: PositionalSpec, value: str) -> Any:
     try:
         return pspec.type_conv(value)
     except ValueError:
-        # Match argparse's wording closely enough that no current test breaks;
-        # there is no test pinning this exact phrasing today.
         type_name = getattr(pspec.type_conv, "__name__", "value")
         _argument_error(f"Argument {pspec.label}: invalid {type_name} value: {value!r}")
 
@@ -1061,10 +1046,9 @@ def _validate_mutex_groups(
         if len(seen) < 2:
             continue
         if group.message is not None:
-            # Semantic rejection - propagated as MacheteException so it
-            # shows up via `assert_failure` and exits with
-            # MACHETE_EXCEPTION just like the dispatcher's own
-            # "Option X conflicts with Y" errors used to.
+            # Semantic rejection: propagated as MacheteException so it
+            # surfaces via `assert_failure` and exits with
+            # MACHETE_EXCEPTION rather than ARGUMENT_ERROR.
             raise MacheteException(group.message)
         first = option_by_key[seen[0]].canonical_name
         second = option_by_key[seen[1]].canonical_name
@@ -1078,7 +1062,7 @@ def _validate_subcommand_restrictions(
         selected: SubcommandSpec,
 ) -> None:
     """For every option/positional that's been parsed, verify the selected
-    subcommand accepts it. Raise `MacheteException` with the historical
+    subcommand accepts it. Raise `MacheteException` with the
     `<thing> is only valid with <sub> subcommand(s).` wording if not."""
 
     # ---- options ----------------------------------------------------------

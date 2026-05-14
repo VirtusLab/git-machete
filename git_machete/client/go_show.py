@@ -121,5 +121,5 @@ class GoShowMacheteClient(MacheteClient):
             if branch is None:
                 raise MacheteException("Not currently on any branch")
             return [self.get_or_infer_parent_of(branch, prompt_if_inferred_msg=None, prompt_if_inferred_yes_opt_msg=None)]
-        else:  # an unknown direction is handled by argparse
+        else:  # an unknown direction is already rejected by the parser
             raise UnexpectedMacheteException(f"Invalid direction: `{param}`.")
