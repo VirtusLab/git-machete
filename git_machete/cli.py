@@ -5,6 +5,7 @@ import sys
 from typing import Iterable, List, Optional, Sequence
 
 import git_machete.options
+from git_machete.cli_parser import ParsedCmd, parse_cmdline
 from git_machete.client.advance import AdvanceMacheteClient
 from git_machete.client.anno import AnnoMacheteClient
 from git_machete.client.base import MacheteClient
@@ -23,7 +24,6 @@ from git_machete.client.status import StatusMacheteClient
 from git_machete.client.traverse import TraverseMacheteClient, TraverseReturnTo
 from git_machete.client.update import UpdateMacheteClient
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
-from git_machete.cli_parser import ParsedCmd, parse_cmdline
 from git_machete.config import MacheteConfig, SquashMergeDetection
 from git_machete.github import GITHUB_API_SPEC
 from git_machete.gitlab import GITLAB_API_SPEC

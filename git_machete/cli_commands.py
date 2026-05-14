@@ -17,7 +17,6 @@ from typing import (Any, Callable, Dict, FrozenSet, List, NamedTuple, Optional,
 
 from git_machete.help import commands_and_aliases
 
-
 # ────────────────────────────────────────────────────────────────────────────
 # Spec types
 # ────────────────────────────────────────────────────────────────────────────
