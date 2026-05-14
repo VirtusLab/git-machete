@@ -249,21 +249,22 @@ class StatusMacheteClient(MacheteClient):
             )
         return f"{first_part}.\n\n{second_part}."
 
-    def _is_fork_point_on_parent_remote_counterpart(
+    def _is_fork_point_inferred_by_parent_remote_counterpart(
             self,
             *,
             parent_branch: LocalBranchShortName,
-            fork_point: FullCommitHash) -> bool:
+            inferring_branches: List[BranchPair]) -> bool:
         # Suppresses the spurious yellow edge that appears when the parent branch is merely behind
-        # its remote counterpart and the child branch was forked from a commit on the remote
-        # that is ahead of parent's local HEAD. We require that the fork point lies strictly
-        # between parent's local HEAD and parent's remote counterpart, so that legitimate
-        # yellow edges (where the fork point is older than parent's local HEAD) are preserved.
+        # its remote counterpart and the child branch was forked from the remote tip. We only
+        # fire here for parents that have a remote counterpart at all (otherwise the "behind
+        # remote" situation cannot arise), and only if `parent_branch` appears among the inferring
+        # branches - either directly as `parent_remote`, or as the `local_branch` side of a
+        # `BranchPair(parent_branch, parent_branch)` entry produced when the inferred commit
+        # survives on `parent_branch`'s own filtered reflog after the push.
         parent_remote = self._git.get_combined_counterpart_for_fetching_of_branch(parent_branch)
         if parent_remote is None:
             return False
-        return self._git.is_ancestor(parent_branch.full_name(), fork_point) and \
-            self._git.is_ancestor_or_equal(fork_point, parent_remote.full_name())
+        return any(p.local_branch == parent_branch for p in inferring_branches)
 
     def compute_status_data(self, *, flags: StatusFlags) -> StatusData:
         managed_branches: List[ManagedBranchName] = self._state.managed_branches  # already returns a copy
@@ -305,7 +306,9 @@ class StatusMacheteClient(MacheteClient):
                 assert fp is not None
                 if self._git.get_commit_hash_by_revision(parent_branch) == fp:
                     sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC
-                elif self._is_fork_point_on_parent_remote_counterpart(parent_branch=parent_branch, fork_point=fp):
+                elif self._is_fork_point_inferred_by_parent_remote_counterpart(
+                        parent_branch=parent_branch,
+                        inferring_branches=fork_point_branches_cached[branch]):
                     sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC
                 else:
                     sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF
@@ -344,16 +347,26 @@ class StatusMacheteClient(MacheteClient):
                     for commit in raw_commits:
                         if commit.hash != fork_point:
                             fp_suffix = ''
-                        elif is_fork_point_off:
+                        else:
+                            marker = '<red><rarrow/> fork point ???</red>' if is_fork_point_off else '<red><rarrow/> fork point</red>'
                             fp_branches_formatted = " and ".join(
                                 sorted(f"<u>{lb_or_rb}</u>" for lb, lb_or_rb in fork_point_branches_cached[branch]))
-                            fp_suffix = (
-                                ' <red><rarrow/> fork point ???</red> ' +
-                                ("this commit" if flags.opt_list_commits_with_hashes else f"commit {commit.short_hash}") +
-                                f' seems to be a part of the unique history of {fp_branches_formatted}'
-                            )
-                        else:
-                            fp_suffix = ' <red><rarrow/> fork point</red>'
+                            if fp_branches_formatted:
+                                # `???` already separates the marker from the prose; a colon would be redundant.
+                                separator = '' if is_fork_point_off else ':'
+                                commit_label = (
+                                    "this commit" if flags.opt_list_commits_with_hashes
+                                    else f"commit {commit.short_hash}"
+                                )
+                                fp_suffix = (
+                                    f' {marker}{separator} {commit_label}'
+                                    f' seems to be a part of the unique history of {fp_branches_formatted}'
+                                )
+                            else:
+                                # Reaching the green-edge marker with no inferring branches means the
+                                # fork point comes from an active override (a fallback-to-parent fork
+                                # point equals the parent hash, so it never appears in `parent..branch`).
+                                fp_suffix = f' {marker}: overridden'
                         commits.append((commit, fp_suffix))
                 commits_by_branch[branch] = commits
 

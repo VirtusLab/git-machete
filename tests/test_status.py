@@ -736,21 +736,23 @@ class TestStatus(BaseTest):
         """)
         assert raw_output == expected_ansi
 
-    def test_status_no_yellow_edge_when_parent_behind_remote(self) -> None:
+    def test_status_no_yellow_edge_when_parent_behind_remote(self, mocker: MockerFixture) -> None:
         # Reproduces a common false-positive yellow edge: the parent branch is just
         # behind its remote counterpart, but the child branch was forked from the
         # remote tip. The fork point of the child is then ahead of parent's local
         # HEAD, which used to render as a yellow edge. The edge should be green.
-        create_repo_with_remote()
-        new_branch("master")
-        commit("master commit 1")
-        push()
-        commit("master commit 2")
-        push()
-        new_branch("develop")
-        commit("develop commit")
-        check_out("master")
-        reset_to("HEAD~")  # master is now behind origin/master
+        self.patch_symbol(mocker, "git_machete.utils.terminal.is_terminal_fully_fledged", lambda: True)
+        with fixed_author_and_committer_date_in_past():
+            create_repo_with_remote()
+            new_branch("master")
+            commit("master commit 1")
+            push()
+            commit("master commit 2")
+            push()
+            new_branch("develop")
+            commit("develop commit")
+            check_out("master")
+            reset_to("HEAD~")  # master is now behind origin/master
 
         rewrite_branch_layout_file(
             """
@@ -775,11 +777,26 @@ class TestStatus(BaseTest):
             """
               master * (behind origin)
               |
-              | master commit 2 -> fork point
+              | master commit 2 -> fork point: commit 39710eb seems to be a part of the unique history of master
               | develop commit
               o-develop (untracked)
             """,
         )
+
+        # Same scenario, but validate the full ANSI rendering of the green-edge
+        # `-> fork point: ...` annotation: the marker must be RED, the inferring
+        # branch name underlined, and the colon must stay outside the red span.
+        E = FullTerminalAnsiOutputCodes
+        raw_output = launch_command('status', '-l', '--color=always')
+        expected_ansi = (
+            f"  {E.BOLD}{E.UNDERLINE}master{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}{E.RED} (behind {E.BOLD}origin{E.ENDC_BOLD_DIM}){E.ENDC}\n"
+            f"  {E.GREEN}│{E.ENDC}\n"
+            f"  {E.GREEN}│{E.ENDC} {E.DIM}master commit 2{E.ENDC_BOLD_DIM} {E.RED}➔ fork point{E.ENDC}:"
+            f" commit 39710eb seems to be a part of the unique history of {E.UNDERLINE}master{E.ENDC_UNDERLINE}\n"
+            f"  {E.GREEN}│{E.ENDC} {E.DIM}develop commit{E.ENDC_BOLD_DIM}\n"
+            f"  {E.GREEN}└─{E.ENDC}{E.BOLD}develop{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}\n"
+        )
+        assert raw_output == expected_ansi
 
     def test_status_ansi_escapes(self, mocker: MockerFixture) -> None:
         # Setup: develop (root); feature-in-sync behind develop=RED; feature-merged merged into develop=DIM;

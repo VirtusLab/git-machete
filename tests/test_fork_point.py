@@ -9,7 +9,7 @@ from .cli_runner import (assert_failure, assert_success, launch_command,
                          rewrite_branch_layout_file)
 from .git_repository import (add_remote, check_out, commit, create_repo,
                              create_repo_with_remote, delete_branch, fetch,
-                             get_commit_hash, get_current_commit_hash,
+                             get_commit_hash, get_current_commit_hash, merge,
                              new_branch, new_orphan_branch, pull, push,
                              reset_to, set_git_config_key)
 from .mockers import fixed_author_and_committer_date_in_past
@@ -115,6 +115,60 @@ class TestForkPoint(BaseTest):
             ["fork-point", "feature", "--override-to-parent", "--explain"],
             "--explain cannot be combined with "
             "--override-to/--override-to-inferred/--override-to-parent/--unset-override."
+        )
+
+    def test_fork_point_explain_dedups_inferring_branches(self) -> None:
+        # When a single commit appears multiple times in a branch's
+        # *filtered* reflog (e.g. after two consecutive ff-merges/pulls
+        # to the same upstream tip), `__match_log_to_filtered_reflogs`
+        # used to record `BranchPair(master, master)` once per
+        # occurrence. The explanation then read
+        # "...part of the unique history of master and master", which
+        # is meaningless to the user and misleading in the debug logs.
+        # The fix dedups branch pairs per hash at computation time, so
+        # `master` is listed exactly once regardless of how many reflog
+        # events on `master` happen to point at the fork point.
+        with fixed_author_and_committer_date_in_past():
+            create_repo()
+            new_branch("master")
+            commit("master initial")
+            new_branch("sidebranch")
+            commit("sidebranch commit")
+            sidebranch_tip = get_current_commit_hash()
+            check_out("master")
+            # First ff-merge: master moves to `sidebranch_tip`; reflog
+            # gets a "merge sidebranch: Fast-forward" entry whose new
+            # value is `sidebranch_tip`. This subject is not excluded
+            # by `filtered_reflog`.
+            merge("sidebranch")
+            # Branch develop off the new master tip so develop's fork
+            # point lands at `sidebranch_tip`.
+            new_branch("develop")
+            commit("develop commit")
+            check_out("master")
+            # Rewind master and ff-merge sidebranch again, so master's
+            # filtered reflog ends up with two non-excluded entries
+            # both pointing at `sidebranch_tip`.
+            reset_to("master~1")
+            merge("sidebranch")
+            # Drop `sidebranch` so it doesn't contribute its own
+            # `BranchPair(sidebranch, sidebranch)` to the inferring set
+            # - the case under test is specifically about a single
+            # branch (`master`) being listed multiple times.
+            delete_branch("sidebranch")
+
+        rewrite_branch_layout_file("""
+            master
+                develop
+            """)
+
+        # Without the dedup the explanation read
+        #   "...part of the unique history of master and master"
+        # because `BranchPair(master, master)` was appended twice.
+        assert_success(
+            ["fork-point", "develop", "--explain"],
+            f"{sidebranch_tip}\n"
+            "this commit seems to be a part of the unique history of master\n"
         )
 
     def test_fork_point_override_for_invalid_branch(self) -> None:
@@ -277,21 +331,22 @@ class TestForkPoint(BaseTest):
             """
               master (untracked)
               |
-              | ad97c34  in-between commit -> fork point
+              | ad97c34  in-between commit -> fork point: overridden
               | 989bd92  develop commit
               o-develop * (untracked)
             """
         )
 
-        # Validate the full ANSI rendering of the green `-> fork point` annotation:
-        # the arrow must be the non-ASCII `\u279a` and the marker must be RED.
+        # Validate the full ANSI rendering of the green `-> fork point: overridden` annotation:
+        # the arrow must be the non-ASCII `\u279a`, the marker must be RED, and the
+        # `: overridden` suffix must stay outside the red span.
         E = FullTerminalAnsiOutputCodes
         raw_output = launch_command("status", "-L", "--color=always")
         expected_ansi = (
             f"  {E.BOLD}master{E.ENDC_BOLD_DIM}{E.ORANGE} (untracked){E.ENDC}\n"
             f"  {E.GREEN}│{E.ENDC}\n"
             f"  {E.GREEN}│{E.ENDC} {E.DIM}ad97c34{E.ENDC_BOLD_DIM}  {E.DIM}in-between commit{E.ENDC_BOLD_DIM} "
-            f"{E.RED}➔ fork point{E.ENDC}\n"
+            f"{E.RED}➔ fork point{E.ENDC}: overridden\n"
             f"  {E.GREEN}│{E.ENDC} {E.DIM}989bd92{E.ENDC_BOLD_DIM}  {E.DIM}develop commit{E.ENDC_BOLD_DIM}\n"
             f"  {E.GREEN}└─{E.ENDC}{E.BOLD}{E.UNDERLINE}develop{E.ENDC_UNDERLINE}{E.ENDC_BOLD_DIM}"
             f"{E.ORANGE} (untracked){E.ENDC}\n"
@@ -301,7 +356,7 @@ class TestForkPoint(BaseTest):
     def test_fork_point_override_marker_in_status(self) -> None:
         # When fork point is overridden to a non-trivial commit (not at the parent's tip),
         # `status -l` should still classify the edge as green and annotate the overridden
-        # fork-point commit with `-> fork point`.
+        # fork-point commit with `-> fork point: overridden`.
         with fixed_author_and_committer_date_in_past():
             create_repo()
             new_branch("master")
@@ -327,7 +382,7 @@ class TestForkPoint(BaseTest):
             """
             master
             |
-            | first develop commit -> fork point
+            | first develop commit -> fork point: overridden
             | second develop commit
             | third develop commit
             o-develop *

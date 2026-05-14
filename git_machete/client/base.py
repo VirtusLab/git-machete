@@ -430,14 +430,18 @@ class MacheteClient:
 
             self.__branch_pairs_by_hash_in_reflog = {}
             for hash, branch_pair in generate_entries():
-                if hash in self.__branch_pairs_by_hash_in_reflog:
-                    # The practice shows that it's rather unlikely for a given
-                    # commit to appear on filtered reflogs of two unrelated branches
-                    # ("unrelated" as in, not a local branch and its remote counterpart)
-                    # but we need to handle this case anyway.
-                    self.__branch_pairs_by_hash_in_reflog[hash] += [branch_pair]
-                else:
-                    self.__branch_pairs_by_hash_in_reflog[hash] = [branch_pair]
+                # We dedup `branch_pair`s per hash so that a commit which appears
+                # multiple times in a single branch's filtered reflog (e.g. via a
+                # `git reset --hard` back to it followed by an advance, then
+                # another reset back) doesn't end up listed twice in
+                # `inferring_branches`. Without this, `fork-point --explain` and
+                # `status -l` would print things like
+                # "...part of the unique history of master and master".
+                # The list-of-pairs shape is preserved (rather than a set) because
+                # downstream code relies on sorted ordering and indexed iteration.
+                existing = self.__branch_pairs_by_hash_in_reflog.setdefault(hash, [])
+                if branch_pair not in existing:
+                    existing.append(branch_pair)
 
             def log_result() -> Iterator[str]:
                 entry_branch_pairs: List[BranchPair]
