@@ -1,11 +1,8 @@
-import argparse
 import textwrap
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 from git_machete import __version__
 from git_machete.generated_docs import long_docs, short_docs
-from git_machete.utils.exceptions import ExitCode
-from git_machete.utils.markup import print_fmt
 
 alias_by_command: Dict[str, str] = {
     "diff": "d",
@@ -75,31 +72,3 @@ def get_help_description(*, display_help_topics: bool, command: Optional[str] = 
 
 def version() -> None:
     print(f"git-machete version {__version__}")
-
-
-class MacheteHelpAction(argparse.Action):
-    def __init__(  # noqa: KW101
-            self,
-            option_strings: str,
-            dest: str = argparse.SUPPRESS,
-            default: Any = argparse.SUPPRESS,
-            help: Optional[str] = None
-    ) -> None:
-        super(MacheteHelpAction, self).__init__(
-            option_strings=option_strings,
-            dest=dest,
-            default=default,
-            nargs=0,
-            help=help)
-
-    def __call__(  # noqa: KW101
-            self,
-            parser: argparse.ArgumentParser,
-            namespace: argparse.Namespace,  # noqa: F841, U100
-            values: Union[str, Sequence[Any], None],  # noqa: U100
-            option_string: Optional[str] = None  # noqa: F841, U100
-    ) -> None:
-        # parser name (prog) is expected to be `git machete` or `git machete <command>`
-        command_name = parser.prog.replace('git machete', '').strip()
-        print_fmt(get_help_description(display_help_topics=True, command=command_name))
-        parser.exit(status=ExitCode.SUCCESS)

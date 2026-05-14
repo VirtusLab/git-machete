@@ -195,7 +195,7 @@ class TestTraverse(BaseTest):
         # mutex group, so the failure carries argparse's standard wording.
         assert_argparse_failure(
             ["traverse", "--sync-github-prs", "--sync-gitlab-mrs"],
-            "argument -L/--sync-gitlab-mrs: not allowed with argument -H/--sync-github-prs"
+            "Argument -L/--sync-gitlab-mrs: not allowed with argument -H/--sync-github-prs"
         )
 
     def test_traverse_no_remotes(self) -> None:

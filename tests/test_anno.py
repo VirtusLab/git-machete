@@ -162,7 +162,7 @@ class TestAnno(BaseTest):
     def test_anno_sync_both_github_and_gitlab(self) -> None:
         assert_argparse_failure(
             ['anno', '--sync-github-prs', '--sync-gitlab-mrs'],
-            "argument -L/--sync-gitlab-mrs: not allowed with argument -H/--sync-github-prs"
+            "Argument -L/--sync-gitlab-mrs: not allowed with argument -H/--sync-github-prs"
         )
 
     @staticmethod
