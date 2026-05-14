@@ -278,3 +278,108 @@ class TestCLI(BaseTest):
             "The following arguments are required: gitlab subcommand\n"
             "Possible values for gitlab subcommand are: "
             "anno-mrs, checkout-mrs, create-mr, restack-mr, retarget-mr, update-mr-descriptions")
+
+    # ─── Missing required positional WITHOUT `choices=` ──────────────────────
+
+    def test_missing_required_positional_without_choices(self) -> None:
+        """`git machete rename` requires `<new_name>` but has no `choices=`, so
+        the "Possible values" follow-up line MUST NOT be appended - we just
+        report which positional is missing."""
+        assert_argparse_failure(
+            ["rename"],
+            "The following arguments are required: new_name")
+
+    # ─── Excess / unrecognized positionals ───────────────────────────────────
+
+    def test_excess_positionals_after_last_scalar(self) -> None:
+        """`add` accepts at most one positional (`<branch>`). Extras must be
+        reported as unrecognized arguments, matching argparse-era behaviour.
+        """
+        assert_argparse_failure(
+            ["add", "foo", "bar"],
+            "Unrecognized arguments: bar\n"
+            "See `git machete help add` for usage.")
+
+    def test_positionals_on_command_without_positional_specs(self) -> None:
+        """`advance` takes no positionals at all; anything passed is rejected
+        as unrecognized."""
+        assert_argparse_failure(
+            ["advance", "foo"],
+            "Unrecognized arguments: foo\n"
+            "See `git machete help advance` for usage.")
+
+    # ─── Type-converted positionals ──────────────────────────────────────────
+
+    def test_invalid_int_positional_for_github_pr_number(self) -> None:
+        """`github checkout-prs` takes one or more PR numbers (`type_conv=int`).
+        A non-integer must surface argparse-style "invalid int value"
+        wording with the user-facing `PR number` label, not the internal
+        `request_id` storage key."""
+        assert_argparse_failure(
+            ["github", "checkout-prs", "not-a-number"],
+            "Argument PR number: invalid int value: 'not-a-number'")
+
+    # ─── Mutex group WITHOUT a custom message ────────────────────────────────
+
+    def test_mutex_group_default_argparse_style_message(self) -> None:
+        """`fork-point` declares a 5-way mutex group on the override flags with
+        NO custom message; that path emits the argparse-style
+        `Argument X: not allowed with argument Y` wording. Picking two
+        long-only flags here also covers `OptSpec.canonical_name`'s
+        long-only branch."""
+        # The wording lists the two flags in their MutexGroup-declaration
+        # order (not the user's argv order): `("override-to-inferred",
+        # "override-to-parent")` is the declared order, so the error
+        # complains about `--override-to-parent` against
+        # `--override-to-inferred` regardless of which the user typed first.
+        assert_argparse_failure(
+            ["fork-point", "--override-to-parent", "--override-to-inferred"],
+            "Argument --override-to-parent: not allowed with argument --override-to-inferred")
+
+    # ─── Boolean flag passed WITH a value ────────────────────────────────────
+
+    def test_boolean_flag_passed_with_value(self) -> None:
+        """`--yes` is a boolean flag (no `takes_value`). Passing `--yes=true`
+        must produce an argparse-style argument error, not let getopt's
+        raw `GetoptError` propagate."""
+        assert_argparse_failure(
+            ["add", "--yes=true"],
+            "Argument -y/--yes: must not have an argument")
+
+    # ─── Value-taking flag passed without a value ────────────────────────────
+
+    def test_value_taking_flag_without_value(self) -> None:
+        """`getopt` raises "option requires argument" for `-o` / `--onto` with
+        no value after it. The parser must catch this rather than let the
+        raw `GetoptError` propagate, and re-cast it in argparse-style
+        wording with the canonical option label."""
+        # Short form.
+        assert_argparse_failure(
+            ["add", "-o"],
+            "Argument -o/--onto: expected one argument")
+        # Long form. `gnu_getopt`'s "long with =" parsing would accept an
+        # explicit empty `--onto=`, so we exercise the no-`=`, end-of-argv
+        # case to actually trigger the recovery path.
+        assert_argparse_failure(
+            ["add", "--onto"],
+            "Argument -o/--onto: expected one argument")
+
+    # ─── Unknown-flag recovery preserves adjacent KNOWN options ──────────────
+
+    def test_unknown_flag_recovery_skips_over_known_separated_value(self) -> None:
+        """When the unknown-token recovery path walks argv after getopt has
+        failed, it must NOT mistake the value of a *known* long option
+        (passed in separated form like `--color always`) for a positional
+        and append it to the unknown list. Same idea for short options
+        like `-o develop`. We feed both forms next to an unknown
+        `--definitely-not-a-flag` and assert only the unknown surfaces."""
+        # Long-form: `--color always` adjacent to the unknown flag.
+        assert_argparse_failure(
+            ["status", "--color", "always", "--definitely-not-a-flag"],
+            "Unrecognized arguments: --definitely-not-a-flag\n"
+            "See `git machete help status` for usage.")
+        # Short-form: `-o develop` (short option of `add` that takes a value).
+        assert_argparse_failure(
+            ["add", "-o", "develop", "--definitely-not-a-flag"],
+            "Unrecognized arguments: --definitely-not-a-flag\n"
+            "See `git machete help add` for usage.")

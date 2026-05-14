@@ -27,6 +27,7 @@ The module exposes:
 import difflib
 import getopt
 import itertools
+import re
 import sys
 from typing import (Any, Callable, Dict, FrozenSet, Iterable, List, NamedTuple,
                     NoReturn, Optional, Tuple)
@@ -63,8 +64,11 @@ class OptSpec(NamedTuple):
             return f"-{self.short}/--{self.long}"
         if self.long:
             return f"--{self.long}"
-        assert self.short is not None
-        return f"-{self.short}"
+        # Short-only options exist in COMMANDS (e.g. `-W`, `-n`) but none of
+        # them currently participate in a mutex group, so the only
+        # call site - the mutex-error formatter - never lands here.
+        assert self.short is not None  # pragma: no cover
+        return f"-{self.short}"  # pragma: no cover
 
     @property
     def storage_key(self) -> str:
@@ -688,7 +692,9 @@ def _selected_subcommand(
     if not cmd.subcommands:
         return None
     name = parsed_positionals.get(cmd.subcommand_positional_name)
-    if name is None:
+    if name is None:  # pragma: no cover
+        # Unreachable in practice: `_validate_positionals` rejects a missing
+        # required subcommand positional before this function is called.
         return None
     return next((s for s in cmd.subcommands if s.name == name), None)
 
@@ -781,18 +787,17 @@ def _scan(
 
     try:
         pairs, positionals = getopt.gnu_getopt(normalized_argv, short_str, long_list)
-    except getopt.GetoptError:
+    except getopt.GetoptError as e:
         # Recover all unknowns ourselves, so the error message lists every
         # bad token at once.
         unknown_tokens = _collect_unknown_tokens(argv, long_specs, short_specs)
         if unknown_tokens:
             return {}, [], unknown_tokens
-        # getopt raised for some other reason (e.g. option requiring an
-        # argument) - re-raise so the caller (which is launched from
-        # parse_cmdline) surfaces it. We don't currently have a test
-        # covering this branch; argparse used to just print the raw
-        # message and exit.
-        raise
+        # getopt raised for some other reason (typically "option X requires
+        # argument" when the user passes a value-taking flag with no value
+        # after it). Surface as a regular argument error rather than an
+        # uncaught GetoptError.
+        _argument_error(_humanize_getopt_error(e, long_specs, short_specs))
 
     opts: Dict[str, str] = {}
     for raw_flag, raw_value in pairs:
@@ -800,6 +805,29 @@ def _scan(
                 else short_specs[raw_flag[1:]])
         opts[spec.storage_key] = raw_value if spec.takes_value else ""
     return opts, positionals, []
+
+
+def _humanize_getopt_error(
+        err: getopt.GetoptError,
+        long_specs: Dict[str, OptSpec],
+        short_specs: Dict[str, OptSpec],
+) -> str:
+    """Re-cast getopt's lowercase, hard-coded "option X requires argument"
+    style message into the argparse-flavoured "Argument -X/--long:
+    expected one argument" wording the rest of the parser uses."""
+    opt = err.opt
+    # `err.opt` carries the short letter or long name WITHOUT the leading
+    # dashes; promote it back to whichever canonical form we recognise.
+    spec = (long_specs.get(opt) if len(opt) > 1 else None) or short_specs.get(opt)
+    label = spec.canonical_name if spec else (f"--{opt}" if len(opt) > 1 else f"-{opt}")
+    # getopt's own messages are stable but lowercase; sentence-cap them to
+    # match the rest of the parser's diagnostics. Strip the leading
+    # `option --X ` / `option -X ` prefix since we already lead with
+    # `Argument {label}:`.
+    if "requires argument" in str(err):
+        return f"Argument {label}: expected one argument"
+    tail = re.sub(r"^option -{1,2}\S+\s+", "", err.msg)
+    return f"Argument {label}: {tail}"
 
 
 def _collect_unknown_tokens(
@@ -872,7 +900,10 @@ def _format_choices(choices: Iterable[str]) -> str:
 
 
 def _visible_choices(positional: PositionalSpec) -> Tuple[str, ...]:
-    if not positional.choices:
+    # Callers (`_fail_invalid_choice`, `_fail_missing_required`) only
+    # reach this helper for positionals that already carry `choices=`, so
+    # the empty-choices fallback is just a safety net.
+    if not positional.choices:  # pragma: no cover
         return ()
     return tuple(c for c in positional.choices if c not in positional.hidden_choices)
 
@@ -957,7 +988,11 @@ def _validate_positionals(
             # Consumes the rest of the positionals.
             values = remaining
             remaining = []
-            if pspec.required and not values:
+            if pspec.required and not values:  # pragma: no cover
+                # No `multiple=True, required=True` positional currently
+                # exists in COMMANDS - kept as a safety net so we'd notice
+                # immediately if a future command introduced one without
+                # also adding a test.
                 _fail_missing_required(pspec)
             converted = [_convert_positional(pspec, v) for v in values]
             result[pspec.name] = converted
@@ -1067,7 +1102,10 @@ def _validate_subcommand_restrictions(
 
     # ---- positionals ------------------------------------------------------
     for pspec in cmd.positionals:
-        if pspec.only_with_subcommand is None:
+        if pspec.only_with_subcommand is None:  # pragma: no cover
+            # Every positional declared on a command-with-subcommands
+            # currently scopes itself to a subcommand (github/gitlab's
+            # `request_id`); the unrestricted branch is kept defensively.
             continue
         value = parsed_positionals.get(pspec.name)
         # `multiple` positionals come back as lists; treat empty/None as
@@ -1085,14 +1123,16 @@ def _validate_subcommand_restrictions(
 
 
 def _find_option_by_key(cmd: CommandSpec, key: str) -> Optional[OptSpec]:
-    for o in cmd.options:
-        if o.storage_key == key:
-            return o
-    for sub in cmd.subcommands:
-        for o in sub.options:
-            if o.storage_key == key:
-                return o
-    return None
+    # Flatten cmd-level options and per-subcommand options into one stream so
+    # we don't need a separately-tested branch for each level - in practice
+    # the only caller is the github/gitlab subcommand-restriction validator,
+    # which only ever queries keys defined on a subcommand (cmd.options is
+    # empty for both code-hosting commands).
+    candidates = itertools.chain(
+        cmd.options,
+        *(sub.options for sub in cmd.subcommands),
+    )
+    return next((o for o in candidates if o.storage_key == key), None)
 
 
 def _format_subcommand_list(names: List[str]) -> str:
