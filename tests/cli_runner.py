@@ -66,7 +66,7 @@ def assert_failure(cmd_and_args: Iterable[str], expected_message: str, expected_
         assert actual_output == expected_output
 
 
-def assert_argparse_failure(cmd_and_args: Iterable[str], expected_output: str) -> None:
+def assert_argument_error(cmd_and_args: Iterable[str], expected_output: str) -> None:
     """Run the CLI and assert it exits with `ARGUMENT_ERROR` after emitting
     exactly `expected_output` (a literal multi-line string) on stdout/stderr.
 

@@ -8,7 +8,7 @@ from git_machete.cli import main
 from git_machete.utils.exceptions import ExitCode
 
 from .base_test import BaseTest
-from .cli_runner import (assert_argparse_failure,
+from .cli_runner import (assert_argument_error,
                          launch_command_capturing_output_and_exception)
 from .git_repository import create_repo
 
@@ -46,7 +46,7 @@ class TestCLI(BaseTest):
             main()
         assert ExitCode.MACHETE_EXCEPTION == ei.value.code
 
-    # The tests below pin down the exact wording of argparse failure messages
+    # The tests below pin down the exact wording of argument-error messages
     # so that future refactors of the parser do not silently regress UX.
     # Order: general (top-level command/flag handling) -> specific (per-subcommand).
 
@@ -54,7 +54,7 @@ class TestCLI(BaseTest):
 
     def test_unknown_subcommand_suggests_close_match(self) -> None:
         """`git machete travers` should suggest `traverse`."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["travers"],
             "Invalid command: 'travers'\n"
             "Did you mean: `traverse`?")
@@ -63,7 +63,7 @@ class TestCLI(BaseTest):
         """A garbage top-level command without a near-miss should steer the
         user to `git machete help` (the help hint is suppressed when there IS
         a close match - that match is the actionable suggestion)."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["xyzzy"],
             "Invalid command: 'xyzzy'\n"
             "Run `git machete help` to see all available commands.")
@@ -72,21 +72,21 @@ class TestCLI(BaseTest):
 
     def test_unknown_flag_no_subcommand(self) -> None:
         """An unknown top-level flag still falls back to the top-level parser."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["--debg"],
             "Unrecognized arguments: --debg\n"
             "Did you mean: `--debug`?")
 
     def test_unknown_flag_suggests_close_match(self) -> None:
         """`git machete traverse --srart-from foo` should suggest `--start-from`."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["traverse", "--srart-from", "foo"],
             "Unrecognized arguments: --srart-from foo\n"
             "Did you mean: `--start-from`?")
 
     def test_unknown_flag_with_equals_suggests_close_match(self) -> None:
         """`--srart-from=foo` is split on `=` before fuzzy-matching."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["traverse", "--srart-from=foo"],
             "Unrecognized arguments: --srart-from=foo\n"
             "Did you mean: `--start-from`?")
@@ -98,7 +98,7 @@ class TestCLI(BaseTest):
         Also serves as the regression test for the message prefix being
         sentence-cased (`Unrecognized`, not `unrecognized`).
         """
-        assert_argparse_failure(
+        assert_argument_error(
             ["status", "--list-commitS"],
             "Unrecognized arguments: --list-commitS\n"
             "Did you mean: `--list-commits`, `--list-commits-with-hashes`?")
@@ -114,14 +114,14 @@ class TestCLI(BaseTest):
         Since there is no spelling-correction hint, the message falls back to
         pointing the user at the subcommand's help page.
         """
-        assert_argparse_failure(
+        assert_argument_error(
             ["traverse", "--checked-out-snc", "foo"],
             "Unrecognized arguments: --checked-out-snc foo\n"
             "See `git machete help traverse` for usage.")
 
     def test_unknown_flag_scoped_to_subparser_positive(self) -> None:
         """Conversely, when the typo is under the right subparser, suggest."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["discover", "--checked-out-snc", "foo"],
             "Unrecognized arguments: --checked-out-snc foo\n"
             "Did you mean: `--checked-out-since`?")
@@ -130,7 +130,7 @@ class TestCLI(BaseTest):
         """When multiple unrecognized flags each have a close match, every
         suggestion line is prefixed with the originating flag name so the
         user can tell them apart."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["traverse", "--srart-from", "foo", "--debugg"],
             "Unrecognized arguments: --srart-from foo --debugg\n"
             "For `--srart-from`: did you mean: `--start-from`?\n"
@@ -139,7 +139,7 @@ class TestCLI(BaseTest):
     def test_unknown_short_flag_points_to_help(self) -> None:
         """Short flags like `-q` or `-gs` have no long-option close match,
         so the message falls back to the subcommand help page."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["status", "-q"],
             "Unrecognized arguments: -q\n"
             "See `git machete help status` for usage.")
@@ -148,7 +148,7 @@ class TestCLI(BaseTest):
         """For a two-level subcommand (`github create-pr`), the hint points
         at the top-level subcommand (`github`) since that is what
         `git machete help` accepts as its argument."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["github", "create-pr", "-gs"],
             "Unrecognized arguments: -gs\n"
             "See `git machete help github` for usage.")
@@ -156,7 +156,7 @@ class TestCLI(BaseTest):
     def test_unknown_flag_no_subcommand_no_hint(self) -> None:
         """At the top level (no subcommand selected), there is no help page
         to point at, so no hint is appended when there is also no suggestion."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["-q"],
             "Unrecognized arguments: -q")
 
@@ -164,7 +164,7 @@ class TestCLI(BaseTest):
 
     def test_invalid_choice_for_positional_suggests_close_match(self) -> None:
         """`git machete go dwn` should suggest `down`."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["go", "dwn"],
             "Invalid go direction: 'dwn'\n"
             "Did you mean: `down`?")
@@ -177,26 +177,26 @@ class TestCLI(BaseTest):
         are small enough that printing them all is the friendlier option.
         """
         # github subcommand
-        assert_argparse_failure(
+        assert_argument_error(
             ["github", "xyzzy"],
             "Invalid github subcommand: 'xyzzy'\n"
             "Possible values for github subcommand are: "
             "anno-prs, checkout-prs, create-pr, restack-pr, retarget-pr, update-pr-descriptions")
         # gitlab subcommand
-        assert_argparse_failure(
+        assert_argument_error(
             ["gitlab", "xyzzy"],
             "Invalid gitlab subcommand: 'xyzzy'\n"
             "Possible values for gitlab subcommand are: "
             "anno-mrs, checkout-mrs, create-mr, restack-mr, retarget-mr, update-mr-descriptions")
         # `go` direction (note: aliases like `d`, `f` are part of the choice set
         # and so legitimately show up here, mirroring the missing-required path)
-        assert_argparse_failure(
+        assert_argument_error(
             ["go", "xyzzy"],
             "Invalid go direction: 'xyzzy'\n"
             "Possible values for go direction are: "
             "d, down, f, first, l, last, n, next, p, prev, r, root, u, up")
         # `show` direction
-        assert_argparse_failure(
+        assert_argument_error(
             ["show", "xyzzy"],
             "Invalid show direction: 'xyzzy'\n"
             "Possible values for show direction are: "
@@ -206,7 +206,7 @@ class TestCLI(BaseTest):
 
     def test_missing_required_choice_lists_possible_values(self) -> None:
         """Missing positional with `choices=` should list the possible values."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["show"],
             "The following arguments are required: show direction\n"
             "Possible values for show direction are: "
@@ -214,14 +214,14 @@ class TestCLI(BaseTest):
 
     def test_missing_required_choice_for_completion(self) -> None:
         """`git machete completion` lists possible shells."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["completion"],
             "The following arguments are required: shell\n"
             "Possible values for shell are: bash, fish, zsh")
 
     def test_missing_required_choice_for_list(self) -> None:
         """`git machete list` lists the categories."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["list"],
             "The following arguments are required: category\n"
             "Possible values for category are: "
@@ -235,7 +235,7 @@ class TestCLI(BaseTest):
         `sync` is intentionally omitted from the listing - see
         `test_github_sync_hidden_from_close_match_suggestions` for the rationale.
         """
-        assert_argparse_failure(
+        assert_argument_error(
             ["github"],
             "The following arguments are required: github subcommand\n"
             "Possible values for github subcommand are: "
@@ -248,7 +248,7 @@ class TestCLI(BaseTest):
         than one candidate; we pin down the full ordered list since the order
         is deterministic (best match first by difflib's similarity ratio).
         """
-        assert_argparse_failure(
+        assert_argument_error(
             ["github", "creat-pr"],
             "Invalid github subcommand: 'creat-pr'\n"
             "Did you mean: `create-pr`, `retarget-pr`, `restack-pr`?")
@@ -263,7 +263,7 @@ class TestCLI(BaseTest):
         # without the `_hidden_from_listing` filter we'd suggest `sync` here.
         # With the filter, no close-match line is produced and we fall through
         # to the "Possible values" listing instead.
-        assert_argparse_failure(
+        assert_argument_error(
             ["github", "snc"],
             "Invalid github subcommand: 'snc'\n"
             "Possible values for github subcommand are: "
@@ -273,7 +273,7 @@ class TestCLI(BaseTest):
 
     def test_missing_required_choice_for_gitlab(self) -> None:
         """`git machete gitlab` lists subcommands."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["gitlab"],
             "The following arguments are required: gitlab subcommand\n"
             "Possible values for gitlab subcommand are: "
@@ -285,7 +285,7 @@ class TestCLI(BaseTest):
         """`git machete rename` requires `<new_name>` but has no `choices=`, so
         the "Possible values" follow-up line MUST NOT be appended - we just
         report which positional is missing."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["rename"],
             "The following arguments are required: new_name")
 
@@ -294,7 +294,7 @@ class TestCLI(BaseTest):
     def test_excess_positionals_after_last_scalar(self) -> None:
         """`add` accepts at most one positional (`<branch>`). Extras must be
         reported as unrecognized arguments."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["add", "foo", "bar"],
             "Unrecognized arguments: bar\n"
             "See `git machete help add` for usage.")
@@ -302,7 +302,7 @@ class TestCLI(BaseTest):
     def test_positionals_on_command_without_positional_specs(self) -> None:
         """`advance` takes no positionals at all; anything passed is rejected
         as unrecognized."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["advance", "foo"],
             "Unrecognized arguments: foo\n"
             "See `git machete help advance` for usage.")
@@ -314,7 +314,7 @@ class TestCLI(BaseTest):
         A non-integer must surface as "invalid int value" with the
         user-facing `PR number` label, not the internal `request_id`
         storage key."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["github", "checkout-prs", "not-a-number"],
             "Argument PR number: invalid int value: 'not-a-number'")
 
@@ -331,7 +331,7 @@ class TestCLI(BaseTest):
         # "override-to-parent")` is the declared order, so the error
         # complains about `--override-to-parent` against
         # `--override-to-inferred` regardless of which the user typed first.
-        assert_argparse_failure(
+        assert_argument_error(
             ["fork-point", "--override-to-parent", "--override-to-inferred"],
             "Argument --override-to-parent: not allowed with argument --override-to-inferred")
 
@@ -341,7 +341,7 @@ class TestCLI(BaseTest):
         """`--yes` is a boolean flag (no `takes_value`). Passing `--yes=true`
         must surface a sane argument error, not let getopt's raw
         `GetoptError` propagate."""
-        assert_argparse_failure(
+        assert_argument_error(
             ["add", "--yes=true"],
             "Argument -y/--yes: must not have an argument")
 
@@ -353,13 +353,13 @@ class TestCLI(BaseTest):
         the raw `GetoptError` propagate, and re-cast it with the
         canonical option label."""
         # Short form.
-        assert_argparse_failure(
+        assert_argument_error(
             ["add", "-o"],
             "Argument -o/--onto: expected one argument")
         # Long form. `gnu_getopt`'s "long with =" parsing would accept an
         # explicit empty `--onto=`, so we exercise the no-`=`, end-of-argv
         # case to actually trigger the recovery path.
-        assert_argparse_failure(
+        assert_argument_error(
             ["add", "--onto"],
             "Argument -o/--onto: expected one argument")
 
@@ -373,12 +373,12 @@ class TestCLI(BaseTest):
         like `-o develop`. We feed both forms next to an unknown
         `--definitely-not-a-flag` and assert only the unknown surfaces."""
         # Long-form: `--color always` adjacent to the unknown flag.
-        assert_argparse_failure(
+        assert_argument_error(
             ["status", "--color", "always", "--definitely-not-a-flag"],
             "Unrecognized arguments: --definitely-not-a-flag\n"
             "See `git machete help status` for usage.")
         # Short-form: `-o develop` (short option of `add` that takes a value).
-        assert_argparse_failure(
+        assert_argument_error(
             ["add", "-o", "develop", "--definitely-not-a-flag"],
             "Unrecognized arguments: --definitely-not-a-flag\n"
             "See `git machete help add` for usage.")
