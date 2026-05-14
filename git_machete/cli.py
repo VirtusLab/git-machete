@@ -238,37 +238,13 @@ def launch_internal(orig_args: List[str]) -> None:
             print_fmt("Extra arguments after `--` are only allowed after `diff` and `log`")
             sys.exit(ExitCode.ARGUMENT_ERROR)
 
-        pass_through_args = parsed.pass_through
-
-        if cmd == "completion":
-            completion_shell = parsed.positionals["shell"]
-
-            def print_completion_resource(name: str) -> None:
-                data = pkgutil.get_data("completion", name)
-                if not data:
-                    raise UnexpectedMacheteException(f"Completion file `{name}` not found.")
-                print(data.decode())
-
-            # Deliberately using if/else rather than a dict to measure coverage more accurately.
-            if completion_shell == "bash":
-                print_completion_resource("git-machete.completion.bash")
-            elif completion_shell == "fish":
-                print_completion_resource("git-machete.fish")
-            elif completion_shell == "zsh":
-                print_completion_resource("git-machete.completion.zsh")
-            else:  # the parser already restricts the choices
-                raise UnexpectedMacheteException(f"Unknown shell: `{completion_shell}`")
-            return
-        elif cmd == "help":
-            print_fmt(get_help_description(display_help_topics=True, command=parsed.positionals.get("topic_or_cmd")))
-            return
-        elif cmd == "version":
-            version()
-            return
-
-        # Load defaults from config; CLI values applied after that take precedence.
-        update_cli_options_using_config_keys(cli_opts)
-        _populate_cli_options(cli_opts, parsed)
+        # `completion`, `help` and `version` neither read git config nor use
+        # `cli_opts`, so skip the config/CLI population for them - in
+        # particular, `help` must keep working even when a config key like
+        # `machete.squashMergeDetection` carries an invalid value.
+        if cmd not in ("completion", "help", "version"):
+            update_cli_options_using_config_keys(cli_opts)
+            _populate_cli_options(cli_opts, parsed)
 
         if cmd == "add":
             add_client = MacheteClient()
@@ -299,6 +275,24 @@ def launch_internal(orig_args: List[str]) -> None:
                 clean_client.checkout_pull_requests(pr_numbers=[], mine=True)
             clean_client.delete_unmanaged(opt_squash_merge_detection=SquashMergeDetection.NONE, opt_yes=cli_opts.opt_yes)
             clean_client.delete_untracked(opt_yes=cli_opts.opt_yes)
+        elif cmd == "completion":
+            completion_shell = parsed.positionals["shell"]
+
+            def print_completion_resource(name: str) -> None:
+                data = pkgutil.get_data("completion", name)
+                if not data:
+                    raise UnexpectedMacheteException(f"Completion file `{name}` not found.")
+                print(data.decode())
+
+            # Deliberately using if/else rather than a dict to measure coverage more accurately.
+            if completion_shell == "bash":
+                print_completion_resource("git-machete.completion.bash")
+            elif completion_shell == "fish":
+                print_completion_resource("git-machete.fish")
+            elif completion_shell == "zsh":
+                print_completion_resource("git-machete.completion.zsh")
+            else:  # the parser already restricts the choices
+                raise UnexpectedMacheteException(f"Unknown shell: `{completion_shell}`")
         elif cmd == "delete-unmanaged":
             delete_unmanaged_client = MacheteClient()
             delete_unmanaged_client.delete_unmanaged(
@@ -306,7 +300,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 opt_yes=cli_opts.opt_yes)
         elif cmd in {"diff", alias_by_command["diff"]}:
             diff_client = DiffMacheteClient()
-            diff_client.display_diff(branch=cli_opts.opt_branch, opt_stat=cli_opts.opt_stat, extra_git_diff_args=pass_through_args)
+            diff_client.display_diff(branch=cli_opts.opt_branch, opt_stat=cli_opts.opt_stat, extra_git_diff_args=parsed.pass_through)
         elif cmd == "discover":
             discover_client = DiscoverMacheteClient()
             discover_client.discover(
@@ -409,6 +403,8 @@ def launch_internal(orig_args: List[str]) -> None:
                 GoShowMacheteClient().go(direction)
             else:
                 GoInteractiveMacheteClient().go_interactive()
+        elif cmd == "help":
+            print_fmt(get_help_description(display_help_topics=True, command=parsed.positionals.get("topic_or_cmd")))
         elif cmd == "is-managed":
             if not MacheteClient().is_managed(opt_branch=cli_opts.opt_branch):
                 sys.exit(ExitCode.MACHETE_EXCEPTION)
@@ -447,7 +443,7 @@ def launch_internal(orig_args: List[str]) -> None:
             if res:
                 print("\n".join(res))
         elif cmd in {"log", alias_by_command["log"]}:
-            LogMacheteClient().display_log(opt_branch=cli_opts.opt_branch, extra_git_log_args=pass_through_args)
+            LogMacheteClient().display_log(opt_branch=cli_opts.opt_branch, extra_git_log_args=parsed.pass_through)
         elif cmd == "reapply":
             ReapplyMacheteClient().reapply(
                 opt_fork_point=cli_opts.opt_fork_point,
@@ -524,6 +520,8 @@ def launch_internal(orig_args: List[str]) -> None:
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
                 opt_fork_point=cli_opts.opt_fork_point)
+        elif cmd == "version":
+            version()
         else:  # rejected by the parser
             raise UnexpectedMacheteException(f"Unknown command: `{cmd}`")
     finally:
