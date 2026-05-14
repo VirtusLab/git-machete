@@ -12,14 +12,9 @@ class BaseTest:
         self.expected_mock_methods: Set[str] = set()
         # So that env vars coming from outside don't interfere with the tests.
         # Note that this is only relevant in plain `pytest` invocations as `tox` doesn't pass env vars from the outside env by default.
-        for env_var in [
-                "GIT_MACHETE_DIFF_OPTS",
-                "GIT_MACHETE_EDITOR",
-                "GIT_MACHETE_MEASURE_COMMAND_TIME",
-                "GIT_MACHETE_REBASE_OPTS",
-                "GITHUB_TOKEN",
-                "GITLAB_TOKEN",
-        ]:
+        leaking_env_vars = [v for v in os.environ if v.startswith("GIT_MACHETE_")]
+        leaking_env_vars += ["GITHUB_TOKEN", "GITLAB_TOKEN"]
+        for env_var in leaking_env_vars:
             os.environ.pop(env_var, None)
 
     def patch_symbol(self, mocker: MockerFixture, symbol: str, target: Any) -> None:
