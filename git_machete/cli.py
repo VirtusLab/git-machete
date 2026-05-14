@@ -528,9 +528,7 @@ def launch_internal(orig_args: List[str]) -> None:
         # Has been fixed in git itself as of 2.35.0, but we still defend
         # against pre-2.35 + the underlying-checkout-moves-cwd case:
         # see https://github.com/git/git/blob/master/Documentation/RelNotes/2.35.0.txt#L81
-        # No unit test reproduces this safely (it would require deleting
-        # the test's own CWD mid-run); kept as a hand-tested safety net.
-        if initial_current_directory and not does_directory_exist(initial_current_directory):  # pragma: no cover
+        if initial_current_directory and not does_directory_exist(initial_current_directory):
             nearest_existing_parent_directory: AbsPath = initial_current_directory
             while not does_directory_exist(nearest_existing_parent_directory):
                 nearest_existing_parent_directory = nearest_existing_parent_directory.parent_dir()
