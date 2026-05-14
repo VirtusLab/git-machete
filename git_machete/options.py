@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from .config import SquashMergeDetection
 from .git import AnyRevision, LocalBranchShortName
 
 
@@ -40,8 +41,7 @@ class CommandLineOptions:
         self.opt_repoint_tracking: bool = False
         self.opt_return_to: str = "stay"
         self.opt_roots: List[LocalBranchShortName] = list()
-        self.opt_squash_merge_detection_origin: Optional[str] = None
-        self.opt_squash_merge_detection_string: str = "simple"
+        self.opt_squash_merge_detection: SquashMergeDetection = SquashMergeDetection.SIMPLE
         self.opt_start_from: str = "here"
         self.opt_stat: bool = False
         self.opt_stop_after: Optional[LocalBranchShortName] = None

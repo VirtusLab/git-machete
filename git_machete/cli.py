@@ -2,7 +2,7 @@
 
 import pkgutil
 import sys
-from typing import Iterable, List, NoReturn, Optional, Sequence
+from typing import Iterable, List, Optional, Sequence
 
 import git_machete.options
 from git_machete.client.advance import AdvanceMacheteClient
@@ -105,8 +105,7 @@ def _populate_cli_options(
             cli_opts.opt_n = True
         elif key == "no-detect-squash-merges":
             warn("`--no-detect-squash-merges` is deprecated, use `--squash-merge-detection=none` instead\n")
-            cli_opts.opt_squash_merge_detection_string = "none"
-            cli_opts.opt_squash_merge_detection_origin = "`--no-detect-squash-merges` flag"
+            cli_opts.opt_squash_merge_detection = SquashMergeDetection.NONE
         elif key == "no-edit-merge":
             cli_opts.opt_no_edit_merge = True
         elif key == "no-interactive-rebase":
@@ -143,8 +142,8 @@ def _populate_cli_options(
             roots: Iterable[str] = filter(None, value.split(","))
             cli_opts.opt_roots = [LocalBranchShortName.of(root) for root in roots]
         elif key == "squash-merge-detection":
-            cli_opts.opt_squash_merge_detection_string = value
-            cli_opts.opt_squash_merge_detection_origin = "`--squash-merge-detection` flag"
+            cli_opts.opt_squash_merge_detection = SquashMergeDetection.from_string(
+                value, "`--squash-merge-detection` flag")
         elif key == "start-from":
             cli_opts.opt_start_from = value
         elif key == "stat":
@@ -189,9 +188,11 @@ def _populate_cli_options(
 
 
 def update_cli_options_using_config_keys(cli_opts: git_machete.options.CommandLineOptions) -> None:
-    traverse_push = MacheteConfig().traverse_push()
+    config = MacheteConfig()
+    traverse_push = config.traverse_push()
     if traverse_push is not None:
         cli_opts.opt_push_tracked = cli_opts.opt_push_untracked = traverse_push
+    cli_opts.opt_squash_merge_detection = config.squash_merge_detection()
 
 
 def set_utils_global_variables(parsed: ParsedCmd) -> None:
@@ -209,13 +210,6 @@ def launch(orig_args: List[str]) -> None:
         pass
 
 
-def _print_help_and_exit(parsed: ParsedCmd) -> NoReturn:
-    """Top-level / per-command `--help` / `-h`: print the relevant page and
-    exit successfully."""
-    print_fmt(get_help_description(display_help_topics=True, command=parsed.command))
-    sys.exit(ExitCode.SUCCESS)
-
-
 def launch_internal(orig_args: List[str]) -> None:
     initial_current_directory: Optional[AbsPath] = get_current_directory_or_none()
 
@@ -227,11 +221,10 @@ def launch_internal(orig_args: List[str]) -> None:
         # Set up `--debug` / `--verbose` first so that subsequent
         # `git config` reads honour them.
         set_utils_global_variables(parsed)
-        update_cli_options_using_config_keys(cli_opts)
-        _populate_cli_options(cli_opts, parsed)
 
         if "help" in parsed.opts:
-            _print_help_and_exit(parsed)
+            print_fmt(get_help_description(display_help_topics=True, command=parsed.command))
+            sys.exit(ExitCode.SUCCESS)
         if "version" in parsed.opts:
             version()
             return
@@ -246,12 +239,6 @@ def launch_internal(orig_args: List[str]) -> None:
             sys.exit(ExitCode.ARGUMENT_ERROR)
 
         pass_through_args = parsed.pass_through
-
-        def squash_merge_detection() -> SquashMergeDetection:
-            if cli_opts.opt_squash_merge_detection_origin is not None:
-                return SquashMergeDetection.from_string(
-                    cli_opts.opt_squash_merge_detection_string, cli_opts.opt_squash_merge_detection_origin)
-            return MacheteConfig().squash_merge_detection()
 
         if cmd == "completion":
             completion_shell = parsed.positionals["shell"]
@@ -278,6 +265,10 @@ def launch_internal(orig_args: List[str]) -> None:
         elif cmd == "version":
             version()
             return
+
+        # Load defaults from config; CLI values applied after that take precedence.
+        update_cli_options_using_config_keys(cli_opts)
+        _populate_cli_options(cli_opts, parsed)
 
         if cmd == "add":
             add_client = MacheteClient()
@@ -311,7 +302,7 @@ def launch_internal(orig_args: List[str]) -> None:
         elif cmd == "delete-unmanaged":
             delete_unmanaged_client = MacheteClient()
             delete_unmanaged_client.delete_unmanaged(
-                opt_squash_merge_detection=MacheteConfig().squash_merge_detection(),
+                opt_squash_merge_detection=cli_opts.opt_squash_merge_detection,
                 opt_yes=cli_opts.opt_yes)
         elif cmd in {"diff", alias_by_command["diff"]}:
             diff_client = DiffMacheteClient()
@@ -498,7 +489,6 @@ def launch_internal(orig_args: List[str]) -> None:
         elif cmd == "squash":
             SquashMacheteClient().squash(opt_fork_point=cli_opts.opt_fork_point)
         elif cmd in {"status", alias_by_command["status"]}:
-            opt_squash_merge_detection = squash_merge_detection()
             status_client = StatusMacheteClient(
                 interactively_slide_out_invalid_branches=terminal.is_stdout_a_tty())
             status_client.expect_at_least_one_managed_branch()
@@ -506,9 +496,8 @@ def launch_internal(orig_args: List[str]) -> None:
                 warn_when_branch_in_sync_but_fork_point_off=True,
                 opt_list_commits=cli_opts.opt_list_commits,
                 opt_list_commits_with_hashes=cli_opts.opt_list_commits_with_hashes,
-                opt_squash_merge_detection=opt_squash_merge_detection)
+                opt_squash_merge_detection=cli_opts.opt_squash_merge_detection)
         elif cmd in {"traverse", alias_by_command["traverse"]}:
-            opt_squash_merge_detection = squash_merge_detection()
             opt_return_to = TraverseReturnTo.from_string(cli_opts.opt_return_to, "`--return-to` flag")
 
             spec = GITHUB_API_SPEC if cli_opts.opt_sync_github_prs else GITLAB_API_SPEC
@@ -523,7 +512,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 opt_push_tracked=cli_opts.opt_push_tracked,
                 opt_push_untracked=cli_opts.opt_push_untracked,
                 opt_return_to=opt_return_to,
-                opt_squash_merge_detection=opt_squash_merge_detection,
+                opt_squash_merge_detection=cli_opts.opt_squash_merge_detection,
                 opt_start_from=cli_opts.opt_start_from,
                 opt_stop_after=cli_opts.opt_stop_after,
                 opt_sync_github_prs=cli_opts.opt_sync_github_prs,
