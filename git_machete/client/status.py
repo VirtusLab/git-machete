@@ -19,6 +19,7 @@ from git_machete.utils.paths import Path
 
 from ..utils import markup
 from .base import MacheteClient
+from .state import ManagedBranchName
 
 
 class SyncToParentStatus(Enum):
@@ -52,8 +53,8 @@ class StatusOngoingOperation(NamedTuple):
 class StatusBranch(NamedTuple):
     """Per-branch data for status output (tree structure, sync state, commits, annotations)."""
 
-    parent: Optional[LocalBranchShortName]
-    children: List[LocalBranchShortName]
+    parent: Optional[ManagedBranchName]
+    children: List[ManagedBranchName]
     sync_to_parent_status: SyncToParentStatus
     commits: List[Tuple[GitLogEntry, str]]
     sync_status: str
@@ -65,9 +66,12 @@ class StatusData(NamedTuple):
     """All precomputed data needed to render status output (tree and optional warning)."""
 
     flags: StatusFlags
+    # Keep the dict keyed on the broader `LocalBranchShortName` to spare every
+    # downstream helper from `ManagedBranchName`-narrowing dance when indexing
+    # via a parent/sibling-of-ancestor (which mypy tracks as the broader type).
     branches: Dict[LocalBranchShortName, StatusBranch]
-    branches_in_display_order: List[LocalBranchShortName]
-    roots: List[LocalBranchShortName]
+    branches_in_display_order: List[ManagedBranchName]
+    roots: List[ManagedBranchName]
     ongoing_operation: StatusOngoingOperation
 
 
@@ -262,7 +266,7 @@ class StatusMacheteClient(MacheteClient):
             self._git.is_ancestor_or_equal(fork_point, parent_remote.full_name())
 
     def compute_status_data(self, *, flags: StatusFlags) -> StatusData:
-        managed_branches: List[LocalBranchShortName] = self._state.managed_branches  # already returns a copy
+        managed_branches: List[ManagedBranchName] = self._state.managed_branches  # already returns a copy
 
         sync_to_parent_status: Dict[LocalBranchShortName, SyncToParentStatus] = {}
         fork_point_hash_cached: Dict[LocalBranchShortName, Optional[FullCommitHash]] = {}

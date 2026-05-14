@@ -922,7 +922,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 raise MacheteException(f"`git machete list {category}` does not expect extra arguments")
 
             list_client = ListMacheteClient()
-            res = []
+            res: Sequence[LocalBranchShortName] = []
             if category == "addable":
                 res = list_client.addable_branches()
             elif category == "childless":

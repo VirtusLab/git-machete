@@ -4,6 +4,7 @@ import os
 import shutil
 from typing import List, Optional, Tuple
 
+from git_machete.client.state import ManagedBranchName
 from git_machete.client.status import StatusMacheteClient
 from git_machete.config import SquashMergeDetection
 from git_machete.constants import DISCOVER_DEFAULT_FRESH_BRANCH_COUNT
@@ -43,10 +44,10 @@ class DiscoverMacheteClient(StatusMacheteClient):
                 initial_roots.append(LocalBranchShortName.of("main"))
             if "develop" in self._git.get_local_branches():
                 initial_roots.append(LocalBranchShortName.of("develop"))
-        for branch in self._state.managed_branches:
-            anno = self._state.get_annotation(branch)
+        for managed in self._state.managed_branches:
+            anno = self._state.get_annotation(managed)
             if anno is not None:
-                self._state.set_annotation(branch, anno._replace(text_without_qualifiers=''))
+                self._state.set_annotation(managed, anno._replace(text_without_qualifiers=''))
         self._state.reset_tree(initial_roots)
 
         root_of = dict((branch, branch) for branch in all_local_branches)
@@ -119,7 +120,9 @@ class DiscoverMacheteClient(StatusMacheteClient):
                 % (", ".join(f"<b>{branch}</b>" for branch in merged_branches_to_skip),
                    "it's" if len(merged_branches_to_skip) == 1 else "they're"))
             for branch in merged_branches_to_skip:
-                self._state.detach_leaf(branch)
+                # Every fresh branch was wired into state above (`wire_as_child`/`wire_as_root`)
+                # before being collected here, so narrowing to `ManagedBranchName` is safe.
+                self._state.detach_leaf(ManagedBranchName(branch))
             # We're NOT applying the removal process recursively,
             # so it's theoretically possible that some merged branches became childless
             # after removing the outer layer of childless merged branches.

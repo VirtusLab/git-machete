@@ -1,6 +1,7 @@
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from git_machete.client.base import MacheteClient, PickRoot
+from git_machete.client.state import ManagedBranchName
 from git_machete.git import LocalBranchShortName
 from git_machete.utils.exceptions import (MacheteException,
                                           UnexpectedMacheteException)
@@ -23,15 +24,15 @@ class GoShowMacheteClient(MacheteClient):
         return destination
 
     def next_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        self.expect_in_managed_branches(branch)
-        index: int = self.managed_branches.index(branch) + 1
+        managed = self.expect_in_managed_branches(branch)
+        index: int = self.managed_branches.index(managed) + 1
         if index == len(self.managed_branches):
             raise MacheteException(f"Branch <b>{branch}</b> has no successor")
         return self.managed_branches[index]
 
     def prev_branch_for(self, branch: LocalBranchShortName) -> LocalBranchShortName:
-        self.expect_in_managed_branches(branch)
-        index: int = self.managed_branches.index(branch) - 1
+        managed = self.expect_in_managed_branches(branch)
+        index: int = self.managed_branches.index(managed) - 1
         if index == -1:
             raise MacheteException(f"Branch <b>{branch}</b> has no predecessor")
         return self.managed_branches[index]
@@ -50,7 +51,7 @@ class GoShowMacheteClient(MacheteClient):
         else:
             self._raise_no_branches_error()  # pragma: no cover; this case should never happen
 
-    def get_or_pick_child_of(self, branch: LocalBranchShortName, *, pick_if_multiple: bool) -> List[LocalBranchShortName]:
+    def get_or_pick_child_of(self, branch: LocalBranchShortName, *, pick_if_multiple: bool) -> List[ManagedBranchName]:
         self.expect_in_managed_branches(branch)
         children = self.children_of(branch)
         if not children:
@@ -83,7 +84,7 @@ class GoShowMacheteClient(MacheteClient):
         branch: Optional[LocalBranchShortName],
         allow_current: bool,
         pick_if_multiple: bool
-    ) -> List[LocalBranchShortName]:
+    ) -> Sequence[LocalBranchShortName]:
         if param in ("c", "current") and allow_current:
             return [self._git.get_current_branch()]  # throws in case of detached HEAD, as in the spec
         elif param in ("d", "down"):

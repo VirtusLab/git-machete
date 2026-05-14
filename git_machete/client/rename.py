@@ -13,8 +13,7 @@ class RenameMacheteClient(MacheteClient):
                opt_branch: Optional[LocalBranchShortName],
                new_name: LocalBranchShortName,
                opt_repoint_tracking: bool) -> None:
-        branch = opt_branch or self._git.get_current_branch()
-        self.expect_in_managed_branches(branch)
+        branch = self.expect_in_managed_branches(opt_branch or self._git.get_current_branch())
         if new_name == branch:
             raise MacheteException(f"Branch is already named <b>{branch}</b>")
         if new_name in self._git.get_local_branches():

@@ -2,7 +2,7 @@ import itertools
 from typing import Dict, List, Optional, Tuple
 
 from git_machete.annotation import Annotation
-from git_machete.client.state import MacheteState
+from git_machete.client.state import MacheteState, ManagedBranchName
 from git_machete.git import LocalBranchShortName
 from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.paths import AbsPath, Path
@@ -27,7 +27,10 @@ def parse(path: AbsPath, *, display_path: Optional[Path] = None) -> Tuple[Machet
 
     state = MacheteState()
     indent: Optional[str] = None
-    at_depth: Dict[int, LocalBranchShortName] = {}
+    # Every entry has by now been handed to `state.add_branch(...)`, so a
+    # `ManagedBranchName` is the natural type for "branch at depth N-1
+    # that the next line's parent will point at".
+    at_depth: Dict[int, ManagedBranchName] = {}
     last_depth = -1
     hint = "Edit the branch layout file manually with `git machete edit`"
 
@@ -80,9 +83,9 @@ def parse(path: AbsPath, *, display_path: Optional[Path] = None) -> Tuple[Machet
                 f"for the branch <b>{branch}</b>. {hint}")
         last_depth = depth
 
-        at_depth[depth] = branch
         parent = at_depth[depth - 1] if depth else None
         state.add_branch(branch, parent=parent, annotation=annotation)
+        at_depth[depth] = ManagedBranchName(branch)
 
     return state, indent
 

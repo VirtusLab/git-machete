@@ -2,6 +2,7 @@ import re
 from typing import List
 
 from git_machete.client.base import MacheteClient
+from git_machete.client.state import ManagedBranchName
 from git_machete.git import LocalBranchShortName, RemoteBranchShortName
 from git_machete.utils.collections import excluding, map_truthy_only
 
@@ -22,17 +23,17 @@ class ListMacheteClient(MacheteClient):
     def unmanaged_branches(self) -> List[LocalBranchShortName]:
         return excluding(self._git.get_local_branches(), self.managed_branches)
 
-    def childless_managed_branches(self) -> List[LocalBranchShortName]:
+    def childless_managed_branches(self) -> List[ManagedBranchName]:
         return [b for b in self._state.managed_branches if not self._state.get_children(b)]
 
     def branches_with_overridden_fork_point(self) -> List[LocalBranchShortName]:
         return [branch for branch in self._git.get_local_branches() if self.has_any_fork_point_override_config(branch)]
 
-    def slidable_branches(self) -> List[LocalBranchShortName]:
+    def slidable_branches(self) -> List[ManagedBranchName]:
         # All managed branches can be slid out, including root branches
         return self.managed_branches
 
-    def get_slidable_after(self, branch: LocalBranchShortName) -> List[LocalBranchShortName]:
+    def get_slidable_after(self, branch: LocalBranchShortName) -> List[ManagedBranchName]:
         if self._state.has_parent(branch):
             children = self.children_of(branch)
             if children and len(children) == 1:

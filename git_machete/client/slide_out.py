@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from git_machete.client.base import MacheteClient
+from git_machete.client.state import ManagedBranchName
 from git_machete.config import SquashMergeDetection
 from git_machete.git import AnyRevision, LocalBranchShortName
 from git_machete.utils.exceptions import MacheteException
@@ -19,14 +20,19 @@ class SlideOutMacheteClient(MacheteClient):
                   opt_no_rebase: bool
                   ) -> None:
         self._git.expect_no_operation_in_progress()
-        branches_to_slide_out: List[LocalBranchShortName] = opt_branches or [self._git.get_current_branch()]
+        raw_branches: List[LocalBranchShortName] = opt_branches or [self._git.get_current_branch()]
 
         # Verify that all branches exist, are managed and are NOT annotated with slide-out=no qualifier.
-        for branch in branches_to_slide_out:
-            self.expect_in_managed_branches(branch)
-            anno = self._state.get_annotation(branch)
+        # `expect_in_managed_branches` narrows to `ManagedBranchName`, which we keep
+        # for the rest of the method so we can hand the values to layout mutators
+        # (`splice_out`, `_remove_branches_from_layout`) without re-checking.
+        branches_to_slide_out: List[ManagedBranchName] = []
+        for branch in raw_branches:
+            managed = self.expect_in_managed_branches(branch)
+            branches_to_slide_out.append(managed)
+            anno = self._state.get_annotation(managed)
             if anno and not anno.qualifiers.slide_out:
-                raise MacheteException(f"Branch <b>{branch}</b> is annotated with `slide-out=no` qualifier, aborting.\n"
+                raise MacheteException(f"Branch <b>{managed}</b> is annotated with `slide-out=no` qualifier, aborting.\n"
                                        f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
 
         if opt_down_fork_point:
@@ -116,7 +122,7 @@ class SlideOutMacheteClient(MacheteClient):
     def slide_out_removed_from_remote(self, *, opt_delete: bool) -> None:
         self._git.expect_no_operation_in_progress()
 
-        slid_out_branches: List[LocalBranchShortName] = []
+        slid_out_branches: List[ManagedBranchName] = []
         for branch in self.managed_branches.copy():
             if self._git.is_removed_from_remote(branch) and not self.children_of(branch):
                 anno = self._state.get_annotation(branch)

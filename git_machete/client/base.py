@@ -3,10 +3,11 @@ import shlex
 import sys
 import textwrap
 from enum import Enum, auto
-from typing import Callable, Dict, Iterator, List, NoReturn, Optional, Tuple
+from typing import (Callable, Dict, Iterator, List, NoReturn, Optional,
+                    Sequence, Tuple, TypeVar)
 
 from git_machete.client import branch_layout
-from git_machete.client.state import MacheteState
+from git_machete.client.state import MacheteState, ManagedBranchName
 from git_machete.config import MacheteConfig, SquashMergeDetection
 from git_machete.constants import (INITIAL_COMMIT_COUNT_FOR_LOG,
                                    TOTAL_COMMIT_COUNT_FOR_LOG)
@@ -23,6 +24,8 @@ from git_machete.utils.markup import input_fmt, pretty_choices, print_fmt, warn
 from git_machete.utils.paths import AbsPath, Path
 
 from ..utils import fs
+
+_BranchT = TypeVar("_BranchT", bound=LocalBranchShortName)
 
 
 class PickRoot(Enum):
@@ -103,13 +106,13 @@ class MacheteClient:
     # === Branch listing ===
 
     @property
-    def managed_branches(self) -> List[LocalBranchShortName]:
+    def managed_branches(self) -> List[ManagedBranchName]:
         return self._state.managed_branches  # returns a copy
 
-    def parent_of(self, branch: LocalBranchShortName) -> Optional[LocalBranchShortName]:
+    def parent_of(self, branch: LocalBranchShortName) -> Optional[ManagedBranchName]:
         return self._state.get_parent(branch)
 
-    def children_of(self, branch: LocalBranchShortName) -> Optional[List[LocalBranchShortName]]:
+    def children_of(self, branch: LocalBranchShortName) -> Optional[List[ManagedBranchName]]:
         return self._state.get_children(branch)
 
     def is_managed(self, *, opt_branch: Optional[LocalBranchShortName]) -> bool:
@@ -118,11 +121,16 @@ class MacheteClient:
 
     # === Branch existence assertions ===
 
-    def expect_in_managed_branches(self, branch: LocalBranchShortName) -> None:
-        if branch not in self.managed_branches:
+    def expect_in_managed_branches(self, branch: LocalBranchShortName) -> ManagedBranchName:
+        """Verify `branch` lives in the layout file; on success, narrow its
+        type to `ManagedBranchName` so the caller can pass it to layout-
+        mutating APIs without a re-check."""
+        managed = self._state.as_managed(branch)
+        if managed is None:
             raise MacheteException(
                 f"Branch <b>{branch}</b> not found in the tree of branch dependencies.\n"
                 f"Use `git machete add {branch}` or `git machete edit`.")
+        return managed
 
     def expect_in_local_branches(self, branch: LocalBranchShortName) -> None:
         if branch not in self._git.get_local_branches():
@@ -193,7 +201,7 @@ class MacheteClient:
     def save_branch_layout_file(self) -> None:
         branch_layout.save(self._branch_layout_file_path, self._state, indent=self.__indent or "  ")
 
-    def _remove_branches_from_layout(self, branches_to_delete: List[LocalBranchShortName]) -> None:
+    def _remove_branches_from_layout(self, branches_to_delete: List[ManagedBranchName]) -> None:
         for branch in branches_to_delete:
             self._state.remove_leaf(branch)
         self.save_branch_layout_file()
@@ -227,9 +235,9 @@ class MacheteClient:
                                prompt_if_inferred_msg: Optional[str],
                                prompt_if_inferred_yes_opt_msg: Optional[str]) -> LocalBranchShortName:
         if branch in self.managed_branches:
-            parent = self.parent_of(branch)
-            if parent:
-                return parent
+            managed_parent = self.parent_of(branch)
+            if managed_parent:
+                return managed_parent
             else:
                 raise MacheteException(f"Branch <b>{branch}</b> has no upstream branch")
         else:
@@ -576,8 +584,11 @@ class MacheteClient:
         if branch in self.managed_branches:
             raise MacheteException(f"Branch <b>{branch}</b> already exists in the tree of branch dependencies")
 
-        if opt_onto:
-            self.expect_in_managed_branches(opt_onto)
+        # `onto` is tracked as a `ManagedBranchName` from this point on so
+        # that the final `add_as_child(parent=...)` call type-checks; every
+        # path that assigns to it (explicit `--onto`, current branch, inferred
+        # parent) is gated on the branch being in the layout.
+        onto: Optional[ManagedBranchName] = self.expect_in_managed_branches(opt_onto) if opt_onto else None
 
         if branch not in self._git.get_local_branches():
             remote_branch: Optional[RemoteBranchShortName] = self._git.get_sole_remote_branch(branch)
@@ -594,8 +605,8 @@ class MacheteClient:
                 # Not dealing with `onto` here. If it hasn't been explicitly
                 # specified via `--onto`, we'll try to infer it now.
             else:
-                out_of = LocalBranchShortName.of(opt_onto).full_name() if opt_onto else HEAD
-                out_of_str = f"<b>{opt_onto}</b>" if opt_onto else "the current HEAD"
+                out_of = LocalBranchShortName.of(onto).full_name() if onto else HEAD
+                out_of_str = f"<b>{onto}</b>" if onto else "the current HEAD"
                 msg = (f"A local branch <b>{branch}</b> does not exist. Create out "
                        f"of {out_of_str}?" + pretty_choices('y', 'N'))
                 opt_yes_msg = (f"A local branch <b>{branch}</b> does not exist. "
@@ -603,11 +614,11 @@ class MacheteClient:
                 if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
                     # If `--onto` hasn't been explicitly specified, let's try to
                     # assess if the current branch would be a good `onto`.
-                    if not opt_onto:
+                    if not onto:
                         current_branch = self._git.get_current_branch_or_none()
                         if self._state.roots:
                             if current_branch and current_branch in self.managed_branches:
-                                opt_onto = current_branch
+                                onto = ManagedBranchName(current_branch)
                         else:
                             if current_branch:
                                 # In this case (empty .git/machete, creating a new branch with `git machete add`)
@@ -617,7 +628,7 @@ class MacheteClient:
                                 # This section of code is only ever executed in verbose mode, but let's leave the `if` for consistency
                                 if verbose:  # pragma: no branch
                                     print_fmt(f"Added branch <b>{current_branch}</b> as a new root")
-                                opt_onto = current_branch
+                                onto = ManagedBranchName(current_branch)
                     self._git.create_branch(branch, out_of, switch_head=switch_head_if_new_branch)
                 else:
                     return
@@ -627,7 +638,7 @@ class MacheteClient:
             if verbose:
                 print_fmt(f"Added branch <b>{branch}</b> as a new root")
         else:
-            if not opt_onto:
+            if not onto:
                 parent = self._infer_parent(
                     branch,
                     condition=lambda x: x in self.managed_branches,
@@ -645,13 +656,16 @@ class MacheteClient:
                     opt_yes_msg = (f"Adding <b>{branch}</b> onto the inferred upstream"
                                    f" (parent) branch <b>{parent}</b>")
                     if self.ask_if(msg, opt_yes_msg, opt_yes=opt_yes, verbose=verbose) in ('y', 'yes'):
-                        opt_onto = parent
+                        # `_infer_parent` was filtered by `x in self.managed_branches`
+                        # above, so we can safely narrow here.
+                        onto = ManagedBranchName(parent)
                     else:
                         return
 
-            self._state.add_as_child(branch=branch, parent=opt_onto, as_first_child=opt_as_first_child)
+            assert onto is not None  # established by the `if not onto: ...` block above
+            self._state.add_as_child(branch=branch, parent=onto, as_first_child=opt_as_first_child)
             if verbose:
-                print_fmt(f"Added branch <b>{branch}</b> onto <b>{opt_onto}</b>")
+                print_fmt(f"Added branch <b>{branch}</b> onto <b>{onto}</b>")
 
         self.save_branch_layout_file()
 
@@ -665,7 +679,7 @@ class MacheteClient:
 
     def delete_untracked(self, *, opt_yes: bool) -> None:
         print_fmt("<b>Checking for untracked managed branches with no downstream...</b>")
-        branches_to_delete: List[LocalBranchShortName] = []
+        branches_to_delete: List[ManagedBranchName] = []
         for branch in self.managed_branches.copy():
             status, _ = self._git.get_combined_remote_sync_status(branch)
             if status == SyncToRemoteStatus.UNTRACKED and not self.children_of(branch):
@@ -676,7 +690,7 @@ class MacheteClient:
 
     def _delete_branches(
         self,
-        branches_to_delete: List[LocalBranchShortName],
+        branches_to_delete: Sequence[LocalBranchShortName],
         *,
         opt_squash_merge_detection: SquashMergeDetection,
         opt_yes: bool
@@ -829,7 +843,7 @@ class MacheteClient:
         *,
         new_parent: Optional[LocalBranchShortName],
         slid_out_branch: LocalBranchShortName,
-        new_children: List[LocalBranchShortName]
+        new_children: List[ManagedBranchName]
     ) -> None:
         hook_path = self._git.get_hook_path("machete-post-slide-out")
         if self._git.check_hook_executable(hook_path):
@@ -1166,7 +1180,10 @@ class MacheteClient:
         return ans
 
     @staticmethod
-    def pick(choices: List[LocalBranchShortName], name: str) -> LocalBranchShortName:
+    def pick(choices: Sequence[_BranchT], name: str) -> _BranchT:
+        # Generic in the branch type: when the caller hands us `List[ManagedBranchName]`
+        # the returned element is also a `ManagedBranchName` (not just any `LocalBranchShortName`),
+        # which matters when the result is then fed back into layout-mutating APIs.
         xs: str = "".join(f"[{index + 1}] {x}\n" for index, x in enumerate(choices))
         msg: str = xs + f"Specify {name} or hit <return> to skip: "
         try:

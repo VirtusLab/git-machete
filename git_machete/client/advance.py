@@ -9,8 +9,7 @@ class AdvanceMacheteClient(MacheteClient):
     def advance(self, *, opt_yes: bool) -> None:
         self._git.expect_no_operation_in_progress()
 
-        branch = self._git.get_current_branch()
-        self.expect_in_managed_branches(branch)
+        branch = self.expect_in_managed_branches(self._git.get_current_branch())
 
         children = self.children_of(branch)
         if not children:

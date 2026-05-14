@@ -3,6 +3,7 @@ import os
 from typing import Dict, Iterator, List, Optional, Set, Tuple
 
 from git_machete.annotation import Annotation, Qualifiers
+from git_machete.client.state import ManagedBranchName
 from git_machete.client.status import StatusMacheteClient
 from git_machete.code_hosting import (CodeHostingApi, CodeHostingSpec,
                                       OrganizationAndRepository,
@@ -70,10 +71,11 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                                                  *, include_urls: bool, verbose: bool) -> None:
         spec = self.code_hosting_spec
         for pr in prs:
-            if LocalBranchShortName.of(pr.head) in self.managed_branches:
+            head_branch_managed = self._state.as_managed(LocalBranchShortName.of(pr.head))
+            if head_branch_managed is not None:
                 debug(f'{pr} corresponds to a managed branch')
                 anno: str = self._pull_request_annotation(pr, current_user, include_url=include_urls)
-                parent: Optional[LocalBranchShortName] = self.parent_of(LocalBranchShortName.of(pr.head))
+                parent: Optional[LocalBranchShortName] = self.parent_of(head_branch_managed)
                 if parent is not None:
                     counterpart = self._git.get_combined_counterpart_for_fetching_of_branch(parent)
                 else:
@@ -88,8 +90,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                              f"{spec.pr_short_name} has {pr.base}")
                 old_annotation_text = ''
                 old_annotation_qualifiers = Qualifiers()
-                head_branch = LocalBranchShortName.of(pr.head)
-                old_annotation = self._state.get_annotation(head_branch)
+                old_annotation = self._state.get_annotation(head_branch_managed)
                 if old_annotation is not None:
                     old_annotation_text = old_annotation.text_without_qualifiers
                     old_annotation_qualifiers = old_annotation.qualifiers
@@ -97,11 +98,11 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 if pr.user != current_user and old_annotation_qualifiers.is_default():
                     if verbose:
                         print_fmt(f'Annotating <b>{pr.head}</b> as `{anno} rebase=no push=no`')
-                    self._state.set_annotation(head_branch, Annotation(anno, Qualifiers(rebase=False, push=False)))
+                    self._state.set_annotation(head_branch_managed, Annotation(anno, Qualifiers(rebase=False, push=False)))
                 elif old_annotation_text != anno:
                     if verbose:
                         print_fmt(f'Annotating <b>{pr.head}</b> as `{anno}`')
-                    self._state.set_annotation(head_branch, Annotation(anno, old_annotation_qualifiers))
+                    self._state.set_annotation(head_branch_managed, Annotation(anno, old_annotation_qualifiers))
             else:
                 debug(f'{pr} does NOT correspond to a managed branch')
         self.save_branch_layout_file()
@@ -240,9 +241,12 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             opt_update_related_descriptions: bool,
             opt_yes: bool
     ) -> None:
-        head: LocalBranchShortName = self._git.get_current_branch()
+        # `sync_before_creating_pull_request` (invoked from the CLI just before this call)
+        # ensures the head branch is in the layout file, so narrowing to `ManagedBranchName`
+        # is safe.
+        head: ManagedBranchName = self.expect_in_managed_branches(self._git.get_current_branch())
         # Use provided base branch if --base flag is specified (undocumented), otherwise use parent branch from .git/machete
-        base: Optional[LocalBranchShortName] = opt_base or self.parent_of(LocalBranchShortName.of(head))
+        base: Optional[LocalBranchShortName] = opt_base or self.parent_of(head)
         spec = self.code_hosting_spec
         if not base:
             raise UnexpectedMacheteException(f'could not determine {spec.base_branch_name} branch for {spec.pr_short_name}. '
@@ -539,8 +543,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
     def retarget_pull_request(self, *, opt_branch: Optional[LocalBranchShortName],
                               opt_ignore_if_missing: bool, opt_update_related_descriptions: bool) -> None:
-        head: LocalBranchShortName = opt_branch or self._git.get_current_branch()
-        self.expect_in_managed_branches(head)
+        head: ManagedBranchName = self.expect_in_managed_branches(opt_branch or self._git.get_current_branch())
         spec = self.code_hosting_spec
         if self.__code_hosting_client is None:
             self._init_code_hosting_client(branch_used_for_tracking_data=head)
@@ -550,7 +553,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         if pr is None:
             return
 
-        new_base: Optional[LocalBranchShortName] = self.parent_of(LocalBranchShortName.of(head))
+        new_base: Optional[LocalBranchShortName] = self.parent_of(head)
         if not new_base:
             raise MacheteException(
                 f'Branch <b>{head}</b> does not have a parent branch (it is a root) '
