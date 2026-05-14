@@ -340,28 +340,29 @@ class TestCLI(BaseTest):
     def test_boolean_flag_passed_with_value(self) -> None:
         """`--yes` is a boolean flag (no `takes_value`). Passing `--yes=true`
         must surface a sane argument error, not let getopt's raw
-        `GetoptError` propagate."""
+        `GetoptError` propagate. We pass the message through verbatim
+        from getopt rather than maintaining a bespoke re-wording."""
         assert_argument_error(
             ["add", "--yes=true"],
-            "Argument -y/--yes: must not have an argument")
+            "option --yes must not have an argument")
 
     # ─── Value-taking flag passed without a value ────────────────────────────
 
     def test_value_taking_flag_without_value(self) -> None:
         """`getopt` raises "option requires argument" for `-o` / `--onto` with
         no value after it. The parser must catch this rather than let
-        the raw `GetoptError` propagate, and re-cast it with the
-        canonical option label."""
+        the raw `GetoptError` propagate; we re-emit getopt's message
+        verbatim."""
         # Short form.
         assert_argument_error(
             ["add", "-o"],
-            "Argument -o/--onto: expected one argument")
+            "option -o requires argument")
         # Long form. `gnu_getopt`'s "long with =" parsing would accept an
         # explicit empty `--onto=`, so we exercise the no-`=`, end-of-argv
         # case to actually trigger the recovery path.
         assert_argument_error(
             ["add", "--onto"],
-            "Argument -o/--onto: expected one argument")
+            "option --onto requires argument")
 
     # ─── Unknown-flag recovery preserves adjacent KNOWN options ──────────────
 

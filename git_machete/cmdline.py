@@ -22,7 +22,6 @@ The module exposes:
 import difflib
 import getopt
 import itertools
-import re
 import sys
 from typing import (Any, Callable, Dict, FrozenSet, Iterable, List, NamedTuple,
                     NoReturn, Optional, Tuple)
@@ -783,9 +782,9 @@ def _scan(
             return {}, [], unknown_tokens
         # getopt raised for some other reason (typically "option X requires
         # argument" when the user passes a value-taking flag with no value
-        # after it). Surface as a regular argument error rather than an
-        # uncaught GetoptError.
-        _argument_error(_humanize_getopt_error(e, long_specs, short_specs))
+        # after it). Surface getopt's own message as a regular argument
+        # error rather than letting an uncaught `GetoptError` propagate.
+        _argument_error(str(e))
 
     opts: Dict[str, str] = {}
     for raw_flag, raw_value in pairs:
@@ -793,29 +792,6 @@ def _scan(
                 else short_specs[raw_flag[1:]])
         opts[spec.storage_key] = raw_value if spec.takes_value else ""
     return opts, positionals, []
-
-
-def _humanize_getopt_error(
-        err: getopt.GetoptError,
-        long_specs: Dict[str, OptSpec],
-        short_specs: Dict[str, OptSpec],
-) -> str:
-    """Re-cast getopt's lowercase, hard-coded "option X requires argument"
-    style message into the "Argument -X/--long: expected one argument"
-    wording the rest of the parser uses."""
-    opt = err.opt
-    # `err.opt` carries the short letter or long name WITHOUT the leading
-    # dashes; promote it back to whichever canonical form we recognise.
-    spec = (long_specs.get(opt) if len(opt) > 1 else None) or short_specs.get(opt)
-    label = spec.canonical_name if spec else (f"--{opt}" if len(opt) > 1 else f"-{opt}")
-    # getopt's own messages are stable but lowercase; sentence-cap them to
-    # match the rest of the parser's diagnostics. Strip the leading
-    # `option --X ` / `option -X ` prefix since we already lead with
-    # `Argument {label}:`.
-    if "requires argument" in str(err):
-        return f"Argument {label}: expected one argument"
-    tail = re.sub(r"^option -{1,2}\S+\s+", "", err.msg)
-    return f"Argument {label}: {tail}"
 
 
 def _collect_unknown_tokens(
