@@ -30,7 +30,7 @@ from git_machete.gitlab import GITLAB_API_SPEC
 
 from .git import AnyRevision, LocalBranchShortName
 from .help import alias_by_command, get_help_description, version
-from .utils import cmd, debug_log, markup, terminal
+from .utils import cmd, debug_log, terminal
 from .utils.exceptions import (ExitCode, InteractionStopped, MacheteException,
                                UnderlyingGitException,
                                UnexpectedMacheteException)
@@ -196,9 +196,9 @@ def update_cli_options_using_config_keys(cli_opts: git_machete.options.CommandLi
 
 
 def set_utils_global_variables(parsed: ParsedCmd) -> None:
-    color = parsed.opts.get("color")
-    markup.use_ansi_escapes_in_stdout = color == "always" or (color in {None, "auto"} and terminal.is_stdout_a_tty())
-    markup.use_ansi_escapes_in_stderr = color == "always" or (color in {None, "auto"} and terminal.is_stderr_a_tty())
+    # `--color` is already applied inside `parse_cmdline` so that any
+    # `MacheteException` raised during validation gets the right ANSI
+    # treatment; here we just propagate the debug / verbose flags.
     debug_log.debug_mode = "debug" in parsed.opts
     cmd.verbose_mode = "verbose" in parsed.opts
 

@@ -32,6 +32,7 @@ from typing import (Any, Callable, Dict, FrozenSet, Iterable, List, NamedTuple,
                     NoReturn, Optional, Tuple)
 
 from git_machete.help import commands_and_aliases
+from git_machete.utils import markup, terminal
 from git_machete.utils.exceptions import ExitCode, MacheteException
 
 _CLOSE_MATCH_CUTOFF = 0.6
@@ -604,6 +605,7 @@ def parse_cmdline(argv: List[str]) -> ParsedCmd:
         # the only "positional" we'd see is an unknown flag (e.g. `-q`).
         # Validate against COMMON_OPTIONS only and return.
         opts, _, unknowns = _scan(direct, COMMON_OPTIONS)
+        _apply_color_setting(opts.get("color"))
         if unknowns:
             _fail_unrecognized(unknowns, command=None)
         return ParsedCmd(command=None, opts=opts, positionals={}, pass_through=pass_through)
@@ -622,6 +624,11 @@ def parse_cmdline(argv: List[str]) -> ParsedCmd:
     merged_options = COMMON_OPTIONS + all_command_options
     other_args = direct[:cmd_pos] + direct[cmd_pos + 1:]
     opts, positionals, unknowns = _scan(other_args, merged_options)
+    # Apply `--color` before any downstream validation step that might
+    # construct a `MacheteException`: the exception captures the current
+    # `markup.use_ansi_escapes_in_*` values at __init__ time and rendering
+    # is one-shot.
+    _apply_color_setting(opts.get("color"))
     if unknowns:
         _fail_unrecognized(unknowns, command=cmd.name)
 
@@ -868,6 +875,22 @@ def _visible_choices(positional: PositionalSpec) -> Tuple[str, ...]:
     if not positional.choices:
         return ()
     return tuple(c for c in positional.choices if c not in positional.hidden_choices)
+
+
+def _apply_color_setting(color: Optional[str]) -> None:
+    """Honour `--color` for stdout / stderr ANSI emission.
+
+    Called from inside `parse_cmdline` (rather than waiting until the
+    caller invokes `set_utils_global_variables`) so that any
+    `MacheteException` raised from the validation phase below picks up
+    the same flag values that the rest of the program will use. The
+    exception's `.msg` is rendered once at `__init__` time, so the
+    globals must be correct BEFORE the raise.
+    """
+    use_in_stdout = color == "always" or (color in {None, "auto"} and terminal.is_stdout_a_tty())
+    use_in_stderr = color == "always" or (color in {None, "auto"} and terminal.is_stderr_a_tty())
+    markup.use_ansi_escapes_in_stdout = use_in_stdout
+    markup.use_ansi_escapes_in_stderr = use_in_stderr
 
 
 def _argument_error(message: str) -> NoReturn:
