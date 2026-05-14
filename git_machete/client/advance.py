@@ -1,14 +1,11 @@
 from git_machete.client.base import MacheteClient
 from git_machete.config import SquashMergeDetection
-from git_machete.git import Git, LocalBranchShortName, SyncToRemoteStatus
+from git_machete.git import LocalBranchShortName, SyncToRemoteStatus
 from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.markup import pretty_choices, warn
 
 
 class AdvanceMacheteClient(MacheteClient):
-    def __init__(self, git: Git) -> None:
-        super().__init__(git)
-
     def advance(self, *, opt_yes: bool) -> None:
         self._git.expect_no_operation_in_progress()
 

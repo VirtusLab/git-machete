@@ -3,14 +3,15 @@ from typing import List, Optional
 
 from git_machete.client.base import MacheteClient
 from git_machete.git import (AnyRevision, FullCommitHash, GitFormatPatterns,
-                             GitLogEntry, LocalBranchShortName)
+                             GitLogEntry)
 from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.markup import print_fmt
 
 
 class SquashMacheteClient(MacheteClient):
-    def squash(self, *, current_branch: LocalBranchShortName, opt_fork_point: Optional[AnyRevision]) -> None:
+    def squash(self, *, opt_fork_point: Optional[AnyRevision]) -> None:
         self._git.expect_no_operation_in_progress()
+        current_branch = self._git.get_current_branch()
         if opt_fork_point is not None:
             self.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                 fork_point=opt_fork_point, branch=current_branch)

@@ -1,6 +1,6 @@
 from git_machete.annotation import Annotation
 from git_machete.client.base import MacheteClient
-from git_machete.git import Git, LocalBranchShortName
+from git_machete.git import LocalBranchShortName
 
 from .base_test import BaseTest
 from .cli_runner import read_branch_layout_file, rewrite_branch_layout_file
@@ -54,8 +54,7 @@ class TestClient(BaseTest):
             feature8 annotation rebase=no push=no rebase=no push=no
             """
         rewrite_branch_layout_file(body)
-        machete_client = MacheteClient(Git())
-        machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
+        machete_client = MacheteClient()
 
         def anno(branch_name: str) -> Annotation:
             result = machete_client._state.get_annotation(LocalBranchShortName.of(branch_name))
@@ -121,8 +120,7 @@ class TestClient(BaseTest):
             # develop
               feature
             """)
-        machete_client = MacheteClient(Git())
-        machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
+        machete_client = MacheteClient()
 
         assert machete_client.managed_branches == [
             LocalBranchShortName.of('master'),
@@ -145,8 +143,7 @@ class TestClient(BaseTest):
             master
             feature  note #123
             """)
-        machete_client = MacheteClient(Git())
-        machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
+        machete_client = MacheteClient()
 
         feature = LocalBranchShortName.of('feature')
         assert machete_client.managed_branches == [
@@ -170,8 +167,7 @@ class TestClient(BaseTest):
             master
             # feature
             """)
-        machete_client = MacheteClient(Git())
-        machete_client.read_branch_layout_file(interactively_slide_out_invalid_branches=False)
+        machete_client = MacheteClient()
         machete_client.save_branch_layout_file()
 
         assert '#' not in read_branch_layout_file()

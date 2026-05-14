@@ -9,7 +9,7 @@ from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.code_hosting import CodeHostingSpec, PullRequest
 from git_machete.config import (SquashMergeDetection,
                                 TraverseWhenBranchNotCheckedOutInAnyWorktree)
-from git_machete.git import Git, LocalBranchShortName, SyncToRemoteStatus
+from git_machete.git import LocalBranchShortName, SyncToRemoteStatus
 from git_machete.utils.exceptions import (MacheteException, ParsableEnum,
                                           UnexpectedMacheteException)
 from git_machete.utils.markup import green_ok, pretty_choices, print_fmt, warn
@@ -29,11 +29,9 @@ class TraverseStartFrom(ParsableEnum):
 
     @classmethod
     def from_string_or_branch(cls: Type['TraverseStartFrom'], value: str,
-                              git_context: Git) -> Union['TraverseStartFrom', LocalBranchShortName]:
+                              local_branches: List[LocalBranchShortName]) -> Union['TraverseStartFrom', LocalBranchShortName]:
         """Parse value as enum (case-insensitive) or as branch name.
         If value matches both a special value and an existing branch name, the branch takes priority."""
-        local_branches = git_context.get_local_branches()
-
         # Check if it's an existing branch name first (gives priority to actual branches)
         # This handles exact matches (case-sensitive)
         if value in local_branches:
@@ -49,8 +47,12 @@ class TraverseStartFrom(ParsableEnum):
 
 class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
-    def __init__(self, git: Git, spec: CodeHostingSpec):
-        super().__init__(git, spec)
+    def __init__(self, spec: CodeHostingSpec, *, read_layout_file: bool = True,
+                 verify_branches: bool = True,
+                 interactively_slide_out_invalid_branches: bool = False):
+        super().__init__(spec, read_layout_file=read_layout_file,
+                         verify_branches=verify_branches,
+                         interactively_slide_out_invalid_branches=interactively_slide_out_invalid_branches)
         self.__temporary_worktree_path: Optional[AbsPath] = None
         self.__dir_before_temporary_worktree: Optional[AbsPath] = None
         self.__worktree_root_dir_for_branch: Dict[LocalBranchShortName, AbsPath] = {}
@@ -153,7 +155,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             opt_push_untracked: bool,
             opt_return_to: TraverseReturnTo,
             opt_squash_merge_detection: SquashMergeDetection,
-            opt_start_from: Union[TraverseStartFrom, LocalBranchShortName],
+            opt_start_from: str,
             opt_stop_after: Optional[LocalBranchShortName],
             opt_sync_github_prs: bool,
             opt_sync_gitlab_mrs: bool,
@@ -161,6 +163,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
     ) -> None:
         self._git.expect_no_operation_in_progress()
         self.expect_at_least_one_managed_branch()
+        start_from = TraverseStartFrom.from_string_or_branch(opt_start_from, self._git.get_local_branches())
 
         if opt_stop_after is not None:
             self.expect_in_managed_branches(opt_stop_after)
@@ -191,29 +194,29 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
         self.__worktree_root_dir_for_branch = self._git.get_worktree_root_dirs_by_branch()
 
         try:
-            if opt_start_from == TraverseStartFrom.ROOT:
+            if start_from == TraverseStartFrom.ROOT:
                 dest = self.root_branch_for(self._git.get_current_branch(), if_unmanaged=PickRoot.FIRST)
                 self._ensure_blank_separator()
                 self._switch_branch(dest, custom_checkout_message=f"Checking out the root branch (<b>{dest}</b>)")
                 current_branch = dest
-            elif opt_start_from == TraverseStartFrom.FIRST_ROOT:
+            elif start_from == TraverseStartFrom.FIRST_ROOT:
                 # Note that we already ensured that there is at least one managed branch.
                 dest = self.managed_branches[0]
                 self._ensure_blank_separator()
                 root_qualifier = "first root" if len(self._state.roots) > 1 else "root"  # property returns a copy
                 self._switch_branch(dest, custom_checkout_message=f"Checking out the {root_qualifier} branch (<b>{dest}</b>)")
                 current_branch = dest
-            elif opt_start_from == TraverseStartFrom.HERE:
+            elif start_from == TraverseStartFrom.HERE:
                 current_branch = self._git.get_current_branch()
                 self.expect_in_managed_branches(current_branch)
-            elif isinstance(opt_start_from, LocalBranchShortName):
-                dest = opt_start_from
+            elif isinstance(start_from, LocalBranchShortName):
+                dest = start_from
                 self.expect_in_managed_branches(dest)
                 self._ensure_blank_separator()
                 self._switch_branch(dest)
                 current_branch = dest
             else:
-                raise UnexpectedMacheteException(f"Unexpected value for opt_start_from: {opt_start_from}")
+                raise UnexpectedMacheteException(f"Unexpected value for opt_start_from: {start_from}")
 
             branch: LocalBranchShortName
             for branch in itertools.dropwhile(lambda x: x != current_branch, self.managed_branches.copy()):
@@ -505,7 +508,6 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                         opt_yes=opt_yes)
                     if ans in ('y', 'yes', 'yq', 'd', 'draft'):
                         self.create_pull_request(
-                            head=current_branch,
                             opt_base=None,
                             opt_draft=(ans in ('d', 'draft')),
                             opt_title=None,

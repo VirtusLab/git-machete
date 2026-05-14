@@ -15,7 +15,7 @@ from git_machete.git import LocalBranchShortName
 from git_machete.utils.collections import index_or_none
 from git_machete.utils.exceptions import (MacheteException,
                                           UnexpectedMacheteException)
-from git_machete.utils.markup import print_fmt, warn
+from git_machete.utils.markup import green_ok, print_fmt, warn
 from git_machete.utils.terminal import (AnsiInputCodes,
                                         BasicTerminalAnsiOutputCodes,
                                         FullTerminalAnsiOutputCodes,
@@ -120,12 +120,22 @@ class GoInteractiveMacheteClient(StatusMacheteClient):
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
-    def go_interactive(self, *, current_branch: Optional[LocalBranchShortName]) -> Optional[LocalBranchShortName]:
+    def go_interactive(self) -> None:
         """
-        Launch interactive branch selection interface.
-        Returns the selected branch or None if cancelled.
+        Launch interactive branch selection interface, then check out the chosen branch.
         Status data is computed once at start; only rendering (format_status_output) runs on each redraw.
         """
+        self._git.expect_no_operation_in_progress()
+        self.expect_at_least_one_managed_branch()
+        current_branch = self._git.get_current_branch_or_none()
+        selected_branch = self._pick_branch_interactively(current_branch=current_branch)
+        if selected_branch is not None and selected_branch != current_branch:
+            print()
+            print_fmt(f"Checking out <b>{selected_branch}</b>... ", newline=False)
+            self._git.checkout(selected_branch)
+            print_fmt(green_ok())
+
+    def _pick_branch_interactively(self, *, current_branch: Optional[LocalBranchShortName]) -> Optional[LocalBranchShortName]:
         if termios is None or tty is None:
             raise UnexpectedMacheteException("Interactive mode is not supported on Windows yet")
         if not terminal.is_stdout_a_tty():

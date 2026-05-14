@@ -1,3 +1,5 @@
+from typing import Optional
+
 from git_machete.client.base import MacheteClient
 from git_machete.git import LocalBranchShortName, RemoteBranchShortName
 from git_machete.utils.exceptions import MacheteException
@@ -8,9 +10,10 @@ class RenameMacheteClient(MacheteClient):
 
     def rename(self,
                *,
-               branch: LocalBranchShortName,
+               opt_branch: Optional[LocalBranchShortName],
                new_name: LocalBranchShortName,
                opt_repoint_tracking: bool) -> None:
+        branch = opt_branch or self._git.get_current_branch()
         self.expect_in_managed_branches(branch)
         if new_name == branch:
             raise MacheteException(f"Branch is already named <b>{branch}</b>")

@@ -10,7 +10,7 @@ from git_machete.utils.markup import green_ok, print_fmt
 class SlideOutMacheteClient(MacheteClient):
     def slide_out(self,
                   *,
-                  branches_to_slide_out: List[LocalBranchShortName],
+                  opt_branches: Optional[List[LocalBranchShortName]],
                   opt_delete: bool,
                   opt_down_fork_point: Optional[AnyRevision],
                   opt_merge: bool,
@@ -19,6 +19,7 @@ class SlideOutMacheteClient(MacheteClient):
                   opt_no_rebase: bool
                   ) -> None:
         self._git.expect_no_operation_in_progress()
+        branches_to_slide_out: List[LocalBranchShortName] = opt_branches or [self._git.get_current_branch()]
 
         # Verify that all branches exist, are managed and are NOT annotated with slide-out=no qualifier.
         for branch in branches_to_slide_out:

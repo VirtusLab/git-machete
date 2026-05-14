@@ -4,6 +4,7 @@ from git_machete.client.base import MacheteClient, PickRoot
 from git_machete.git import LocalBranchShortName
 from git_machete.utils.exceptions import (MacheteException,
                                           UnexpectedMacheteException)
+from git_machete.utils.markup import green_ok, print_fmt
 
 
 class GoShowMacheteClient(MacheteClient):
@@ -61,7 +62,21 @@ class GoShowMacheteClient(MacheteClient):
         else:
             return children
 
-    def parse_direction(
+    def go(self, direction: str) -> None:
+        self._git.expect_no_operation_in_progress()
+        current_branch = self._git.get_current_branch_or_none()
+        # with pick_if_multiple=True, the returned list will have exactly one element
+        dest = self._parse_direction(direction, branch=current_branch, allow_current=False, pick_if_multiple=True)[0]
+        if dest != current_branch:
+            print_fmt(f"Checking out <b>{dest}</b>... ", newline=False)
+            self._git.checkout(dest)
+            print_fmt(green_ok())
+
+    def show(self, direction: str, *, opt_branch: Optional[LocalBranchShortName]) -> None:
+        branch = opt_branch or self._git.get_current_branch_or_none()
+        print('\n'.join(self._parse_direction(direction, branch=branch, allow_current=True, pick_if_multiple=False)))
+
+    def _parse_direction(
         self,
         param: str,
         *,

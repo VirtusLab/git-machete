@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from git_machete.annotation import Annotation
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
@@ -6,14 +6,18 @@ from git_machete.git import LocalBranchShortName
 
 
 class AnnoMacheteClient(MacheteClientWithCodeHosting):
-    def annotate(self, branch: LocalBranchShortName, words: List[str]) -> None:
+    def annotate(self, *, opt_branch: Optional[LocalBranchShortName], words: List[str]) -> None:
+        branch = opt_branch or self._git.get_current_branch()
+        self.expect_in_managed_branches(branch)
         if self._state.has_annotation(branch) and words == ['']:
             self._state.delete_annotation(branch)
         else:
             self._state.set_annotation(branch, Annotation.parse(" ".join(words)))
         self.save_branch_layout_file()
 
-    def print_annotation(self, branch: LocalBranchShortName) -> None:
+    def print_annotation(self, *, opt_branch: Optional[LocalBranchShortName]) -> None:
+        branch = opt_branch or self._git.get_current_branch()
+        self.expect_in_managed_branches(branch)
         anno = self._state.get_annotation(branch)
         if anno is not None:
             print(anno.text_without_qualifiers)

@@ -50,8 +50,13 @@ class MacheteConfig:
     _TRAVERSE_WHEN_BRANCH_NOT_CHECKED_OUT_IN_ANY_WORKTREE = 'machete.traverse.whenBranchNotCheckedOutInAnyWorktree'
     _WORKTREE_USE_TOP_LEVEL_MACHETE_FILE = 'machete.worktree.useTopLevelMacheteFile'
 
-    def __init__(self, git: Git) -> None:
-        self._git: Git = git
+    def __init__(self, git: Optional[Git] = None) -> None:
+        # Default-construct `Git` so that early-startup code in `cli.py` can
+        # read a config key (e.g. `machete.traverse.push`) without having to
+        # build a `Git` instance itself just to feed it here. Clients that
+        # already own a `Git` (i.e. `MacheteClient`) keep passing it in to
+        # share the underlying caches.
+        self._git: Git = git if git is not None else Git()
 
     def advice_machete_editor_selection(self) -> bool:
         return self._git.get_config_attr_or_none(self._ADVICE_MACHETE_EDITOR_SELECTION) != 'false'

@@ -9,7 +9,7 @@ from git_machete.code_hosting import (CodeHostingApi, CodeHostingSpec,
                                       OrganizationAndRepositoryAndRemote,
                                       PullRequest, is_matching_remote_url)
 from git_machete.config import PRDescriptionIntroStyle, SquashMergeDetection
-from git_machete.git import (Git, GitFormatPatterns, GitLogEntry,
+from git_machete.git import (GitFormatPatterns, GitLogEntry,
                              LocalBranchShortName, RemoteBranchShortName,
                              SyncToRemoteStatus)
 from git_machete.utils.collections import find_or_none, get_non_empty_lines
@@ -25,8 +25,12 @@ from ..utils import date
 
 
 class MacheteClientWithCodeHosting(StatusMacheteClient):
-    def __init__(self, git: Git, spec: CodeHostingSpec):
-        super().__init__(git)
+    def __init__(self, spec: CodeHostingSpec, *, read_layout_file: bool = True,
+                 verify_branches: bool = True,
+                 interactively_slide_out_invalid_branches: bool = False):
+        super().__init__(read_layout_file=read_layout_file,
+                         verify_branches=verify_branches,
+                         interactively_slide_out_invalid_branches=interactively_slide_out_invalid_branches)
         self.__code_hosting_spec: CodeHostingSpec = spec
         self.__code_hosting_client: Optional[CodeHostingApi] = None
         self.__all_open_prs: Optional[List[PullRequest]] = None
@@ -127,7 +131,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         current_branch = self._git.get_current_branch()
         if current_branch not in self.managed_branches:
-            self.add(branch=current_branch,
+            self.add(opt_branch=current_branch,
                      opt_onto=None,
                      opt_as_first_child=False,
                      opt_as_root=False,
@@ -230,13 +234,13 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
     def create_pull_request(
             self,
             *,
-            head: LocalBranchShortName,
             opt_base: Optional[LocalBranchShortName],
             opt_draft: bool,
             opt_title: Optional[str],
             opt_update_related_descriptions: bool,
             opt_yes: bool
     ) -> None:
+        head: LocalBranchShortName = self._git.get_current_branch()
         # Use provided base branch if --base flag is specified (undocumented), otherwise use parent branch from .git/machete
         base: Optional[LocalBranchShortName] = opt_base or self.parent_of(LocalBranchShortName.of(head))
         spec = self.code_hosting_spec
@@ -456,7 +460,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 print_fmt(f'{pr.display_text()} has been temporarily marked as draft')
 
             # Note that retarget should happen BEFORE push, see issue #1222
-            self.retarget_pull_request(head, opt_ignore_if_missing=False,
+            self.retarget_pull_request(opt_branch=head, opt_ignore_if_missing=False,
                                        opt_update_related_descriptions=opt_update_related_descriptions)
 
             if s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
@@ -509,7 +513,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             else:  # case handled elsewhere
                 raise UnexpectedMacheteException(f"Could not retarget {spec.pr_full_name}: invalid sync-to-remote status `{s}`.")
 
-            self.retarget_pull_request(head, opt_ignore_if_missing=False,
+            self.retarget_pull_request(opt_branch=head, opt_ignore_if_missing=False,
                                        opt_update_related_descriptions=opt_update_related_descriptions)
 
     def _get_updated_pull_request_description(self, pr: PullRequest) -> str:
@@ -533,8 +537,10 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             lines = lines_to_prepend + ([''] if lines_to_prepend else []) + skip_leading_empty(lines)
         return '\n'.join(lines) + original_trailing_newlines
 
-    def retarget_pull_request(self, head: LocalBranchShortName, *,
+    def retarget_pull_request(self, *, opt_branch: Optional[LocalBranchShortName],
                               opt_ignore_if_missing: bool, opt_update_related_descriptions: bool) -> None:
+        head: LocalBranchShortName = opt_branch or self._git.get_current_branch()
+        self.expect_in_managed_branches(head)
         spec = self.code_hosting_spec
         if self.__code_hosting_client is None:
             self._init_code_hosting_client(branch_used_for_tracking_data=head)
@@ -884,7 +890,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             reversed_pr_path: List[PullRequest] = pr_path[::-1]  # need to add from root downwards
             if reversed_pr_path[0].base not in self.managed_branches:
                 self.add(
-                    branch=LocalBranchShortName.of(reversed_pr_path[0].base),
+                    opt_branch=LocalBranchShortName.of(reversed_pr_path[0].base),
                     opt_as_first_child=False,
                     opt_as_root=True,
                     opt_onto=None,
@@ -894,7 +900,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             for pr_on_path in reversed_pr_path:
                 if pr_on_path.head not in self.managed_branches:
                     self.add(
-                        branch=LocalBranchShortName.of(pr_on_path.head),
+                        opt_branch=LocalBranchShortName.of(pr_on_path.head),
                         opt_onto=LocalBranchShortName.of(pr_on_path.base),
                         opt_as_first_child=False,
                         opt_as_root=False,

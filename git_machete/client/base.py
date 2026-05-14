@@ -34,10 +34,14 @@ class MacheteClient:
 
     # === Initialization ===
 
-    def __init__(self, git: Git) -> None:
-        self._git: Git = git
-        self._config: MacheteConfig = MacheteConfig(git)
-        git.owner = self
+    def __init__(self, *, read_layout_file: bool = True, verify_branches: bool = True,
+                 interactively_slide_out_invalid_branches: bool = False) -> None:
+        # Clients own their `Git` plumbing instance - command-dispatch code
+        # (`cli.py`) and tests never touch it directly. Pass-throughs are
+        # avoided in favour of domain-specific methods on the client itself.
+        self._git: Git = Git()
+        self._config: MacheteConfig = MacheteConfig(self._git)
+        self._git.owner = self
 
         self._branch_layout_file_path: AbsPath = self.__get_git_machete_branch_layout_file_path()
         # Cwd-relative rendition of the layout path, captured at init time
@@ -64,6 +68,18 @@ class MacheteClient:
                 "rather than a regular file, aborting")
 
         self.__init_state()
+
+        # Load the layout file as part of construction so that callers
+        # consistently get a ready-to-use client; subclasses don't need
+        # to remember a separate `client.read_branch_layout_file(...)`
+        # step (and easily get its flags wrong for the command at hand).
+        # `read_layout_file=False` is for the few commands (`edit`, `file`)
+        # that must work even when the layout file is malformed - their
+        # whole point is to let the user inspect or fix it.
+        if read_layout_file:
+            self.read_branch_layout_file(
+                verify_branches=verify_branches,
+                interactively_slide_out_invalid_branches=interactively_slide_out_invalid_branches)
 
     def __get_git_machete_branch_layout_file_path(self) -> AbsPath:
         if self._config.worktree_use_top_level_machete_file():
@@ -95,6 +111,10 @@ class MacheteClient:
 
     def children_of(self, branch: LocalBranchShortName) -> Optional[List[LocalBranchShortName]]:
         return self._state.get_children(branch)
+
+    def is_managed(self, *, opt_branch: Optional[LocalBranchShortName]) -> bool:
+        branch = opt_branch or self._git.get_current_branch_or_none()
+        return branch is not None and branch in self.managed_branches
 
     # === Branch existence assertions ===
 
@@ -544,7 +564,7 @@ class MacheteClient:
 
     def add(self,
             *,
-            branch: LocalBranchShortName,
+            opt_branch: Optional[LocalBranchShortName],
             opt_onto: Optional[LocalBranchShortName],
             opt_as_first_child: bool,
             opt_as_root: bool,
@@ -552,6 +572,7 @@ class MacheteClient:
             verbose: bool,
             switch_head_if_new_branch: bool
             ) -> None:
+        branch = opt_branch or self._git.get_current_branch()
         if branch in self.managed_branches:
             raise MacheteException(f"Branch <b>{branch}</b> already exists in the tree of branch dependencies")
 
