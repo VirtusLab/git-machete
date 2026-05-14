@@ -5,28 +5,21 @@ heavy-lifting features (typo suggestions, scoped close-match hints,
 hidden-but-still-accepted choices, required-positional listings, ...)
 all live here; `getopt` is only used for the option-parsing primitive.
 
-The module exposes:
-
-* `OptSpec`, `PositionalSpec`, `MutexGroup`, `SubcommandSpec`, `CommandSpec`
-  - declarative description of one (sub)command's command-line surface.
-* `parse_cmdline(argv, *, commands_by_name_or_alias, common_options) ->
-  ParsedCmd` - the single entry point. Performs alias resolution, option
-  parsing, choice + mutex + per-subcommand-option validation, and either
-  returns a `ParsedCmd` or exits via `_argument_error()` (syntax errors)
-  / `MacheteException` (semantic rejections like "this option is only
-  valid with that subcommand").
-
-The actual catalog of commands the parser is fed (`COMMANDS`,
-`COMMON_OPTIONS`, ...) lives in `cli_commands.py`.
+The spec types this parser operates on, plus the actual catalog of
+git-machete commands (`COMMANDS`, `COMMON_OPTIONS`, ...) live in
+`cli_commands.py`. This file imports them and runs the parsing pass;
+`cli.py` is the single external caller, via `parse_cmdline(argv)`.
 """
 
 import difflib
 import getopt
 import itertools
 import sys
-from typing import (Any, Callable, Dict, FrozenSet, Iterable, List, NamedTuple,
-                    NoReturn, Optional, Tuple)
+from typing import Any, Dict, Iterable, List, NoReturn, Optional, Tuple
 
+from git_machete.cli_commands import (COMMAND_BY_NAME_OR_ALIAS, COMMON_OPTIONS,
+                                      CommandSpec, MutexGroup, OptSpec,
+                                      ParsedCmd, PositionalSpec, SubcommandSpec)
 from git_machete.utils import markup, terminal
 from git_machete.utils.exceptions import ExitCode, MacheteException
 
@@ -35,207 +28,33 @@ _MAX_SUGGESTIONS = 3
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# Spec types
-# ────────────────────────────────────────────────────────────────────────────
-
-
-class OptSpec(NamedTuple):
-    """One option (long, short or both).
-
-    `takes_value` is True iff the option requires an argument (e.g. `--onto
-    foo` or `-o foo`). The display name used in error messages is built
-    from whichever of `short`/`long` is set (preferring `-short/--long` if
-    both are present).
-    """
-    long: Optional[str] = None
-    short: Optional[str] = None
-    takes_value: bool = False
-
-    @property
-    def canonical_name(self) -> str:
-        """`-X/--long`, `--long`, or `-X` depending on what's defined."""
-        if self.short and self.long:
-            return f"-{self.short}/--{self.long}"
-        if self.long:
-            return f"--{self.long}"
-        # Short-only options exist in the catalog (e.g. `-W`, `-n`) but
-        # none of them currently participate in a mutex group, so the
-        # only call site - the mutex-error formatter - never lands here.
-        assert self.short is not None  # pragma: no cover
-        return f"-{self.short}"  # pragma: no cover
-
-    @property
-    def storage_key(self) -> str:
-        """Stable key used in the `opts` dict returned by the parser."""
-        return self.long if self.long else (self.short or "")
-
-
-class PositionalSpec(NamedTuple):
-    """One positional argument.
-
-    `multiple=True` collects every remaining positional into a list;
-    `required=False` makes a single-valued positional optional.
-
-    `choices` constrains the allowed values; `hidden_choices` is the
-    subset that's still accepted by the parser but never surfaced in
-    error messages or close-match suggestions (used for the deprecated
-    `github sync` subcommand).
-
-    `display_name` overrides the human-readable label used in error
-    messages while `name` stays the stable storage key (e.g. github's
-    `request_id` storage key but `PR number` in errors).
-
-    `only_with_subcommand`, when set, restricts this positional to a set
-    of subcommands. Used together with the `subcommands` field of
-    `CommandSpec` to surface "X is only valid with Y subcommand" errors
-    from the parser rather than from the dispatcher.
-    """
-    name: str
-    required: bool = True
-    multiple: bool = False
-    choices: Optional[Tuple[str, ...]] = None
-    hidden_choices: FrozenSet[str] = frozenset()
-    type_conv: Optional[Callable[[str], Any]] = None
-    display_name: Optional[str] = None
-    only_with_subcommand: Optional[Tuple[str, ...]] = None
-
-    @property
-    def label(self) -> str:
-        return self.display_name or self.name
-
-
-class MutexGroup(NamedTuple):
-    """A set of options that may not be used together.
-
-    `options` lists `OptSpec.storage_key`s. If two or more of them are
-    set, the group fires.
-
-    If `message` is None, a generic wording is emitted: `Argument X: not
-    allowed with argument Y` (exit code `ARGUMENT_ERROR`).
-
-    If `message` is a string, it's raised verbatim as a
-    `MacheteException` (exit code `MACHETE_EXCEPTION`). Use this for
-    semantic rejections like "Option `-d/--down-fork-point` only makes
-    sense when using rebase and cannot be specified together with
-    `-M/--merge`." - the message is fully owned by the spec and doesn't
-    depend on which option came first on the command line.
-    """
-    options: Tuple[str, ...]
-    message: Optional[str] = None
-
-
-class SubcommandSpec(NamedTuple):
-    """One second-level subcommand of a command that dispatches on its
-    first positional (currently `github` and `gitlab`).
-
-    Each subcommand owns its own option set + mutex groups; the parser
-    unions them across the command's subcommands for the actual parsing
-    pass but validates that any option used on a given command line is
-    accepted by the selected subcommand. `hidden=True` keeps the
-    subcommand accepted by the parser while excluding it from
-    user-facing listings (used for the deprecated `github sync`).
-    """
-    name: str
-    options: Tuple[OptSpec, ...] = ()
-    mutex_groups: Tuple[MutexGroup, ...] = ()
-    hidden: bool = False
-
-
-class CommandSpec(NamedTuple):
-    """One git-machete command.
-
-    `options`, `positionals` and `mutex_groups` describe what's accepted
-    regardless of any subcommand. `subcommands`, when non-empty, makes
-    the first positional a subcommand selector; the parser auto-generates
-    its `PositionalSpec` (with the storage key `{cmd.name}_subcommand`
-    and the display label `{cmd.name} subcommand`) and merges in the
-    selected subcommand's options/mutex_groups for validation.
-    """
-    name: str
-    aliases: Tuple[str, ...] = ()
-    options: Tuple[OptSpec, ...] = ()
-    positionals: Tuple[PositionalSpec, ...] = ()
-    mutex_groups: Tuple[MutexGroup, ...] = ()
-    subcommands: Tuple[SubcommandSpec, ...] = ()
-
-    @property
-    def subcommand_positional_name(self) -> str:
-        return f"{self.name}_subcommand"
-
-    @property
-    def subcommand_display_label(self) -> str:
-        return f"{self.name} subcommand"
-
-
-class ParsedCmd(NamedTuple):
-    """The output of `parse_cmdline`.
-
-    `opts` keys are `OptSpec.storage_key` (the long name, or short if
-    long-less). Boolean flags map to `""`; valued options map to their
-    string value.
-
-    `positionals` keys are `PositionalSpec.name` (the human-readable name
-    used in error messages); the value is a string, list of strings, or
-    list of converted values depending on `multiple`/`type_conv`.
-
-    `pass_through` is everything after a literal `--` in argv.
-    """
-    command: Optional[str]  # canonical command name (alias resolved). None for "no command"
-    opts: Dict[str, str]
-    positionals: Dict[str, Any]
-    pass_through: List[str]
-
-
-# ────────────────────────────────────────────────────────────────────────────
-# Parser context
-# ────────────────────────────────────────────────────────────────────────────
-
-
-class ParserContext(NamedTuple):
-    """Static catalog data the parser consumes on every call.
-
-    `parse_cmdline` receives one of these from `cli.py` so that the
-    parser module stays generic over its input: the actual catalog of
-    git-machete commands lives in `cli_commands.py`, but the parser
-    only ever sees these two fields.
-    """
-    commands_by_name_or_alias: Dict[str, CommandSpec]
-    common_options: Tuple[OptSpec, ...]
-
-
-# ────────────────────────────────────────────────────────────────────────────
 # Parsing
 # ────────────────────────────────────────────────────────────────────────────
 
 
-def parse_cmdline(argv: List[str], ctx: ParserContext) -> ParsedCmd:
-    """Parse `argv` into a `ParsedCmd` or exit with an argument error.
-
-    The catalog of valid commands and the cross-command "common"
-    options are supplied via `ctx` so the parser stays decoupled from
-    `cli_commands.py`.
-    """
+def parse_cmdline(argv: List[str]) -> ParsedCmd:
+    """Parse `argv` into a `ParsedCmd` or exit with an argument error."""
     direct, pass_through = _split_on_dashdash(argv)
 
     # Locate the command in `direct`. Anything before it must be a
     # common-option flag; anything after is parsed against the merged
     # spec (common + command-specific + selected-subcommand).
-    cmd_pos = _find_command_position(direct, ctx.common_options)
+    cmd_pos = _find_command_position(direct)
 
     if cmd_pos is None:
         # Either there are no positionals at all (`git machete --help`) or
         # the only "positional" we'd see is an unknown flag (e.g. `-q`).
         # Validate against common options only and return.
-        opts, _, unknowns = _scan(direct, ctx.common_options)
+        opts, _, unknowns = _scan(direct, COMMON_OPTIONS)
         _apply_color_setting(opts.get("color"))
         if unknowns:
-            _fail_unrecognized(unknowns, command=None, ctx=ctx)
+            _fail_unrecognized(unknowns, command=None)
         return ParsedCmd(command=None, opts=opts, positionals={}, pass_through=pass_through)
 
     cmd_name_typed = direct[cmd_pos]
-    cmd = ctx.commands_by_name_or_alias.get(cmd_name_typed)
+    cmd = COMMAND_BY_NAME_OR_ALIAS.get(cmd_name_typed)
     if cmd is None:
-        _fail_invalid_command(cmd_name_typed, ctx)
+        _fail_invalid_command(cmd_name_typed)
 
     # Build the union of every option this command may accept on any
     # subcommand: needed so the option parser knows what's syntactically
@@ -243,7 +62,7 @@ def parse_cmdline(argv: List[str], ctx: ParserContext) -> ParsedCmd:
     # subcommand and emit a friendlier "only valid with X subcommand"
     # error for the legal-but-not-here case.
     all_command_options = _collect_all_options(cmd)
-    merged_options = ctx.common_options + all_command_options
+    merged_options = COMMON_OPTIONS + all_command_options
     other_args = direct[:cmd_pos] + direct[cmd_pos + 1:]
     opts, positionals, unknowns = _scan(other_args, merged_options)
     # Apply `--color` before any downstream validation step that might
@@ -252,7 +71,7 @@ def parse_cmdline(argv: List[str], ctx: ParserContext) -> ParsedCmd:
     # is one-shot.
     _apply_color_setting(opts.get("color"))
     if unknowns:
-        _fail_unrecognized(unknowns, command=cmd.name, ctx=ctx)
+        _fail_unrecognized(unknowns, command=cmd.name)
 
     # `--help` and `--version` short-circuit positional/mutex validation
     # so that e.g. `git machete completion --help` prints the completion
@@ -262,12 +81,11 @@ def parse_cmdline(argv: List[str], ctx: ParserContext) -> ParsedCmd:
         return ParsedCmd(command=cmd.name, opts=opts, positionals={}, pass_through=pass_through)
 
     effective_positionals = _effective_positionals(cmd)
-    parsed_positionals = _validate_positionals(positionals, cmd, effective_positionals, ctx)
+    parsed_positionals = _validate_positionals(positionals, cmd, effective_positionals)
 
     selected_subcommand = _selected_subcommand(cmd, parsed_positionals)
     if cmd.subcommands and selected_subcommand is not None:
-        _validate_subcommand_restrictions(
-            opts, parsed_positionals, cmd, selected_subcommand, ctx.common_options)
+        _validate_subcommand_restrictions(opts, parsed_positionals, cmd, selected_subcommand)
 
     effective_mutex = cmd.mutex_groups + (
         selected_subcommand.mutex_groups if selected_subcommand is not None else ())
@@ -327,16 +145,13 @@ def _split_on_dashdash(argv: List[str]) -> Tuple[List[str], List[str]]:
     return direct, pass_through
 
 
-def _find_command_position(
-        direct: List[str],
-        common_options: Tuple[OptSpec, ...],
-) -> Optional[int]:
+def _find_command_position(direct: List[str]) -> Optional[int]:
     """Walk `direct`, skipping common-option flags, and return the index of
     the first positional token. `None` if there is no positional at all
     (or if we hit something option-looking we can't classify - in which
     case the parser will surface it as an unknown flag below)."""
-    common_long = {o.long for o in common_options if o.long}
-    common_short = {o.short for o in common_options if o.short}
+    common_long = {o.long for o in COMMON_OPTIONS if o.long}
+    common_short = {o.short for o in COMMON_OPTIONS if o.short}
     i = 0
     while i < len(direct):
         a = direct[i]
@@ -528,10 +343,10 @@ def _argument_error(message: str) -> NoReturn:
     sys.exit(ExitCode.ARGUMENT_ERROR)
 
 
-def _fail_invalid_command(typed: str, ctx: "ParserContext") -> NoReturn:
+def _fail_invalid_command(typed: str) -> NoReturn:
     lines = [f"Invalid command: {typed!r}"]
     # Build the user-visible vocabulary from canonical names + aliases.
-    visible = [n for n, spec in ctx.commands_by_name_or_alias.items()
+    visible = [n for n, spec in COMMAND_BY_NAME_OR_ALIAS.items()
                if n == spec.name or n in spec.aliases]
     suggestions = _close_matches(typed, visible)
     if suggestions:
@@ -543,19 +358,14 @@ def _fail_invalid_command(typed: str, ctx: "ParserContext") -> NoReturn:
     _argument_error("\n".join(lines))
 
 
-def _fail_unrecognized(
-        unknown_tokens: List[str],
-        *,
-        command: Optional[str],
-        ctx: "ParserContext",
-) -> NoReturn:
+def _fail_unrecognized(unknown_tokens: List[str], *, command: Optional[str]) -> NoReturn:
     message = "Unrecognized arguments: " + " ".join(unknown_tokens)
 
     # Build per-flag suggestions. `--foo=bar` is split before fuzzy-matching
     # so `--foo` (the actual misspelling) is what we compare against.
     flag_suggestions: List[Tuple[str, List[str]]] = []
-    known_options = ctx.common_options + (
-        ctx.commands_by_name_or_alias[command].options if command is not None else ()
+    known_options = COMMON_OPTIONS + (
+        COMMAND_BY_NAME_OR_ALIAS[command].options if command is not None else ()
     )
     known_flags = [f"--{o.long}" for o in known_options if o.long]
     for tok in unknown_tokens:
@@ -583,7 +393,6 @@ def _validate_positionals(
         positionals: List[str],
         cmd: CommandSpec,
         positional_specs: Tuple[PositionalSpec, ...],
-        ctx: "ParserContext",
 ) -> Dict[str, Any]:
     result: Dict[str, Any] = {}
     remaining = list(positionals)
@@ -613,11 +422,11 @@ def _validate_positionals(
             result[pspec.name] = _convert_positional(pspec, value)
         if is_last and remaining:
             # Excess positionals are reported as unrecognized arguments.
-            _fail_unrecognized(remaining, command=cmd.name, ctx=ctx)
+            _fail_unrecognized(remaining, command=cmd.name)
 
     if remaining:
         # The command declares no positionals but the user passed some.
-        _fail_unrecognized(remaining, command=cmd.name, ctx=ctx)
+        _fail_unrecognized(remaining, command=cmd.name)
 
     return result
 
@@ -678,7 +487,6 @@ def _validate_subcommand_restrictions(
         parsed_positionals: Dict[str, Any],
         cmd: CommandSpec,
         selected: SubcommandSpec,
-        common_options: Tuple[OptSpec, ...],
 ) -> None:
     """For every option/positional that's been parsed, verify the selected
     subcommand accepts it. Raise `MacheteException` with the
@@ -686,7 +494,7 @@ def _validate_subcommand_restrictions(
 
     # ---- options ----------------------------------------------------------
     selected_keys = {o.storage_key for o in selected.options}
-    common_keys = {o.storage_key for o in cmd.options} | {o.storage_key for o in common_options}
+    common_keys = {o.storage_key for o in cmd.options} | {o.storage_key for o in COMMON_OPTIONS}
     for key in opts:
         if key in selected_keys or key in common_keys:
             continue

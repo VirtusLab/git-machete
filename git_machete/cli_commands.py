@@ -1,21 +1,173 @@
-"""Catalog of git-machete CLI commands.
+"""Spec types + catalog of git-machete CLI commands.
 
-This module is pure data: it declares every command, alias, option,
-positional, mutex group and subcommand that `git machete` understands.
-The parsing engine that consumes these declarations lives in
-`cli_parser.py`.
+This module owns both the data model (`OptSpec`, `PositionalSpec`,
+`MutexGroup`, `SubcommandSpec`, `CommandSpec`, `ParsedCmd`) and the
+data itself (`COMMANDS`, `COMMON_OPTIONS`, `COMMAND_BY_NAME_OR_ALIAS`).
+The parsing engine that consumes these lives in `cli_parser.py` and
+imports from here.
 
-Keeping the catalog separate from the parser lets the parser stay
-generic over its input (any catalog of the right shape works) and keeps
-the two layers - "what the CLI accepts" vs. "how arguments are parsed"
-- changing independently.
+Keeping types + data together (rather than splitting types into the
+parser module) keeps `cli_parser.py → cli_commands.py` as a one-way
+dependency and removes the need for any forward references or
+parameterization.
 """
 
-from typing import Dict, Tuple
+from typing import (Any, Callable, Dict, FrozenSet, List, NamedTuple, Optional,
+                    Tuple)
 
-from git_machete.cli_parser import (CommandSpec, MutexGroup, OptSpec,
-                                    PositionalSpec, SubcommandSpec)
 from git_machete.help import commands_and_aliases
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# Spec types
+# ────────────────────────────────────────────────────────────────────────────
+
+
+class OptSpec(NamedTuple):
+    """One option (long, short or both).
+
+    `takes_value` is True iff the option requires an argument (e.g. `--onto
+    foo` or `-o foo`). The display name used in error messages is built
+    from whichever of `short`/`long` is set (preferring `-short/--long` if
+    both are present).
+    """
+    long: Optional[str] = None
+    short: Optional[str] = None
+    takes_value: bool = False
+
+    @property
+    def canonical_name(self) -> str:
+        """`-X/--long`, `--long`, or `-X` depending on what's defined."""
+        if self.short and self.long:
+            return f"-{self.short}/--{self.long}"
+        if self.long:
+            return f"--{self.long}"
+        # Short-only options exist in the catalog (e.g. `-W`, `-n`) but
+        # none of them currently participate in a mutex group, so the
+        # only call site - the mutex-error formatter - never lands here.
+        assert self.short is not None  # pragma: no cover
+        return f"-{self.short}"  # pragma: no cover
+
+    @property
+    def storage_key(self) -> str:
+        """Stable key used in the `opts` dict returned by the parser."""
+        return self.long if self.long else (self.short or "")
+
+
+class PositionalSpec(NamedTuple):
+    """One positional argument.
+
+    `multiple=True` collects every remaining positional into a list;
+    `required=False` makes a single-valued positional optional.
+
+    `choices` constrains the allowed values; `hidden_choices` is the
+    subset that's still accepted by the parser but never surfaced in
+    error messages or close-match suggestions (used for the deprecated
+    `github sync` subcommand).
+
+    `display_name` overrides the human-readable label used in error
+    messages while `name` stays the stable storage key (e.g. github's
+    `request_id` storage key but `PR number` in errors).
+
+    `only_with_subcommand`, when set, restricts this positional to a set
+    of subcommands. Used together with the `subcommands` field of
+    `CommandSpec` to surface "X is only valid with Y subcommand" errors
+    from the parser rather than from the dispatcher.
+    """
+    name: str
+    required: bool = True
+    multiple: bool = False
+    choices: Optional[Tuple[str, ...]] = None
+    hidden_choices: FrozenSet[str] = frozenset()
+    type_conv: Optional[Callable[[str], Any]] = None
+    display_name: Optional[str] = None
+    only_with_subcommand: Optional[Tuple[str, ...]] = None
+
+    @property
+    def label(self) -> str:
+        return self.display_name or self.name
+
+
+class MutexGroup(NamedTuple):
+    """A set of options that may not be used together.
+
+    `options` lists `OptSpec.storage_key`s. If two or more of them are
+    set, the group fires.
+
+    If `message` is None, a generic wording is emitted: `Argument X: not
+    allowed with argument Y` (exit code `ARGUMENT_ERROR`).
+
+    If `message` is a string, it's raised verbatim as a
+    `MacheteException` (exit code `MACHETE_EXCEPTION`). Use this for
+    semantic rejections like "Option `-d/--down-fork-point` only makes
+    sense when using rebase and cannot be specified together with
+    `-M/--merge`." - the message is fully owned by the spec and doesn't
+    depend on which option came first on the command line.
+    """
+    options: Tuple[str, ...]
+    message: Optional[str] = None
+
+
+class SubcommandSpec(NamedTuple):
+    """One second-level subcommand of a command that dispatches on its
+    first positional (currently `github` and `gitlab`).
+
+    Each subcommand owns its own option set + mutex groups; the parser
+    unions them across the command's subcommands for the actual parsing
+    pass but validates that any option used on a given command line is
+    accepted by the selected subcommand. `hidden=True` keeps the
+    subcommand accepted by the parser while excluding it from
+    user-facing listings (used for the deprecated `github sync`).
+    """
+    name: str
+    options: Tuple[OptSpec, ...] = ()
+    mutex_groups: Tuple[MutexGroup, ...] = ()
+    hidden: bool = False
+
+
+class CommandSpec(NamedTuple):
+    """One git-machete command.
+
+    `options`, `positionals` and `mutex_groups` describe what's accepted
+    regardless of any subcommand. `subcommands`, when non-empty, makes
+    the first positional a subcommand selector; the parser auto-generates
+    its `PositionalSpec` (with the storage key `{cmd.name}_subcommand`
+    and the display label `{cmd.name} subcommand`) and merges in the
+    selected subcommand's options/mutex_groups for validation.
+    """
+    name: str
+    aliases: Tuple[str, ...] = ()
+    options: Tuple[OptSpec, ...] = ()
+    positionals: Tuple[PositionalSpec, ...] = ()
+    mutex_groups: Tuple[MutexGroup, ...] = ()
+    subcommands: Tuple[SubcommandSpec, ...] = ()
+
+    @property
+    def subcommand_positional_name(self) -> str:
+        return f"{self.name}_subcommand"
+
+    @property
+    def subcommand_display_label(self) -> str:
+        return f"{self.name} subcommand"
+
+
+class ParsedCmd(NamedTuple):
+    """The output of `parse_cmdline`.
+
+    `opts` keys are `OptSpec.storage_key` (the long name, or short if
+    long-less). Boolean flags map to `""`; valued options map to their
+    string value.
+
+    `positionals` keys are `PositionalSpec.name` (the human-readable name
+    used in error messages); the value is a string, list of strings, or
+    list of converted values depending on `multiple`/`type_conv`.
+
+    `pass_through` is everything after a literal `--` in argv.
+    """
+    command: Optional[str]  # canonical command name (alias resolved). None for "no command"
+    opts: Dict[str, str]
+    positionals: Dict[str, Any]
+    pass_through: List[str]
 
 
 # ────────────────────────────────────────────────────────────────────────────

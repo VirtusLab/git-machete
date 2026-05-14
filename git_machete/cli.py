@@ -23,8 +23,7 @@ from git_machete.client.status import StatusMacheteClient
 from git_machete.client.traverse import TraverseMacheteClient, TraverseReturnTo
 from git_machete.client.update import UpdateMacheteClient
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
-from git_machete.cli_commands import COMMAND_BY_NAME_OR_ALIAS, COMMON_OPTIONS
-from git_machete.cli_parser import ParsedCmd, ParserContext, parse_cmdline
+from git_machete.cli_parser import ParsedCmd, parse_cmdline
 from git_machete.config import MacheteConfig, SquashMergeDetection
 from git_machete.github import GITHUB_API_SPEC
 from git_machete.gitlab import GITLAB_API_SPEC
@@ -217,10 +216,7 @@ def launch_internal(orig_args: List[str]) -> None:
     try:
         cli_opts = git_machete.options.CommandLineOptions()
 
-        parsed = parse_cmdline(orig_args, ParserContext(
-            commands_by_name_or_alias=COMMAND_BY_NAME_OR_ALIAS,
-            common_options=COMMON_OPTIONS,
-        ))
+        parsed = parse_cmdline(orig_args)
 
         # Set up `--debug` / `--verbose` first so that subsequent
         # `git config` reads honour them.
