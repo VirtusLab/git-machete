@@ -1,4 +1,4 @@
-"""Command-line parser for git-machete.
+"""Command-line argument parser for git-machete.
 
 A small hand-rolled parser layered on top of `getopt.gnu_getopt`. The
 heavy-lifting features (typo suggestions, scoped close-match hints,
@@ -9,14 +9,15 @@ The module exposes:
 
 * `OptSpec`, `PositionalSpec`, `MutexGroup`, `SubcommandSpec`, `CommandSpec`
   - declarative description of one (sub)command's command-line surface.
-* `COMMANDS` / `COMMAND_BY_NAME_OR_ALIAS` - the actual table of git-machete
-  commands.
-* `parse_cmdline(argv) -> ParsedCmd` - the single entry point used by
-  `cli.py`. Performs alias resolution, option parsing, choice + mutex +
-  per-subcommand-option validation, and either returns a `ParsedCmd` or
-  exits via `_argument_error()` (syntax errors) / `MacheteException`
-  (semantic rejections like "this option is only valid with that
-  subcommand").
+* `parse_cmdline(argv, *, commands_by_name_or_alias, common_options) ->
+  ParsedCmd` - the single entry point. Performs alias resolution, option
+  parsing, choice + mutex + per-subcommand-option validation, and either
+  returns a `ParsedCmd` or exits via `_argument_error()` (syntax errors)
+  / `MacheteException` (semantic rejections like "this option is only
+  valid with that subcommand").
+
+The actual catalog of commands the parser is fed (`COMMANDS`,
+`COMMON_OPTIONS`, ...) lives in `cli_commands.py`.
 """
 
 import difflib
@@ -26,7 +27,6 @@ import sys
 from typing import (Any, Callable, Dict, FrozenSet, Iterable, List, NamedTuple,
                     NoReturn, Optional, Tuple)
 
-from git_machete.help import commands_and_aliases
 from git_machete.utils import markup, terminal
 from git_machete.utils.exceptions import ExitCode, MacheteException
 
@@ -58,9 +58,9 @@ class OptSpec(NamedTuple):
             return f"-{self.short}/--{self.long}"
         if self.long:
             return f"--{self.long}"
-        # Short-only options exist in COMMANDS (e.g. `-W`, `-n`) but none of
-        # them currently participate in a mutex group, so the only
-        # call site - the mutex-error formatter - never lands here.
+        # Short-only options exist in the catalog (e.g. `-W`, `-n`) but
+        # none of them currently participate in a mutex group, so the
+        # only call site - the mutex-error formatter - never lands here.
         assert self.short is not None  # pragma: no cover
         return f"-{self.short}"  # pragma: no cover
 
@@ -187,395 +187,20 @@ class ParsedCmd(NamedTuple):
 
 
 # ────────────────────────────────────────────────────────────────────────────
-# Common options - accepted both before and after the command name.
-# ────────────────────────────────────────────────────────────────────────────
-
-COMMON_OPTIONS: Tuple[OptSpec, ...] = (
-    OptSpec(long="debug"),
-    OptSpec(short="h", long="help"),
-    OptSpec(short="v", long="verbose"),
-    OptSpec(long="version"),
-)
-
-
-# ────────────────────────────────────────────────────────────────────────────
-# Command table
+# Parser context
 # ────────────────────────────────────────────────────────────────────────────
 
 
-_GO_DIRECTION_CHOICES: Tuple[str, ...] = (
-    "d", "down", "f", "first", "l", "last", "n", "next",
-    "p", "prev", "r", "root", "u", "up",
-)
-_SHOW_DIRECTION_CHOICES: Tuple[str, ...] = ("c", "current") + _GO_DIRECTION_CHOICES
+class ParserContext(NamedTuple):
+    """Static catalog data the parser consumes on every call.
 
-
-def _code_hosting_spec(*, command: str, pr_or_mr: str, include_sync: bool) -> CommandSpec:
-    """github/gitlab share an identical surface modulo `sync` being deep into
-    deprecation on github-only - build them from one mould.
-
-    Each second-level subcommand owns its own options; the dispatcher in
-    `cli.py` only needs to look up the selected subcommand and run its
-    command-specific logic, because invalid combinations
-    (`github anno-prs --draft`, `gitlab retarget-mr 123`, ...) are
-    rejected by the parser before the dispatcher ever sees them.
+    `parse_cmdline` receives one of these from `cli.py` so that the
+    parser module stays generic over its input: the actual catalog of
+    git-machete commands lives in `cli_commands.py`, but the parser
+    only ever sees these two fields.
     """
-    subcommands: Tuple[SubcommandSpec, ...] = (
-        SubcommandSpec(
-            name=f"anno-{pr_or_mr}s",
-            options=(OptSpec(long="with-urls"),),
-        ),
-        SubcommandSpec(
-            name=f"checkout-{pr_or_mr}s",
-            options=(
-                OptSpec(long="all"),
-                OptSpec(long="by", takes_value=True),
-                OptSpec(long="mine"),
-            ),
-        ),
-        SubcommandSpec(
-            name=f"create-{pr_or_mr}",
-            options=(
-                # Intentionally undocumented (see commit 336c152): an escape
-                # hatch for the rare case when the parent branch detected by
-                # git-machete isn't the desired PR/MR base. Not exposed
-                # anywhere user-facing on purpose.
-                OptSpec(long="base", takes_value=True),
-                OptSpec(long="draft"),
-                OptSpec(long="title", takes_value=True),
-                OptSpec(short="U", long="update-related-descriptions"),
-                OptSpec(short="y", long="yes"),
-            ),
-        ),
-        SubcommandSpec(
-            name=f"restack-{pr_or_mr}",
-            options=(OptSpec(short="U", long="update-related-descriptions"),),
-        ),
-        SubcommandSpec(
-            name=f"retarget-{pr_or_mr}",
-            options=(
-                OptSpec(short="b", long="branch", takes_value=True),
-                OptSpec(long="ignore-if-missing"),
-                OptSpec(short="U", long="update-related-descriptions"),
-            ),
-        ),
-        SubcommandSpec(
-            name=f"update-{pr_or_mr}-descriptions",
-            options=(
-                OptSpec(long="all"),
-                OptSpec(long="by", takes_value=True),
-                OptSpec(long="mine"),
-                OptSpec(long="related"),
-            ),
-        ),
-    ) + ((SubcommandSpec(name="sync", hidden=True),) if include_sync else ())
-
-    return CommandSpec(
-        name=command,
-        subcommands=subcommands,
-        positionals=(
-            PositionalSpec(
-                name="request_id",
-                display_name=f"{pr_or_mr.upper()} number",
-                required=False,
-                multiple=True,
-                type_conv=int,
-                only_with_subcommand=(f"checkout-{pr_or_mr}s",),
-            ),
-        ),
-    )
-
-
-COMMANDS: Tuple[CommandSpec, ...] = (
-    CommandSpec(
-        name="add",
-        options=(
-            OptSpec(short="f", long="as-first-child"),
-            OptSpec(short="o", long="onto", takes_value=True),
-            OptSpec(short="R", long="as-root"),
-            OptSpec(short="y", long="yes"),
-        ),
-        mutex_groups=(
-            MutexGroup(
-                ("as-root", "onto"),
-                "Option `-R/--as-root` cannot be specified together with `-o/--onto`."),
-            MutexGroup(
-                ("as-root", "as-first-child"),
-                "Option `-R/--as-root` cannot be specified together with `-f/--as-first-child`."),
-        ),
-        positionals=(PositionalSpec(name="branch", required=False),),
-    ),
-    CommandSpec(
-        name="advance",
-        options=(OptSpec(short="y", long="yes"),),
-    ),
-    CommandSpec(
-        name="anno",
-        options=(
-            OptSpec(short="b", long="branch", takes_value=True),
-            OptSpec(short="H", long="sync-github-prs"),
-            OptSpec(short="L", long="sync-gitlab-mrs"),
-        ),
-        mutex_groups=(MutexGroup(("sync-github-prs", "sync-gitlab-mrs")),),
-        positionals=(
-            # `nargs='*'`: possible values include [], [''], ['some_val'], ['t1', 't2']
-            PositionalSpec(name="annotation_text", required=False, multiple=True),
-        ),
-    ),
-    CommandSpec(
-        name="clean",
-        options=(
-            OptSpec(short="H", long="checkout-my-github-prs"),
-            OptSpec(short="y", long="yes"),
-        ),
-    ),
-    CommandSpec(
-        name="completion",
-        # Shells we ship completion resource files for.
-        positionals=(PositionalSpec(name="shell", choices=("bash", "fish", "zsh")),),
-    ),
-    CommandSpec(
-        name="delete-unmanaged",
-        options=(OptSpec(short="y", long="yes"),),
-    ),
-    CommandSpec(
-        name="diff",
-        aliases=("d",),
-        options=(OptSpec(short="s", long="stat"),),
-        positionals=(PositionalSpec(name="branch", required=False),),
-    ),
-    CommandSpec(
-        name="discover",
-        options=(
-            OptSpec(short="C", long="checked-out-since", takes_value=True),
-            OptSpec(short="l", long="list-commits"),
-            OptSpec(short="r", long="roots", takes_value=True),
-            OptSpec(short="y", long="yes"),
-        ),
-    ),
-    CommandSpec(name="edit", aliases=("e",)),
-    CommandSpec(name="file"),
-    CommandSpec(
-        name="fork-point",
-        options=(
-            OptSpec(long="explain"),
-            OptSpec(long="inferred"),
-            OptSpec(long="override-to", takes_value=True),
-            OptSpec(long="override-to-inferred"),
-            OptSpec(long="override-to-parent"),
-            OptSpec(long="unset-override"),
-        ),
-        mutex_groups=(
-            # Any two of these clobber each other (`--inferred` vs the
-            # override-*/unset-override family is also covered).
-            MutexGroup(("inferred", "override-to", "override-to-inferred",
-                        "override-to-parent", "unset-override")),
-            # `--explain` is informational and conflicts with anything that
-            # MUTATES the fork-point override. Modelled as four pair groups
-            # sharing the same custom message; only the first matching pair
-            # fires (we exit on the first violation).
-            *(
-                MutexGroup(
-                    ("explain", override_opt),
-                    "`--explain` cannot be combined with "
-                    "`--override-to`/`--override-to-inferred`/`--override-to-parent`/`--unset-override`.")
-                for override_opt in (
-                    "override-to", "override-to-inferred",
-                    "override-to-parent", "unset-override")
-            ),
-        ),
-        positionals=(PositionalSpec(name="branch", required=False),),
-    ),
-    _code_hosting_spec(command="github", pr_or_mr="pr", include_sync=True),
-    _code_hosting_spec(command="gitlab", pr_or_mr="mr", include_sync=False),
-    CommandSpec(
-        name="go",
-        aliases=("g",),
-        positionals=(
-            PositionalSpec(
-                name="direction",
-                display_name="go direction",
-                required=False,
-                choices=_GO_DIRECTION_CHOICES,
-            ),
-        ),
-    ),
-    CommandSpec(
-        name="help",
-        positionals=(
-            PositionalSpec(
-                name="topic_or_cmd",
-                required=False,
-                choices=tuple(commands_and_aliases),
-            ),
-        ),
-    ),
-    CommandSpec(
-        name="is-managed",
-        positionals=(PositionalSpec(name="branch", required=False),),
-    ),
-    CommandSpec(
-        name="list",
-        positionals=(
-            PositionalSpec(
-                name="category",
-                choices=(
-                    "addable", "childless", "managed", "slidable", "slidable-after",
-                    "unmanaged", "with-overridden-fork-point",
-                ),
-            ),
-            PositionalSpec(name="branch", required=False),
-        ),
-    ),
-    CommandSpec(
-        name="log",
-        aliases=("l",),
-        positionals=(PositionalSpec(name="branch", required=False),),
-    ),
-    CommandSpec(
-        name="reapply",
-        options=(OptSpec(short="f", long="fork-point", takes_value=True),),
-    ),
-    CommandSpec(
-        name="rename",
-        options=(
-            OptSpec(short="b", long="branch", takes_value=True),
-            OptSpec(long="repoint-tracking"),
-        ),
-        positionals=(PositionalSpec(name="new_name"),),
-    ),
-    CommandSpec(
-        name="show",
-        positionals=(
-            PositionalSpec(
-                name="direction",
-                display_name="show direction",
-                choices=_SHOW_DIRECTION_CHOICES,
-            ),
-            PositionalSpec(name="branch", required=False),
-        ),
-    ),
-    CommandSpec(
-        name="slide-out",
-        options=(
-            OptSpec(short="d", long="down-fork-point", takes_value=True),
-            OptSpec(long="delete"),
-            OptSpec(short="M", long="merge"),
-            OptSpec(short="n"),
-            OptSpec(long="no-edit-merge"),
-            OptSpec(long="no-interactive-rebase"),
-            OptSpec(long="no-rebase"),
-            OptSpec(long="removed-from-remote"),
-        ),
-        mutex_groups=(
-            MutexGroup(
-                ("down-fork-point", "merge"),
-                "Option `-d/--down-fork-point` only makes sense when using "
-                "rebase and cannot be specified together with `-M/--merge`."),
-            MutexGroup(
-                ("down-fork-point", "no-rebase"),
-                "Option `-d/--down-fork-point` only makes sense when using "
-                "rebase and cannot be specified together with `--no-rebase`."),
-            MutexGroup(
-                ("merge", "no-rebase"),
-                "Option `-M/--merge` cannot be specified together with `--no-rebase`."),
-            MutexGroup(
-                ("no-interactive-rebase", "no-rebase"),
-                "Option `--no-interactive-rebase` only makes sense when using "
-                "rebase and cannot be specified together with `--no-rebase`."),
-            MutexGroup(
-                ("no-edit-merge", "no-rebase"),
-                "Option `--no-edit-merge` only makes sense when using "
-                "merge and cannot be specified together with `--no-rebase`."),
-            MutexGroup(
-                ("no-interactive-rebase", "merge"),
-                "Option `--no-interactive-rebase` only makes sense when using "
-                "rebase and cannot be specified together with `-M/--merge`."),
-        ),
-        positionals=(PositionalSpec(name="branches", required=False, multiple=True),),
-    ),
-    CommandSpec(
-        name="squash",
-        options=(OptSpec(short="f", long="fork-point", takes_value=True),),
-    ),
-    CommandSpec(
-        name="status",
-        aliases=("s",),
-        options=(
-            OptSpec(long="color", takes_value=True),
-            OptSpec(short="l", long="list-commits"),
-            OptSpec(short="L", long="list-commits-with-hashes"),
-            OptSpec(long="no-detect-squash-merges"),
-            OptSpec(long="squash-merge-detection", takes_value=True),
-        ),
-    ),
-    CommandSpec(
-        name="traverse",
-        aliases=("t",),
-        options=(
-            OptSpec(short="F", long="fetch"),
-            OptSpec(short="H", long="sync-github-prs"),
-            OptSpec(short="L", long="sync-gitlab-mrs"),
-            OptSpec(short="l", long="list-commits"),
-            OptSpec(short="M", long="merge"),
-            OptSpec(short="n"),
-            OptSpec(long="no-detect-squash-merges"),
-            OptSpec(long="no-edit-merge"),
-            OptSpec(long="no-interactive-rebase"),
-            OptSpec(long="no-push"),
-            OptSpec(long="no-push-untracked"),
-            OptSpec(long="push"),
-            OptSpec(long="push-untracked"),
-            OptSpec(long="return-to", takes_value=True),
-            OptSpec(long="squash-merge-detection", takes_value=True),
-            OptSpec(long="start-from", takes_value=True),
-            OptSpec(long="stop-after", takes_value=True),
-            OptSpec(short="W"),
-            OptSpec(short="w", long="whole"),
-            OptSpec(short="y", long="yes"),
-        ),
-        mutex_groups=(
-            MutexGroup(("sync-github-prs", "sync-gitlab-mrs")),
-            MutexGroup(
-                ("no-interactive-rebase", "merge"),
-                "Option `--no-interactive-rebase` only makes sense when using "
-                "rebase and cannot be specified together with `-M/--merge`."),
-        ),
-    ),
-    CommandSpec(
-        name="update",
-        options=(
-            OptSpec(short="f", long="fork-point", takes_value=True),
-            OptSpec(short="M", long="merge"),
-            OptSpec(short="n"),
-            OptSpec(long="no-edit-merge"),
-            OptSpec(long="no-interactive-rebase"),
-        ),
-        mutex_groups=(
-            MutexGroup(
-                ("no-interactive-rebase", "merge"),
-                "Option `--no-interactive-rebase` only makes sense when using "
-                "rebase and cannot be specified together with `-M/--merge`."),
-            MutexGroup(
-                ("fork-point", "merge"),
-                "Option `-f/--fork-point` only makes sense when using rebase "
-                "and cannot be specified together with `-M/--merge`."),
-        ),
-    ),
-    CommandSpec(name="version"),
-)
-
-
-def _build_command_index() -> Dict[str, CommandSpec]:
-    by_name: Dict[str, CommandSpec] = {}
-    for spec in COMMANDS:
-        by_name[spec.name] = spec
-        for alias in spec.aliases:
-            by_name[alias] = spec
-    return by_name
-
-
-COMMAND_BY_NAME_OR_ALIAS: Dict[str, CommandSpec] = _build_command_index()
+    commands_by_name_or_alias: Dict[str, CommandSpec]
+    common_options: Tuple[OptSpec, ...]
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -583,29 +208,34 @@ COMMAND_BY_NAME_OR_ALIAS: Dict[str, CommandSpec] = _build_command_index()
 # ────────────────────────────────────────────────────────────────────────────
 
 
-def parse_cmdline(argv: List[str]) -> ParsedCmd:
-    """Parse `argv` into a `ParsedCmd` or exit with an argument error."""
+def parse_cmdline(argv: List[str], ctx: ParserContext) -> ParsedCmd:
+    """Parse `argv` into a `ParsedCmd` or exit with an argument error.
+
+    The catalog of valid commands and the cross-command "common"
+    options are supplied via `ctx` so the parser stays decoupled from
+    `cli_commands.py`.
+    """
     direct, pass_through = _split_on_dashdash(argv)
 
     # Locate the command in `direct`. Anything before it must be a
-    # COMMON_OPTIONS flag; anything after is parsed against the merged
+    # common-option flag; anything after is parsed against the merged
     # spec (common + command-specific + selected-subcommand).
-    cmd_pos = _find_command_position(direct)
+    cmd_pos = _find_command_position(direct, ctx.common_options)
 
     if cmd_pos is None:
         # Either there are no positionals at all (`git machete --help`) or
         # the only "positional" we'd see is an unknown flag (e.g. `-q`).
-        # Validate against COMMON_OPTIONS only and return.
-        opts, _, unknowns = _scan(direct, COMMON_OPTIONS)
+        # Validate against common options only and return.
+        opts, _, unknowns = _scan(direct, ctx.common_options)
         _apply_color_setting(opts.get("color"))
         if unknowns:
-            _fail_unrecognized(unknowns, command=None)
+            _fail_unrecognized(unknowns, command=None, ctx=ctx)
         return ParsedCmd(command=None, opts=opts, positionals={}, pass_through=pass_through)
 
     cmd_name_typed = direct[cmd_pos]
-    cmd = COMMAND_BY_NAME_OR_ALIAS.get(cmd_name_typed)
+    cmd = ctx.commands_by_name_or_alias.get(cmd_name_typed)
     if cmd is None:
-        _fail_invalid_command(cmd_name_typed)
+        _fail_invalid_command(cmd_name_typed, ctx)
 
     # Build the union of every option this command may accept on any
     # subcommand: needed so the option parser knows what's syntactically
@@ -613,7 +243,7 @@ def parse_cmdline(argv: List[str]) -> ParsedCmd:
     # subcommand and emit a friendlier "only valid with X subcommand"
     # error for the legal-but-not-here case.
     all_command_options = _collect_all_options(cmd)
-    merged_options = COMMON_OPTIONS + all_command_options
+    merged_options = ctx.common_options + all_command_options
     other_args = direct[:cmd_pos] + direct[cmd_pos + 1:]
     opts, positionals, unknowns = _scan(other_args, merged_options)
     # Apply `--color` before any downstream validation step that might
@@ -622,7 +252,7 @@ def parse_cmdline(argv: List[str]) -> ParsedCmd:
     # is one-shot.
     _apply_color_setting(opts.get("color"))
     if unknowns:
-        _fail_unrecognized(unknowns, command=cmd.name)
+        _fail_unrecognized(unknowns, command=cmd.name, ctx=ctx)
 
     # `--help` and `--version` short-circuit positional/mutex validation
     # so that e.g. `git machete completion --help` prints the completion
@@ -632,11 +262,12 @@ def parse_cmdline(argv: List[str]) -> ParsedCmd:
         return ParsedCmd(command=cmd.name, opts=opts, positionals={}, pass_through=pass_through)
 
     effective_positionals = _effective_positionals(cmd)
-    parsed_positionals = _validate_positionals(positionals, cmd, effective_positionals)
+    parsed_positionals = _validate_positionals(positionals, cmd, effective_positionals, ctx)
 
     selected_subcommand = _selected_subcommand(cmd, parsed_positionals)
     if cmd.subcommands and selected_subcommand is not None:
-        _validate_subcommand_restrictions(opts, parsed_positionals, cmd, selected_subcommand)
+        _validate_subcommand_restrictions(
+            opts, parsed_positionals, cmd, selected_subcommand, ctx.common_options)
 
     effective_mutex = cmd.mutex_groups + (
         selected_subcommand.mutex_groups if selected_subcommand is not None else ())
@@ -696,20 +327,23 @@ def _split_on_dashdash(argv: List[str]) -> Tuple[List[str], List[str]]:
     return direct, pass_through
 
 
-def _find_command_position(direct: List[str]) -> Optional[int]:
-    """Walk `direct`, skipping COMMON_OPTIONS flags, and return the index of
+def _find_command_position(
+        direct: List[str],
+        common_options: Tuple[OptSpec, ...],
+) -> Optional[int]:
+    """Walk `direct`, skipping common-option flags, and return the index of
     the first positional token. `None` if there is no positional at all
     (or if we hit something option-looking we can't classify - in which
     case the parser will surface it as an unknown flag below)."""
-    common_long = {o.long for o in COMMON_OPTIONS if o.long}
-    common_short = {o.short for o in COMMON_OPTIONS if o.short}
+    common_long = {o.long for o in common_options if o.long}
+    common_short = {o.short for o in common_options if o.short}
     i = 0
     while i < len(direct):
         a = direct[i]
         if a.startswith("--"):
             name = a[2:].split("=", 1)[0]
             if name in common_long:
-                # None of COMMON_OPTIONS take a value, so just step over.
+                # None of the common options take a value, so just step over.
                 i += 1
                 continue
             # Unknown long option in the top-level segment - bail out
@@ -718,9 +352,10 @@ def _find_command_position(direct: List[str]) -> Optional[int]:
             return None
         if a.startswith("-") and len(a) > 1:
             short = a[1:]
-            # Single-letter short → check against COMMON_OPTIONS; longer
-            # `-XXX` (e.g. `-gs`) is by definition not a COMMON_OPTIONS
-            # short flag, so bail out for the same reason as above.
+            # Single-letter short → check against the common short
+            # flags; longer `-XXX` (e.g. `-gs`) is by definition not a
+            # common short flag, so bail out for the same reason as
+            # above.
             if len(short) == 1 and short in common_short:
                 i += 1
                 continue
@@ -893,10 +528,11 @@ def _argument_error(message: str) -> NoReturn:
     sys.exit(ExitCode.ARGUMENT_ERROR)
 
 
-def _fail_invalid_command(typed: str) -> NoReturn:
+def _fail_invalid_command(typed: str, ctx: "ParserContext") -> NoReturn:
     lines = [f"Invalid command: {typed!r}"]
     # Build the user-visible vocabulary from canonical names + aliases.
-    visible = [n for n, spec in COMMAND_BY_NAME_OR_ALIAS.items() if n == spec.name or n in spec.aliases]
+    visible = [n for n, spec in ctx.commands_by_name_or_alias.items()
+               if n == spec.name or n in spec.aliases]
     suggestions = _close_matches(typed, visible)
     if suggestions:
         lines.append(_format_suggestions(suggestions))
@@ -907,14 +543,19 @@ def _fail_invalid_command(typed: str) -> NoReturn:
     _argument_error("\n".join(lines))
 
 
-def _fail_unrecognized(unknown_tokens: List[str], *, command: Optional[str]) -> NoReturn:
+def _fail_unrecognized(
+        unknown_tokens: List[str],
+        *,
+        command: Optional[str],
+        ctx: "ParserContext",
+) -> NoReturn:
     message = "Unrecognized arguments: " + " ".join(unknown_tokens)
 
     # Build per-flag suggestions. `--foo=bar` is split before fuzzy-matching
     # so `--foo` (the actual misspelling) is what we compare against.
     flag_suggestions: List[Tuple[str, List[str]]] = []
-    known_options = COMMON_OPTIONS + (
-        COMMAND_BY_NAME_OR_ALIAS[command].options if command is not None else ()
+    known_options = ctx.common_options + (
+        ctx.commands_by_name_or_alias[command].options if command is not None else ()
     )
     known_flags = [f"--{o.long}" for o in known_options if o.long]
     for tok in unknown_tokens:
@@ -942,6 +583,7 @@ def _validate_positionals(
         positionals: List[str],
         cmd: CommandSpec,
         positional_specs: Tuple[PositionalSpec, ...],
+        ctx: "ParserContext",
 ) -> Dict[str, Any]:
     result: Dict[str, Any] = {}
     remaining = list(positionals)
@@ -971,11 +613,11 @@ def _validate_positionals(
             result[pspec.name] = _convert_positional(pspec, value)
         if is_last and remaining:
             # Excess positionals are reported as unrecognized arguments.
-            _fail_unrecognized(remaining, command=cmd.name)
+            _fail_unrecognized(remaining, command=cmd.name, ctx=ctx)
 
     if remaining:
         # The command declares no positionals but the user passed some.
-        _fail_unrecognized(remaining, command=cmd.name)
+        _fail_unrecognized(remaining, command=cmd.name, ctx=ctx)
 
     return result
 
@@ -1036,6 +678,7 @@ def _validate_subcommand_restrictions(
         parsed_positionals: Dict[str, Any],
         cmd: CommandSpec,
         selected: SubcommandSpec,
+        common_options: Tuple[OptSpec, ...],
 ) -> None:
     """For every option/positional that's been parsed, verify the selected
     subcommand accepts it. Raise `MacheteException` with the
@@ -1043,7 +686,7 @@ def _validate_subcommand_restrictions(
 
     # ---- options ----------------------------------------------------------
     selected_keys = {o.storage_key for o in selected.options}
-    common_keys = {o.storage_key for o in cmd.options} | {o.storage_key for o in COMMON_OPTIONS}
+    common_keys = {o.storage_key for o in cmd.options} | {o.storage_key for o in common_options}
     for key in opts:
         if key in selected_keys or key in common_keys:
             continue
