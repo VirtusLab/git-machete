@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.41.0
 
+- added: an [Agent Skill](https://agentskills.io/) at `skills/git-machete/SKILL.md`
 - added: `git machete rename <new-name>` command to rename a branch both in git and in the branch layout file
 - added: `git machete fork-point --explain` flag explains which branches the fork point was inferred from
 - changed: `git machete github update-pr-descriptions` and `git machete gitlab update-mr-descriptions` now default to `--related` when no flag (`--all`/`--by`/`--mine`/`--related`) is provided
