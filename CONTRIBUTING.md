@@ -115,25 +115,50 @@ For [`go-interactive.gif`](graphics/go-interactive.gif) `&mdash;` on macOS:
 
 Deprecated commands are excluded.
 
-| Property                                                          | Commands                                                                                                                                           |
-|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| can accept interactive input on stdin                             | `add`, `advance`, `delete-unmanaged`, `discover`, `github`<sup>[1]</sup>, `gitlab`<sup>[1]</sup>, `go`, `traverse`, `update`                       |
-| can display status (and run `machete-status-branch` hook)         | `discover`, `github`<sup>[1]</sup>, `gitlab`<sup>[1]</sup>, `status`, `traverse`                                                                   |
-| can modify the .git/machete file                                  | `add`, `advance`, `anno`, `discover`, `edit`, `github`, `gitlab`, `slide-out`, `traverse`                                                          |
-| can modify the git repository (excluding .git/machete)            | `add`, `advance`, `delete-unmanaged`, `github`<sup>[1]</sup>, `gitlab`<sup>[1]</sup>, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update` |
-| can run merge                                                     | `advance`<sup>[2]</sup>, `slide-out`, `traverse`, `update`                                                                                         |
-| can run rebase (and run `machete-pre-rebase` hook)                | `reapply`<sup>[3]</sup>, `slide-out`, `traverse`, `update`                                                                                         |
-| can slide out a branch (and run `machete-post-slide-out` hook)    | `advance`, `slide-out`, `traverse`                                                                                                                 |
-| expects no ongoing rebase/merge/cherry-pick/revert/am             | `advance`, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update`                                                                            |
-| has stable output format across minor versions (plumbing command) | `file`, `fork-point`<sup>[4]</sup>, `is-managed`, `list`, `show`, `version`                                                                        |
+`github`/`gitlab` subcommands are treated as separate commands in the table below.
+The brace notation `{github,gitlab} create-{pr,mr}` is shorthand for the pair `github create-pr` and `gitlab create-mr`, and likewise for the other verbs.
 
-[1]: `github`/`gitlab` can only display status, accept interactive mode or modify git repository when `create-{pr,mr}`, `checkout-{pr,mr}s` or `restack-{pr,mr}` subcommand is executed.
+Commands absent from every row (`completion`, `diff`, `help`, `log`,
+plus the plumbing commands, plus `{github,gitlab} update-{pr,mr}-descriptions` which only talks to the hosting API)
+do not satisfy any of the properties.
 
-[2]: `advance` can only run fast-forward merge (`git merge --ff-only`).
+| Property                                                             | Commands                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|----------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| can accept interactive input on stdin<sup>[1]</sup>                  | `add`, `advance`, `clean`, `delete-unmanaged`, `discover`, `{github,gitlab} create-{pr,mr}`, `go`<sup>[2]</sup>, `slide-out`<sup>[3]</sup>, `status`<sup>[4]</sup>, `traverse`, `update`                                                                                                                                                                                                                                                                                                                |
+| can display status (and run `machete-status-branch` hook)            | `discover`, `{github,gitlab} create-{pr,mr}`, `{github,gitlab} restack-{pr,mr}`, `go`<sup>[2]</sup>, `status`, `traverse`                                                                                                                                                                                                                                                                                                                                                                              |
+| can modify the .git/machete file (branch layout)                     | `add`, `advance`, `anno`, `clean`, `discover`, `edit`<sup>[5]</sup>, `{github,gitlab} anno-{pr,mr}s`, `{github,gitlab} checkout-{pr,mr}s`, `{github,gitlab} create-{pr,mr}`, `{github,gitlab} restack-{pr,mr}`, `{github,gitlab} retarget-{pr,mr}`, `rename`, `slide-out`, `traverse`                                                                                                                                                                                                                  |
+| can modify the git repository (excluding .git/machete)<sup>[6]</sup> | `add`, `advance`, `clean`, `delete-unmanaged`, `fork-point`<sup>[7]</sup>, `{github,gitlab} checkout-{pr,mr}s`, `{github,gitlab} create-{pr,mr}`, `{github,gitlab} restack-{pr,mr}`, `go`, `reapply`, `rename`, `slide-out`, `squash`, `traverse`, `update`                                                                                                                                                                                                                                            |
+| can run merge                                                        | `advance`<sup>[8]</sup>, `slide-out`, `traverse`, `update`                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| can run rebase (and run `machete-pre-rebase` hook)                   | `reapply`<sup>[9]</sup>, `slide-out`, `traverse`, `update`                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| can slide out a branch (and run `machete-post-slide-out` hook)       | `advance`, `slide-out`<sup>[10]</sup>, `traverse`                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| expects no ongoing rebase/merge/cherry-pick/revert/am/bisect         | `advance`, `go`, `reapply`, `slide-out`, `squash`, `traverse`, `update`                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| has stable output format across minor versions (plumbing command)    | `file`, `fork-point`<sup>[11]</sup>, `is-managed`<sup>[12]</sup>, `list`, `show`, `version`                                                                                                                                                                                                                                                                                                                                                                                                           |
 
-[3]: `reapply` can run rebase but can't run merge since merging a branch with its own fork point is a no-op and generally doesn't make much sense.
+### Footnotes
 
-[4]: A stable output is only guaranteed for `fork-point` when invoked without any option or only with `--inferred` option.
+[1]: A `-y/--yes` flag exists on `add`, `advance`, `clean`, `delete-unmanaged`, `discover`, `slide-out`, `traverse`, and `{github,gitlab} create-{pr,mr}`; passing it suppresses all yes/no prompts and forces a "yes" answer on every otherwise-interactive choice that has one. Commands lacking the flag still need to read stdin in narrow cases: `update` prompts only when the current branch is missing from the layout and its parent must be inferred, `status` prompts only when stdout is a TTY and the layout references branches that no longer exist (see [4]), and `go` without a direction is fully interactive (see [2]).
+
+[2]: `go` without a direction opens an interactive single-keystroke picker that reads from stdin and emits a status-style preview (which triggers the `machete-status-branch` hook). `go <direction>` (`up`/`down`/`prev`/`next`/`root`/`first`/`last`) is non-interactive and does not display status; if the requested direction is ambiguous (e.g. multiple children for `down`) it prompts.
+
+[3]: `slide-out` only reads stdin under `--delete` (one yes/no prompt per branch being removed); `slide-out --removed-from-remote` and plain `slide-out` are non-interactive.
+
+[4]: `status` reads stdin only when stdout is a TTY: it can prompt to slide out branches that are present in the layout but no longer exist in the repo. Redirected/non-TTY runs skip the prompt and keep the layout unchanged.
+
+[5]: `edit` doesn't itself write the layout file; it just opens `$GIT_MACHETE_EDITOR`/`$GIT_EDITOR` on it and any change is done by the editor.
+
+[6]: "Modifies git repository" covers any change to local refs, the index, the working tree, or `.git/config`. It excludes pure hosting-API calls — that's why `{github,gitlab} retarget-{pr,mr}` and `{github,gitlab} update-{pr,mr}-descriptions` are not listed here.
+
+[7]: `fork-point` mutates `.git/config` only under its override flags (`--override-to=...`, `--override-to-inferred`, `--override-to-parent`, `--unset-override`). The default mode and `--inferred`/`--explain` are read-only.
+
+[8]: `advance` can only run fast-forward merge (`git merge --ff-only`).
+
+[9]: `reapply` can run rebase but can't run merge since merging a branch with its own fork point is a no-op and generally doesn't make much sense.
+
+[10]: `slide-out --removed-from-remote` removes branches from the layout but does NOT run the `machete-post-slide-out` hook. The regular `slide-out` and the slide-out triggered by `advance`/`traverse` do.
+
+[11]: A stable output is only guaranteed for `fork-point` when invoked without any option or with only `--inferred`. The mutating modes (`--override-to=...`, `--override-to-inferred`, `--override-to-parent`, `--unset-override`) and `--explain` print human-oriented prose, partly to stderr.
+
+[12]: `is-managed` writes nothing to stdout; the result is communicated via exit code only (`0` = managed, non-zero = not managed / branch unknown).
 
 
 ## Versioning
