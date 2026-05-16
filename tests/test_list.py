@@ -9,7 +9,7 @@ class TestList(BaseTest):
 
     def test_list(self) -> None:
         """
-        Verify behaviour of a 'git machete list' command.
+        Verify behavior of a 'git machete list' command.
         """
 
         create_repo_with_remote()

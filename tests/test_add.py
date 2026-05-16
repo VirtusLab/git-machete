@@ -89,7 +89,7 @@ class TestAdd(BaseTest):
 
     def test_add_check_out_remote_branch(self, mocker: MockerFixture) -> None:
         """
-        Verify the behaviour of a 'git machete add' command in the special case when a remote branch is checked out locally.
+        Verify the behavior of a 'git machete add' command in the special case when a remote branch is checked out locally.
         """
 
         create_repo_with_remote()

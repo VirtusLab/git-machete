@@ -331,7 +331,7 @@ COMMANDS: Tuple[CommandSpec, ...] = (
             MutexGroup(("inferred", "override-to", "override-to-inferred",
                         "override-to-parent", "unset-override")),
             # `--explain` is informational and conflicts with anything that MUTATES the fork-point override.
-            # Modelled as four pair groups sharing the same custom message;
+            # Modeled as four pair groups sharing the same custom message;
             # only the first matching pair fires (we exit on the first violation).
             *(
                 MutexGroup(

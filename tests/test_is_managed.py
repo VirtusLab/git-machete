@@ -9,7 +9,7 @@ class TestIsManaged(BaseTest):
 
     def test_is_managed(self) -> None:
         """
-        Verify behaviour of a 'git machete is-managed' command.
+        Verify behavior of a 'git machete is-managed' command.
         """
 
         create_repo()

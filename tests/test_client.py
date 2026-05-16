@@ -12,7 +12,7 @@ class TestClient(BaseTest):
 
     def test_annotations_read_branch_layout_file(self) -> None:
         """
-        Verify behaviour of a 'MacheteClient.read_branch_layout_file()' method
+        Verify behavior of a 'MacheteClient.read_branch_layout_file()' method
         """
         create_repo_with_remote()
         new_branch('master')

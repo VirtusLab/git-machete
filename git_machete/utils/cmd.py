@@ -55,7 +55,7 @@ def run_cmd(cmd: str, *args: str, cwd: Optional[Path] = None, env: Optional[Dict
 
     start = time.time()
     # Looked up via the `_subproc` module so that
-    # `mock.patch('git_machete.utils._subproc._run_cmd', ...)` is honoured.
+    # `mock.patch('git_machete.utils._subproc._run_cmd', ...)` is honored.
     exit_code: int = _subproc._run_cmd(cmd, *args, cwd=cwd, env=env)
     if measure_command_time:  # pragma: no cover
         end = time.time()

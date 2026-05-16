@@ -15,7 +15,7 @@ from .mockers import mock_input_returning
 class TestGo(BaseTest):
 
     def test_go_up(self) -> None:
-        """Verify behaviour of a 'git machete go up' command.
+        """Verify behavior of a 'git machete go up' command.
 
         Verify that 'git machete go up' performs 'git checkout' to the
         parent/upstream branch of the current branch.
@@ -60,7 +60,7 @@ class TestGo(BaseTest):
         assert 'level-1-branch' == launch_command("show", "current").strip()
 
     def test_go_down(self, mocker: MockerFixture) -> None:
-        """Verify behaviour of a 'git machete go down' command.
+        """Verify behavior of a 'git machete go down' command.
 
         Verify that 'git machete go down' performs 'git checkout' to the
         child/downstream branch of the current branch.
@@ -99,7 +99,7 @@ class TestGo(BaseTest):
         assert launch_command("show", "current").strip() == "level-2b-branch"
 
     def test_go_first_root_with_downstream(self) -> None:
-        """Verify behaviour of a 'git machete go first' command.
+        """Verify behavior of a 'git machete go first' command.
 
         Verify that 'git machete go first' performs 'git checkout' to
         the first downstream branch of a root branch in the config file
@@ -163,7 +163,7 @@ class TestGo(BaseTest):
              "has any downstream branches.")
 
     def test_go_first_root_without_downstream(self) -> None:
-        """Verify behaviour of a 'git machete go first' command.
+        """Verify behavior of a 'git machete go first' command.
 
         Verify that 'git machete go first' set current branch to root
         if root branch has no downstream.
@@ -182,7 +182,7 @@ class TestGo(BaseTest):
         assert 'level-0-branch' == launch_command("show", "current").strip(), \
             ("Verify that 'git machete go first' set current branch to root "
              "if root branch has no downstream.")
-        # check short command behaviour
+        # check short command behavior
         launch_command("g", "f")
 
         assert 'level-0-branch' == launch_command("show", "current").strip(), \
@@ -190,7 +190,7 @@ class TestGo(BaseTest):
              "if root branch has no downstream.")
 
     def test_go_last(self) -> None:
-        """Verify behaviour of a 'git machete go last' command.
+        """Verify behavior of a 'git machete go last' command.
 
         Verify that 'git machete go last' performs 'git checkout' to
         the last downstream branch of a root branch if root branch
@@ -249,7 +249,7 @@ class TestGo(BaseTest):
         assert 'branch-from-x-additional-root' == launch_command("show", "current").strip()
 
     def test_go_next_successor_exists(self) -> None:
-        """Verify behaviour of a 'git machete go next' command.
+        """Verify behavior of a 'git machete go next' command.
 
         Verify that 'git machete go next' performs 'git checkout' to
         the branch right after the current one in the config file
@@ -293,7 +293,7 @@ class TestGo(BaseTest):
              "config file if successor branch exists.")
 
     def test_go_next_successor_on_another_root_tree(self) -> None:
-        """Verify behaviour of a 'git machete go next' command.
+        """Verify behavior of a 'git machete go next' command.
 
         Verify that 'git machete go next' can checkout to branch that doesn't
         share root with the current branch.
@@ -331,7 +331,7 @@ class TestGo(BaseTest):
              "share root with the current branch.")
 
     def test_go_prev_successor_exists(self) -> None:
-        """Verify behaviour of a 'git machete go prev' command.
+        """Verify behavior of a 'git machete go prev' command.
 
         Verify that 'git machete go prev' performs 'git checkout' to
         the branch right before the current one in the config file
@@ -374,7 +374,7 @@ class TestGo(BaseTest):
              "when predecessor branch exists within the root tree.")
 
     def test_go_prev_successor_on_another_root_tree(self) -> None:
-        """Verify behaviour of a 'git machete go prev' command.
+        """Verify behavior of a 'git machete go prev' command.
 
         Verify that 'git machete go prev' raises an error when predecessor
         branch doesn't exist.
@@ -409,7 +409,7 @@ class TestGo(BaseTest):
              )
 
     def test_go_root(self) -> None:
-        """Verify behaviour of a 'git machete go root' command.
+        """Verify behavior of a 'git machete go root' command.
 
         Verify that 'git machete go root' performs 'git checkout' to
         the root of the current branch.

@@ -41,7 +41,7 @@ class MacheteClient:
                  interactively_slide_out_invalid_branches: bool = False) -> None:
         # Clients own their `Git` plumbing instance - command-dispatch code
         # (`cli.py`) and tests never touch it directly. Pass-throughs are
-        # avoided in favour of domain-specific methods on the client itself.
+        # avoided in favor of domain-specific methods on the client itself.
         self._git: Git = Git()
         self._config: MacheteConfig = MacheteConfig(self._git)
         self._git.owner = self

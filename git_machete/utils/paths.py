@@ -1,6 +1,6 @@
 """POSIX-style typed paths and helpers.
 
-Every `Path` / `AbsPath` instance is normalised to forward-slash form on
+Every `Path` / `AbsPath` instance is normalized to forward-slash form on
 construction (via `PurePath(value).as_posix()`), regardless of platform.
 This is load-bearing for:
 
@@ -14,7 +14,7 @@ This is load-bearing for:
   git-machete's state (caches, branch-layout-file path, ...).
 
 Pure I/O (`open`, `os.path.isfile`, `shutil.*`, `subprocess.run(cwd=...)`)
-accepts either form on Windows, so the normalisation is invisible there -
+accepts either form on Windows, so the normalization is invisible there -
 the value lies in the type-system guarantee that downstream comparisons
 and renders are stable.
 
@@ -34,7 +34,7 @@ from pathlib import PurePath, PurePosixPath
 class Path(str):
     """A filesystem path (relative or absolute), always in posix form.
 
-    All normalisation and invariants happen in `__new__` so that
+    All normalization and invariants happen in `__new__` so that
     `Path(value)` / `AbsPath(value)` is the single, obvious way to obtain
     a typed path - there are intentionally no `.of(...)` factory methods.
     """
@@ -56,13 +56,13 @@ class Path(str):
         anything before it).
 
         We use `PurePosixPath` (rather than the platform-aware `PurePath`)
-        for joining because `Path.__new__` has already normalised any
+        for joining because `Path.__new__` has already normalized any
         prior typed segment to forward-slash form, so the inputs here
         are guaranteed posix-style on every platform - `PurePosixPath`
         states that intent explicitly and avoids the Windows-only
         drive-letter / backslash parsing that `PureWindowsPath` would do.
         The result still passes through `Path.__new__` for a final
-        normalisation pass (cheap, idempotent).
+        normalization pass (cheap, idempotent).
         """
         return Path(str(PurePosixPath(*paths)))
 

@@ -16,7 +16,7 @@ class TestAnno(BaseTest):
 
     def test_anno(self) -> None:
         """
-        Verify behaviour of a 'git machete anno' command.
+        Verify behavior of a 'git machete anno' command.
         """
 
         create_repo_with_remote()

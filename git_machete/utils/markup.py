@@ -8,7 +8,7 @@ TTY (and on `--color`).
 `_fmt` looks up `is_terminal_fully_fledged` via `terminal.is_terminal_fully_fledged()`
 (rather than via a `from .terminal import ...` binding) so that
 `unittest.mock.patch('git_machete.utils.terminal.is_terminal_fully_fledged', ...)`
-in tests is honoured at every call.
+in tests is honored at every call.
 """
 
 import re
@@ -41,7 +41,7 @@ def _fmt(s: str, *, use_ansi_escapes: bool) -> str:
     # Looked up via the `terminal` module (not via a top-level
     # `from .terminal import is_terminal_fully_fledged`) so that
     # `mock.patch('git_machete.utils.terminal.is_terminal_fully_fledged', ...)`
-    # is honoured.
+    # is honored.
     ao = FullTerminalAnsiOutputCodes if terminal.is_terminal_fully_fledged() else BasicTerminalAnsiOutputCodes
 
     # pattern                                  ansi replacement                            ascii replacement

@@ -251,7 +251,7 @@ def _collect_unknown_tokens(
             else:
                 unknown.append(a)
                 # If `--foo bar` (no `=`) and `bar` is unlikely to be its own flag,
-                # also include it for display so the user sees the full unrecognised pair.
+                # also include it for display so the user sees the full unrecognized pair.
                 if "=" not in a and i + 1 < len(argv) and not argv[i + 1].startswith("-"):
                     i += 1
                     unknown.append(argv[i])
@@ -302,7 +302,7 @@ def _visible_choices(positional: PositionalSpec) -> Tuple[str, ...]:
 
 
 def _apply_color_setting(color: Optional[str]) -> None:
-    """Honour `--color` for stdout / stderr ANSI emission.
+    """Honor `--color` for stdout / stderr ANSI emission.
 
     Called from inside `parse_cmdline` (rather than waiting until the caller invokes `set_utils_global_variables`)
     so that any `MacheteException` raised from the validation phase below

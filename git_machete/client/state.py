@@ -9,7 +9,7 @@ class ManagedBranchName(LocalBranchShortName):
     """A `LocalBranchShortName` known to live in the `.git/machete` branch
     layout file.
 
-    The type is a marker - it carries no extra behaviour - and exists so that
+    The type is a marker - it carries no extra behavior - and exists so that
     mypy can distinguish "any local branch the user typed" from "a branch
     that has already been verified against the layout file". Every read
     accessor on `MacheteState` (and the corresponding `MacheteClient`

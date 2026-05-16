@@ -213,7 +213,7 @@ def launch_internal(orig_args: List[str]) -> None:
 
         parsed = parse_cmdline(orig_args)
 
-        # Set up `--debug` / `--verbose` first so that subsequent `git config` reads honour them.
+        # Set up `--debug` / `--verbose` first so that subsequent `git config` reads honor them.
         set_utils_global_variables(parsed)
 
         if "help" in parsed.opts:

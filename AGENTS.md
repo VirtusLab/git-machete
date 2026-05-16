@@ -29,6 +29,9 @@
 
 - No trailing whitespace on any line.
 - Always leave a single newline at the end of every file.
+- Always use American English spelling (`color`, `behavior`, `honor`, `organize`, `modeled`, `normalized`, `unrecognized`, ...) -
+  never the British variants (`colour`, `behaviour`, `honour`, `organise`, `modelled`, `normalised`, `unrecognised`, ...).
+  Applies to code, identifiers, comments, docstrings, Markdown, commit messages and PR descriptions.
 - Don't hard-wrap prose (code comments, docstrings, Markdown, commit messages, PR descriptions) at 80 or so columns -
   the line-length limit is 140 (see `[flake8]` in `tox.ini`).
   Break on sentence or clause boundaries instead, so each line carries one thought rather than a fragment chopped by column count.

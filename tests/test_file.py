@@ -15,7 +15,7 @@ class TestFile(BaseTest):
 
     def test_file(self) -> None:
         """
-        Verify behaviour of a 'git machete file' command.
+        Verify behavior of a 'git machete file' command.
         """
 
         create_repo()

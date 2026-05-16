@@ -40,7 +40,7 @@ class TestShow(BaseTest):
         assert_failure(["show", "current", "master"], "show current with a <branch> argument does not make sense")
 
     def test_show_up(self) -> None:
-        """Verify behaviour of a 'git machete show up' command.
+        """Verify behavior of a 'git machete show up' command.
 
         Verify that 'git machete show up' displays name of a parent/upstream
         branch one above current one in the config file from within current
@@ -99,7 +99,7 @@ class TestShow(BaseTest):
         )
 
     def test_show_down(self) -> None:
-        """Verify behaviour of a 'git machete show down' command.
+        """Verify behavior of a 'git machete show down' command.
 
         Verify that 'git machete show down' displays name of a
         child/downstream branch one below current one.
@@ -128,7 +128,7 @@ class TestShow(BaseTest):
         assert_failure(["show", "d", "level-1b-branch"], "Branch level-1b-branch has no downstream branch")
 
     def test_show_first(self) -> None:
-        """Verify behaviour of a 'git machete show first' command.
+        """Verify behavior of a 'git machete show first' command.
 
         Verify that 'git machete show first' displays name of the first downstream
         branch of a root branch of the current branch in the config file if root
@@ -181,7 +181,7 @@ class TestShow(BaseTest):
         )
 
     def test_show_last(self) -> None:
-        """Verify behaviour of a 'git machete show last' command.
+        """Verify behavior of a 'git machete show last' command.
 
         Verify that 'git machete show last' displays name of the last downstream
         branch of a root branch of the current branch in the config file if root
@@ -232,7 +232,7 @@ class TestShow(BaseTest):
         )
 
     def test_show_next(self) -> None:
-        """Verify behaviour of a 'git machete show next' command.
+        """Verify behavior of a 'git machete show next' command.
 
         Verify that 'git machete show next' displays name of
         a branch right after the current one in the config file
@@ -265,7 +265,7 @@ class TestShow(BaseTest):
         assert_failure(["show", "n", "level-1b-branch"], "Branch level-1b-branch has no successor")
 
     def test_show_prev(self) -> None:
-        """Verify behaviour of a 'git machete show prev' command.
+        """Verify behavior of a 'git machete show prev' command.
 
         Verify that 'git machete show prev' displays name of
         a branch right before the current one in the config file
@@ -297,7 +297,7 @@ class TestShow(BaseTest):
         assert_failure(["show", "p", "level-0-branch"], "Branch level-0-branch has no predecessor")
 
     def test_show_root(self) -> None:
-        """Verify behaviour of a 'git machete show root' command.
+        """Verify behavior of a 'git machete show root' command.
 
         Verify that 'git machete show root' displays name of the root of
         the current branch.
