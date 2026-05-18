@@ -5,6 +5,8 @@
 - Run autoformatters and linters via `tox`. Never invoke `flake8`, `isort`,
   `mypy`, `vulture`, `pylint` (etc.) directly - go through their respective
   `tox -e <env>` invocation so dependency versions stay pinned.
+- Exception: do NOT run `tox -e flake8` or `tox -e vulture` (or those binaries directly).
+  They hang indefinitely inside Cursor's terminal for an unidentified reason - rely on CI to catch any violations.
 - Run tests with `tox -e py [-- <pytest flags like -k>...]`. Do NOT run
   `pytest`, `python -m pytest`, or any tox-built venv's pytest binary
   directly. Tox's `passenv` shielding is what keeps test runs deterministic
