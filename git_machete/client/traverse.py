@@ -130,6 +130,8 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
                 checkout_msg = custom_checkout_message or f"Checking out <b>{target_branch}</b>"
                 print_fmt(f"{checkout_msg}... ", newline=False)
+                # Plain `git checkout`: traverse's snapshot already verified `target_branch` isn't held by
+                # any other worktree, so the extra guard in `checkout_in_current_worktree` is unnecessary here.
                 self._git.checkout(target_branch)
                 print_fmt(green_ok())
                 self._update_worktrees_cache_after_checkout(target_branch)

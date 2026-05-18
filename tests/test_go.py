@@ -1,10 +1,12 @@
 import os
 
+import pytest
 from pytest_mock import MockerFixture
+
+from git_machete.utils.paths import AbsPath
 
 from .base_test import BaseTest
 from .cli_runner import (assert_failure, assert_success, launch_command,
-                         launch_command_capturing_output_and_exception,
                          rewrite_branch_layout_file)
 from .git_repository import (add_worktree, check_out, commit, create_repo,
                              get_commit_hash, get_git_version, new_branch,
@@ -483,12 +485,13 @@ class TestGo(BaseTest):
           * git machete gitlab checkout-mrs --mine"""
         assert_failure(["g", "root"], expected_error_message)
 
+    @pytest.mark.skipif(get_git_version() < (2, 5), reason="git worktree command was introduced in git 2.5")
     def test_go_with_worktree(self) -> None:
-        """Test that go fails gracefully when target branch is checked out in a worktree."""
-        if get_git_version() < (2, 5):
-            # git worktree command was introduced in git 2.5
-            return
-
+        """`go down` fails with an actionable machete-level error (not the raw `git checkout` error)
+        when the target branch is already checked out in a linked worktree, and the user's cwd is
+        left untouched (we deliberately do NOT silently `cd` into the linked worktree - `os.chdir`
+        can never propagate back to the user's shell, so doing so + exiting 0 would mislead both
+        interactive users and scripts/agents into thinking the checkout succeeded)."""
         create_repo()
         new_branch("develop")
         commit()
@@ -505,26 +508,23 @@ class TestGo(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        # Create a worktree for feature-1
         check_out("develop")
-        add_worktree("feature-1")
+        feature_1_worktree = add_worktree("feature-1")
 
-        # Now try to `go down` from develop to feature-1
-        # feature-1 is already checked out in a worktree
         check_out("develop")
         initial_dir = os.getcwd()
-        output, exception = launch_command_capturing_output_and_exception("go", "down")
 
-        # Verify that `go` command fails when trying to checkout a branch in a worktree
-        # Git checkout fails with exit code 128 and stderr: "fatal: 'feature-1' is already used by worktree..."
-        assert exception is not None, "Expected go command to fail when target branch is in a worktree"
-        from git_machete.utils.exceptions import UnderlyingGitException
-        assert isinstance(exception, UnderlyingGitException)
-        assert "returned 128" in str(exception)  # Git checkout failure
-        assert "checkout" in str(exception).lower()
+        normalized_feature_1_worktree = AbsPath(feature_1_worktree)
+        assert_failure(
+            ["go", "down"],
+            f"Branch feature-1 is already checked out in another worktree at {normalized_feature_1_worktree}.\n"
+            f"Run cd {normalized_feature_1_worktree} to work on it there,\n"
+            f"or git worktree remove {normalized_feature_1_worktree} to drop that worktree.",
+        )
 
-        # Also verify the directory hasn't changed (unlike traverse which cd's into worktrees)
         assert os.getcwd() == initial_dir, "go should not change directory"
+        assert launch_command("show", "current").strip() == "develop", \
+            "HEAD should remain on develop - the failed `go down` must not silently leave a partial state."
 
     def test_go_directions_when_detached_head(self) -> None:
         """Verify behavior of 'git machete go' commands when in detached HEAD mode.

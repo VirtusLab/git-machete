@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.41.1
 
+- fixed: `git machete go`, `slide-out` and `{github,gitlab} checkout-{pr,mr}s` now fail with an actionable error when the target branch is already checked out in another worktree, rather than the cryptic `fatal: '<branch>' is already used by worktree at <path>` from `git checkout` (reported by @lsierant)
+
 ## New in git-machete 3.41.0
 
 - added: an [Agent Skill](https://agentskills.io/) at `skills/git-machete/SKILL.md`

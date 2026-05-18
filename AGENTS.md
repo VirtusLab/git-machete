@@ -27,6 +27,20 @@
 
 - Don't `git commit` or `git push` unless explicitly asked.
 
+## Tests
+
+- Skip tests that require a minimum Git version with `@pytest.mark.skipif(get_git_version() < (X, Y), reason="...")`,
+  not with an `if get_git_version() < (X, Y): return` early-return at the top of the test body.
+  The decorator surfaces the skip in pytest's report (and in the JUnit XML CI uploads); the early-return silently masquerades as a pass.
+
+## Comments
+
+- Don't add code comments that narrate test-harness internals or explain why an assertion's expected value was massaged
+  to match the harness's output (e.g. "backticks are stripped by `_fmt` in ASCII mode, so the expected string omits them",
+  "the harness lower-cases this, so we compare against lower-case", etc.).
+  If the actual and expected values match, the assertion already documents itself; if they don't, fix the production code or the harness, don't annotate the workaround.
+  This generalizes: avoid comments that exist solely to justify a specific literal in a test - the test name and the assertion are the contract.
+
 ## Formatting
 
 - No trailing whitespace on any line.

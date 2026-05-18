@@ -13,7 +13,7 @@ from .utils._subproc import PopenResult
 from .utils.cmd import get_cmd_shell_repr, popen_cmd, run_cmd
 from .utils.collections import get_non_empty_lines
 from .utils.debug_log import debug, hex_repr
-from .utils.exceptions import (UnderlyingGitException,
+from .utils.exceptions import (MacheteException, UnderlyingGitException,
                                UnexpectedMacheteException)
 from .utils.fs import is_executable, slurp_file
 from .utils.markup import escape_markup, print_fmt
@@ -726,7 +726,29 @@ class Git:
     # === Branch listing & loading ===
 
     def checkout(self, branch: LocalBranchShortName) -> None:
+        """Plain `git checkout <branch>` in the current worktree.
+
+        Callers that need to guard against the "branch is already checked out in another linked worktree" case
+        (which would otherwise surface as the cryptic `fatal: '<branch>' is already used by worktree at <path>`)
+        should use `checkout_in_current_worktree` instead.
+        """
         self._run_git("checkout", "--quiet", branch, "--", flush_caches=True)
+
+    def checkout_in_current_worktree(self, branch: LocalBranchShortName) -> None:
+        """Like `checkout`, but if `<branch>` is already checked out in another linked worktree,
+        raise a `MacheteException` naming that worktree instead of letting `git checkout` fail with
+        `fatal: '<branch>' is already used by worktree at <path>` (exit 128).
+
+        No `os.chdir` is performed: `os.chdir` only mutates the current Python process and cannot propagate
+        back to the calling shell, so chdir-then-exit-0 would falsely signal success to interactive users and scripts.
+        """
+        target_worktree_root_dir = self.get_worktree_root_dirs_by_branch().get(branch)
+        if target_worktree_root_dir is not None and target_worktree_root_dir != self.get_current_worktree_root_dir():
+            raise MacheteException(
+                f"Branch <b>{branch}</b> is already checked out in another worktree at <b>{target_worktree_root_dir}</b>.\n"
+                f"Run `cd {target_worktree_root_dir}` to work on it there,\n"
+                f"or `git worktree remove {target_worktree_root_dir}` to drop that worktree.")
+        self.checkout(branch)
 
     def get_local_branches(self) -> List[LocalBranchShortName]:
         if self.__local_branches_cached is None:

@@ -883,7 +883,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                      f'No remote tracking data will be set up for <b>{pr.head}</b> branch.')
                 refspec = f'{self.code_hosting_client.get_ref_name_for_pull_request(pr.number)}:{pr.head}'
                 self._git.fetch_refspec(org_repo_remote.remote, refspec)
-                self._git.checkout(LocalBranchShortName.of(pr.head))
+                self._git.checkout_in_current_worktree(LocalBranchShortName.of(pr.head))
             if pr.state in ('closed', 'merged'):
                 warn(f'{pr.display_text()} is already closed.')
             debug(f'found {pr}')
@@ -915,7 +915,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         debug(f'Current {spec.display_name} user is ' + (current_user or '<none>'))
         self.__sync_annotations_to_branch_layout_file(list(prs_to_annotate), current_user=current_user, include_urls=False, verbose=False)
         if len(applicable_prs) == 1:
-            self._git.checkout(LocalBranchShortName.of(applicable_prs[0].head))
+            self._git.checkout_in_current_worktree(LocalBranchShortName.of(applicable_prs[0].head))
 
     def __get_downwards_tree_excluding_pr(self, original_pr: PullRequest) -> List[Tuple[PullRequest, int]]:
         """Returns pairs of (PR, depth below the given PR)"""
