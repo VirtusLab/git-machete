@@ -6,14 +6,15 @@ function retry() {
   attempts=$1
   interval=5
   for i in $(seq 1 $attempts); do
-    if "${@:2}"; then break; fi
+    if "${@:2}"; then return 0; fi
 
-    echo "Attempt #$i out of $attempts at command '$*' failed"
+    echo "Attempt #$i out of $attempts at command '${*:2}' failed"
     if [[ $i -lt $attempts ]]; then
       echo "Sleeping $interval seconds..."
       sleep $interval
     fi
   done
+  return 1
 }
 
 # If image is not found by pull, build the image and push it to the Docker Hub.

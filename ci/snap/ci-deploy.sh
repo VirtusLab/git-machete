@@ -2,6 +2,9 @@
 
 set -e -o pipefail -u -x
 
+# shellcheck source=../ci-run-commons.sh
+source "$(git rev-parse --show-toplevel)/ci/ci-run-commons.sh"
+
 sudo apt-get update
 sudo apt-get install -y snapd
 sudo snap install snapcraft --classic
@@ -25,8 +28,11 @@ if [[ ${1-} == "--dry-run" || ${CIRCLE_BRANCH-} != "master" ]]; then
   fi
   sudo snap remove git-machete
 
-  snapcraft upload --release=edge git-machete_*_amd64.snap
-  snapcraft upload --release=edge git-machete_*_arm64.snap
+  # `snapcraft upload` occasionally drops the HTTPS connection right after the upload completes
+  # (`('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))`),
+  # which is a transient store-side flake; retry a few times before giving up.
+  retry 3 snapcraft upload --release=edge git-machete_*_amd64.snap
+  retry 3 snapcraft upload --release=edge git-machete_*_arm64.snap
 else
   # Relying on SNAPCRAFT_STORE_CREDENTIALS, provided by the CI
   snapcraft upload --release=stable git-machete_*_amd64.snap
