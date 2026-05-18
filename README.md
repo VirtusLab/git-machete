@@ -235,20 +235,21 @@ source <(git machete completion zsh)
 
 ### AI coding agents (Cursor, Claude Code, Codex CLI, GitHub Copilot, ...)
 
-`git machete` ships an [Agent Skill](https://agentskills.io/) that teaches AI coding agents which commands are safe to script, which require `-y/--yes` to avoid hanging on interactive prompts, and how to mutate the branch layout without corrupting it.
-Install it with the [GitHub CLI](https://cli.github.com/) (v2.90+):
+Install with [GitHub CLI](https://cli.github.com/) (v2.90+):
 
 ```shell script
-gh skill install VirtusLab/git-machete --scope user
+gh skill install VirtusLab/git-machete git-machete --scope user
 ```
 
-`--scope user` puts the skill under `~/.<agent>/skills/git-machete/` so every repo on your machine picks it up; without it `gh skill install` defaults to `.<agent>/skills/git-machete/` in the **current** repo only.
-In a TTY `gh` prompts for which agent(s) to install for; non-interactively it defaults to GitHub Copilot - pass `--agent claude-code` / `--agent cursor` / etc. (or pick multiple) for others.
-Most agents (Cursor, Codex CLI, Copilot, Gemini CLI, Cline, OpenCode, Warp, ...) share `~/.agents/skills/`, so one install covers them all; Claude Code uses its own `~/.claude/skills/`.
+`--scope user` puts the skill under `~/.<agent>/skills/git-machete/` so every repo on your machine picks it up;
+without it `gh skill install` defaults to `.<agent>/skills/git-machete/` in the **current** repo only.
+In a TTY `gh` prompts for which agent(s) to install for; non-interactively it defaults to GitHub Copilot &mdash;
+pass `--agent claude-code`/`--agent cursor` etc. for others.
 
 To pull in upstream changes later, run `gh skill update`.
 
-If you don't have `gh`, copy `skills/git-machete/SKILL.md` from this repo into `~/.cursor/skills/git-machete/`, `~/.claude/skills/git-machete/`, `~/.codex/skills/git-machete/`, or `~/.agents/skills/git-machete/` by hand.
+If you don't use `gh`, copy `skills/git-machete/SKILL.md` from this repo
+into `~/.cursor/skills/git-machete/`, `~/.claude/skills/git-machete/`, `~/.codex/skills/git-machete/`, or `~/.agents/skills/git-machete/` by hand.
 
 <br/>
 

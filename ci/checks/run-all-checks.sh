@@ -37,6 +37,7 @@ _ prohibit-bash-usages-from-python
 _ prohibit-current-date-in-tests
 _ prohibit-deploy-step-in-circleci
 _ prohibit-double-backticks-in-python
+_ prohibit-ellipsis
 _ prohibit-exempli-gratia-in-rst
 _ prohibit-fish-completion-repetition-checks-for-long-options
 _ prohibit-fork-point-in-git
