@@ -70,7 +70,7 @@ class GoShowMacheteClient(MacheteClient):
         dest = self._parse_direction(direction, branch=current_branch, allow_current=False, pick_if_multiple=True)[0]
         if dest != current_branch:
             print_fmt(f"Checking out <b>{dest}</b>... ", newline=False)
-            self._git.checkout(dest)
+            self._git.checkout_in_current_worktree(dest)
             print_fmt(green_ok())
         # Other directions (`up`/`prev`/`next`/`root`/`first`/`last`) are deterministic and plumbing-friendly,
         # but `down` may prompt to pick among multiple children - so it's the one direction whose users

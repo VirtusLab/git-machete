@@ -80,12 +80,12 @@ class SlideOutMacheteClient(MacheteClient):
         if self._git.get_current_branch_or_none() in branches_to_slide_out:
             if new_parent is not None:
                 print_fmt(f"Checking out <b>{new_parent}</b>... ", newline=False)
-                self._git.checkout(new_parent)
+                self._git.checkout_in_current_worktree(new_parent)
                 print_fmt(green_ok())
             elif new_children:
                 # If no parent and there are children, check out the first child
                 print_fmt(f"Checking out <b>{new_children[0]}</b>... ", newline=False)
-                self._git.checkout(new_children[0])
+                self._git.checkout_in_current_worktree(new_children[0])
                 print_fmt(green_ok())
             # Otherwise, stay on the current (slid-out) branch
 
@@ -97,7 +97,7 @@ class SlideOutMacheteClient(MacheteClient):
                 use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
                 if use_merge or use_rebase:
                     print_fmt(f"Checking out <b>{child}</b>... ", newline=False)
-                    self._git.checkout(child)
+                    self._git.checkout_in_current_worktree(child)
                     print_fmt(green_ok())
                 if use_merge:
                     print_fmt(f"Merging <b>{new_parent}</b> into <b>{child}</b>...")

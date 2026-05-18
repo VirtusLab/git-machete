@@ -2,14 +2,17 @@
 import pytest
 from pytest_mock import MockerFixture
 
+from git_machete.utils.paths import AbsPath
+
 from .base_test import BaseTest
 from .cli_runner import (assert_failure, assert_success, launch_command,
                          read_branch_layout_file, rewrite_branch_layout_file)
-from .git_repository import (amend_commit, check_out, commit, create_repo,
-                             create_repo_with_remote, delete_branch,
-                             delete_remote_branch, get_current_branch,
-                             get_current_commit_hash, get_local_branches,
-                             new_branch, push)
+from .git_repository import (add_worktree, amend_commit, check_out, commit,
+                             create_repo, create_repo_with_remote,
+                             delete_branch, delete_remote_branch,
+                             get_current_branch, get_current_commit_hash,
+                             get_git_version, get_local_branches, new_branch,
+                             push)
 from .mockers import (fixed_author_and_committer_date_in_past,
                       mock_input_returning_y)
 from .shell import read_file, set_file_executable, write_to_file
@@ -789,3 +792,44 @@ class TestSlideOut(BaseTest):
 
         expected_layout = ["branch-0", "    branch-2"]
         assert read_branch_layout_file().splitlines() == expected_layout
+
+    @pytest.mark.skipif(get_git_version() < (2, 5), reason="git worktree command was introduced in git 2.5")
+    def test_slide_out_fails_when_new_parent_is_in_another_worktree(self) -> None:
+        """`slide-out` fails with an actionable machete-level error (not the raw `git checkout` error)
+        when the new parent that `slide-out` would `git checkout` is already checked out in a linked worktree.
+        Importantly, `slide-out` must NOT silently `cd` into that worktree as a workaround - `os.chdir` from
+        a Python subprocess cannot propagate back to the user's shell, so exit-0 + a silent chdir would mislead
+        scripts/agents into thinking the slide-out completed in the current worktree."""
+        create_repo()
+        new_branch("develop")
+        commit()
+        new_branch("feature-1")
+        commit()
+        new_branch("feature-2")
+        commit()
+
+        body: str = \
+            """
+            develop
+                feature-1
+                    feature-2
+            """
+        rewrite_branch_layout_file(body)
+
+        # Pin `develop` to a linked worktree, then move the main worktree off it
+        # so `slide-out feature-1` (run from the main worktree, currently on `feature-1`)
+        # will try to `git checkout develop` here.
+        check_out("develop")
+        develop_worktree = add_worktree("develop")
+        check_out("feature-1")
+
+        normalized_develop_worktree = AbsPath(develop_worktree)
+        assert_failure(
+            ["slide-out", "--no-rebase"],  # skip post-slide-out rebase so the test stays focused on the checkout step
+            f"Branch develop is already checked out in another worktree at {normalized_develop_worktree}.\n"
+            f"Run cd {normalized_develop_worktree} to work on it there, "
+            f"or git worktree remove {normalized_develop_worktree} to drop that worktree.",
+            # `slide-out` had already printed "Checking out develop... " (newline=False, no `OK` yet)
+            # when `Git.checkout` raised the actionable error - keep that captured so we don't lose the breadcrumb.
+            expected_output="Checking out develop...",
+        )
