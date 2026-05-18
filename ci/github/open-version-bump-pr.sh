@@ -3,10 +3,33 @@
 set -e -o pipefail -u -x
 
 # Opens a routine patch-version-bump PR (`<major>.<minor>.<patch>++`) atop the
-# just-released `master`.
+# mainline `develop` branch (where the next release is being prepared) rather
+# than `master` - so the bump rides along with whatever else is already queued
+# for the next release.
+#
+# Runs as part of the `master`-only release job, so the workspace starts out
+# on `master` at the just-released tag.
 
-current_version=$(cut -d\' -f2 git_machete/__init__.py)
-IFS=. read -r major minor patch <<< "$current_version"
+# Captured up-front from master's `__init__.py` (= the version that was just
+# released); used only in the PR body.
+released_version=$(cut -d\' -f2 git_machete/__init__.py)
+
+# Same git identity used by the sister `git-machete-intellij-plugin` repo
+# for CI-authored bot commits.
+git config user.name "Git Machete Bot"
+git config user.email "gitmachete@virtuslab.com"
+
+# Use `GITHUB_TOKEN` for `git push` (the same env var that `gh` already
+# consumes in master jobs); we don't depend on the checkout deploy key
+# having write access.
+git remote set-url origin "https://${GITHUB_TOKEN}@github.com/VirtusLab/git-machete.git"
+
+# Read the version off `develop` (which may already be ahead of the just-released
+# `master` - e.g. a minor-bump landed there meanwhile) so the new patch number
+# is computed relative to what develop will actually compare against.
+git fetch origin develop
+develop_version=$(git show origin/develop:git_machete/__init__.py | cut -d\' -f2)
+IFS=. read -r major minor patch <<< "$develop_version"
 new_version="${major}.${minor}.$((patch + 1))"
 branch="bump-version-to-v${new_version}"
 
@@ -17,7 +40,9 @@ if [[ -n $(gh pr list --head "$branch" --state all --json number --jq '.[].numbe
   exit 0
 fi
 
-sed -i "s/__version__ = '$current_version'/__version__ = '$new_version'/" git_machete/__init__.py
+git checkout -b "$branch" origin/develop
+
+sed -i "s/__version__ = '$develop_version'/__version__ = '$new_version'/" git_machete/__init__.py
 
 # Insert a new "## New in git-machete <new>" header (plus a blank line below it)
 # above the previous latest-version section. `enforce-release-notes-up-to-date.sh`
@@ -30,23 +55,19 @@ sed -i "s/__version__ = '$current_version'/__version__ = '$new_version'/" git_ma
 } > RELEASE_NOTES.md.tmp
 mv RELEASE_NOTES.md.tmp RELEASE_NOTES.md
 
-# Same git identity used by the sister `git-machete-intellij-plugin` repo
-# for CI-authored bot commits.
-git config user.name "Git Machete Bot"
-git config user.email "gitmachete@virtuslab.com"
+# Regenerate the Sphinx-built man page so its embedded version string matches
+# the bumped `__init__.py`; otherwise `tox -e sphinx-man-check` (run as part
+# of regular CI on the bump PR) would fail. `tox` isn't pre-installed in the
+# release executor - other CircleCI jobs `pip3 install tox` for the same reason.
+pip3 install tox
+tox -e sphinx-man
 
-# Use `GITHUB_TOKEN` for `git push` (the same env var that `gh` already
-# consumes in master jobs); we don't depend on the checkout deploy key
-# having write access.
-git remote set-url origin "https://${GITHUB_TOKEN}@github.com/VirtusLab/git-machete.git"
-
-git checkout -b "$branch"
-git add git_machete/__init__.py RELEASE_NOTES.md
+git add git_machete/__init__.py RELEASE_NOTES.md docs/man/git-machete.1
 git commit -m "Bump version to v${new_version}"
 git push origin "$branch"
 
 gh pr create \
   --title "Bump version to v${new_version}" \
-  --body "Routine patch-version bump opened automatically after \`v${current_version}\` was released." \
-  --base master \
+  --body "Routine patch-version bump opened automatically after \`v${released_version}\` was released." \
+  --base develop \
   --head "$branch"
