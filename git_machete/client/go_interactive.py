@@ -132,7 +132,7 @@ class GoInteractiveMacheteClient(StatusMacheteClient):
         if selected_branch is not None and selected_branch != current_branch:
             print()
             print_fmt(f"Checking out <b>{selected_branch}</b>... ", newline=False)
-            self._git.checkout(selected_branch)
+            self._git.checkout_in_current_worktree(selected_branch)
             print_fmt(green_ok())
 
     def _pick_branch_interactively(self, *, current_branch: Optional[LocalBranchShortName]) -> Optional[LocalBranchShortName]:
