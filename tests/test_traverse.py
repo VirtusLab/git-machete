@@ -29,13 +29,11 @@ from .shell import write_to_file
 
 class TestTraverse(BaseTest):
 
-    # Building the "standard tree" from scratch takes ~4.3 s per test, dominated
-    # by ~25 git subprocess invocations plus a hard 1.5 s `time.sleep` in
-    # `wait_to_bump_commit_timestamp`. Since the tree is identical across every
-    # test that uses it, we build it once per process and let each test
-    # `shutil.copytree` it into a fresh temp directory. The copy of a small
-    # bare/non-bare repo pair is sub-10 ms, so ~18 call sites in this file
-    # collectively save tens of seconds of CI time.
+    # Building the "standard tree" from scratch takes ~4.3 s per test, dominated by ~25 git subprocess invocations
+    # plus a hard 1.5 s `time.sleep` in `wait_to_bump_commit_timestamp`.
+    # Since the tree is identical across every test that uses it, we build it once per process
+    # and let each test `shutil.copytree` it into a fresh temp directory.
+    # The copy of a small bare/non-bare repo pair is sub-10 ms, so ~18 call sites in this file collectively save tens of seconds of CI time.
     _standard_tree_template: ClassVar[Optional[Tuple[str, str]]] = None
 
     @classmethod
@@ -109,9 +107,8 @@ class TestTraverse(BaseTest):
         shutil.copytree(template_remote, new_remote)
 
         os.chdir(new_local)
-        # The local repo's `origin` URL still points at the template's remote
-        # path (baked in by `add_remote` during template build); repoint it
-        # so that any further push/fetch in the test exercises this copy.
+        # The local repo's `origin` URL still points at the template's remote path (baked in by `add_remote` during template build);
+        # repoint it so that any further push/fetch in the test exercises this copy.
         set_remote_url("origin", new_remote)
 
     def test_traverse_slide_out(self, mocker: MockerFixture) -> None:
@@ -189,8 +186,7 @@ class TestTraverse(BaseTest):
         )
 
     def test_traverse_sync_both_github_and_gitlab(self) -> None:
-        # `-H/--sync-github-prs` and `-L/--sync-gitlab-mrs` are pairwise
-        # mutually exclusive on `traverse`, enforced via a mutex group.
+        # `-H/--sync-github-prs` and `-L/--sync-gitlab-mrs` are pairwise mutually exclusive on `traverse`, enforced via a mutex group.
         assert_argument_error(
             ["traverse", "--sync-github-prs", "--sync-gitlab-mrs"],
             "Argument -L/--sync-gitlab-mrs: not allowed with argument -H/--sync-github-prs"

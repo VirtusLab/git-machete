@@ -43,18 +43,14 @@ def _populate_cli_options(
         cli_opts: git_machete.options.CommandLineOptions,
         parsed: ParsedCmd,
 ) -> None:
-    """Translate the raw `ParsedCmd` (flags as strings, positionals keyed by
-    display name) into the typed `CommandLineOptions` aggregate.
+    """Translate the raw `ParsedCmd` (flags as strings, positionals keyed by display name) into the typed `CommandLineOptions` aggregate.
 
-    Options are processed in user-input order so that "last one wins" works
-    intuitively: `git machete traverse -W --start-from=here` overrides the
-    `start-from` baked into the `-W` macro because `--start-from=here` is
-    seen later in the command line. Same goes for `--push` after `--no-push`.
+    Options are processed in user-input order so that "last one wins" works intuitively:
+    `git machete traverse -W --start-from=here` overrides the `start-from` baked into the `-W` macro
+    because `--start-from=here` is seen later in the command line. Same goes for `--push` after `--no-push`.
 
-    This is also the only place that knows how to coerce raw strings into the
-    project's domain types (`LocalBranchShortName`, `AnyRevision`,
-    comma-separated `--roots`, the `-W` macro that fans out to four other
-    flags, ...).
+    This is also the only place that knows how to coerce raw strings into the project's domain types
+    (`LocalBranchShortName`, `AnyRevision`, comma-separated `--roots`, the `-W` macro that fans out to four other flags, ...).
     """
     branch_positional: Optional[str] = parsed.positionals.get("branch")
     if branch_positional:
@@ -174,9 +170,8 @@ def _populate_cli_options(
         elif key == "yes":
             cli_opts.opt_yes = True
         # `debug`, `verbose`, `color`, `help`, `version`, `checkout-my-github-prs`,
-        # plus per-subcommand presence-only markers (`sync-github-prs` consumers
-        # of GitLab specs etc.) are picked up directly from `parsed.opts` by the
-        # dispatcher below or by `set_utils_global_variables`.
+        # plus per-subcommand presence-only markers (`sync-github-prs` consumers of GitLab specs etc.)
+        # are picked up directly from `parsed.opts` by the dispatcher below or by `set_utils_global_variables`.
 
     if cli_opts.opt_n or cli_opts.opt_yes:
         # Some branches may carry a merge strategy even when --merge isn't set,
@@ -196,9 +191,9 @@ def update_cli_options_using_config_keys(cli_opts: git_machete.options.CommandLi
 
 
 def set_utils_global_variables(parsed: ParsedCmd) -> None:
-    # `--color` is already applied inside `parse_cmdline` so that any
-    # `MacheteException` raised during validation gets the right ANSI
-    # treatment; here we just propagate the debug / verbose flags.
+    # `--color` is already applied inside `parse_cmdline`
+    # so that any `MacheteException` raised during validation gets the right ANSI treatment;
+    # here we just propagate the debug / verbose flags.
     debug_log.debug_mode = "debug" in parsed.opts
     cmd.verbose_mode = "verbose" in parsed.opts
 
@@ -218,8 +213,7 @@ def launch_internal(orig_args: List[str]) -> None:
 
         parsed = parse_cmdline(orig_args)
 
-        # Set up `--debug` / `--verbose` first so that subsequent
-        # `git config` reads honour them.
+        # Set up `--debug` / `--verbose` first so that subsequent `git config` reads honour them.
         set_utils_global_variables(parsed)
 
         if "help" in parsed.opts:
@@ -238,10 +232,8 @@ def launch_internal(orig_args: List[str]) -> None:
             print_fmt("Extra arguments after `--` are only allowed after `diff` and `log`")
             sys.exit(ExitCode.ARGUMENT_ERROR)
 
-        # `completion`, `help` and `version` neither read git config nor use
-        # `cli_opts`, so skip the config/CLI population for them - in
-        # particular, `help` must keep working even when a config key like
-        # `machete.squashMergeDetection` carries an invalid value.
+        # `completion`, `help` and `version` neither read git config nor use `cli_opts`, so skip the config/CLI population for them -
+        # in particular, `help` must keep working even when a config key like `machete.squashMergeDetection` carries an invalid value.
         if cmd not in ("completion", "help", "version"):
             update_cli_options_using_config_keys(cli_opts)
             _populate_cli_options(cli_opts, parsed)
@@ -338,11 +330,9 @@ def launch_internal(orig_args: List[str]) -> None:
             spec = GITHUB_API_SPEC if cmd == "github" else GITLAB_API_SPEC
             pr_or_mr = spec.pr_short_name.lower()
             request_ids: List[int] = parsed.positionals.get("request_id", [])
-            # Each option's compatibility with each subcommand is encoded
-            # in the github/gitlab `CommandSpec`'s `subcommands` tuple
-            # (see `cli_commands.py::_code_hosting_spec`), so the parser has
-            # already rejected the invalid combinations - the dispatcher
-            # just runs the subcommand.
+            # Each option's compatibility with each subcommand is encoded in the github/gitlab `CommandSpec`'s `subcommands` tuple
+            # (see `cli_commands.py::_code_hosting_spec`), so the parser has already rejected the invalid combinations -
+            # the dispatcher just runs the subcommand.
 
             github_or_gitlab_client = MacheteClientWithCodeHosting(spec)
 
@@ -427,8 +417,8 @@ def launch_internal(orig_args: List[str]) -> None:
             elif category == "slidable":
                 res = list_client.slidable_branches()
             elif category == "slidable-after":
-                # `list_branch` is non-None here: the early-exit check above
-                # raised when `category == 'slidable-after' and not list_branch`.
+                # `list_branch` is non-None here:
+                # the early-exit check above raised when `category == 'slidable-after' and not list_branch`.
                 assert list_branch is not None
                 target_branch = LocalBranchShortName.of(list_branch)
                 list_client.expect_in_managed_branches(target_branch)
@@ -459,12 +449,11 @@ def launch_internal(orig_args: List[str]) -> None:
                 raise MacheteException('`show current` with a `<branch>` argument does not make sense')
             GoShowMacheteClient(verify_branches=False).show(show_direction, opt_branch=cli_opts.opt_branch)
         elif cmd == "slide-out":
-            # `verify_branches=False` so that a branch the user is *explicitly* asking
-            # to slide out doesn't first trigger the "Warning: sliding invalid branch ..."
-            # auto-prune (which then makes the explicit slide-out fail with
-            # "not found in the tree of branch dependencies"). The auto-prune is useful
-            # for commands that just *read* the layout (e.g. `status`, `traverse`); for
-            # `slide-out` it's redundant with the user's own intent.
+            # `verify_branches=False` so that a branch the user is *explicitly* asking to slide out
+            # doesn't first trigger the "Warning: sliding invalid branch ..." auto-prune
+            # (which then makes the explicit slide-out fail with "not found in the tree of branch dependencies").
+            # The auto-prune is useful for commands that just *read* the layout (e.g. `status`, `traverse`);
+            # for `slide-out` it's redundant with the user's own intent.
             slide_out_client = SlideOutMacheteClient(verify_branches=False)
             branches_to_slide_out: List[str] = parsed.positionals.get("branches", [])
             if cli_opts.opt_removed_from_remote:
@@ -525,8 +514,7 @@ def launch_internal(orig_args: List[str]) -> None:
         else:  # rejected by the parser
             raise UnexpectedMacheteException(f"Unknown command: `{cmd}`")
     finally:
-        # Has been fixed in git itself as of 2.35.0, but we still defend
-        # against pre-2.35 + the underlying-checkout-moves-cwd case:
+        # Has been fixed in git itself as of 2.35.0, but we still defend against pre-2.35 + the underlying-checkout-moves-cwd case:
         # see https://github.com/git/git/blob/master/Documentation/RelNotes/2.35.0.txt#L81
         if initial_current_directory and not does_directory_exist(initial_current_directory):
             nearest_existing_parent_directory: AbsPath = initial_current_directory

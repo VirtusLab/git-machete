@@ -29,3 +29,7 @@
 
 - No trailing whitespace on any line.
 - Always leave a single newline at the end of every file.
+- Don't hard-wrap prose (code comments, docstrings, Markdown, commit messages, PR descriptions) at 80 or so columns -
+  the line-length limit is 140 (see `[flake8]` in `tox.ini`).
+  Break on sentence or clause boundaries instead, so each line carries one thought rather than a fragment chopped by column count.
+  Prefer one sentence per line; for a sentence that exceeds 140 columns, split at a natural clause boundary (semicolons, parentheticals, conjunctions, ...).

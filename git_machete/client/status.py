@@ -254,13 +254,12 @@ class StatusMacheteClient(MacheteClient):
             *,
             parent_branch: LocalBranchShortName,
             inferring_branches: List[BranchPair]) -> bool:
-        # Suppresses the spurious yellow edge that appears when the parent branch is merely behind
-        # its remote counterpart and the child branch was forked from the remote tip. We only
-        # fire here for parents that have a remote counterpart at all (otherwise the "behind
-        # remote" situation cannot arise), and only if `parent_branch` appears among the inferring
-        # branches - either directly as `parent_remote`, or as the `local_branch` side of a
-        # `BranchPair(parent_branch, parent_branch)` entry produced when the inferred commit
-        # survives on `parent_branch`'s own filtered reflog after the push.
+        # Suppresses the spurious yellow edge that appears when the parent branch is merely behind its remote counterpart
+        # and the child branch was forked from the remote tip.
+        # We only fire here for parents that have a remote counterpart at all (otherwise the "behind remote" situation cannot arise),
+        # and only if `parent_branch` appears among the inferring branches -
+        # either directly as `parent_remote`, or as the `local_branch` side of a `BranchPair(parent_branch, parent_branch)` entry
+        # produced when the inferred commit survives on `parent_branch`'s own filtered reflog after the push.
         parent_remote = self._git.get_combined_counterpart_for_fetching_of_branch(parent_branch)
         if parent_remote is None:
             return False
@@ -363,9 +362,9 @@ class StatusMacheteClient(MacheteClient):
                                     f' seems to be a part of the unique history of {fp_branches_formatted}'
                                 )
                             else:
-                                # Reaching the green-edge marker with no inferring branches means the
-                                # fork point comes from an active override (a fallback-to-parent fork
-                                # point equals the parent hash, so it never appears in `parent..branch`).
+                                # Reaching the green-edge marker with no inferring branches
+                                # means the fork point comes from an active override
+                                # (a fallback-to-parent fork point equals the parent hash, so it never appears in `parent..branch`).
                                 fp_suffix = f' {marker}: overridden'
                         commits.append((commit, fp_suffix))
                 commits_by_branch[branch] = commits

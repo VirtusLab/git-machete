@@ -16,9 +16,8 @@ from .git_repository import create_repo
 class TestCLI(BaseTest):
     @pytest.mark.parametrize("flag", ["--debug", "-v", "--verbose"])
     def test_verbose_no_command(self, flag: str) -> None:
-        # Asserting on the full help output here would be brittle (the listing
-        # tracks every (sub)command); we only smoke-check that `--help`-style
-        # output is what we get instead of a stack trace.
+        # Asserting on the full help output here would be brittle (the listing tracks every (sub)command);
+        # we only smoke-check that `--help`-style output is what we get instead of a stack trace.
         output, e = launch_command_capturing_output_and_exception(flag)
         assert output and "Usage: git machete" in output
         assert type(e) is SystemExit
@@ -60,9 +59,9 @@ class TestCLI(BaseTest):
             "Did you mean: `traverse`?")
 
     def test_unknown_subcommand_no_close_match(self) -> None:
-        """A garbage top-level command without a near-miss should steer the
-        user to `git machete help` (the help hint is suppressed when there IS
-        a close match - that match is the actionable suggestion)."""
+        """A garbage top-level command without a near-miss should steer the user to `git machete help`
+        (the help hint is suppressed when there IS a close match - that match is the actionable suggestion).
+        """
         assert_argument_error(
             ["xyzzy"],
             "Invalid command: 'xyzzy'\n"
@@ -92,11 +91,9 @@ class TestCLI(BaseTest):
             "Did you mean: `--start-from`?")
 
     def test_unknown_flag_with_uppercase_letter_suggests_close_match(self) -> None:
-        """A wrong-case typo (`--list-commitS` vs `--list-commits`) is still
-        within difflib's similarity threshold and should be suggested.
+        """A wrong-case typo (`--list-commitS` vs `--list-commits`) is still within difflib's similarity threshold and should be suggested.
 
-        Also serves as the regression test for the message prefix being
-        sentence-cased (`Unrecognized`, not `unrecognized`).
+        Also serves as the regression test for the message prefix being sentence-cased (`Unrecognized`, not `unrecognized`).
         """
         assert_argument_error(
             ["status", "--list-commitS"],
@@ -106,13 +103,11 @@ class TestCLI(BaseTest):
     def test_unknown_flag_scoped_to_subparser(self) -> None:
         """Suggestions only consider options of the active subcommand.
 
-        `--checked-out-since` exists on `discover` but not on `traverse`. A typo
-        of it under `traverse` must NOT trigger a suggestion based on `discover`'s
-        vocabulary - otherwise we'd be telling the user to use a flag that the
-        active subcommand rejects.
+        `--checked-out-since` exists on `discover` but not on `traverse`.
+        A typo of it under `traverse` must NOT trigger a suggestion based on `discover`'s vocabulary -
+        otherwise we'd be telling the user to use a flag that the active subcommand rejects.
 
-        Since there is no spelling-correction hint, the message falls back to
-        pointing the user at the subcommand's help page.
+        Since there is no spelling-correction hint, the message falls back to pointing the user at the subcommand's help page.
         """
         assert_argument_error(
             ["traverse", "--checked-out-snc", "foo"],
@@ -127,9 +122,9 @@ class TestCLI(BaseTest):
             "Did you mean: `--checked-out-since`?")
 
     def test_two_unknown_flags_each_with_suggestion(self) -> None:
-        """When multiple unrecognized flags each have a close match, every
-        suggestion line is prefixed with the originating flag name so the
-        user can tell them apart."""
+        """When multiple unrecognized flags each have a close match,
+        every suggestion line is prefixed with the originating flag name so the user can tell them apart.
+        """
         assert_argument_error(
             ["traverse", "--srart-from", "foo", "--debugg"],
             "Unrecognized arguments: --srart-from foo --debugg\n"
@@ -137,25 +132,25 @@ class TestCLI(BaseTest):
             "For `--debugg`: did you mean: `--debug`?")
 
     def test_unknown_short_flag_points_to_help(self) -> None:
-        """Short flags like `-q` or `-gs` have no long-option close match,
-        so the message falls back to the subcommand help page."""
+        """Short flags like `-q` or `-gs` have no long-option close match, so the message falls back to the subcommand help page."""
         assert_argument_error(
             ["status", "-q"],
             "Unrecognized arguments: -q\n"
             "See `git machete help status` for usage.")
 
     def test_unknown_short_flags_nested_subcommand_points_to_help(self) -> None:
-        """For a two-level subcommand (`github create-pr`), the hint points
-        at the top-level subcommand (`github`) since that is what
-        `git machete help` accepts as its argument."""
+        """For a two-level subcommand (`github create-pr`), the hint points at the top-level subcommand (`github`)
+        since that is what `git machete help` accepts as its argument.
+        """
         assert_argument_error(
             ["github", "create-pr", "-gs"],
             "Unrecognized arguments: -gs\n"
             "See `git machete help github` for usage.")
 
     def test_unknown_flag_no_subcommand_no_hint(self) -> None:
-        """At the top level (no subcommand selected), there is no help page
-        to point at, so no hint is appended when there is also no suggestion."""
+        """At the top level (no subcommand selected), there is no help page to point at,
+        so no hint is appended when there is also no suggestion.
+        """
         assert_argument_error(
             ["-q"],
             "Unrecognized arguments: -q")
@@ -172,9 +167,8 @@ class TestCLI(BaseTest):
     def test_invalid_nested_choice_no_close_match_lists_all(self) -> None:
         """Nested invalid choices without a near-miss list every option.
 
-        The top-level "Run `git machete help`" hint would point the user at
-        the wrong help topic for nested subcommands, and the choice sets here
-        are small enough that printing them all is the friendlier option.
+        The top-level "Run `git machete help`" hint would point the user at the wrong help topic for nested subcommands,
+        and the choice sets here are small enough that printing them all is the friendlier option.
         """
         # github subcommand
         assert_argument_error(
@@ -188,8 +182,8 @@ class TestCLI(BaseTest):
             "Invalid gitlab subcommand: 'xyzzy'\n"
             "Possible values for gitlab subcommand are: "
             "anno-mrs, checkout-mrs, create-mr, restack-mr, retarget-mr, update-mr-descriptions")
-        # `go` direction (note: aliases like `d`, `f` are part of the choice set
-        # and so legitimately show up here, mirroring the missing-required path)
+        # `go` direction
+        # (note: aliases like `d`, `f` are part of the choice set and so legitimately show up here, mirroring the missing-required path)
         assert_argument_error(
             ["go", "xyzzy"],
             "Invalid go direction: 'xyzzy'\n"
@@ -232,8 +226,7 @@ class TestCLI(BaseTest):
     def test_missing_required_choice_for_github(self) -> None:
         """`git machete github` lists subcommands.
 
-        `sync` is intentionally omitted from the listing - see
-        `test_github_sync_hidden_from_close_match_suggestions` for the rationale.
+        `sync` is intentionally omitted from the listing - see `test_github_sync_hidden_from_close_match_suggestions` for the rationale.
         """
         assert_argument_error(
             ["github"],
@@ -244,9 +237,8 @@ class TestCLI(BaseTest):
     def test_invalid_choice_for_subcommand_positional(self) -> None:
         """`git machete github creat-pr` should suggest `create-pr`.
 
-        Several `*-pr` subcommands are similar enough that difflib returns more
-        than one candidate; we pin down the full ordered list since the order
-        is deterministic (best match first by difflib's similarity ratio).
+        Several `*-pr` subcommands are similar enough that difflib returns more than one candidate;
+        we pin down the full ordered list since the order is deterministic (best match first by difflib's similarity ratio).
         """
         assert_argument_error(
             ["github", "creat-pr"],
@@ -254,15 +246,15 @@ class TestCLI(BaseTest):
             "Did you mean: `create-pr`, `retarget-pr`, `restack-pr`?")
 
     def test_github_sync_hidden_from_close_match_suggestions(self) -> None:
-        """`github sync` is deep into deprecation. It must remain accepted by
-        the parser, but a typo close to `sync` must NOT suggest it - that
-        would advertise a command we're trying to retire. Same goes for the
-        `Possible values` listing in `test_missing_required_choice_for_github`.
+        """`github sync` is deep into deprecation.
+
+        It must remain accepted by the parser, but a typo close to `sync` must NOT suggest it -
+        that would advertise a command we're trying to retire.
+        Same goes for the `Possible values` listing in `test_missing_required_choice_for_github`.
         """
-        # `snc` is similar to `sync` (and to nothing else under github), so
-        # without the `_hidden_from_listing` filter we'd suggest `sync` here.
-        # With the filter, no close-match line is produced and we fall through
-        # to the "Possible values" listing instead.
+        # `snc` is similar to `sync` (and to nothing else under github),
+        # so without the `_hidden_from_listing` filter we'd suggest `sync` here.
+        # With the filter, no close-match line is produced and we fall through to the "Possible values" listing instead.
         assert_argument_error(
             ["github", "snc"],
             "Invalid github subcommand: 'snc'\n"
@@ -282,9 +274,9 @@ class TestCLI(BaseTest):
     # ─── Missing required positional WITHOUT `choices=` ──────────────────────
 
     def test_missing_required_positional_without_choices(self) -> None:
-        """`git machete rename` requires `<new_name>` but has no `choices=`, so
-        the "Possible values" follow-up line MUST NOT be appended - we just
-        report which positional is missing."""
+        """`git machete rename` requires `<new_name>` but has no `choices=`,
+        so the "Possible values" follow-up line MUST NOT be appended - we just report which positional is missing.
+        """
         assert_argument_error(
             ["rename"],
             "The following arguments are required: new_name")
@@ -292,16 +284,14 @@ class TestCLI(BaseTest):
     # ─── Excess / unrecognized positionals ───────────────────────────────────
 
     def test_excess_positionals_after_last_scalar(self) -> None:
-        """`add` accepts at most one positional (`<branch>`). Extras must be
-        reported as unrecognized arguments."""
+        """`add` accepts at most one positional (`<branch>`). Extras must be reported as unrecognized arguments."""
         assert_argument_error(
             ["add", "foo", "bar"],
             "Unrecognized arguments: bar\n"
             "See `git machete help add` for usage.")
 
     def test_positionals_on_command_without_positional_specs(self) -> None:
-        """`advance` takes no positionals at all; anything passed is rejected
-        as unrecognized."""
+        """`advance` takes no positionals at all; anything passed is rejected as unrecognized."""
         assert_argument_error(
             ["advance", "foo"],
             "Unrecognized arguments: foo\n"
@@ -311,9 +301,9 @@ class TestCLI(BaseTest):
 
     def test_invalid_int_positional_for_github_pr_number(self) -> None:
         """`github checkout-prs` takes one or more PR numbers (`type_conv=int`).
-        A non-integer must surface as "invalid int value" with the
-        user-facing `PR number` label, not the internal `request_id`
-        storage key."""
+
+        A non-integer must surface as "invalid int value" with the user-facing `PR number` label, not the internal `request_id` storage key.
+        """
         assert_argument_error(
             ["github", "checkout-prs", "not-a-number"],
             "Argument PR number: invalid int value: 'not-a-number'")
@@ -321,16 +311,13 @@ class TestCLI(BaseTest):
     # ─── Mutex group WITHOUT a custom message ────────────────────────────────
 
     def test_mutex_group_default_message(self) -> None:
-        """`fork-point` declares a 5-way mutex group on the override flags
-        with NO custom message; that path emits the generic
-        `Argument X: not allowed with argument Y` wording. Picking two
-        long-only flags here also covers `OptSpec.canonical_name`'s
-        long-only branch."""
-        # The wording lists the two flags in their MutexGroup-declaration
-        # order (not the user's argv order): `("override-to-inferred",
-        # "override-to-parent")` is the declared order, so the error
-        # complains about `--override-to-parent` against
-        # `--override-to-inferred` regardless of which the user typed first.
+        """`fork-point` declares a 5-way mutex group on the override flags with NO custom message;
+        that path emits the generic `Argument X: not allowed with argument Y` wording.
+        Picking two long-only flags here also covers `OptSpec.canonical_name`'s long-only branch.
+        """
+        # The wording lists the two flags in their MutexGroup-declaration order (not the user's argv order):
+        # `("override-to-inferred", "override-to-parent")` is the declared order,
+        # so the error complains about `--override-to-parent` against `--override-to-inferred` regardless of which the user typed first.
         assert_argument_error(
             ["fork-point", "--override-to-parent", "--override-to-inferred"],
             "Argument --override-to-parent: not allowed with argument --override-to-inferred")
@@ -338,10 +325,11 @@ class TestCLI(BaseTest):
     # ─── Boolean flag passed WITH a value ────────────────────────────────────
 
     def test_boolean_flag_passed_with_value(self) -> None:
-        """`--yes` is a boolean flag (no `takes_value`). Passing `--yes=true`
-        must surface a sane argument error, not let getopt's raw
-        `GetoptError` propagate. We pass the message through verbatim
-        from getopt rather than maintaining a bespoke re-wording."""
+        """`--yes` is a boolean flag (no `takes_value`).
+
+        Passing `--yes=true` must surface a sane argument error, not let getopt's raw `GetoptError` propagate.
+        We pass the message through verbatim from getopt rather than maintaining a bespoke re-wording.
+        """
         assert_argument_error(
             ["add", "--yes=true"],
             "option --yes must not have an argument")
@@ -349,17 +337,17 @@ class TestCLI(BaseTest):
     # ─── Value-taking flag passed without a value ────────────────────────────
 
     def test_value_taking_flag_without_value(self) -> None:
-        """`getopt` raises "option requires argument" for `-o` / `--onto` with
-        no value after it. The parser must catch this rather than let
-        the raw `GetoptError` propagate; we re-emit getopt's message
-        verbatim."""
+        """`getopt` raises "option requires argument" for `-o` / `--onto` with no value after it.
+
+        The parser must catch this rather than let the raw `GetoptError` propagate;
+        we re-emit getopt's message verbatim.
+        """
         # Short form.
         assert_argument_error(
             ["add", "-o"],
             "option -o requires argument")
-        # Long form. `gnu_getopt`'s "long with =" parsing would accept an
-        # explicit empty `--onto=`, so we exercise the no-`=`, end-of-argv
-        # case to actually trigger the recovery path.
+        # Long form. `gnu_getopt`'s "long with =" parsing would accept an explicit empty `--onto=`,
+        # so we exercise the no-`=`, end-of-argv case to actually trigger the recovery path.
         assert_argument_error(
             ["add", "--onto"],
             "option --onto requires argument")
@@ -367,12 +355,12 @@ class TestCLI(BaseTest):
     # ─── Unknown-flag recovery preserves adjacent KNOWN options ──────────────
 
     def test_unknown_flag_recovery_skips_over_known_separated_value(self) -> None:
-        """When the unknown-token recovery path walks argv after getopt has
-        failed, it must NOT mistake the value of a *known* long option
-        (passed in separated form like `--color always`) for a positional
-        and append it to the unknown list. Same idea for short options
-        like `-o develop`. We feed both forms next to an unknown
-        `--definitely-not-a-flag` and assert only the unknown surfaces."""
+        """When the unknown-token recovery path walks argv after getopt has failed,
+        it must NOT mistake the value of a *known* long option (passed in separated form like `--color always`)
+        for a positional and append it to the unknown list.
+        Same idea for short options like `-o develop`.
+        We feed both forms next to an unknown `--definitely-not-a-flag` and assert only the unknown surfaces.
+        """
         # Long-form: `--color always` adjacent to the unknown flag.
         assert_argument_error(
             ["status", "--color", "always", "--definitely-not-a-flag"],

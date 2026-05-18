@@ -1,15 +1,11 @@
 """Spec types + catalog of git-machete CLI commands.
 
-This module owns both the data model (`OptSpec`, `PositionalSpec`,
-`MutexGroup`, `SubcommandSpec`, `CommandSpec`, `ParsedCmd`) and the
-data itself (`COMMANDS`, `COMMON_OPTIONS`, `COMMAND_BY_NAME_OR_ALIAS`).
-The parsing engine that consumes these lives in `cli_parser.py` and
-imports from here.
+This module owns both the data model (`OptSpec`, `PositionalSpec`, `MutexGroup`, `SubcommandSpec`, `CommandSpec`, `ParsedCmd`)
+and the data itself (`COMMANDS`, `COMMON_OPTIONS`, `COMMAND_BY_NAME_OR_ALIAS`).
+The parsing engine that consumes these lives in `cli_parser.py` and imports from here.
 
-Keeping types + data together (rather than splitting types into the
-parser module) keeps `cli_parser.py → cli_commands.py` as a one-way
-dependency and removes the need for any forward references or
-parameterization.
+Keeping types + data together (rather than splitting types into the parser module)
+keeps `cli_parser.py → cli_commands.py` as a one-way dependency and removes the need for any forward references or parameterization.
 """
 
 from typing import (Any, Callable, Dict, FrozenSet, List, NamedTuple, Optional,
@@ -25,10 +21,9 @@ from git_machete.help import commands_and_aliases
 class OptSpec(NamedTuple):
     """One option (long, short or both).
 
-    `takes_value` is True iff the option requires an argument (e.g. `--onto
-    foo` or `-o foo`). The display name used in error messages is built
-    from whichever of `short`/`long` is set (preferring `-short/--long` if
-    both are present).
+    `takes_value` is True iff the option requires an argument (e.g. `--onto foo` or `-o foo`).
+    The display name used in error messages is built from whichever of `short`/`long` is set
+    (preferring `-short/--long` if both are present).
     """
     long: Optional[str] = None
     short: Optional[str] = None
@@ -41,9 +36,8 @@ class OptSpec(NamedTuple):
             return f"-{self.short}/--{self.long}"
         if self.long:
             return f"--{self.long}"
-        # Short-only options exist in the catalog (e.g. `-W`, `-n`) but
-        # none of them currently participate in a mutex group, so the
-        # only call site - the mutex-error formatter - never lands here.
+        # Short-only options exist in the catalog (e.g. `-W`, `-n`) but none of them currently participate in a mutex group,
+        # so the only call site - the mutex-error formatter - never lands here.
         assert self.short is not None  # pragma: no cover
         return f"-{self.short}"  # pragma: no cover
 
@@ -56,22 +50,18 @@ class OptSpec(NamedTuple):
 class PositionalSpec(NamedTuple):
     """One positional argument.
 
-    `multiple=True` collects every remaining positional into a list;
-    `required=False` makes a single-valued positional optional.
+    `multiple=True` collects every remaining positional into a list; `required=False` makes a single-valued positional optional.
 
-    `choices` constrains the allowed values; `hidden_choices` is the
-    subset that's still accepted by the parser but never surfaced in
-    error messages or close-match suggestions (used for the deprecated
-    `github sync` subcommand).
+    `choices` constrains the allowed values;
+    `hidden_choices` is the subset that's still accepted by the parser but never surfaced in error messages or close-match suggestions
+    (used for the deprecated `github sync` subcommand).
 
-    `display_name` overrides the human-readable label used in error
-    messages while `name` stays the stable storage key (e.g. github's
-    `request_id` storage key but `PR number` in errors).
+    `display_name` overrides the human-readable label used in error messages
+    while `name` stays the stable storage key (e.g. github's `request_id` storage key but `PR number` in errors).
 
-    `only_with_subcommand`, when set, restricts this positional to a set
-    of subcommands. Used together with the `subcommands` field of
-    `CommandSpec` to surface "X is only valid with Y subcommand" errors
-    from the parser rather than from the dispatcher.
+    `only_with_subcommand`, when set, restricts this positional to a set of subcommands.
+    Used together with the `subcommands` field of `CommandSpec`
+    to surface "X is only valid with Y subcommand" errors from the parser rather than from the dispatcher.
     """
     name: str
     required: bool = True
@@ -90,33 +80,27 @@ class PositionalSpec(NamedTuple):
 class MutexGroup(NamedTuple):
     """A set of options that may not be used together.
 
-    `options` lists `OptSpec.storage_key`s. If two or more of them are
-    set, the group fires.
+    `options` lists `OptSpec.storage_key`s. If two or more of them are set, the group fires.
 
-    If `message` is None, a generic wording is emitted: `Argument X: not
-    allowed with argument Y` (exit code `ARGUMENT_ERROR`).
+    If `message` is None, a generic wording is emitted: `Argument X: not allowed with argument Y` (exit code `ARGUMENT_ERROR`).
 
-    If `message` is a string, it's raised verbatim as a
-    `MacheteException` (exit code `MACHETE_EXCEPTION`). Use this for
-    semantic rejections like "Option `-d/--down-fork-point` only makes
-    sense when using rebase and cannot be specified together with
-    `-M/--merge`." - the message is fully owned by the spec and doesn't
-    depend on which option came first on the command line.
+    If `message` is a string, it's raised verbatim as a `MacheteException` (exit code `MACHETE_EXCEPTION`).
+    Use this for semantic rejections like
+    "Option `-d/--down-fork-point` only makes sense when using rebase and cannot be specified together with `-M/--merge`." -
+    the message is fully owned by the spec and doesn't depend on which option came first on the command line.
     """
     options: Tuple[str, ...]
     message: Optional[str] = None
 
 
 class SubcommandSpec(NamedTuple):
-    """One second-level subcommand of a command that dispatches on its
-    first positional (currently `github` and `gitlab`).
+    """One second-level subcommand of a command that dispatches on its first positional (currently `github` and `gitlab`).
 
-    Each subcommand owns its own option set + mutex groups; the parser
-    unions them across the command's subcommands for the actual parsing
-    pass but validates that any option used on a given command line is
-    accepted by the selected subcommand. `hidden=True` keeps the
-    subcommand accepted by the parser while excluding it from
-    user-facing listings (used for the deprecated `github sync`).
+    Each subcommand owns its own option set + mutex groups;
+    the parser unions them across the command's subcommands for the actual parsing pass
+    but validates that any option used on a given command line is accepted by the selected subcommand.
+    `hidden=True` keeps the subcommand accepted by the parser while excluding it from user-facing listings
+    (used for the deprecated `github sync`).
     """
     name: str
     options: Tuple[OptSpec, ...] = ()
@@ -127,12 +111,11 @@ class SubcommandSpec(NamedTuple):
 class CommandSpec(NamedTuple):
     """One git-machete command.
 
-    `options`, `positionals` and `mutex_groups` describe what's accepted
-    regardless of any subcommand. `subcommands`, when non-empty, makes
-    the first positional a subcommand selector; the parser auto-generates
-    its `PositionalSpec` (with the storage key `{cmd.name}_subcommand`
-    and the display label `{cmd.name} subcommand`) and merges in the
-    selected subcommand's options/mutex_groups for validation.
+    `options`, `positionals` and `mutex_groups` describe what's accepted regardless of any subcommand.
+    `subcommands`, when non-empty, makes the first positional a subcommand selector;
+    the parser auto-generates its `PositionalSpec`
+    (with the storage key `{cmd.name}_subcommand` and the display label `{cmd.name} subcommand`)
+    and merges in the selected subcommand's options/mutex_groups for validation.
     """
     name: str
     aliases: Tuple[str, ...] = ()
@@ -153,13 +136,11 @@ class CommandSpec(NamedTuple):
 class ParsedCmd(NamedTuple):
     """The output of `parse_cmdline`.
 
-    `opts` keys are `OptSpec.storage_key` (the long name, or short if
-    long-less). Boolean flags map to `""`; valued options map to their
-    string value.
+    `opts` keys are `OptSpec.storage_key` (the long name, or short if long-less).
+    Boolean flags map to `""`; valued options map to their string value.
 
-    `positionals` keys are `PositionalSpec.name` (the human-readable name
-    used in error messages); the value is a string, list of strings, or
-    list of converted values depending on `multiple`/`type_conv`.
+    `positionals` keys are `PositionalSpec.name` (the human-readable name used in error messages);
+    the value is a string, list of strings, or list of converted values depending on `multiple`/`type_conv`.
 
     `pass_through` is everything after a literal `--` in argv.
     """
@@ -194,14 +175,12 @@ _SHOW_DIRECTION_CHOICES: Tuple[str, ...] = ("c", "current") + _GO_DIRECTION_CHOI
 
 
 def _code_hosting_spec(*, command: str, pr_or_mr: str, include_sync: bool) -> CommandSpec:
-    """github/gitlab share an identical surface modulo `sync` being deep into
-    deprecation on github-only - build them from one mould.
+    """github/gitlab share an identical surface modulo `sync` being deep into deprecation on github-only - build them from one mould.
 
-    Each second-level subcommand owns its own options; the dispatcher in
-    `cli.py` only needs to look up the selected subcommand and run its
-    command-specific logic, because invalid combinations
-    (`github anno-prs --draft`, `gitlab retarget-mr 123`, ...) are
-    rejected by the parser before the dispatcher ever sees them.
+    Each second-level subcommand owns its own options;
+    the dispatcher in `cli.py` only needs to look up the selected subcommand and run its command-specific logic,
+    because invalid combinations (`github anno-prs --draft`, `gitlab retarget-mr 123`, ...)
+    are rejected by the parser before the dispatcher ever sees them.
     """
     subcommands: Tuple[SubcommandSpec, ...] = (
         SubcommandSpec(
@@ -219,10 +198,9 @@ def _code_hosting_spec(*, command: str, pr_or_mr: str, include_sync: bool) -> Co
         SubcommandSpec(
             name=f"create-{pr_or_mr}",
             options=(
-                # Intentionally undocumented (see commit 336c152): an escape
-                # hatch for the rare case when the parent branch detected by
-                # git-machete isn't the desired PR/MR base. Not exposed
-                # anywhere user-facing on purpose.
+                # Intentionally undocumented (see commit 336c152): an escape hatch for the rare case
+                # when the parent branch detected by git-machete isn't the desired PR/MR base.
+                # Not exposed anywhere user-facing on purpose.
                 OptSpec(long="base", takes_value=True),
                 OptSpec(long="draft"),
                 OptSpec(long="title", takes_value=True),
@@ -349,14 +327,12 @@ COMMANDS: Tuple[CommandSpec, ...] = (
             OptSpec(long="unset-override"),
         ),
         mutex_groups=(
-            # Any two of these clobber each other (`--inferred` vs the
-            # override-*/unset-override family is also covered).
+            # Any two of these clobber each other (`--inferred` vs the override-*/unset-override family is also covered).
             MutexGroup(("inferred", "override-to", "override-to-inferred",
                         "override-to-parent", "unset-override")),
-            # `--explain` is informational and conflicts with anything that
-            # MUTATES the fork-point override. Modelled as four pair groups
-            # sharing the same custom message; only the first matching pair
-            # fires (we exit on the first violation).
+            # `--explain` is informational and conflicts with anything that MUTATES the fork-point override.
+            # Modelled as four pair groups sharing the same custom message;
+            # only the first matching pair fires (we exit on the first violation).
             *(
                 MutexGroup(
                     ("explain", override_opt),

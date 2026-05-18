@@ -1,14 +1,12 @@
 """Command-line argument parser for git-machete.
 
-A small hand-rolled parser layered on top of `getopt.gnu_getopt`. The
-heavy-lifting features (typo suggestions, scoped close-match hints,
-hidden-but-still-accepted choices, required-positional listings, ...)
-all live here; `getopt` is only used for the option-parsing primitive.
+A small hand-rolled parser layered on top of `getopt.gnu_getopt`.
+The heavy-lifting features (typo suggestions, scoped close-match hints, hidden-but-still-accepted choices,
+required-positional listings, ...) all live here; `getopt` is only used for the option-parsing primitive.
 
-The spec types this parser operates on, plus the actual catalog of
-git-machete commands (`COMMANDS`, `COMMON_OPTIONS`, ...) live in
-`cli_commands.py`. This file imports them and runs the parsing pass;
-`cli.py` is the single external caller, via `parse_cmdline(argv)`.
+The spec types this parser operates on, plus the actual catalog of git-machete commands
+(`COMMANDS`, `COMMON_OPTIONS`, ...) live in `cli_commands.py`.
+This file imports them and runs the parsing pass; `cli.py` is the single external caller, via `parse_cmdline(argv)`.
 """
 
 import difflib
@@ -37,14 +35,12 @@ def parse_cmdline(argv: List[str]) -> ParsedCmd:
     """Parse `argv` into a `ParsedCmd` or exit with an argument error."""
     direct, pass_through = _split_on_dashdash(argv)
 
-    # Locate the command in `direct`. Anything before it must be a
-    # common-option flag; anything after is parsed against the merged
-    # spec (common + command-specific + selected-subcommand).
+    # Locate the command in `direct`. Anything before it must be a common-option flag;
+    # anything after is parsed against the merged spec (common + command-specific + selected-subcommand).
     cmd_pos = _find_command_position(direct)
 
     if cmd_pos is None:
-        # Either there are no positionals at all (`git machete --help`) or
-        # the only "positional" we'd see is an unknown flag (e.g. `-q`).
+        # Either there are no positionals at all (`git machete --help`) or the only "positional" we'd see is an unknown flag (e.g. `-q`).
         # Validate against common options only and return.
         opts, _, unknowns = _scan(direct, COMMON_OPTIONS)
         _apply_color_setting(opts.get("color"))
@@ -57,27 +53,22 @@ def parse_cmdline(argv: List[str]) -> ParsedCmd:
     if cmd is None:
         _fail_invalid_command(cmd_name_typed)
 
-    # Build the union of every option this command may accept on any
-    # subcommand: needed so the option parser knows what's syntactically
-    # valid. We later cross-check each used option against the SELECTED
-    # subcommand and emit a friendlier "only valid with X subcommand"
-    # error for the legal-but-not-here case.
+    # Build the union of every option this command may accept on any subcommand:
+    # needed so the option parser knows what's syntactically valid.
+    # We later cross-check each used option against the SELECTED subcommand
+    # and emit a friendlier "only valid with X subcommand" error for the legal-but-not-here case.
     all_command_options = _collect_all_options(cmd)
     merged_options = COMMON_OPTIONS + all_command_options
     other_args = direct[:cmd_pos] + direct[cmd_pos + 1:]
     opts, positionals, unknowns = _scan(other_args, merged_options)
-    # Apply `--color` before any downstream validation step that might
-    # construct a `MacheteException`: the exception captures the current
-    # `markup.use_ansi_escapes_in_*` values at __init__ time and rendering
-    # is one-shot.
+    # Apply `--color` before any downstream validation step that might construct a `MacheteException`:
+    # the exception captures the current `markup.use_ansi_escapes_in_*` values at __init__ time and rendering is one-shot.
     _apply_color_setting(opts.get("color"))
     if unknowns:
         _fail_unrecognized(unknowns, command=cmd.name)
 
-    # `--help` and `--version` short-circuit positional/mutex validation
-    # so that e.g. `git machete completion --help` prints the completion
-    # help page instead of complaining about the missing `shell`
-    # positional.
+    # `--help` and `--version` short-circuit positional/mutex validation so that
+    # e.g. `git machete completion --help` prints the completion help page instead of complaining about the missing `shell` positional.
     if "help" in opts or "version" in opts:
         return ParsedCmd(command=cmd.name, opts=opts, positionals={}, pass_through=pass_through)
 
@@ -109,8 +100,7 @@ def _collect_all_options(cmd: CommandSpec) -> Tuple[OptSpec, ...]:
 
 
 def _effective_positionals(cmd: CommandSpec) -> Tuple[PositionalSpec, ...]:
-    """Build the final positional list for this command, prepending a
-    synthetic subcommand selector when `cmd.subcommands` is non-empty."""
+    """Build the final positional list for this command, prepending a synthetic subcommand selector when `cmd.subcommands` is non-empty."""
     if not cmd.subcommands:
         return cmd.positionals
     selector = PositionalSpec(
@@ -130,8 +120,7 @@ def _selected_subcommand(
         return None
     name = parsed_positionals.get(cmd.subcommand_positional_name)
     if name is None:  # pragma: no cover
-        # Unreachable in practice: `_validate_positionals` rejects a missing
-        # required subcommand positional before this function is called.
+        # Unreachable in practice: `_validate_positionals` rejects a missing required subcommand positional before this function is called.
         return None
     return next((s for s in cmd.subcommands if s.name == name), None)
 
@@ -147,10 +136,11 @@ def _split_on_dashdash(argv: List[str]) -> Tuple[List[str], List[str]]:
 
 
 def _find_command_position(direct: List[str]) -> Optional[int]:
-    """Walk `direct`, skipping common-option flags, and return the index of
-    the first positional token. `None` if there is no positional at all
-    (or if we hit something option-looking we can't classify - in which
-    case the parser will surface it as an unknown flag below)."""
+    """Walk `direct`, skipping common-option flags, and return the index of the first positional token.
+
+    `None` if there is no positional at all (or if we hit something option-looking we can't classify -
+    in which case the parser will surface it as an unknown flag below).
+    """
     common_long = {o.long for o in COMMON_OPTIONS if o.long}
     common_short = {o.short for o in COMMON_OPTIONS if o.short}
     i = 0
@@ -162,16 +152,13 @@ def _find_command_position(direct: List[str]) -> Optional[int]:
                 # None of the common options take a value, so just step over.
                 i += 1
                 continue
-            # Unknown long option in the top-level segment - bail out
-            # without picking a command. The unknown-flag scan downstream
-            # will turn this into a proper error.
+            # Unknown long option in the top-level segment - bail out without picking a command.
+            # The unknown-flag scan downstream will turn this into a proper error.
             return None
         if a.startswith("-") and len(a) > 1:
             short = a[1:]
-            # Single-letter short → check against the common short
-            # flags; longer `-XXX` (e.g. `-gs`) is by definition not a
-            # common short flag, so bail out for the same reason as
-            # above.
+            # Single-letter short → check against the common short flags;
+            # longer `-XXX` (e.g. `-gs`) is by definition not a common short flag, so bail out for the same reason as above.
             if len(short) == 1 and short in common_short:
                 i += 1
                 continue
@@ -186,15 +173,13 @@ def _scan(
 ) -> Tuple[Dict[str, str], List[str], List[str]]:
     """The actual option scanner.
 
-    Uses `getopt.gnu_getopt` for the happy path (so we inherit its handling
-    of `--long=value`, `--long value`, `-x value`, `-xvalue`, combined
-    short flags, ...). On `GetoptError` we fall back to a single-pass
-    manual sweep that collects EVERY unknown flag (and its trailing value,
-    if any) so the user sees them all at once - rather than getting picked
-    off one by one as they fix typos.
+    Uses `getopt.gnu_getopt` for the happy path
+    (so we inherit its handling of `--long=value`, `--long value`, `-x value`, `-xvalue`, combined short flags, ...).
+    On `GetoptError` we fall back to a single-pass manual sweep that collects EVERY unknown flag (and its trailing value, if any)
+    so the user sees them all at once - rather than getting picked off one by one as they fix typos.
 
-    Returns `(opts, positionals, unknown_flag_tokens)`. `unknown_flag_tokens`
-    is the raw arg list as the user typed it (e.g. `["--srart-from", "foo"]`)
+    Returns `(opts, positionals, unknown_flag_tokens)`.
+    `unknown_flag_tokens` is the raw arg list as the user typed it (e.g. `["--srart-from", "foo"]`)
     so the error formatter can re-emit it verbatim.
     """
     long_specs: Dict[str, OptSpec] = {o.long: o for o in options if o.long}
@@ -210,9 +195,9 @@ def _scan(
         for lng, spec in long_specs.items()
     ]
 
-    # `getopt` treats `-b=foo` as `-b` with value `"=foo"`, but we want
-    # `-b foo` semantics so callers can write either `-b foo`, `-bfoo`
-    # or `-b=foo` interchangeably. Normalize the `-X=value` form here.
+    # `getopt` treats `-b=foo` as `-b` with value `"=foo"`, but we want `-b foo` semantics
+    # so callers can write either `-b foo`, `-bfoo` or `-b=foo` interchangeably.
+    # Normalize the `-X=value` form here.
     normalized_argv = []
     for a in argv:
         if (len(a) >= 4 and a.startswith("-") and not a.startswith("--") and
@@ -226,15 +211,13 @@ def _scan(
     try:
         pairs, positionals = getopt.gnu_getopt(normalized_argv, short_str, long_list)
     except getopt.GetoptError as e:
-        # Recover all unknowns ourselves, so the error message lists every
-        # bad token at once.
+        # Recover all unknowns ourselves, so the error message lists every bad token at once.
         unknown_tokens = _collect_unknown_tokens(argv, long_specs, short_specs)
         if unknown_tokens:
             return {}, [], unknown_tokens
-        # getopt raised for some other reason (typically "option X requires
-        # argument" when the user passes a value-taking flag with no value
-        # after it). Surface getopt's own message as a regular argument
-        # error rather than letting an uncaught `GetoptError` propagate.
+        # getopt raised for some other reason
+        # (typically "option X requires argument" when the user passes a value-taking flag with no value after it).
+        # Surface getopt's own message as a regular argument error rather than letting an uncaught `GetoptError` propagate.
         _argument_error(str(e))
 
     opts: Dict[str, str] = {}
@@ -250,12 +233,10 @@ def _collect_unknown_tokens(
         long_specs: Dict[str, OptSpec],
         short_specs: Dict[str, OptSpec],
 ) -> List[str]:
-    """Walk `argv` once and return the user-typed tokens of every unknown
-    flag, paired with their adjacent value when one was supplied.
+    """Walk `argv` once and return the user-typed tokens of every unknown flag, paired with their adjacent value when one was supplied.
 
     The output is meant to be re-emitted verbatim in the error message,
-    so we preserve the user's syntax (e.g. `--foo=bar` stays a single
-    token while `--foo bar` stays two).
+    so we preserve the user's syntax (e.g. `--foo=bar` stays a single token while `--foo bar` stays two).
     """
     unknown: List[str] = []
     i = 0
@@ -269,9 +250,8 @@ def _collect_unknown_tokens(
                     i += 1  # consume the value
             else:
                 unknown.append(a)
-                # If `--foo bar` (no `=`) and `bar` is unlikely to be its
-                # own flag, also include it for display so the user sees
-                # the full unrecognised pair.
+                # If `--foo bar` (no `=`) and `bar` is unlikely to be its own flag,
+                # also include it for display so the user sees the full unrecognised pair.
                 if "=" not in a and i + 1 < len(argv) and not argv[i + 1].startswith("-"):
                     i += 1
                     unknown.append(argv[i])
@@ -279,8 +259,7 @@ def _collect_unknown_tokens(
             continue
         if a.startswith("-") and len(a) > 1:
             short = a[1:]
-            # Match `-X`, `-Xvalue` (when -X takes a value) but treat
-            # anything else (e.g. `-gs`, `-q`) as unknown.
+            # Match `-X`, `-Xvalue` (when -X takes a value) but treat anything else (e.g. `-gs`, `-q`) as unknown.
             if short[0] in short_specs and (
                     len(short) == 1 or short_specs[short[0]].takes_value):
                 spec = short_specs[short[0]]
@@ -315,9 +294,8 @@ def _format_choices(choices: Iterable[str]) -> str:
 
 
 def _visible_choices(positional: PositionalSpec) -> Tuple[str, ...]:
-    # Callers (`_fail_invalid_choice`, `_fail_missing_required`) only
-    # reach this helper for positionals that already carry `choices=`, so
-    # the empty-choices fallback is just a safety net.
+    # Callers (`_fail_invalid_choice`, `_fail_missing_required`) only reach this helper for positionals that already carry `choices=`,
+    # so the empty-choices fallback is just a safety net.
     if not positional.choices:  # pragma: no cover
         return ()
     return tuple(c for c in positional.choices if c not in positional.hidden_choices)
@@ -326,12 +304,10 @@ def _visible_choices(positional: PositionalSpec) -> Tuple[str, ...]:
 def _apply_color_setting(color: Optional[str]) -> None:
     """Honour `--color` for stdout / stderr ANSI emission.
 
-    Called from inside `parse_cmdline` (rather than waiting until the
-    caller invokes `set_utils_global_variables`) so that any
-    `MacheteException` raised from the validation phase below picks up
-    the same flag values that the rest of the program will use. The
-    exception's `.msg` is rendered once at `__init__` time, so the
-    globals must be correct BEFORE the raise.
+    Called from inside `parse_cmdline` (rather than waiting until the caller invokes `set_utils_global_variables`)
+    so that any `MacheteException` raised from the validation phase below
+    picks up the same flag values that the rest of the program will use.
+    The exception's `.msg` is rendered once at `__init__` time, so the globals must be correct BEFORE the raise.
     """
     use_in_stdout = color == "always" or (color in {None, "auto"} and terminal.is_stdout_a_tty())
     use_in_stderr = color == "always" or (color in {None, "auto"} and terminal.is_stderr_a_tty())
@@ -353,8 +329,7 @@ def _fail_invalid_command(typed: str) -> NoReturn:
     if suggestions:
         lines.append(_format_suggestions(suggestions))
     else:
-        # With ~30 commands the full listing would dwarf the error, so
-        # steer the user to `help` instead.
+        # With ~30 commands the full listing would dwarf the error, so steer the user to `help` instead.
         lines.append("Run `git machete help` to see all available commands.")
     _argument_error("\n".join(lines))
 
@@ -362,8 +337,8 @@ def _fail_invalid_command(typed: str) -> NoReturn:
 def _fail_unrecognized(unknown_tokens: List[str], *, command: Optional[str]) -> NoReturn:
     message = "Unrecognized arguments: " + " ".join(unknown_tokens)
 
-    # Build per-flag suggestions. `--foo=bar` is split before fuzzy-matching
-    # so `--foo` (the actual misspelling) is what we compare against.
+    # Build per-flag suggestions.
+    # `--foo=bar` is split before fuzzy-matching so `--foo` (the actual misspelling) is what we compare against.
     flag_suggestions: List[Tuple[str, List[str]]] = []
     known_options = COMMON_OPTIONS + (
         COMMAND_BY_NAME_OR_ALIAS[command].options if command is not None else ()
@@ -405,10 +380,8 @@ def _validate_positionals(
             values = remaining
             remaining = []
             if pspec.required and not values:  # pragma: no cover
-                # No `multiple=True, required=True` positional currently
-                # exists in COMMANDS - kept as a safety net so we'd notice
-                # immediately if a future command introduced one without
-                # also adding a test.
+                # No `multiple=True, required=True` positional currently exists in COMMANDS -
+                # kept as a safety net so we'd notice immediately if a future command introduced one without also adding a test.
                 _fail_missing_required(pspec)
             converted = [_convert_positional(pspec, v) for v in values]
             result[pspec.name] = converted
@@ -474,9 +447,8 @@ def _validate_mutex_groups(
         if len(seen) < 2:
             continue
         if group.message is not None:
-            # Semantic rejection: propagated as MacheteException so it
-            # surfaces via `assert_failure` and exits with
-            # MACHETE_EXCEPTION rather than ARGUMENT_ERROR.
+            # Semantic rejection: propagated as MacheteException
+            # so it surfaces via `assert_failure` and exits with MACHETE_EXCEPTION rather than ARGUMENT_ERROR.
             raise MacheteException(group.message)
         first = option_by_key[seen[0]].canonical_name
         second = option_by_key[seen[1]].canonical_name
@@ -489,9 +461,10 @@ def _validate_subcommand_restrictions(
         cmd: CommandSpec,
         selected: SubcommandSpec,
 ) -> None:
-    """For every option/positional that's been parsed, verify the selected
-    subcommand accepts it. Raise `MacheteException` with the
-    `<thing> is only valid with <sub> subcommand(s).` wording if not."""
+    """For every option/positional that's been parsed, verify the selected subcommand accepts it.
+
+    Raise `MacheteException` with the `<thing> is only valid with <sub> subcommand(s).` wording if not.
+    """
 
     # ---- options ----------------------------------------------------------
     selected_keys = {o.storage_key for o in selected.options}
@@ -502,8 +475,7 @@ def _validate_subcommand_restrictions(
         offering = [s.name for s in cmd.subcommands
                     if any(o.storage_key == key for o in s.options)]
         if not offering:
-            # Should be unreachable: the parser only accepts options that
-            # belong to SOMETHING.
+            # Should be unreachable: the parser only accepts options that belong to SOMETHING.
             continue  # pragma: no cover
         opt_spec = _find_option_by_key(cmd, key)
         flag_label = f"--{opt_spec.long}" if opt_spec and opt_spec.long else f"-{key}"
@@ -515,14 +487,12 @@ def _validate_subcommand_restrictions(
     # ---- positionals ------------------------------------------------------
     for pspec in cmd.positionals:
         if pspec.only_with_subcommand is None:  # pragma: no cover
-            # Every positional declared on a command-with-subcommands
-            # currently scopes itself to a subcommand (github/gitlab's
-            # `request_id`); the unrestricted branch is kept defensively.
+            # Every positional declared on a command-with-subcommands currently scopes itself to a subcommand
+            # (github/gitlab's `request_id`); the unrestricted branch is kept defensively.
             continue
         value = parsed_positionals.get(pspec.name)
-        # `multiple` positionals come back as lists; treat empty/None as
-        # "not supplied" so we only fire when the user actually provided
-        # the positional under the wrong subcommand.
+        # `multiple` positionals come back as lists; treat empty/None as "not supplied"
+        # so we only fire when the user actually provided the positional under the wrong subcommand.
         if not value:
             continue
         if selected.name in pspec.only_with_subcommand:
@@ -535,11 +505,9 @@ def _validate_subcommand_restrictions(
 
 
 def _find_option_by_key(cmd: CommandSpec, key: str) -> Optional[OptSpec]:
-    # Flatten cmd-level options and per-subcommand options into one stream so
-    # we don't need a separately-tested branch for each level - in practice
-    # the only caller is the github/gitlab subcommand-restriction validator,
-    # which only ever queries keys defined on a subcommand (cmd.options is
-    # empty for both code-hosting commands).
+    # Flatten cmd-level options and per-subcommand options into one stream so we don't need a separately-tested branch for each level -
+    # in practice the only caller is the github/gitlab subcommand-restriction validator,
+    # which only ever queries keys defined on a subcommand (cmd.options is empty for both code-hosting commands).
     candidates = itertools.chain(
         cmd.options,
         *(sub.options for sub in cmd.subcommands),

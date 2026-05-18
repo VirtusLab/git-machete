@@ -13,8 +13,7 @@ class TestVersion:
         )
 
     def test_version_flag(self) -> None:
-        # `--version` should be honoured as a top-level flag too, equivalently
-        # to `git machete version`.
+        # `--version` should be honoured as a top-level flag too, equivalently to `git machete version`.
         assert_success(
             ["--version"],
             f"git-machete version {__version__}\n"
