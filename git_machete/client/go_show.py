@@ -72,6 +72,11 @@ class GoShowMacheteClient(MacheteClient):
             print_fmt(f"Checking out <b>{dest}</b>... ", newline=False)
             self._git.checkout(dest)
             print_fmt(green_ok())
+        # Other directions (`up`/`prev`/`next`/`root`/`first`/`last`) are deterministic and plumbing-friendly,
+        # but `down` may prompt to pick among multiple children - so it's the one direction whose users
+        # are most likely to benefit from the interactive picker.
+        if direction in ("d", "down"):
+            print_fmt("Tip: run `git machete go` (without a direction) to pick a branch interactively.")
 
     def show(self, direction: str, *, opt_branch: Optional[LocalBranchShortName]) -> None:
         branch = opt_branch or self._git.get_current_branch_or_none()

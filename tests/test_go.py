@@ -87,11 +87,19 @@ class TestGo(BaseTest):
         rewrite_branch_layout_file(body)
 
         check_out("level-0-branch")
-        launch_command("go", "down")
+        assert_success(
+            ["go", "down"],
+            "Checking out level-1-branch... OK\n"
+            "Tip: run git machete go (without a direction) to pick a branch interactively.\n",
+        )
         assert launch_command("show", "current").strip() == "level-1-branch"
 
         check_out("level-0-branch")
-        launch_command("g", "d")
+        assert_success(
+            ["g", "d"],
+            "Checking out level-1-branch... OK\n"
+            "Tip: run git machete go (without a direction) to pick a branch interactively.\n",
+        )
         assert launch_command("show", "current").strip() == "level-1-branch"
 
         self.patch_symbol(mocker, "builtins.input", mock_input_returning("2"))
