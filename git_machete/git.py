@@ -189,14 +189,13 @@ class BranchPair(NamedTuple):
 
 HEAD = AnyRevision.of("HEAD")
 
-# Explicitly suppress showing GPG signatures in `git log`
-# operations to simplify log parsing. This option must be passed as a
-# configuration parameter because the `git log` command's `--no-show-signature`
-# flag does not exist prior to `git` version 2.10.0; `git` does not emit an
-# error if it is passed via the `-c` flag a configuration setting that does not
-# exist, so compatibility with `git` versions earlier than version 2.10.0 is
-# preserved, even though the `log.showSignature` setting also does not exist
-# prior to version 2.10.0. Fixes a bug documented in GitHub issue #1286.
+# Explicitly suppress showing GPG signatures in `git log` operations to simplify log parsing.
+# This option must be passed as a configuration parameter because the `git log` command's `--no-show-signature` flag
+# does not exist prior to `git` version 2.10.0;
+# `git` does not emit an error if it is passed via the `-c` flag a configuration setting that does not exist,
+# so compatibility with `git` versions earlier than version 2.10.0 is preserved,
+# even though the `log.showSignature` setting also does not exist prior to version 2.10.0.
+# Fixes a bug documented in GitHub issue #1286.
 GIT_EXEC = ("git", "-c", "log.showSignature=false")
 
 
@@ -313,11 +312,10 @@ class Git:
 
     # === Worktree & repository paths ===
     #
-    # All path-returning helpers in this section return `AbsPath`: relative
-    # paths can lead to subtle bugs when CWD changes between worktrees
-    # mid-run (e.g. `traverse` chdir-ing into a linked worktree - the latent
-    # source of issue #1681 and similar). The conversion happens once here,
-    # in `__rev_parse_path`, via `abs_path`.
+    # All path-returning helpers in this section return `AbsPath`:
+    # relative paths can lead to subtle bugs when CWD changes between worktrees mid-run
+    # (e.g. `traverse` chdir-ing into a linked worktree - the latent source of issue #1681 and similar).
+    # The conversion happens once here, in `__rev_parse_path`, via `abs_path`.
 
     def __rev_parse_path(self, flag: str) -> AbsPath:
         return AbsPath(self._popen_git("rev-parse", flag).stdout.strip())
@@ -351,8 +349,7 @@ class Git:
                 # If worktrees aren't supported, just return the current root dir
                 self.__main_worktree_root_dir = self.get_current_worktree_root_dir()
             else:
-                # We can't rely on `git rev-parse --git-common-dir`
-                # since in some earlier supported versions of git
+                # We can't rely on `git rev-parse --git-common-dir` since in some earlier supported versions of git
                 # this path is apparently printed in a faulty way when dealing with worktrees.
                 # Let's parse the output of of `git worktree list` instead.
                 result = self._popen_git("worktree", "list", "--porcelain")
@@ -1015,9 +1012,8 @@ class Git:
                 f.write(f"{hash1} {hash2}\n")
 
     def __get_merge_base_for_commit_hashes(self, hash1: FullCommitHash, hash2: FullCommitHash) -> Optional[FullCommitHash]:  # noqa: KW
-        # This if statement is not changing the outcome of the later return, but
-        # it enhances the efficiency of the script. If both hashes are the same,
-        # there is no point running git merge-base.
+        # This if statement is not changing the outcome of the later return, but it enhances the efficiency of the script.
+        # If both hashes are the same, there is no point running git merge-base.
         if hash1 == hash2:
             return hash1
         # Load cache lazily on first use
@@ -1197,10 +1193,8 @@ class Git:
     # === Hooks ===
 
     def get_hook_path(self, hook_name: str) -> Path:
-        # `core.hooksPath` may be unset, relative, or absolute - so the
-        # combined result is only ever known to be a `Path`, not `AbsPath`.
-        # `core.hooksPath` may be unset, relative, or absolute - the joined
-        # `hook_dir` is therefore only ever known to be a `Path`.
+        # `core.hooksPath` may be unset, relative, or absolute - the joined `hook_dir` is therefore only ever known to be a `Path`,
+        # not `AbsPath`.
         hook_dir: Path = Path(self.get_config_attr_or_none("core.hooksPath") or self.get_main_worktree_git_subpath("hooks"))
         return Path.join_paths(hook_dir, hook_name)
 

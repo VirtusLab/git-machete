@@ -1,14 +1,12 @@
 """Markup formatting and styled output helpers.
 
-The markup language is intentionally tiny - a handful of `<tag>...</tag>`
-blocks plus a few self-closing tags - and is rendered to either ANSI escape
-sequences or plain ASCII depending on whether the destination stream is a
-TTY (and on `--color`).
+The markup language is intentionally tiny - a handful of `<tag>...</tag>` blocks plus a few self-closing tags -
+and is rendered to either ANSI escape sequences or plain ASCII
+depending on whether the destination stream is a TTY (and on `--color`).
 
 `_fmt` looks up `is_terminal_fully_fledged` via `terminal.is_terminal_fully_fledged()`
 (rather than via a `from .terminal import ...` binding) so that
-`unittest.mock.patch('git_machete.utils.terminal.is_terminal_fully_fledged', ...)`
-in tests is honored at every call.
+`unittest.mock.patch('git_machete.utils.terminal.is_terminal_fully_fledged', ...)` in tests is honored at every call.
 """
 
 import re
@@ -21,9 +19,8 @@ from .terminal import BasicTerminalAnsiOutputCodes, FullTerminalAnsiOutputCodes
 
 # === Mutable runtime flags ===
 #
-# Whether to emit ANSI escapes on stdout / stderr. Set by `cli.py` based on
-# `--color` and TTY detection; read by `print_fmt`, `input_fmt`, and -
-# indirectly via `_fmt` - by `MacheteException` / `UnderlyingGitException`.
+# Whether to emit ANSI escapes on stdout / stderr. Set by `cli.py` based on `--color` and TTY detection;
+# read by `print_fmt`, `input_fmt`, and - indirectly via `_fmt` - by `MacheteException` / `UnderlyingGitException`.
 use_ansi_escapes_in_stdout: bool = sys.stdout.isatty()
 use_ansi_escapes_in_stderr: bool = sys.stderr.isatty()
 
@@ -31,17 +28,14 @@ use_ansi_escapes_in_stderr: bool = sys.stderr.isatty()
 def escape_markup(s: str) -> str:
     """Escape characters that `_fmt` would interpret as markup.
 
-    Use on user-provided content (annotation text, commit subjects, hook
-    output) before embedding it into markup strings.
+    Use on user-provided content (annotation text, commit subjects, hook output) before embedding it into markup strings.
     """
     return s.replace('&', '&amp;').replace('`', '&backtick;').replace('<', '&lt;')
 
 
 def _fmt(s: str, *, use_ansi_escapes: bool) -> str:
-    # Looked up via the `terminal` module (not via a top-level
-    # `from .terminal import is_terminal_fully_fledged`) so that
-    # `mock.patch('git_machete.utils.terminal.is_terminal_fully_fledged', ...)`
-    # is honored.
+    # Looked up via the `terminal` module (not via a top-level `from .terminal import is_terminal_fully_fledged`)
+    # so that `mock.patch('git_machete.utils.terminal.is_terminal_fully_fledged', ...)` is honored.
     ao = FullTerminalAnsiOutputCodes if terminal.is_terminal_fully_fledged() else BasicTerminalAnsiOutputCodes
 
     # pattern                                  ansi replacement                            ascii replacement
@@ -76,9 +70,7 @@ def print_fmt(s: str, *, file: Optional[Any] = None, newline: bool = True) -> No
     ANSI / Unicode styling follows the same rules as for direct writes to `file`
     (stdout vs stderr, TTY detection, `--color`, etc.).
 
-    When newline=False, output is flushed immediately so that a
-    subsequent print_fmt (e.g. "OK") appears on the same line
-    without delay.
+    When newline=False, output is flushed immediately so that a subsequent print_fmt (e.g. "OK") appears on the same line without delay.
     """
     use_ansi = use_ansi_escapes_in_stderr if file is sys.stderr else use_ansi_escapes_in_stdout
     # Defaults to stdout at call time so that contextlib.redirect_stdout is respected.

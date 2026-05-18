@@ -49,18 +49,15 @@ class SquashMacheteClient(MacheteClient):
                           GIT_AUTHOR_DATE=earliest_author_date,
                           GIT_AUTHOR_EMAIL=earliest_author_email,
                           GIT_AUTHOR_NAME=earliest_author_name)
-        # Using `git commit-tree` since it's cleaner than any high-level command
-        # like `git merge --squash` or `git rebase --interactive`.
+        # Using `git commit-tree` since it's cleaner than any high-level command like `git merge --squash` or `git rebase --interactive`.
         # The tree (HEAD^{tree}) argument must be passed as first,
-        # otherwise the entire `commit-tree` will fail on some ancient supported
-        # versions of git (at least on v1.7.10).
+        # otherwise the entire `commit-tree` will fail on some ancient supported versions of git (at least on v1.7.10).
         squashed_hash = FullCommitHash.of(self._git.commit_tree_with_given_parent_and_message_and_env(
             fork_point, earliest_full_message, author_env).strip())
 
         # This can't be done with `git reset` since it doesn't allow for a custom reflog message.
         # Even worse, reset's reflog message would be filtered out in our fork point algorithm,
-        # so the squashed commit would not even be considered to "belong"
-        # (in the fork-point sense) to the current branch's history.
+        # so the squashed commit would not even be considered to "belong" (in the fork-point sense) to the current branch's history.
         self._git.update_head_ref_to_new_hash_with_reflog_subject(
             squashed_hash, f"squash: {earliest_commit.subject}")
 

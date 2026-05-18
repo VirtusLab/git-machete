@@ -1,10 +1,9 @@
 """Lowest-level subprocess wrappers used elsewhere in :mod:`git_machete.utils`.
 
-These helpers deliberately do **not** print anything (no debug/verbose
-logging), so they can be safely called from code paths that themselves
-implement that logging - in particular from
-:func:`git_machete.utils.terminal.is_terminal_fully_fledged`, whose result
-the logging path itself depends on.
+These helpers deliberately do **not** print anything (no debug/verbose logging),
+so they can be safely called from code paths that themselves implement that logging -
+in particular from :func:`git_machete.utils.terminal.is_terminal_fully_fledged`,
+whose result the logging path itself depends on.
 """
 
 import subprocess
@@ -17,11 +16,10 @@ class PopenResult(NamedTuple):
     stderr: str
 
 
-# `cwd` is typed as plain `str` here (not `Path`) to keep this lowest-level
-# module free of internal dependencies - `utils.paths` transitively pulls in
-# `utils.markup`/`utils.terminal`, which in turn re-imports from this module,
-# creating a circular import. The outer wrappers in `utils.cmd` enforce the
-# `Path` discipline.
+# `cwd` is typed as plain `str` here (not `Path`) to keep this lowest-level module free of internal dependencies -
+# `utils.paths` transitively pulls in `utils.markup`/`utils.terminal`, which in turn re-imports from this module,
+# creating a circular import.
+# The outer wrappers in `utils.cmd` enforce the `Path` discipline.
 def _run_cmd(cmd: str, *args: str, cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> int:
     return subprocess.run([cmd] + list(args), stdout=None, stderr=None, cwd=cwd, env=env).returncode
 

@@ -11,15 +11,12 @@ from git_machete.utils.paths import AbsPath, Path
 def parse(path: AbsPath, *, display_path: Optional[Path] = None) -> Tuple[MacheteState, Optional[str]]:
     """Parse the branch layout file at *path*.
 
-    Returns a new `MacheteState` populated from the file together with
-    the indent string detected in the file (`None` when no indented
-    line was found, e.g. a single-root flat layout).
+    Returns a new `MacheteState` populated from the file together with the indent string detected in the file
+    (`None` when no indented line was found, e.g. a single-root flat layout).
 
-    Raises `MacheteException` for structural errors (duplicate branch,
-    bad indent, excess depth). The `display_path` argument, if provided,
-    is used in error messages in place of `path` - useful when `path` is
-    an absolute internal location and the caller wants a more compact
-    cwd-relative form shown to the user.
+    Raises `MacheteException` for structural errors (duplicate branch, bad indent, excess depth).
+    The `display_path` argument, if provided, is used in error messages in place of `path` -
+    useful when `path` is an absolute internal location and the caller wants a more compact cwd-relative form shown to the user.
     """
     msg_path: Path = display_path if display_path is not None else path
     with open(path) as f:
@@ -27,9 +24,8 @@ def parse(path: AbsPath, *, display_path: Optional[Path] = None) -> Tuple[Machet
 
     state = MacheteState()
     indent: Optional[str] = None
-    # Every entry has by now been handed to `state.add_branch(...)`, so a
-    # `ManagedBranchName` is the natural type for "branch at depth N-1
-    # that the next line's parent will point at".
+    # Every entry has by now been handed to `state.add_branch(...)`,
+    # so a `ManagedBranchName` is the natural type for "branch at depth N-1 that the next line's parent will point at".
     at_depth: Dict[int, ManagedBranchName] = {}
     last_depth = -1
     hint = "Edit the branch layout file manually with `git machete edit`"
@@ -37,9 +33,8 @@ def parse(path: AbsPath, *, display_path: Optional[Path] = None) -> Tuple[Machet
     for index, line in enumerate(lines):
         if line == "":
             continue
-        # Undocumented: lines whose first non-whitespace character is `#`
-        # are ignored as comments.  They are not preserved when
-        # git-machete writes the branch layout file.
+        # Undocumented: lines whose first non-whitespace character is `#` are ignored as comments.
+        # They are not preserved when git-machete writes the branch layout file.
         if line.lstrip().startswith("#"):
             continue
 

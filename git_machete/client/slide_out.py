@@ -23,9 +23,8 @@ class SlideOutMacheteClient(MacheteClient):
         raw_branches: List[LocalBranchShortName] = opt_branches or [self._git.get_current_branch()]
 
         # Verify that all branches exist, are managed and are NOT annotated with slide-out=no qualifier.
-        # `expect_in_managed_branches` narrows to `ManagedBranchName`, which we keep
-        # for the rest of the method so we can hand the values to layout mutators
-        # (`splice_out`, `_remove_branches_from_layout`) without re-checking.
+        # `expect_in_managed_branches` narrows to `ManagedBranchName`, which we keep for the rest of the method
+        # so we can hand the values to layout mutators (`splice_out`, `_remove_branches_from_layout`) without re-checking.
         branches_to_slide_out: List[ManagedBranchName] = []
         for branch in raw_branches:
             managed = self.expect_in_managed_branches(branch)

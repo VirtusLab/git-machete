@@ -1,8 +1,7 @@
 """Debug-mode logging.
 
-`debug` is a no-op unless `debug_mode` is set (typically because `--debug`
-was passed on the command line). It pulls argument names and values
-directly from the caller's frame via `inspect`.
+`debug` is a no-op unless `debug_mode` is set (typically because `--debug` was passed on the command line).
+It pulls argument names and values directly from the caller's frame via `inspect`.
 """
 
 import inspect
@@ -43,8 +42,7 @@ def debug(msg: str) -> None:
     func = inspect.stack()[1].function
     args, _, _, values_original = inspect.getargvalues(inspect.stack()[1].frame)
     # Do not write over the original values!
-    # Since Python 3.13, the result of `getargvalues` keeps a map of local variables
-    # that the Python runtime actually keeps on the stack,
+    # Since Python 3.13, the result of `getargvalues` keeps a map of local variables that the Python runtime actually keeps on the stack,
     # so overwriting a key in values_original changes the local variable.
     values: Dict[str, Any] = dict(values_original)
 

@@ -66,9 +66,8 @@ class StatusData(NamedTuple):
     """All precomputed data needed to render status output (tree and optional warning)."""
 
     flags: StatusFlags
-    # Keep the dict keyed on the broader `LocalBranchShortName` to spare every
-    # downstream helper from `ManagedBranchName`-narrowing dance when indexing
-    # via a parent/sibling-of-ancestor (which mypy tracks as the broader type).
+    # Keep the dict keyed on the broader `LocalBranchShortName` to spare every downstream helper from `ManagedBranchName`-narrowing dance
+    # when indexing via a parent/sibling-of-ancestor (which mypy tracks as the broader type).
     branches: Dict[LocalBranchShortName, StatusBranch]
     branches_in_display_order: List[ManagedBranchName]
     roots: List[ManagedBranchName]

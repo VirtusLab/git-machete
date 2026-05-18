@@ -1,15 +1,12 @@
 """High-level wrappers around subprocess that respect verbose/debug mode.
 
-Compared to `._subproc` (used internally for capability detection),
-the helpers here:
+Compared to `._subproc` (used internally for capability detection), the helpers here:
 
-* log the command being run when `verbose_mode` / `debug_mode` /
-  `measure_command_time` is set (via `print_fmt`),
+* log the command being run when `verbose_mode` / `debug_mode` / `measure_command_time` is set (via `print_fmt`),
 * redact GitHub / GitLab access tokens from captured stdout/stderr,
 * update the cached "current directory still exists" flag,
-* delegate the actual `subprocess` call to `_subproc._run_cmd` /
-  `_subproc._popen_cmd` so that tests can patch the former without
-  losing the surrounding logic.
+* delegate the actual `subprocess` call to `_subproc._run_cmd` / `_subproc._popen_cmd`
+  so that tests can patch the former without losing the surrounding logic.
 """
 
 import os
@@ -27,10 +24,8 @@ from .paths import AbsPath, Path
 
 # === Mutable runtime flags ===
 #
-# `verbose_mode` / `measure_command_time` toggle command logging; set by
-# `cli.py` (and the env var `GIT_MACHETE_MEASURE_COMMAND_TIME`).
-# `current_directory_confirmed_to_exist` is an internal cache used to
-# avoid a `getcwd()` syscall before every command.
+# `verbose_mode` / `measure_command_time` toggle command logging; set by `cli.py` (and the env var `GIT_MACHETE_MEASURE_COMMAND_TIME`).
+# `current_directory_confirmed_to_exist` is an internal cache used to avoid a `getcwd()` syscall before every command.
 current_directory_confirmed_to_exist: bool = False
 measure_command_time: bool = os.environ.get('GIT_MACHETE_MEASURE_COMMAND_TIME') == 'true'  # undocumented, internal
 verbose_mode: bool = False
@@ -54,16 +49,14 @@ def run_cmd(cmd: str, *args: str, cwd: Optional[Path] = None, env: Optional[Dict
         print_command(escaped_flat_cmd)
 
     start = time.time()
-    # Looked up via the `_subproc` module so that
-    # `mock.patch('git_machete.utils._subproc._run_cmd', ...)` is honored.
+    # Looked up via the `_subproc` module so that `mock.patch('git_machete.utils._subproc._run_cmd', ...)` is honored.
     exit_code: int = _subproc._run_cmd(cmd, *args, cwd=cwd, env=env)
     if measure_command_time:  # pragma: no cover
         end = time.time()
         elapsed_ms = int((end - start) * 1e3)
         print(f"{elapsed_ms} ms")
 
-    # Let's defensively assume that every command executed via run_cmd
-    # (but not via popen_cmd) can make the current directory disappear.
+    # Let's defensively assume that every command executed via run_cmd (but not via popen_cmd) can make the current directory disappear.
     # In practice, it's mostly 'git checkout' that carries such risk.
     mark_current_directory_as_possibly_non_existent()
 

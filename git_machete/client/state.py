@@ -6,19 +6,16 @@ from git_machete.utils.collections import flat_map
 
 
 class ManagedBranchName(LocalBranchShortName):
-    """A `LocalBranchShortName` known to live in the `.git/machete` branch
-    layout file.
+    """A `LocalBranchShortName` known to live in the `.git/machete` branch layout file.
 
-    The type is a marker - it carries no extra behavior - and exists so that
-    mypy can distinguish "any local branch the user typed" from "a branch
-    that has already been verified against the layout file". Every read
-    accessor on `MacheteState` (and the corresponding `MacheteClient`
-    helpers, including `expect_in_managed_branches`) hands back an instance
-    of this type; every mutation method that operates on a presumed-managed
-    branch (`splice_out`, `remove_leaf`, `add_as_child`'s `parent`, etc.)
-    accepts only this type. The "promote raw -> managed" conversion lives
-    in those methods alone, so accidentally feeding an unverified branch
-    into the layout-file mutators becomes a type error.
+    The type is a marker - it carries no extra behavior - and exists so that mypy can distinguish
+    "any local branch the user typed" from "a branch that has already been verified against the layout file".
+    Every read accessor on `MacheteState` (and the corresponding `MacheteClient` helpers, including `expect_in_managed_branches`)
+    hands back an instance of this type;
+    every mutation method that operates on a presumed-managed branch (`splice_out`, `remove_leaf`, `add_as_child`'s `parent`, etc.)
+    accepts only this type.
+    The "promote raw -> managed" conversion lives in those methods alone,
+    so accidentally feeding an unverified branch into the layout-file mutators becomes a type error.
     """
 
 
@@ -29,14 +26,12 @@ class MacheteState:
     The five internal fields are kept mutually consistent:
       - `_managed_branches`: DFS-ordered flat list of every managed branch.
       - `_roots`: root branches (those with no parent in the layout).
-      - `_parent_of`: child → parent mapping for every non-root branch.
-      - `_children_of`: parent → ordered list of children.
+      - `_parent_of`: child -> parent mapping for every non-root branch.
+      - `_children_of`: parent -> ordered list of children.
       - `_annotations`: per-branch annotation metadata.
 
-    All five fields are private.  Callers may read them freely through the
-    properties and accessor methods below, but every structural change must go
-    through the mutation methods so that the invariants above are never
-    violated.
+    All five fields are private. Callers may read them freely through the properties and accessor methods below,
+    but every structural change must go through the mutation methods so that the invariants above are never violated.
     """
 
     def __init__(self) -> None:
@@ -86,10 +81,9 @@ class MacheteState:
 
     # ── Adding branches ─────────────────────────────────────────────────────
     #
-    # The methods in this section are the gateway from `LocalBranchShortName`
-    # to `ManagedBranchName`: the branch passed in is *becoming* managed by
-    # virtue of the call itself, so the input type is the broader one and
-    # the value is stored internally as the narrower `ManagedBranchName`.
+    # The methods in this section are the gateway from `LocalBranchShortName` to `ManagedBranchName`:
+    # the branch passed in is *becoming* managed by virtue of the call itself,
+    # so the input type is the broader one and the value is stored internally as the narrower `ManagedBranchName`.
 
     def add_branch(
         self,
@@ -143,8 +137,7 @@ class MacheteState:
     def splice_out(self, branch: ManagedBranchName) -> None:
         """Remove a branch from the tree, wiring its children to its parent.
 
-        If branch is a root, its children become new roots in its place.
-        Removes branch from managed_branches and deletes its annotation.
+        If branch is a root, its children become new roots in its place. Removes branch from managed_branches and deletes its annotation.
         """
         children = list(self._children_of.get(branch) or [])
         parent = self._parent_of.get(branch)
@@ -170,8 +163,7 @@ class MacheteState:
     def remove_leaf(self, branch: ManagedBranchName) -> None:
         """Remove a childless branch from the layout.
 
-        Detaches it from its parent (or roots), removes it from managed_branches,
-        and deletes its annotation.
+        Detaches it from its parent (or roots), removes it from managed_branches, and deletes its annotation.
         """
         self._managed_branches.remove(branch)
         self._annotations.pop(branch, None)
@@ -201,8 +193,7 @@ class MacheteState:
     ) -> None:
         """Wire child under parent without touching managed_branches.
 
-        Intended for incremental tree building when managed_branches will be
-        set in bulk afterwards via set_managed().
+        Intended for incremental tree building when managed_branches will be set in bulk afterwards via set_managed().
         """
         managed_parent = ManagedBranchName(parent)
         managed_child = ManagedBranchName(child)
@@ -215,8 +206,7 @@ class MacheteState:
     def wire_as_root(self, branch: LocalBranchShortName) -> None:
         """Append branch to roots without touching managed_branches.
 
-        Intended for incremental tree building when managed_branches will be
-        set in bulk afterwards via set_managed().
+        Intended for incremental tree building when managed_branches will be set in bulk afterwards via set_managed().
         """
         self._roots.append(ManagedBranchName(branch))
 

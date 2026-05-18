@@ -86,9 +86,8 @@ class GitHubToken(NamedTuple):
         # gh version 2.18.0 (2022-10-18)
         # https://github.com/cli/cli/releases/tag/v2.18.0
         #
-        # Custom/devel builds (e.g. Homebrew `--HEAD`, Arch's `gh-git`,
-        # built-from-source) append a `git describe`-style suffix directly
-        # after the patch number, with no space before the date:
+        # Custom/devel builds (e.g. Homebrew `--HEAD`, Arch's `gh-git`, built-from-source)
+        # append a `git describe`-style suffix directly after the patch number, with no space before the date:
         #
         # gh version 2.92.0-7-ga3efb25a (2026-04-30)
         #

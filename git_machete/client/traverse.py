@@ -62,8 +62,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
         Update the worktrees cache after a checkout operation in the current worktree.
         This avoids the need to re-fetch the full worktree list.
 
-        Only the current worktree's entry needs to be updated - linked worktrees
-        don't change when we checkout in a different worktree.
+        Only the current worktree's entry needs to be updated - linked worktrees don't change when we checkout in a different worktree.
         """
         current_worktree_root_dir = self._git.get_current_worktree_root_dir()
 
@@ -268,8 +267,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 skipping_parent_sync = False
 
                 if needs_slide_out:
-                    # Avoid unnecessary fork point check if we already know that the
-                    # branch qualifies for slide out;
+                    # Avoid unnecessary fork point check if we already know that the branch qualifies for slide out;
                     # neither rebase nor merge will be suggested in such case anyway.
                     needs_parent_sync: bool = False
                 elif s in (SyncToRemoteStatus.BEHIND_REMOTE, SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE):
@@ -347,14 +345,11 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     if ans in ('y', 'yes', 'yq'):
                         if use_merge:
                             self._git.merge(branch=parent, into=branch, opt_no_edit_merge=opt_no_edit_merge)
-                            # It's clearly possible that merge can be in progress
-                            # after 'git merge' returned non-zero exit code;
+                            # It's clearly possible that merge can be in progress after 'git merge' returned non-zero exit code;
                             # this happens most commonly in case of conflicts.
-                            # As for now, we're not aware of any case when merge can
-                            # be still in progress after 'git merge' returns zero,
-                            # at least not with the options that git-machete passes
-                            # to merge; this happens though in case of 'git merge
-                            # --no-commit' (which we don't ever invoke).
+                            # As for now, we're not aware of any case when merge can be still in progress after 'git merge' returns zero,
+                            # at least not with the options that git-machete passes to merge;
+                            # this happens though in case of 'git merge --no-commit' (which we don't ever invoke).
                             # It's still better, however, to be on the safe side.
                             if self._git.is_merge_in_progress():
                                 print("\nMerge in progress; stopping the traversal")

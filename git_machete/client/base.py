@@ -39,46 +39,39 @@ class MacheteClient:
 
     def __init__(self, *, read_layout_file: bool = True, verify_branches: bool = True,
                  interactively_slide_out_invalid_branches: bool = False) -> None:
-        # Clients own their `Git` plumbing instance - command-dispatch code
-        # (`cli.py`) and tests never touch it directly. Pass-throughs are
-        # avoided in favor of domain-specific methods on the client itself.
+        # Clients own their `Git` plumbing instance - command-dispatch code (`cli.py`) and tests never touch it directly.
+        # Pass-throughs are avoided in favor of domain-specific methods on the client itself.
         self._git: Git = Git()
         self._config: MacheteConfig = MacheteConfig(self._git)
         self._git.owner = self
 
         self._branch_layout_file_path: AbsPath = self.__get_git_machete_branch_layout_file_path()
-        # Cwd-relative rendition of the layout path, captured at init time
-        # for use in user-facing messages (compact, points at the file as
-        # the user invoked us from). I/O always uses the absolute path so
-        # it survives any mid-run `chdir` (e.g. into a linked worktree).
+        # Cwd-relative rendition of the layout path, captured at init time for use in user-facing messages
+        # (compact, points at the file as the user invoked us from).
+        # I/O always uses the absolute path so it survives any mid-run `chdir` (e.g. into a linked worktree).
         try:
             self._branch_layout_file_path_for_display: Path = Path.relative(self._branch_layout_file_path)
         except Exception:  # pragma: no cover
             self._branch_layout_file_path_for_display = self._branch_layout_file_path
         if not os.path.exists(self._branch_layout_file_path):
             # We're opening in "append" and not "write" mode to avoid a race condition:
-            # if other process writes to the file between we check the
-            # result of `os.path.exists` and call `open`,
-            # then open(..., "w") would result in us clearing up the file
-            # contents, while open(..., "a") has no effect.
+            # if other process writes to the file between we check the result of `os.path.exists` and call `open`,
+            # then open(..., "w") would result in us clearing up the file contents, while open(..., "a") has no effect.
             with open(self._branch_layout_file_path, "a"):
                 pass
         elif os.path.isdir(self._branch_layout_file_path):
-            # Extremely unlikely case, basically checking if anybody
-            # tampered with the repository.
+            # Extremely unlikely case, basically checking if anybody tampered with the repository.
             raise MacheteException(
                 f"{self._branch_layout_file_path_for_display} is a directory "
                 "rather than a regular file, aborting")
 
         self.__init_state()
 
-        # Load the layout file as part of construction so that callers
-        # consistently get a ready-to-use client; subclasses don't need
-        # to remember a separate `client.read_branch_layout_file(...)`
-        # step (and easily get its flags wrong for the command at hand).
-        # `read_layout_file=False` is for the few commands (`edit`, `file`)
-        # that must work even when the layout file is malformed - their
-        # whole point is to let the user inspect or fix it.
+        # Load the layout file as part of construction so that callers consistently get a ready-to-use client;
+        # subclasses don't need to remember a separate `client.read_branch_layout_file(...)` step
+        # (and easily get its flags wrong for the command at hand).
+        # `read_layout_file=False` is for the few commands (`edit`, `file`) that must work even when the layout file is malformed -
+        # their whole point is to let the user inspect or fix it.
         if read_layout_file:
             self.read_branch_layout_file(
                 verify_branches=verify_branches,
@@ -89,12 +82,10 @@ class MacheteClient:
             machete_file_directory = self._git.get_main_worktree_git_dir()
         else:
             machete_file_directory = self._git.get_current_worktree_git_dir()
-        # Keep the path absolute: `traverse` and other commands may `chdir` into
-        # linked worktrees mid-run, and a stored cwd-relative path would then
-        # resolve against the wrong directory - inside a linked worktree `.git`
-        # is a gitdir-pointer file, so `.git/machete` no longer points at the
-        # layout file. The underlying `get_SOMETHING_worktree_git_dir()` helpers already
-        # return absolute paths (via `git rev-parse` + `abs_path`).
+        # Keep the path absolute: `traverse` and other commands may `chdir` into linked worktrees mid-run,
+        # and a stored cwd-relative path would then resolve against the wrong directory -
+        # inside a linked worktree `.git` is a gitdir-pointer file, so `.git/machete` no longer points at the layout file.
+        # The underlying `get_SOMETHING_worktree_git_dir()` helpers already return absolute paths (via `git rev-parse` + `abs_path`).
         return machete_file_directory.join_fragments('machete')
 
     def __init_state(self) -> None:
@@ -122,9 +113,8 @@ class MacheteClient:
     # === Branch existence assertions ===
 
     def expect_in_managed_branches(self, branch: LocalBranchShortName) -> ManagedBranchName:
-        """Verify `branch` lives in the layout file; on success, narrow its
-        type to `ManagedBranchName` so the caller can pass it to layout-
-        mutating APIs without a re-check."""
+        """Verify `branch` lives in the layout file;
+        on success, narrow its type to `ManagedBranchName` so the caller can pass it to layout-mutating APIs without a re-check."""
         managed = self._state.as_managed(branch)
         if managed is None:
             raise MacheteException(
@@ -321,11 +311,9 @@ class MacheteClient:
             if parent and parent_hash and \
                     self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()) and \
                     not self._git.is_ancestor_or_equal(parent.full_name(), computed_fork_point):
-                # That happens very rarely in practice (typically current head
-                # of any branch, including parent, should occur on the reflog
-                # of this branch, thus is_ancestor(parent, branch) should imply
-                # is_ancestor(parent, FP(branch)), but it's still possible in
-                # case reflog of parent is incomplete for whatever reason.
+                # That happens very rarely in practice (typically current head of any branch, including parent,
+                # should occur on the reflog of this branch, thus is_ancestor(parent, branch) should imply is_ancestor(parent, FP(branch)),
+                # but it's still possible in case reflog of parent is incomplete for whatever reason.
                 debug(
                     f"{parent} is an ancestor of {branch}, "
                     f"but the inferred fork point commit {computed_fork_point} is NOT a descendant of {parent}; "
@@ -430,15 +418,13 @@ class MacheteClient:
 
             self.__branch_pairs_by_hash_in_reflog = {}
             for hash, branch_pair in generate_entries():
-                # We dedup `branch_pair`s per hash so that a commit which appears
-                # multiple times in a single branch's filtered reflog (e.g. via a
-                # `git reset --hard` back to it followed by an advance, then
-                # another reset back) doesn't end up listed twice in
-                # `inferring_branches`. Without this, `fork-point --explain` and
-                # `status -l` would print things like
+                # We dedup `branch_pair`s per hash so that a commit which appears multiple times in a single branch's filtered reflog
+                # (e.g. via a `git reset --hard` back to it followed by an advance, then another reset back)
+                # doesn't end up listed twice in `inferring_branches`.
+                # Without this, `fork-point --explain` and `status -l` would print things like
                 # "...part of the unique history of master and master".
-                # The list-of-pairs shape is preserved (rather than a set) because
-                # downstream code relies on sorted ordering and indexed iteration.
+                # The list-of-pairs shape is preserved (rather than a set) because downstream code relies on sorted ordering
+                # and indexed iteration.
                 existing = self.__branch_pairs_by_hash_in_reflog.setdefault(hash, [])
                 if branch_pair not in existing:
                     existing.append(branch_pair)
@@ -465,9 +451,8 @@ class MacheteClient:
                                                    initial_count=INITIAL_COMMIT_COUNT_FOR_LOG,
                                                    total_count=TOTAL_COMMIT_COUNT_FOR_LOG):
             if hash in self.__branch_pairs_by_hash_in_reflog:
-                # The entries must be sorted by lb_or_rb to make sure the
-                # parent inference is deterministic (and does not depend on the
-                # order in which `generate_entries` iterated through the local branches).
+                # The entries must be sorted by lb_or_rb to make sure the parent inference is deterministic
+                # (and does not depend on the order in which `generate_entries` iterated through the local branches).
                 branch_pairs: List[BranchPair] = self.__branch_pairs_by_hash_in_reflog[hash]
 
                 def lb_is_not_b(lb: str, _lb_or_rb: str) -> bool:
@@ -588,10 +573,8 @@ class MacheteClient:
         if branch in self.managed_branches:
             raise MacheteException(f"Branch <b>{branch}</b> already exists in the tree of branch dependencies")
 
-        # `onto` is tracked as a `ManagedBranchName` from this point on so
-        # that the final `add_as_child(parent=...)` call type-checks; every
-        # path that assigns to it (explicit `--onto`, current branch, inferred
-        # parent) is gated on the branch being in the layout.
+        # `onto` is tracked as a `ManagedBranchName` from this point on so that the final `add_as_child(parent=...)` call type-checks;
+        # every path that assigns to it (explicit `--onto`, current branch, inferred parent) is gated on the branch being in the layout.
         onto: Optional[ManagedBranchName] = self.expect_in_managed_branches(opt_onto) if opt_onto else None
 
         if branch not in self._git.get_local_branches():
@@ -606,8 +589,7 @@ class MacheteClient:
                     self._git.create_branch(branch, remote_branch.full_name(), switch_head=switch_head_if_new_branch)
                 else:
                     return
-                # Not dealing with `onto` here. If it hasn't been explicitly
-                # specified via `--onto`, we'll try to infer it now.
+                # Not dealing with `onto` here. If it hasn't been explicitly specified via `--onto`, we'll try to infer it now.
             else:
                 out_of = LocalBranchShortName.of(onto).full_name() if onto else HEAD
                 out_of_str = f"<b>{onto}</b>" if onto else "the current HEAD"
