@@ -25,8 +25,10 @@ function docker_compose_pull_or_build_and_push() {
   cd "$(git rev-parse --show-toplevel)/ci/$image_name/"
 
   # Let's retry pulling the image in case of a spurious failure
-  # (`error pulling image configuration: Get "https://docker-images-prod.s3.dualstack.us-east-1.amazonaws.com/...": dial tcp ...:443: i/o timeout`)
-  retry 3 docker-compose --ansi=never pull "$image_name"
+  # (`error pulling image configuration: Get "https://docker-images-prod.s3.dualstack.us-east-1.amazonaws.com/...": dial tcp ...:443: i/o timeout`).
+  # `|| true` because a pull failure here is expected when the image hasn't been published yet (`manifest unknown`);
+  # we want to fall through to the build-and-push branch below rather than aborting under `set -e`.
+  retry 3 docker-compose --ansi=never pull "$image_name" || true
 
   # A very unpleasant workaround for https://github.com/docker/compose/issues/7258
   # (since v1.25.1, `docker-compose pull` is NOT failing when it can't fetch the image).

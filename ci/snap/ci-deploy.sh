@@ -2,7 +2,7 @@
 
 set -e -o pipefail -u -x
 
-# shellcheck source=../ci-run-commons.sh
+# shellcheck source=/dev/null
 source "$(git rev-parse --show-toplevel)/ci/ci-run-commons.sh"
 
 sudo apt-get update

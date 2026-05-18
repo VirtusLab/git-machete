@@ -8,13 +8,18 @@ if ! declare -f __git_complete &>/dev/null; then
   # __git_complete (defined in https://github.com/git/git/blob/master/contrib/completion/git-completion.bash#L3496-L3505)
   # is not public and is loaded by bash_completion dynamically on demand.
   # The solution is to source git completions (from one of these common locations).
+  # The `source=/dev/null` directives below tell shellcheck not to try to follow these distro-specific runtime paths.
   if [ -e /usr/share/bash-completion/completions/git ]; then
+    # shellcheck source=/dev/null
     source /usr/share/bash-completion/completions/git
   elif [ -f /usr/local/share/bash-completion/completions/git ]; then
+    # shellcheck source=/dev/null
     source /usr/local/share/bash-completion/completions/git
   elif [ -e /etc/bash_completion.d/git ]; then
+    # shellcheck source=/dev/null
     source /etc/bash_completion.d/git
   elif [ -e "$(brew --prefix)/etc/bash_completion.d/git-completion.bash" ]; then
+    # shellcheck source=/dev/null
     source "$(brew --prefix)/etc/bash_completion.d/git-completion.bash"
   else
     exit 1
