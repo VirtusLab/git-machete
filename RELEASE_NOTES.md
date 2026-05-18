@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.41.1
+
 ## New in git-machete 3.41.0
 
 - added: an [Agent Skill](https://agentskills.io/) at `skills/git-machete/SKILL.md`
