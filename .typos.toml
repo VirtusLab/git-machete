@@ -1,8 +1,8 @@
 [files]
 extend-exclude = [
   "ci/checks/*",
-  "graphics/*.cast",
-  "graphics/generate-asciinema-gif",
+  "img/*.cast",
+  "scripts/generate-asciinema-gif",
   "tests/test_cli.py"  # to allow for testing typos in commands/flags
 ]
 

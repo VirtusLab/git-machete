@@ -13,8 +13,8 @@
 
 [//]: # (These images are referenced by full URLs to ensure they render correctly on https://pypi.org/project/git-machete/)
 [//]: # (In fact, only the light-mode image is used in PyPI, the other one is cropped out when publishing the package. Still, using the same format for consistency)
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name.svg#gh-light-mode-only"     style="width: 100%; display: block; margin-bottom: 10pt;" />
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/logo/svg/with-name-dark.svg#gh-dark-mode-only" style="width: 100%; display: block; margin-bottom: 10pt;" />
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/img/logo/svg/with-name.svg#gh-light-mode-only"     style="width: 100%; display: block; margin-bottom: 10pt;" />
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/img/logo/svg/with-name-dark.svg#gh-dark-mode-only" style="width: 100%; display: block; margin-bottom: 10pt;" />
 
 💪 git-machete is a robust tool that **simplifies your git workflows**.<br/>
 
@@ -32,7 +32,7 @@ even when **multiple branches** are present in the repository
 
 [//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
 <p align="center">
-    <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/discover-status-traverse.gif"
+    <img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/img/discover-status-traverse.gif"
          alt="git machete discover, status and traverse" />
 </p>
 
@@ -153,7 +153,7 @@ git machete go
 ```
 
 [//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/go-interactive.gif"
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/img/go-interactive.gif"
      alt="PR chain on GitHub"
      width="75%" />
 
@@ -192,7 +192,7 @@ git machete gitlab create-mr [--draft]
 The entire chain of PRs/MRs will be posted in the PR/MR description (example for GitHub): <br/>
 
 [//]: # (The image is referenced by its full URL to ensure it renders correctly on https://pypi.org/project/git-machete/)
-<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/master/graphics/pr-chain-github-screenshot.png"
+<img src="https://raw.githubusercontent.com/VirtusLab/git-machete/develop/img/pr-chain-github-screenshot.png"
      alt="PR chain on GitHub"
      width="75%" />
 

@@ -55,7 +55,15 @@ If the repo has no `.git/machete` file yet (check with `git machete file && test
 
    All other commands' stdout/stderr formatting may change between minor versions, including `status`.
 
-6. **Resolve yellow edges before running `update`/`traverse`.** A yellow edge means a child branch is a descendant of its parent *but* git-machete's inferred fork point lies somewhere earlier than the parent tip - usually because the branch was rebased over commits from another branch, or its real parent is a different managed branch. In ASCII-only output the edge marker is `?-` (e.g. `?-feature-x`); with colour it's yellow. **Do not run `git machete update` / `git machete traverse` blindly in this state** - a rebase from the inferred fork point will pull extra commits onto the branch.
+6. **To open a PR/MR, use `git machete github create-pr -y` (or `gitlab create-mr -y`), not raw `gh pr create` / `glab mr create`.**
+   The machete subcommand does three things the hosting CLI doesn't:
+   - sets the PR/MR base to the branch's *parent in the layout*, not the repo default branch (correct for stacked PRs);
+   - writes the new PR/MR number back onto the branch in `.git/machete` so subsequent `status` / `traverse` / `retarget-{pr,mr}` see it;
+   - uses `.git/info/description` for the default PR title.
+
+   The host's own CLI is only the right tool for things git-machete doesn't cover (read-only listing/commenting, deleting a PR, fetching CI status, etc.). See the [Create / restack / retarget PRs](#create--restack--retarget-prs-github) recipe.
+
+7. **Resolve yellow edges before running `update`/`traverse`.** A yellow edge means a child branch is a descendant of its parent *but* git-machete's inferred fork point lies somewhere earlier than the parent tip - usually because the branch was rebased over commits from another branch, or its real parent is a different managed branch. In ASCII-only output the edge marker is `?-` (e.g. `?-feature-x`); with colour it's yellow. **Do not run `git machete update` / `git machete traverse` blindly in this state** - a rebase from the inferred fork point will pull extra commits onto the branch.
 
    Instead, run `git machete status --list-commits --color=never | cat` (which prints the relevant suggestion under the tree) and present the options to the user. The three resolutions, in roughly the order to consider them, are:
    - `git machete fork-point <branch> --override-to-parent` - accept the parent branch tip as the fork point (use when the branch was rebased and the inferred fork point is stale).

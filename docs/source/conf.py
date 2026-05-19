@@ -29,12 +29,12 @@ exclude_patterns = ['cli']
 
 html_theme = "sphinx_book_theme"
 
-html_logo = "../../graphics/logo/svg/512x512.svg"
+html_logo = "../../img/logo/svg/512x512.svg"
 
 html_theme_options = {
     "show_navbar_depth": 2,
     "logo": {
-        "image_dark": "../../graphics/logo/svg/512x512-dark.svg",
+        "image_dark": "../../img/logo/svg/512x512-dark.svg",
         "text": "git-machete v" + release,
     },
     # See https://github.com/pydata/pydata-sphinx-theme/issues/1492.
@@ -43,4 +43,4 @@ html_theme_options = {
 }
 
 # To make sure the dark logo is included in _static/ directory in the generated docs
-html_static_path = ["../../graphics/logo/svg/"]
+html_static_path = ["../../img/logo/svg/"]
