@@ -9,6 +9,8 @@ updates:
       - /ci/tox/build-context
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     reviewers:
       - PawelLipski
     target-branch: develop
