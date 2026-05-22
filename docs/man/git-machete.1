@@ -30,7 +30,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .TH "GIT-MACHETE" "1" "" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.41.1
+git-machete \- git-machete 3.42.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -452,9 +452,8 @@ whether \fBtraverse\fP suggests to slide out the branch.
 .UNINDENT
 .TP
 .B \fBmachete.status.extraSpaceBeforeBranchName\fP:
-To make it easier to select branch name from the \fBstatus\fP output on certain terminals
-(like Alacritty \%<https://\:github\:.com/\:alacritty/\:alacritty>), you can add an extra space between └─ and branch name
-by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
+To make it easier to select branch name from the \fBstatus\fP output on certain terminals (like Alacritty \%<https://\:github\:.com/\:alacritty/\:alacritty>),
+you can add an extra space between └─ and branch name by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .sp
 For example, by default the status is displayed as:
 .INDENT 7.0
@@ -2002,6 +2001,19 @@ is not in sync with its remote counterpart;
 displays the custom annotations (see help for format and anno) next to each branch, if present. Annotations might contain underlined branch
 qualifiers (\fBpush=no\fP, \fBrebase=no\fP, \fBslide\-out=no\fP) that control rebase and push behavior of \fBtraverse\fP (see help for traverse);
 .IP \(bu 2
+in repositories with at least one linked git worktree, displays a green label in square brackets
+after the annotation, naming the worktree where each branch is checked out:
+.INDENT 2.0
+.IP \(bu 2
+\fB[<this worktree>]\fP for the branch checked out in the worktree you\(aqre currently standing in (whether main or linked);
+.IP \(bu 2
+\fB[<main worktree>]\fP for the branch checked out in the main worktree when you\(aqre standing in a linked worktree;
+.IP \(bu 2
+\fB[<worktree\-basename>]\fP (or a longer path suffix, if linked worktrees don\(aqt share a common parent directory) for branches in other linked worktrees;
+.IP \(bu 2
+no label for branches not checked out in any worktree.
+.UNINDENT
+.IP \(bu 2
 displays the output of \fBmachete\-status\-branch hook\fP (see help for hooks), if present;
 .IP \(bu 2
 optionally lists commits introduced on each branch if \fB\-l/\-\-list\-commits\fP or \fB\-L/\-\-list\-commits\-with\-hashes\fP is supplied.
@@ -2036,9 +2048,8 @@ m\-<branch4>     # gray (merged to parent)
 .UNINDENT
 .UNINDENT
 .sp
-To make it easier to select branch name from the \fBstatus\fP output on certain terminals
-(like Alacritty \%<https://\:github\:.com/\:alacritty/\:alacritty>), you can add an extra space between └─ and branch name
-by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
+To make it easier to select branch name from the \fBstatus\fP output on certain terminals (like Alacritty \%<https://\:github\:.com/\:alacritty/\:alacritty>),
+you can add an extra space between └─ and branch name by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .sp
 For example, by default the status is displayed as:
 .INDENT 0.0
@@ -2117,9 +2128,8 @@ whether \fBtraverse\fP suggests to slide out the branch.
 .UNINDENT
 .TP
 .B \fBmachete.status.extraSpaceBeforeBranchName\fP:
-To make it easier to select branch name from the \fBstatus\fP output on certain terminals
-(like Alacritty \%<https://\:github\:.com/\:alacritty/\:alacritty>), you can add an extra space between └─ and branch name
-by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
+To make it easier to select branch name from the \fBstatus\fP output on certain terminals (like Alacritty \%<https://\:github\:.com/\:alacritty/\:alacritty>),
+you can add an extra space between └─ and branch name by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .UNINDENT
 .SH TRAVERSE
 .sp

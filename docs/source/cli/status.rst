@@ -33,6 +33,14 @@ Apart from simply ASCII-formatting the branch layout file, this also:
 * displays the custom annotations (see help for :ref:`format` and :ref:`anno`) next to each branch, if present. Annotations might contain underlined branch
   qualifiers (``push=no``, ``rebase=no``, ``slide-out=no``) that control rebase and push behavior of ``traverse`` (see help for :ref:`traverse`);
 
+* in repositories with at least one linked git worktree, displays a :green:`green label in square brackets`
+  after the annotation, naming the worktree where each branch is checked out:
+
+  - ``[<this worktree>]`` for the branch checked out in the worktree you're currently standing in (whether main or linked);
+  - ``[<main worktree>]`` for the branch checked out in the main worktree when you're standing in a linked worktree;
+  - ``[<worktree-basename>]`` (or a longer path suffix, if linked worktrees don't share a common parent directory) for branches in other linked worktrees;
+  - no label for branches not checked out in any worktree.
+
 * displays the output of ``machete-status-branch hook`` (see help for :ref:`hooks`), if present;
 
 * optionally lists commits introduced on each branch if ``-l/--list-commits`` or ``-L/--list-commits-with-hashes`` is supplied.

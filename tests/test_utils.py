@@ -10,7 +10,7 @@ from git_machete.utils import debug_log
 from git_machete.utils.date import get_current_date
 from git_machete.utils.debug_log import debug, hex_repr
 from git_machete.utils.markup import _fmt
-from git_machete.utils.paths import AbsPath
+from git_machete.utils.paths import AbsPath, strip_longest_common_path_prefix
 from git_machete.utils.terminal import (BasicTerminalAnsiOutputCodes,
                                         FullTerminalAnsiOutputCodes)
 from tests.base_test import BaseTest
@@ -117,3 +117,44 @@ class TestUtils(BaseTest):
             assert normalized.startswith('/')
             # Should not contain backslashes
             assert '\\' not in normalized
+
+    def test_strip_longest_common_path_prefix(self) -> None:
+        # Empty input.
+        assert strip_longest_common_path_prefix([]) == []
+
+        # Single input falls back to the basename so callers get a non-empty label.
+        assert strip_longest_common_path_prefix(["/a/b/foo"]) == ["foo"]
+        assert strip_longest_common_path_prefix(["foo"]) == ["foo"]
+
+        # Common parent directory: only basenames survive.
+        assert strip_longest_common_path_prefix(["/a/b/foo", "/a/b/bar"]) == ["foo", "bar"]
+
+        # Common prefix is component-wise, not character-wise:
+        # `/a/proj-foo` and `/a/proj-bar` share `/a`, not `/a/proj-`.
+        assert strip_longest_common_path_prefix(["/a/proj-foo", "/a/proj-bar"]) == ["proj-foo", "proj-bar"]
+
+        # Mixed depths under a shared parent.
+        assert strip_longest_common_path_prefix(["/a/b/foo", "/a/b/c/bar"]) == ["foo", "c/bar"]
+
+        # One input is itself a prefix of another - we never collapse any path to "".
+        # Here the cap drives common_len from the "natural" 3 back down to 2,
+        # so the root-preservation special case must *not* fire (the paths really do share `/a/b`).
+        assert strip_longest_common_path_prefix(["/a/b", "/a/b/c"]) == ["b", "b/c"]
+
+        # No shared components beyond the filesystem root - the leading `/` is retained on each result
+        # so they remain recognizable absolute paths (rather than being stripped to a misleadingly-relative form).
+        assert strip_longest_common_path_prefix(["/x/foo", "/y/bar"]) == ["/x/foo", "/y/bar"]
+
+        # Same as above for paths with exactly one component below the root.
+        assert strip_longest_common_path_prefix(["/foo", "/bar"]) == ["/foo", "/bar"]
+
+        # Three-way variant of the root-only-share case.
+        assert strip_longest_common_path_prefix(["/a/x", "/b/y", "/c/z"]) == ["/a/x", "/b/y", "/c/z"]
+
+        # All-relative inputs that share nothing - already rootless, returned unchanged.
+        assert strip_longest_common_path_prefix(["x/foo", "y/bar"]) == ["x/foo", "y/bar"]
+
+        # More than two inputs.
+        assert strip_longest_common_path_prefix(
+            ["/home/me/wt1", "/home/me/wt2", "/home/me/wt3"]
+        ) == ["wt1", "wt2", "wt3"]

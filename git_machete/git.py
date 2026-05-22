@@ -344,24 +344,21 @@ class Git:
         """
         Returns the path to the main worktree (not a linked worktree).
         """
-        if not self.__main_worktree_root_dir:
+        if self.__main_worktree_root_dir is None:
             if self.get_git_version() < (2, 5):
                 # git worktree command was introduced in git 2.5
                 # If worktrees aren't supported, just return the current root dir
                 self.__main_worktree_root_dir = self.get_current_worktree_root_dir()
             else:
-                # We can't rely on `git rev-parse --git-common-dir` since in some earlier supported versions of git
-                # this path is apparently printed in a faulty way when dealing with worktrees.
-                # Let's parse the output of of `git worktree list` instead.
-                result = self._popen_git("worktree", "list", "--porcelain")
-
-                # The first worktree in the list is always the main worktree
-                first_entry = result.stdout.splitlines()[0]
-                if first_entry.startswith('worktree '):
-                    self.__main_worktree_root_dir = AbsPath(first_entry[len('worktree '):])
-                else:
-                    raise UnexpectedMacheteException("Could not obtain the main worktree path from "
-                                                     f"`git worktree list --porcelain` output (first line: `{first_entry}`)")
+                # `get_worktree_root_dirs_by_branch` parses the same porcelain output and sets
+                # `__main_worktree_root_dir` as a side effect on its way past the first entry,
+                # so reuse it here rather than running `git worktree list --porcelain` a second time.
+                self.get_worktree_root_dirs_by_branch()
+                if self.__main_worktree_root_dir is None:
+                    # Should not happen in practice: `git worktree list --porcelain` always emits at least the main worktree.
+                    # If it did, we'd have already raised inside `__parse_worktree_list_porcelain`.
+                    raise UnexpectedMacheteException(
+                        "Could not obtain the main worktree path from `git worktree list --porcelain` (no entries returned).")
         return self.__main_worktree_root_dir
 
     def get_main_worktree_git_dir(self) -> AbsPath:
@@ -390,6 +387,25 @@ class Git:
         The main worktree's current branch is included if it's on a branch.
         Branches not checked out in any worktree are not in the dict.
         Worktrees in detached HEAD state are not included (since they can't be looked up by branch name).
+
+        Same-branch-in-multiple-worktrees (only reachable via `git worktree add -f`, which is what the test harness
+        uses to set up some scenarios; vanilla `git worktree add` refuses with `fatal: '<branch>' is already used
+        by worktree at <path>`) collapses to "last entry from the porcelain output wins". The porcelain output puts
+        the main worktree first and linked worktrees after it, so this picks the linked entry over the main one -
+        which happens to be the more useful answer for our callers (they typically want "where else is this branch
+        held besides the main worktree") and also matches a human's intuition. We don't bother special-casing it
+        because the state is one git itself disallows by default.
+
+        Uncached on purpose: in practice each CLI invocation calls this at most once per logical operation
+        (`status` reads it once for the worktree-label render; `traverse` reads it once on startup and then
+        owns a local copy that it mutates incrementally as it adds/removes worktrees). Adding a cache here
+        would just buy invalidation bookkeeping (every `worktree add` / `worktree remove` / `checkout` would
+        have to remember to clear it) without saving any real git calls.
+
+        The main worktree path *is* cached on `__main_worktree_root_dir` (populated as a side effect of the
+        parse below) - that one's safe because the main worktree path doesn't change during a CLI invocation,
+        and it lets `get_main_worktree_root_dir` reuse our parse output rather than running
+        `git worktree list --porcelain` a second time when both getters are called together (as `status` does).
         """
         if self.get_git_version() < (2, 5):
             # git worktree command was introduced in git 2.5
@@ -401,10 +417,16 @@ class Git:
         latest_worktree_path: Optional[AbsPath] = None
         latest_branch: Optional[LocalBranchShortName] = None
         is_detached: bool = False
+        is_first_entry: bool = True
 
         for line in result.stdout.strip().splitlines():
             if line.startswith('worktree '):
                 latest_worktree_path = AbsPath(line[len('worktree '):])
+                if is_first_entry:
+                    # The first worktree in the porcelain output is always the main worktree;
+                    # cache it on the side so `get_main_worktree_root_dir` doesn't re-run the same git command.
+                    self.__main_worktree_root_dir = latest_worktree_path
+                    is_first_entry = False
             elif line.startswith('branch '):
                 # Format: "branch refs/heads/<branch-name>"
                 branch_ref = line[len('branch '):]

@@ -23,6 +23,7 @@ where a stored path must outlive a possible `os.chdir`
 import os
 from pathlib import Path as PyPath
 from pathlib import PurePath, PurePosixPath
+from typing import List
 
 
 class Path(str):
@@ -91,3 +92,52 @@ class AbsPath(Path):
         The final renormalization happens in `AbsPath.__new__` via `pathlib.Path.resolve().as_posix()`.
         """
         return AbsPath(str(PurePosixPath(self, *fragments)))
+
+
+def strip_longest_common_path_prefix(paths: List[str]) -> List[str]:
+    """Return each input path with the longest leading path-component prefix shared by all inputs removed.
+
+    The prefix is computed component-wise (full path segments), never character-wise:
+    `["/a/b/foo", "/a/b/bar"]` collapses to `["foo", "bar"]`,
+    whereas a chunk like `["/a/proj-foo", "/a/proj-bar"]` collapses to `["proj-foo", "proj-bar"]`
+    rather than to the character-prefix `["foo", "bar"]` - the result always names a real directory entry.
+
+    Edge cases:
+
+    * empty input returns an empty list,
+    * a single input has no "common" prefix to speak of (the path is trivially equal to itself);
+      we return its basename so callers always get a printable label rather than the empty string,
+    * if one input is itself a prefix of another (`["/a/b", "/a/b/c"]`),
+      we keep at least one trailing component for every input so the shorter one doesn't collapse to `""`,
+    * if the inputs share *nothing* beyond the filesystem root (`["/x/foo", "/y/bar"]`),
+      we leave the leading `/` in place so each result is still a recognizable absolute path
+      (rather than dropping the root and rendering as the misleadingly-relative-looking `["x/foo", "y/bar"]`);
+      a deeper common prefix that happens to start with `/` (`["/a/b/foo", "/a/b/bar"]`)
+      is still stripped in full - the special case fires only when `/` is the *only* shared component.
+    """
+    if not paths:
+        return []
+    if len(paths) == 1:
+        return [PurePosixPath(paths[0]).name or paths[0]]
+
+    split = [PurePosixPath(p).parts for p in paths]
+    uncapped_common_len = 0
+    first = split[0]
+    for i in range(min(len(s) for s in split)):
+        if all(s[i] == first[i] for s in split):
+            uncapped_common_len = i + 1
+        else:
+            break
+
+    # Cap so the shortest path doesn't collapse to the empty string (`["/a/b", "/a/b/c"]` -> `["b", "b/c"]`,
+    # not `["", "c"]`).
+    common_len = min(uncapped_common_len, min(len(s) for s in split) - 1)
+
+    # If the *natural* (uncapped) shared prefix is just the POSIX root `/`, keep it on each path.
+    # We test the uncapped value so this doesn't fire when the cap above coincidentally drove common_len down to 1
+    # for paths that actually do share more (`["/a", "/a/b"]` is capped from 2 to 1, but `/a` is still really shared,
+    # so we strip the leading `/a` rather than retaining the bare `/` here).
+    if uncapped_common_len == 1 and split[0][0] == "/":
+        common_len = 0
+
+    return [str(PurePosixPath(*s[common_len:])) for s in split]

@@ -18,7 +18,7 @@ from git_machete.utils.cmd import popen_cmd
 from git_machete.utils.debug_log import debug
 from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.markup import escape_markup, print_fmt, warn
-from git_machete.utils.paths import Path
+from git_machete.utils.paths import Path, strip_longest_common_path_prefix
 
 
 class SyncToParentStatus(Enum):
@@ -59,6 +59,7 @@ class StatusBranch(NamedTuple):
     sync_status: str
     hook_output: str
     annotation: Optional[Annotation]
+    worktree_label: Optional[str]
 
 
 class StatusData(NamedTuple):
@@ -197,11 +198,15 @@ class StatusMacheteClient(MacheteClient):
             if b.annotation is not None and b.annotation.formatted_full_text:
                 anno = '  ' + b.annotation.formatted_full_text
 
+            worktree_part = ''
+            if b.worktree_label is not None:
+                worktree_part = f" <green>[{escape_markup(b.worktree_label)}]</green>"
+
             if selected_branch is not None and branch == selected_branch:
                 current_part = f"<reverse>{current}</reverse>"
             else:
                 current_part = current
-            out.write(f"{current_part}{anno}{b.sync_status}{b.hook_output}\n")
+            out.write(f"{current_part}{anno}{worktree_part}{b.sync_status}{b.hook_output}\n")
             line_index += 1
 
         return StatusFormatOutput(result=out.getvalue(), line_for_branch=line_for_branch)
@@ -394,6 +399,8 @@ class StatusMacheteClient(MacheteClient):
                           f"returned {status_code}; stdout: '{stdout}'; stderr: '{stderr}'")
             hook_output_by_branch[branch] = hook_output
 
+        worktree_label_by_branch = self._compute_worktree_label_by_branch()
+
         branches: Dict[LocalBranchShortName, StatusBranch] = {}
         for branch in managed_branches:
             branches[branch] = StatusBranch(
@@ -404,6 +411,7 @@ class StatusMacheteClient(MacheteClient):
                 sync_status=sync_status_by_branch[branch],
                 hook_output=hook_output_by_branch[branch],
                 annotation=self._state.get_annotation(branch),
+                worktree_label=worktree_label_by_branch.get(branch),
             )
 
         return StatusData(
@@ -448,6 +456,55 @@ class StatusMacheteClient(MacheteClient):
             if warning_msg is not None:
                 print("", file=sys.stderr)
                 warn(warning_msg)
+
+    def _compute_worktree_label_by_branch(self) -> Dict[LocalBranchShortName, str]:
+        """For each managed branch checked out in a worktree, derive a short label naming that worktree
+        (rendered in `status` after the annotation).
+
+        The labeling is uniform: *every* branch checked out in any worktree is labeled when the feature
+        fires, so users see one consistent piece of info per branch rather than guessing why some
+        branches carry a label and others don't. Concretely:
+
+        * branch in the current worktree (whether main or linked) -> the literal `<this worktree>` -
+          self-explanatory so users encountering the label for the first time can interpret it without
+          having to read any PSA in the status output,
+        * branch in the main worktree, but the user is standing in a linked worktree -> `<main worktree>`,
+        * branch in any other linked worktree -> that worktree's stripped-prefix label
+          (`strip_longest_common_path_prefix` collapses sibling linked worktrees to plain basenames,
+          so typical layouts like `~/worktrees/wt1`, `~/worktrees/wt2`, ... render as `wt1`, `wt2`, ...).
+
+        The main worktree gets a literal `<main worktree>` label rather than participating in the prefix
+        computation, because mixing it in could artificially lengthen every linked-worktree label
+        (e.g. when the main worktree lives in the user's home dir but linked worktrees sit under `/tmp` -
+        the only shared component would be `/`, leaving every label as a full absolute path).
+
+        The whole feature is gated on at least one linked worktree existing: in a plain single-worktree
+        repo we don't want a `[<this worktree>]` tag stuck on the current branch of every status output,
+        since the user hasn't opted into the multi-worktree workflow and there's nothing to disambiguate.
+        """
+        worktree_path_by_branch = self._git.get_worktree_root_dirs_by_branch()
+        if not worktree_path_by_branch:
+            return {}
+
+        main_path = self._git.get_main_worktree_root_dir()
+        current_path = self._git.get_current_worktree_root_dir()
+
+        linked_paths = sorted({p for p in worktree_path_by_branch.values() if p != main_path})
+        if not linked_paths:
+            return {}
+
+        stripped = strip_longest_common_path_prefix([str(p) for p in linked_paths])
+        label_by_linked_path = dict(zip(linked_paths, stripped))
+
+        labels: Dict[LocalBranchShortName, str] = {}
+        for branch, path in worktree_path_by_branch.items():
+            if path == current_path:
+                labels[branch] = "<this worktree>"
+            elif path == main_path:
+                labels[branch] = "<main worktree>"
+            else:
+                labels[branch] = label_by_linked_path[path]
+        return labels
 
     @staticmethod
     def _popen_hook(*args: str, cwd: Path, env: Dict[str, str]) -> PopenResult:

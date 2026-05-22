@@ -32,6 +32,14 @@
 - Skip tests that require a minimum Git version with `@pytest.mark.skipif(get_git_version() < (X, Y), reason="...")`,
   not with an `if get_git_version() < (X, Y): return` early-return at the top of the test body.
   The decorator surfaces the skip in pytest's report (and in the JUnit XML CI uploads); the early-return silently masquerades as a pass.
+- Assert on the *full* command output rather than substring presence.
+  Use `assert_success(cmd_and_args, expected_output)` (or, for ANSI/colored runs where `--color=always` produces escape codes,
+  `raw_output = launch_command(...); assert raw_output == expected_ansi`) so the whole rendering is pinned down at once.
+  Avoid `assert "<phrase>" in output` / `assert "<phrase>" not in output` for command-output checks - a substring match silently tolerates
+  stray extra lines, misordered sections, the same phrase landing on the wrong row, or new (unintended) labels appearing elsewhere,
+  all of which a full-output equality assertion would catch on the first run.
+  Exception: substring checks are legitimate when the asserted invariant is genuinely scoped to one fragment of the output
+  (e.g. "this warning text appears somewhere") and the rest of the output is either non-deterministic or already covered by another test.
 
 ## Imports
 

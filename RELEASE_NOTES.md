@@ -1,7 +1,8 @@
 # Release notes
 
-## New in git-machete 3.41.1
+## New in git-machete 3.42.0
 
+- added: `git machete status` now annotates each branch checked out in a worktree with a `[<worktree>]` label (suggested by @mikechristiansenvae)
 - fixed: `git machete go`, `slide-out` and `{github,gitlab} checkout-{pr,mr}s` now fail with an actionable error when the target branch is already checked out in another worktree, rather than the cryptic `fatal: '<branch>' is already used by worktree at <path>` from `git checkout` (reported by @lsierant)
 
 ## New in git-machete 3.41.0

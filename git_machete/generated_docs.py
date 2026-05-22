@@ -336,9 +336,8 @@ long_docs: Dict[str, str] = {
               * whether `traverse` suggests to slide out the branch.
 
            `machete.status.extraSpaceBeforeBranchName`:
-              To make it easier to select branch name from the `status` output on certain terminals
-              (like Alacritty), you can add an extra space between └─ and branch name
-              by setting `git config machete.status.extraSpaceBeforeBranchName true`.
+              To make it easier to select branch name from the `status` output on certain terminals (like `Alacritty),
+              you can add an extra space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
               For example, by default the status is displayed as:
 
@@ -1387,6 +1386,14 @@ long_docs: Dict[str, str] = {
            * displays the custom annotations (see help for `format` and `anno`) next to each branch, if present. Annotations might contain underlined branch
              qualifiers (`push=no`, `rebase=no`, `slide-out=no`) that control rebase and push behavior of `traverse` (see help for `traverse`);
 
+           * in repositories with at least one linked git worktree, displays a <green>green label in square brackets</green>
+             after the annotation, naming the worktree where each branch is checked out:
+
+             - `[<this worktree>]` for the branch checked out in the worktree you're currently standing in (whether main or linked);
+             - `[<main worktree>]` for the branch checked out in the main worktree when you're standing in a linked worktree;
+             - `[<worktree-basename>]` (or a longer path suffix, if linked worktrees don't share a common parent directory) for branches in other linked worktrees;
+             - no label for branches not checked out in any worktree.
+
            * displays the output of `machete-status-branch hook` (see help for `hooks`), if present;
 
            * optionally lists commits introduced on each branch if `-l/--list-commits` or `-L/--list-commits-with-hashes` is supplied.
@@ -1414,9 +1421,8 @@ long_docs: Dict[str, str] = {
           |
           m-<branch4>     # gray (merged to parent)
         </dim>
-        To make it easier to select branch name from the `status` output on certain terminals
-        (like Alacritty), you can add an extra space between └─ and branch name
-        by setting `git config machete.status.extraSpaceBeforeBranchName true`.
+        To make it easier to select branch name from the `status` output on certain terminals (like `Alacritty),
+        you can add an extra space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
         For example, by default the status is displayed as:
         <dim>
@@ -1475,9 +1481,8 @@ long_docs: Dict[str, str] = {
               * whether `traverse` suggests to slide out the branch.
 
            `machete.status.extraSpaceBeforeBranchName`:
-              To make it easier to select branch name from the `status` output on certain terminals
-              (like Alacritty), you can add an extra space between └─ and branch name
-              by setting `git config machete.status.extraSpaceBeforeBranchName true`.
+              To make it easier to select branch name from the `status` output on certain terminals (like `Alacritty),
+              you can add an extra space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
    """,
     "traverse": """
         <b>Usage:</b><b>
