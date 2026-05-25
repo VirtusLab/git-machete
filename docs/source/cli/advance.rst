@@ -1,9 +1,3 @@
-.. raw:: html
-
-    <style> .green {color:green} </style>
-
-.. role:: green
-
 .. _advance:
 
 advance

@@ -40,7 +40,7 @@ def resolve_includes(rst_content: str, docs_source_dir: str) -> str:
     return rst_content
 
 
-HEADER = 0
+BEFORE_HEADING = 0
 USAGE = 1
 NORMAL = 2
 SHELL_BLOCK = 3
@@ -49,7 +49,7 @@ SECTION = 5
 
 
 def rst2txt(rst: str) -> str:
-    state = HEADER
+    state = BEFORE_HEADING
     result = []
     indent = " " * 3
 

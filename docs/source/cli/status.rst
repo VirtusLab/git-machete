@@ -1,15 +1,3 @@
-.. raw:: html
-
-    <style> .green {color:green} </style>
-    <style> .gray {color:dimgray} </style>
-    <style> .red {color:red} </style>
-    <style> .yellow {color:#FFBF00} </style>
-
-.. role:: green
-.. role:: gray
-.. role:: red
-.. role:: yellow
-
 .. _status:
 
 status

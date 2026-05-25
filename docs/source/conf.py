@@ -25,6 +25,26 @@ extensions = ["sphinx_book_theme"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['cli']
 
+# Prepended to every processed source file.
+# Defines the inline color styles and roles used across the CLI docs.
+# The `raw:: html` block is silently ignored by non-HTML builders (man, text, etc.),
+# and unused roles in a given file are harmless.
+rst_prolog = """
+.. raw:: html
+
+    <style>
+        .green  { color: green }
+        .gray   { color: dimgray }
+        .red    { color: red }
+        .yellow { color: #FFBF00 }
+    </style>
+
+.. role:: green
+.. role:: gray
+.. role:: red
+.. role:: yellow
+"""
+
 # -- Options for HTML output -------------------------------------------------
 
 html_theme = "sphinx_book_theme"
