@@ -152,16 +152,26 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             opt_merge: bool,
             opt_no_edit_merge: bool,
             opt_no_interactive_rebase: bool,
-            opt_push_tracked: bool,
-            opt_push_untracked: bool,
+            opt_push_tracked: Optional[bool],
+            opt_push_untracked: Optional[bool],
             opt_return_to: TraverseReturnTo,
-            opt_squash_merge_detection: SquashMergeDetection,
+            opt_squash_merge_detection: Optional[SquashMergeDetection],
             opt_start_from: str,
             opt_stop_after: Optional[LocalBranchShortName],
             opt_sync_github_prs: bool,
             opt_sync_gitlab_mrs: bool,
             opt_yes: bool
     ) -> None:
+        # Resolve tri-state CLI options against git config (CLI flag > config key > built-in default).
+        # See `git_machete.options.CommandLineOptions` for the rationale behind the `None` sentinels.
+        traverse_push_config = self._config.traverse_push()
+        if opt_push_tracked is None:
+            opt_push_tracked = traverse_push_config if traverse_push_config is not None else True
+        if opt_push_untracked is None:
+            opt_push_untracked = traverse_push_config if traverse_push_config is not None else True
+        if opt_squash_merge_detection is None:
+            opt_squash_merge_detection = self._config.squash_merge_detection()
+
         self._git.expect_no_operation_in_progress()
         self.expect_at_least_one_managed_branch()
         start_from = TraverseStartFrom.from_string_or_branch(opt_start_from, self._git.get_local_branches())

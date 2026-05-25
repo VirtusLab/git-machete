@@ -34,14 +34,19 @@ class CommandLineOptions:
         self.opt_override_to: Optional[str] = None
         self.opt_override_to_inferred: bool = False
         self.opt_override_to_parent: bool = False
-        self.opt_push_tracked: bool = True
-        self.opt_push_untracked: bool = True
+        # Tri-state: `None` means "user did not pass any `--push*`/`--no-push*` flag",
+        # leaving the effective value to be resolved against `machete.traverse.push` (or the built-in default of `True`)
+        # at the use site inside the client.
+        self.opt_push_tracked: Optional[bool] = None
+        self.opt_push_untracked: Optional[bool] = None
         self.opt_related: bool = False
         self.opt_removed_from_remote: bool = False
         self.opt_repoint_tracking: bool = False
         self.opt_return_to: str = "stay"
         self.opt_roots: List[LocalBranchShortName] = list()
-        self.opt_squash_merge_detection: SquashMergeDetection = SquashMergeDetection.SIMPLE
+        # Tri-state: `None` means "user did not pass `--squash-merge-detection`/`--no-detect-squash-merges`",
+        # leaving the effective value to be resolved against `machete.squashMergeDetection` (default `SIMPLE`) at the use site.
+        self.opt_squash_merge_detection: Optional[SquashMergeDetection] = None
         self.opt_start_from: str = "here"
         self.opt_stat: bool = False
         self.opt_stop_after: Optional[LocalBranchShortName] = None

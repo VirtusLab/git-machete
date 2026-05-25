@@ -428,8 +428,11 @@ class StatusMacheteClient(MacheteClient):
             warn_when_branch_in_sync_but_fork_point_off: bool,
             opt_list_commits: bool,
             opt_list_commits_with_hashes: bool,
-            opt_squash_merge_detection: SquashMergeDetection
+            opt_squash_merge_detection: Optional[SquashMergeDetection]
     ) -> None:
+        # CLI flag > `machete.squashMergeDetection` config key > built-in `SIMPLE` default - see `CommandLineOptions`.
+        if opt_squash_merge_detection is None:
+            opt_squash_merge_detection = self._config.squash_merge_detection()
         maybe_space_before_branch_name = ' ' if self._config.status_extra_space_before_branch_name() else ''
         flags = StatusFlags(
             maybe_space_before_branch_name=maybe_space_before_branch_name,

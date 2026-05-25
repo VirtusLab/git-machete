@@ -24,12 +24,12 @@ from git_machete.client.status import StatusMacheteClient
 from git_machete.client.traverse import TraverseMacheteClient, TraverseReturnTo
 from git_machete.client.update import UpdateMacheteClient
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
-from git_machete.config import MacheteConfig, SquashMergeDetection
+from git_machete.config import SquashMergeDetection
 from git_machete.git import AnyRevision, LocalBranchShortName
 from git_machete.github import GITHUB_API_SPEC
 from git_machete.gitlab import GITLAB_API_SPEC
 from git_machete.help import alias_by_command, get_help_description, version
-from git_machete.utils import cmd, debug_log, terminal
+from git_machete.utils import cmd, debug_log, markup, terminal
 from git_machete.utils.exceptions import (ExitCode, InteractionStopped,
                                           MacheteException,
                                           UnderlyingGitException,
@@ -183,18 +183,15 @@ def _populate_cli_options(
             cli_opts.opt_no_interactive_rebase = True
 
 
-def update_cli_options_using_config_keys(cli_opts: git_machete.options.CommandLineOptions) -> None:
-    config = MacheteConfig()
-    traverse_push = config.traverse_push()
-    if traverse_push is not None:
-        cli_opts.opt_push_tracked = cli_opts.opt_push_untracked = traverse_push
-    cli_opts.opt_squash_merge_detection = config.squash_merge_detection()
-
-
 def set_utils_global_variables(parsed: ParsedCmd) -> None:
-    # `--color` is already applied inside `parse_cmdline`
-    # so that any `MacheteException` raised during validation gets the right ANSI treatment;
-    # here we just propagate the debug / verbose flags.
+    # Side effects are concentrated here (rather than scattered through `parse_cmdline`)
+    # so that the parser stays free of global state mutation - it returns a plain `ParsedCmd` and lets the caller decide what to do with it.
+    # `--color` is applied here even though it means parser-level `MacheteException`s (mutex / "only valid with X subcommand")
+    # don't pick up `--color=always` / `--color=never` - those messages contain only minor markup (backticks)
+    # and the default `--color=auto` behavior (TTY-detected at module import) already does the right thing in practice.
+    color = parsed.opts.get("color")
+    markup.use_ansi_escapes_in_stdout = color == "always" or (color in {None, "auto"} and terminal.is_stdout_a_tty())
+    markup.use_ansi_escapes_in_stderr = color == "always" or (color in {None, "auto"} and terminal.is_stderr_a_tty())
     debug_log.debug_mode = "debug" in parsed.opts
     cmd.verbose_mode = "verbose" in parsed.opts
 
@@ -212,9 +209,17 @@ def launch_internal(orig_args: List[str]) -> None:
     try:
         cli_opts = git_machete.options.CommandLineOptions()
 
+        # Reset markup globals to the `--color=auto` baseline before parsing.
+        # Two reasons: (1) `parse_cmdline` may raise a `MacheteException`, whose message is rendered at `__init__`
+        # against the *current* `markup.use_ansi_escapes_in_stdout` - without a reset, a stale value from a prior invocation
+        # (most relevant in the test harness, where one Python process runs many `cli.launch` calls back-to-back) would leak in.
+        # (2) It keeps `parse_cmdline` itself side-effect-free; the actual `--color` override is applied below in `set_utils_global_variables`.
+        markup.use_ansi_escapes_in_stdout = terminal.is_stdout_a_tty()
+        markup.use_ansi_escapes_in_stderr = terminal.is_stderr_a_tty()
+
         parsed = parse_cmdline(orig_args)
 
-        # Set up `--debug` / `--verbose` first so that subsequent `git config` reads honor them.
+        # Set up `--debug` / `--verbose` (and refine `--color` against the parsed value) before any subsequent `git config` read.
         set_utils_global_variables(parsed)
 
         if "help" in parsed.opts:
@@ -233,10 +238,10 @@ def launch_internal(orig_args: List[str]) -> None:
             print_fmt("Extra arguments after `--` are only allowed after `diff` and `log`")
             sys.exit(ExitCode.ARGUMENT_ERROR)
 
-        # `completion`, `help` and `version` neither read git config nor use `cli_opts`, so skip the config/CLI population for them -
-        # in particular, `help` must keep working even when a config key like `machete.squashMergeDetection` carries an invalid value.
+        # `completion`, `help` and `version` don't use `cli_opts`, so skip the CLI-options population for them.
+        # Config keys that back tri-state options (`machete.traverse.push`, `machete.squashMergeDetection`) are read on demand
+        # in the client method that actually needs them, so a malformed value never blows up unrelated commands like `help` or `add`.
         if cmd not in ("completion", "help", "version"):
-            update_cli_options_using_config_keys(cli_opts)
             _populate_cli_options(cli_opts, parsed)
 
         if cmd == "add":

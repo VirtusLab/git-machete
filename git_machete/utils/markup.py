@@ -20,7 +20,7 @@ from git_machete.utils.terminal import (BasicTerminalAnsiOutputCodes,
 
 # === Mutable runtime flags ===
 #
-# Whether to emit ANSI escapes on stdout / stderr. Set by `cli.py` based on `--color` and TTY detection;
+# Whether to emit ANSI escapes on stdout / stderr. Set by `cli.set_utils_global_variables` (based on `--color` and TTY detection);
 # read by `print_fmt`, `input_fmt`, and - indirectly via `_fmt` - by `MacheteException` / `UnderlyingGitException`.
 use_ansi_escapes_in_stdout: bool = sys.stdout.isatty()
 use_ansi_escapes_in_stderr: bool = sys.stderr.isatty()

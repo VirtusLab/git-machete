@@ -656,7 +656,11 @@ class MacheteClient:
 
     # === Branch deletion ===
 
-    def delete_unmanaged(self, *, opt_squash_merge_detection: SquashMergeDetection, opt_yes: bool) -> None:
+    def delete_unmanaged(self, *, opt_squash_merge_detection: Optional[SquashMergeDetection], opt_yes: bool) -> None:
+        # CLI flag > `machete.squashMergeDetection` config key > built-in `SIMPLE` default - see `CommandLineOptions`.
+        # Internal callers (`clean`, `github sync`, `gitlab sync`) pass a concrete `SquashMergeDetection.NONE`, bypassing the fallback.
+        if opt_squash_merge_detection is None:
+            opt_squash_merge_detection = self._config.squash_merge_detection()
         print('Checking for unmanaged branches...')
         branches_to_delete = sorted(excluding(self._git.get_local_branches(), self.managed_branches))
         self._delete_branches(branches_to_delete=branches_to_delete,
