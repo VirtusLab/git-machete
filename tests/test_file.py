@@ -3,12 +3,11 @@ from pathlib import Path
 from tempfile import mkdtemp
 
 from git_machete.utils.exceptions import UnderlyingGitException
-
-from .base_test import BaseTest
-from .cli_runner import assert_failure, launch_command
-from .git_repository import (commit, create_repo, get_git_version, new_branch,
-                             set_git_config_key)
-from .shell import execute
+from tests.base_test import BaseTest
+from tests.cli_runner import assert_failure, launch_command
+from tests.git_repository import (commit, create_repo, get_git_version,
+                                  new_branch, set_git_config_key)
+from tests.shell import execute
 
 
 class TestFile(BaseTest):

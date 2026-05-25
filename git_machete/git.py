@@ -8,16 +8,17 @@ from pathlib import Path as PyPath
 from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
                     Set, Tuple)
 
-from .constants import MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
-from .utils._subproc import PopenResult
-from .utils.cmd import get_cmd_shell_repr, popen_cmd, run_cmd
-from .utils.collections import get_non_empty_lines
-from .utils.debug_log import debug, hex_repr
-from .utils.exceptions import (MacheteException, UnderlyingGitException,
-                               UnexpectedMacheteException)
-from .utils.fs import is_executable, slurp_file
-from .utils.markup import escape_markup, print_fmt
-from .utils.paths import AbsPath, Path
+from git_machete.constants import MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
+from git_machete.utils._subproc import PopenResult
+from git_machete.utils.cmd import get_cmd_shell_repr, popen_cmd, run_cmd
+from git_machete.utils.collections import get_non_empty_lines
+from git_machete.utils.debug_log import debug, hex_repr
+from git_machete.utils.exceptions import (MacheteException,
+                                          UnderlyingGitException,
+                                          UnexpectedMacheteException)
+from git_machete.utils.fs import is_executable, slurp_file
+from git_machete.utils.markup import escape_markup, print_fmt
+from git_machete.utils.paths import AbsPath, Path
 
 
 class AnyRevision(str):

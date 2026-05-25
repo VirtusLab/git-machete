@@ -1,9 +1,9 @@
-from .base_test import BaseTest
-from .cli_runner import (assert_failure, assert_success, launch_command,
-                         rewrite_branch_layout_file)
-from .git_repository import check_out, commit, create_repo, new_branch
-from .mockers import (fixed_author_and_committer_date_in_past,
-                      overridden_environment)
+from tests.base_test import BaseTest
+from tests.cli_runner import (assert_failure, assert_success, launch_command,
+                              rewrite_branch_layout_file)
+from tests.git_repository import check_out, commit, create_repo, new_branch
+from tests.mockers import (fixed_author_and_committer_date_in_past,
+                           overridden_environment)
 
 
 class TestReapply(BaseTest):

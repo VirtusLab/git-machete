@@ -13,8 +13,7 @@ from git_machete.utils.markup import _fmt
 from git_machete.utils.paths import AbsPath
 from git_machete.utils.terminal import (BasicTerminalAnsiOutputCodes,
                                         FullTerminalAnsiOutputCodes)
-
-from .base_test import BaseTest
+from tests.base_test import BaseTest
 
 
 class TestUtils(BaseTest):

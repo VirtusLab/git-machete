@@ -1,11 +1,11 @@
 from git_machete.annotation import Annotation
 from git_machete.client.base import MacheteClient
 from git_machete.git import LocalBranchShortName
-
-from .base_test import BaseTest
-from .cli_runner import read_branch_layout_file, rewrite_branch_layout_file
-from .git_repository import (check_out, commit, create_repo_with_remote,
-                             new_branch, push)
+from tests.base_test import BaseTest
+from tests.cli_runner import (read_branch_layout_file,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (check_out, commit, create_repo_with_remote,
+                                  new_branch, push)
 
 
 class TestClient(BaseTest):

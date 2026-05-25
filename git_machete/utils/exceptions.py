@@ -9,8 +9,8 @@ output.
 from enum import Enum, IntEnum
 from typing import Optional, Type, TypeVar
 
-from . import markup
-from .markup import _fmt
+from git_machete.utils import markup
+from git_machete.utils.markup import _fmt
 
 E = TypeVar('E', bound=Enum)
 

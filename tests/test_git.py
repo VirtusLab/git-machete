@@ -4,13 +4,12 @@ import pytest
 
 from git_machete.git import (AnyBranchName, AnyRevision, FullCommitHash, Git,
                              LocalBranchShortName)
-
-from .base_test import BaseTest
-from .git_repository import (add_worktree, check_out, commit, create_repo,
-                             get_current_commit_hash, get_git_version,
-                             is_ancestor_or_equal, new_branch,
-                             new_orphan_branch, set_git_config_key)
-from .shell import read_file, write_to_file
+from tests.base_test import BaseTest
+from tests.git_repository import (add_worktree, check_out, commit, create_repo,
+                                  get_current_commit_hash, get_git_version,
+                                  is_ancestor_or_equal, new_branch,
+                                  new_orphan_branch, set_git_config_key)
+from tests.shell import read_file, write_to_file
 
 
 class TestGitOperations(BaseTest):
@@ -274,7 +273,7 @@ class TestGitOperations(BaseTest):
         # This tests the bug fix where multiple detached HEADs would overwrite each other with None key
         from tempfile import mkdtemp
 
-        from .shell import execute
+        from tests.shell import execute
         feature3_worktree = mkdtemp()
         execute(f"git worktree add -f --detach {feature3_worktree} feature-3")
 

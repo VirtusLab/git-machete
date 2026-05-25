@@ -13,9 +13,10 @@ import re
 import sys
 from typing import Any, List, Optional, Tuple
 
-from . import terminal
-from .collections import map_truthy_only
-from .terminal import BasicTerminalAnsiOutputCodes, FullTerminalAnsiOutputCodes
+from git_machete.utils import terminal
+from git_machete.utils.collections import map_truthy_only
+from git_machete.utils.terminal import (BasicTerminalAnsiOutputCodes,
+                                        FullTerminalAnsiOutputCodes)
 
 # === Mutable runtime flags ===
 #

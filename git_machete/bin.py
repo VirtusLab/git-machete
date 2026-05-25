@@ -16,6 +16,6 @@ def main():  # type: ignore
 
     validate_python_version()  # type: ignore
 
-    from . import cli
+    from git_machete import cli
 
     cli.main()

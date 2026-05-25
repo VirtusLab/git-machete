@@ -2,16 +2,16 @@ import textwrap
 
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest
-from .cli_runner import (assert_failure, assert_success,
-                         rewrite_branch_layout_file)
-from .git_repository import (check_out, commit, create_repo_with_remote,
-                             new_branch, push)
-from .mockers import mock_input_returning
-from .mockers_code_hosting import mock_from_url
-from .mockers_github import (MockGitHubAPIState,
-                             mock_github_token_for_domain_fake, mock_pr_json,
-                             mock_urlopen)
+from tests.base_test import BaseTest
+from tests.cli_runner import (assert_failure, assert_success,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (check_out, commit, create_repo_with_remote,
+                                  new_branch, push)
+from tests.mockers import mock_input_returning
+from tests.mockers_code_hosting import mock_from_url
+from tests.mockers_github import (MockGitHubAPIState,
+                                  mock_github_token_for_domain_fake,
+                                  mock_pr_json, mock_urlopen)
 
 
 class TestTraverseGitHub(BaseTest):

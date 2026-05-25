@@ -7,21 +7,20 @@ from pytest_mock import MockerFixture
 
 from git_machete.utils.paths import AbsPath
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
-
-from .base_test import BaseTest
-from .cli_runner import (assert_failure, assert_success, launch_command,
-                         rewrite_branch_layout_file)
-from .git_repository import (add_file_and_commit, add_remote, check_out,
-                             commit, commit_n_times, create_repo,
-                             create_repo_with_remote, delete_branch,
-                             delete_remote_branch, new_branch,
-                             new_orphan_branch, push, reset_to,
-                             set_git_config_key, unset_git_config_key)
-from .mockers import (fixed_author_and_committer_date_in_past,
-                      mock_input_returning, mock_input_returning_y,
-                      overridden_environment)
-from .shell import (execute, execute_ignoring_exit_code, popen,
-                    remove_directory, set_file_executable, write_to_file)
+from tests.base_test import BaseTest
+from tests.cli_runner import (assert_failure, assert_success, launch_command,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (add_file_and_commit, add_remote, check_out,
+                                  commit, commit_n_times, create_repo,
+                                  create_repo_with_remote, delete_branch,
+                                  delete_remote_branch, new_branch,
+                                  new_orphan_branch, push, reset_to,
+                                  set_git_config_key, unset_git_config_key)
+from tests.mockers import (fixed_author_and_committer_date_in_past,
+                           mock_input_returning, mock_input_returning_y,
+                           overridden_environment)
+from tests.shell import (execute, execute_ignoring_exit_code, popen,
+                         remove_directory, set_file_executable, write_to_file)
 
 
 class TestStatus(BaseTest):

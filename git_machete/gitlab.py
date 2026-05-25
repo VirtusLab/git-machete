@@ -20,9 +20,8 @@ from git_machete.utils.collections import map_truthy_only
 from git_machete.utils.debug_log import compact_dict, debug
 from git_machete.utils.exceptions import (MacheteException,
                                           UnexpectedMacheteException)
-
-from .utils.fs import slurp_file
-from .utils.paths import AbsPath
+from git_machete.utils.fs import slurp_file
+from git_machete.utils.paths import AbsPath
 
 GITLAB_TOKEN_ENV_VAR = 'GITLAB_TOKEN'
 

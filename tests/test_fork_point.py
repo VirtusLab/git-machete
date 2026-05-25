@@ -3,17 +3,17 @@ import os
 from pytest_mock import MockerFixture
 
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
-
-from .base_test import BaseTest
-from .cli_runner import (assert_failure, assert_success, launch_command,
-                         rewrite_branch_layout_file)
-from .git_repository import (add_remote, check_out, commit, create_repo,
-                             create_repo_with_remote, delete_branch, fetch,
-                             get_commit_hash, get_current_commit_hash, merge,
-                             new_branch, new_orphan_branch, pull, push,
-                             reset_to, set_git_config_key)
-from .mockers import fixed_author_and_committer_date_in_past
-from .shell import execute, remove_directory
+from tests.base_test import BaseTest
+from tests.cli_runner import (assert_failure, assert_success, launch_command,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (add_remote, check_out, commit, create_repo,
+                                  create_repo_with_remote, delete_branch,
+                                  fetch, get_commit_hash,
+                                  get_current_commit_hash, merge, new_branch,
+                                  new_orphan_branch, pull, push, reset_to,
+                                  set_git_config_key)
+from tests.mockers import fixed_author_and_committer_date_in_past
+from tests.shell import execute, remove_directory
 
 
 class TestForkPoint(BaseTest):

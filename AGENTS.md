@@ -33,6 +33,14 @@
   not with an `if get_git_version() < (X, Y): return` early-return at the top of the test body.
   The decorator surfaces the skip in pytest's report (and in the JUnit XML CI uploads); the early-return silently masquerades as a pass.
 
+## Imports
+
+- Always use absolute imports (`from git_machete.<...> import ...`, `from tests.<...> import ...`) - never relative ones (`from .x import y`, `from ..x import y`, ...),
+  not even for siblings inside the same package and not even inside a function body.
+  Absolute imports are easier to follow when reading code in isolation (no need to know the file's package)
+  and survive moving a file across packages without a silent semantic change.
+  Enforced by `ci/checks/prohibit-relative-imports.sh`.
+
 ## Comments
 
 - Don't add code comments that narrate test-harness internals or explain why an assertion's expected value was massaged

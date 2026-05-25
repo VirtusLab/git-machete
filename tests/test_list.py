@@ -1,8 +1,8 @@
-from .base_test import BaseTest
-from .cli_runner import (assert_failure, assert_success, launch_command,
-                         rewrite_branch_layout_file)
-from .git_repository import (check_out, commit, create_repo_with_remote,
-                             delete_branch, new_branch, push)
+from tests.base_test import BaseTest
+from tests.cli_runner import (assert_failure, assert_success, launch_command,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (check_out, commit, create_repo_with_remote,
+                                  delete_branch, new_branch, push)
 
 
 class TestList(BaseTest):

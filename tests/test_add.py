@@ -1,14 +1,15 @@
 
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest
-from .cli_runner import (assert_failure, assert_success,
-                         read_branch_layout_file, rewrite_branch_layout_file)
-from .git_repository import (check_out, commit, create_repo,
-                             create_repo_with_remote, delete_branch,
-                             get_commit_hash, get_current_commit_hash,
-                             new_branch, push)
-from .mockers import mock_input_returning, mock_input_returning_y
+from tests.base_test import BaseTest
+from tests.cli_runner import (assert_failure, assert_success,
+                              read_branch_layout_file,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (check_out, commit, create_repo,
+                                  create_repo_with_remote, delete_branch,
+                                  get_commit_hash, get_current_commit_hash,
+                                  new_branch, push)
+from tests.mockers import mock_input_returning, mock_input_returning_y
 
 
 class TestAdd(BaseTest):

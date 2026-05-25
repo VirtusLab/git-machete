@@ -49,6 +49,7 @@ _ prohibit-id-est-in-rst
 _ prohibit-markdown-links-in-rst
 _ prohibit-mrs-in-github-files
 _ prohibit-prs-in-gitlab-files
+_ prohibit-relative-imports
 _ prohibit-single-backtick-in-rst
 _ prohibit-sleep-in-python
 _ prohibit-split-backslash-n

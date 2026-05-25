@@ -15,12 +15,12 @@ import sys
 import time
 from typing import Dict, Optional
 
-from . import _subproc, debug_log
-from ._subproc import PopenResult, _popen_cmd
-from .debug_log import debug
-from .fs import get_current_directory_or_none
-from .markup import escape_markup, print_fmt
-from .paths import AbsPath, Path
+from git_machete.utils import _subproc, debug_log
+from git_machete.utils._subproc import PopenResult, _popen_cmd
+from git_machete.utils.debug_log import debug
+from git_machete.utils.fs import get_current_directory_or_none
+from git_machete.utils.markup import escape_markup, print_fmt
+from git_machete.utils.paths import AbsPath, Path
 
 # === Mutable runtime flags ===
 #

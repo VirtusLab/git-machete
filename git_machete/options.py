@@ -1,7 +1,7 @@
 from typing import List, Optional
 
-from .config import SquashMergeDetection
-from .git import AnyRevision, LocalBranchShortName
+from git_machete.config import SquashMergeDetection
+from git_machete.git import AnyRevision, LocalBranchShortName
 
 
 class CommandLineOptions:

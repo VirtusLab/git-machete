@@ -1,13 +1,13 @@
 import subprocess
 import textwrap
 
-from .base_test import BaseTest
-from .cli_runner import (assert_failure, assert_success,
-                         rewrite_branch_layout_file)
-from .git_repository import (check_out, commit, create_repo,
-                             create_repo_with_remote, get_local_branches,
-                             new_branch, push)
-from .shell import popen
+from tests.base_test import BaseTest
+from tests.cli_runner import (assert_failure, assert_success,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (check_out, commit, create_repo,
+                                  create_repo_with_remote, get_local_branches,
+                                  new_branch, push)
+from tests.shell import popen
 
 
 class TestRename(BaseTest):

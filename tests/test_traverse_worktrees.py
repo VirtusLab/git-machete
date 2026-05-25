@@ -6,17 +6,16 @@ from pytest_mock import MockerFixture
 
 from git_machete.utils.exceptions import UnderlyingGitException
 from git_machete.utils.paths import AbsPath
-
-from .base_test import BaseTest
-from .cli_runner import (assert_failure, assert_success, launch_command,
-                         rewrite_branch_layout_file)
-from .git_repository import (add_file_and_commit, add_worktree, check_out,
-                             commit, create_repo_with_remote,
-                             get_current_branch, get_git_version,
-                             get_worktree_dirs, new_branch, push,
-                             set_git_config_key)
-from .mockers import (fixed_author_and_committer_date_in_past,
-                      mock_input_returning)
+from tests.base_test import BaseTest
+from tests.cli_runner import (assert_failure, assert_success, launch_command,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (add_file_and_commit, add_worktree, check_out,
+                                  commit, create_repo_with_remote,
+                                  get_current_branch, get_git_version,
+                                  get_worktree_dirs, new_branch, push,
+                                  set_git_config_key)
+from tests.mockers import (fixed_author_and_committer_date_in_past,
+                           mock_input_returning)
 
 # pytestmark is a special variable that pytest recognizes automatically.
 # It applies the specified marks to all test functions in this module.
@@ -31,7 +30,7 @@ class TestTraverseWorktrees(BaseTest):
 
     def test_traverse_with_worktrees(self) -> None:
         """Test that traverse can handle branches checked out in separate worktrees."""
-        from .shell import execute
+        from tests.shell import execute
 
         create_repo_with_remote()
         new_branch("develop")
@@ -791,7 +790,7 @@ class TestTraverseWorktrees(BaseTest):
     # subsequent `open(path, "w")` raised `NotADirectoryError`. The path is
     # now stored as absolute, so it survives any mid-traverse `chdir`.
     def test_traverse_auto_slide_out_in_worktree(self) -> None:
-        from .shell import execute
+        from tests.shell import execute
 
         create_repo_with_remote()
         new_branch("main")

@@ -9,8 +9,8 @@ import os
 import sys
 from typing import Optional
 
-from .debug_log import debug
-from .paths import AbsPath, Path
+from git_machete.utils.debug_log import debug
+from git_machete.utils.paths import AbsPath, Path
 
 
 def does_directory_exist(path: Path) -> bool:

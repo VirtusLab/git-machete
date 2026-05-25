@@ -15,6 +15,7 @@ from git_machete.git import (HEAD, AnyBranchName, AnyRevision, BranchPair,
                              ForkPointOverrideData, FullCommitHash, Git,
                              LocalBranchShortName, RemoteBranchShortName,
                              SyncToRemoteStatus)
+from git_machete.utils import fs
 from git_machete.utils.cmd import run_cmd
 from git_machete.utils.collections import excluding, get_second, tupled
 from git_machete.utils.debug_log import debug
@@ -22,8 +23,6 @@ from git_machete.utils.exceptions import (InteractionStopped, MacheteException,
                                           UnexpectedMacheteException)
 from git_machete.utils.markup import input_fmt, pretty_choices, print_fmt, warn
 from git_machete.utils.paths import AbsPath, Path
-
-from ..utils import fs
 
 _BranchT = TypeVar("_BranchT", bound=LocalBranchShortName)
 

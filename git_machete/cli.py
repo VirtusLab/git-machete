@@ -25,18 +25,19 @@ from git_machete.client.traverse import TraverseMacheteClient, TraverseReturnTo
 from git_machete.client.update import UpdateMacheteClient
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.config import MacheteConfig, SquashMergeDetection
+from git_machete.git import AnyRevision, LocalBranchShortName
 from git_machete.github import GITHUB_API_SPEC
 from git_machete.gitlab import GITLAB_API_SPEC
-
-from .git import AnyRevision, LocalBranchShortName
-from .help import alias_by_command, get_help_description, version
-from .utils import cmd, debug_log, terminal
-from .utils.exceptions import (ExitCode, InteractionStopped, MacheteException,
-                               UnderlyingGitException,
-                               UnexpectedMacheteException)
-from .utils.fs import does_directory_exist, get_current_directory_or_none
-from .utils.markup import print_fmt, warn
-from .utils.paths import AbsPath
+from git_machete.help import alias_by_command, get_help_description, version
+from git_machete.utils import cmd, debug_log, terminal
+from git_machete.utils.exceptions import (ExitCode, InteractionStopped,
+                                          MacheteException,
+                                          UnderlyingGitException,
+                                          UnexpectedMacheteException)
+from git_machete.utils.fs import (does_directory_exist,
+                                  get_current_directory_or_none)
+from git_machete.utils.markup import print_fmt, warn
+from git_machete.utils.paths import AbsPath
 
 
 def _populate_cli_options(

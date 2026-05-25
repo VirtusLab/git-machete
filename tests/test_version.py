@@ -1,7 +1,6 @@
 
 from git_machete import __version__
-
-from .cli_runner import assert_success
+from tests.cli_runner import assert_success
 
 
 class TestVersion:

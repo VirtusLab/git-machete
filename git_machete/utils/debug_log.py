@@ -10,8 +10,8 @@ import sys
 import textwrap
 from typing import Any, Dict
 
-from .collections import excluding
-from .markup import escape_markup, print_fmt
+from git_machete.utils.collections import excluding
+from git_machete.utils.markup import escape_markup, print_fmt
 
 # === Mutable runtime flags ===
 #

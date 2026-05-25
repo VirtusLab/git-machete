@@ -1,11 +1,11 @@
 from pytest_mock import MockerFixture
 
-from .base_test import BaseTest
-from .cli_runner import assert_success, launch_command
-from .git_repository import (commit, create_repo, get_current_commit_hash,
-                             new_branch)
-from .mockers import (fixed_author_and_committer_date_in_past,
-                      mock__run_cmd_and_forward_stdout)
+from tests.base_test import BaseTest
+from tests.cli_runner import assert_success, launch_command
+from tests.git_repository import (commit, create_repo, get_current_commit_hash,
+                                  new_branch)
+from tests.mockers import (fixed_author_and_committer_date_in_past,
+                           mock__run_cmd_and_forward_stdout)
 
 
 class TestLog(BaseTest):

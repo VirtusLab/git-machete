@@ -5,14 +5,14 @@ import textwrap
 from pytest_mock import MockerFixture
 
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
-
-from .base_test import BaseTest
-from .cli_runner import (assert_failure, assert_success, launch_command,
-                         rewrite_branch_layout_file)
-from .git_repository import (check_out, commit, create_repo,
-                             create_repo_with_remote, merge, new_branch, push)
-from .mockers import mock_input_returning, overridden_environment
-from .shell import read_file
+from tests.base_test import BaseTest
+from tests.cli_runner import (assert_failure, assert_success, launch_command,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (check_out, commit, create_repo,
+                                  create_repo_with_remote, merge, new_branch,
+                                  push)
+from tests.mockers import mock_input_returning, overridden_environment
+from tests.shell import read_file
 
 
 class TestDiscover(BaseTest):

@@ -7,19 +7,18 @@ from enum import Enum, auto
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from git_machete.annotation import Annotation
+from git_machete.client.base import MacheteClient
+from git_machete.client.state import ManagedBranchName
 from git_machete.config import SquashMergeDetection
 from git_machete.git import (BranchPair, FullCommitHash, GitLogEntry,
                              LocalBranchShortName, SyncToRemoteStatus)
+from git_machete.utils import markup
 from git_machete.utils._subproc import PopenResult
 from git_machete.utils.cmd import popen_cmd
 from git_machete.utils.debug_log import debug
 from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.markup import escape_markup, print_fmt, warn
 from git_machete.utils.paths import Path
-
-from ..utils import markup
-from .base import MacheteClient
-from .state import ManagedBranchName
 
 
 class SyncToParentStatus(Enum):

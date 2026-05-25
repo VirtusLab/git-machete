@@ -1,6 +1,6 @@
 
-from .base_test import BaseTest
-from .cli_runner import launch_command
+from tests.base_test import BaseTest
+from tests.cli_runner import launch_command
 
 
 # These are mostly smoke-tests which also provide coverage.

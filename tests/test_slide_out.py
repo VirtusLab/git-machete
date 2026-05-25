@@ -3,19 +3,19 @@ import pytest
 from pytest_mock import MockerFixture
 
 from git_machete.utils.paths import AbsPath
-
-from .base_test import BaseTest
-from .cli_runner import (assert_failure, assert_success, launch_command,
-                         read_branch_layout_file, rewrite_branch_layout_file)
-from .git_repository import (add_worktree, amend_commit, check_out, commit,
-                             create_repo, create_repo_with_remote,
-                             delete_branch, delete_remote_branch,
-                             get_current_branch, get_current_commit_hash,
-                             get_git_version, get_local_branches, new_branch,
-                             push)
-from .mockers import (fixed_author_and_committer_date_in_past,
-                      mock_input_returning_y)
-from .shell import read_file, set_file_executable, write_to_file
+from tests.base_test import BaseTest
+from tests.cli_runner import (assert_failure, assert_success, launch_command,
+                              read_branch_layout_file,
+                              rewrite_branch_layout_file)
+from tests.git_repository import (add_worktree, amend_commit, check_out,
+                                  commit, create_repo, create_repo_with_remote,
+                                  delete_branch, delete_remote_branch,
+                                  get_current_branch, get_current_commit_hash,
+                                  get_git_version, get_local_branches,
+                                  new_branch, push)
+from tests.mockers import (fixed_author_and_committer_date_in_past,
+                           mock_input_returning_y)
+from tests.shell import read_file, set_file_executable, write_to_file
 
 
 class TestSlideOut(BaseTest):

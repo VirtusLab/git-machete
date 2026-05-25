@@ -11,7 +11,7 @@ import os
 import sys
 from typing import Optional
 
-from ._subproc import _popen_cmd
+from git_machete.utils._subproc import _popen_cmd
 
 
 def is_stdout_a_tty() -> bool:

@@ -18,10 +18,9 @@ from git_machete.utils.cmd import popen_cmd
 from git_machete.utils.debug_log import compact_dict, debug
 from git_machete.utils.exceptions import (MacheteException,
                                           UnexpectedMacheteException)
+from git_machete.utils.fs import slurp_file
 from git_machete.utils.markup import warn
 from git_machete.utils.paths import AbsPath
-
-from .utils.fs import slurp_file
 
 GITHUB_TOKEN_ENV_VAR = 'GITHUB_TOKEN'
 
