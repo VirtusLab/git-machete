@@ -366,17 +366,18 @@ class Git:
 
     def get_main_worktree_git_dir(self) -> AbsPath:
         if not self.__main_worktree_git_dir:
-            try:
-                git_dir: AbsPath = self.__rev_parse_path("--git-dir")
-                git_dir_parts = PyPath(git_dir).parts
-                if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees':
-                    self.__main_worktree_git_dir = AbsPath(Path.join_paths(*git_dir_parts[:-2]))
-                    debug(f'git dir pointing to {git_dir} - we are in a worktree; '
-                          f'using {self.__main_worktree_git_dir} as the effective git dir instead')
-                else:
-                    self.__main_worktree_git_dir = git_dir
-            except UnderlyingGitException:
-                raise UnderlyingGitException("Not a git repository")
+            # `git rev-parse --git-dir` returns the *current* worktree's git dir
+            # (`.git/worktrees/<name>` inside a linked worktree, just `.git` otherwise);
+            # piggybacking on `get_current_worktree_git_dir` lets the underlying command be served from cache
+            # on the second call rather than rerun.
+            git_dir = self.get_current_worktree_git_dir()
+            git_dir_parts = PyPath(git_dir).parts
+            if len(git_dir_parts) >= 3 and git_dir_parts[-3] == '.git' and git_dir_parts[-2] == 'worktrees':
+                self.__main_worktree_git_dir = AbsPath(Path.join_paths(*git_dir_parts[:-2]))
+                debug(f'git dir pointing to {git_dir} - we are in a worktree; '
+                      f'using {self.__main_worktree_git_dir} as the effective git dir instead')
+            else:
+                self.__main_worktree_git_dir = git_dir
         return self.__main_worktree_git_dir
 
     def get_main_worktree_git_subpath(self, *fragments: str) -> AbsPath:

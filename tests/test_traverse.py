@@ -560,6 +560,14 @@ class TestTraverse(BaseTest):
             """,
         )
 
+    def test_traverse_with_explicit_squash_merge_detection_flag(self) -> None:
+        # Covers the branch in `traverse()` where `--squash-merge-detection` was passed on the command line,
+        # bypassing the on-demand fallback to the `machete.squashMergeDetection` git config key.
+        # We only care that the flag is consumed without errors - the actual squash-detection semantics
+        # are exercised by the dedicated tests in `test_status.py`.
+        self.setup_standard_tree()
+        launch_command("traverse", "-Wy", "--squash-merge-detection=none")
+
     def test_traverse_push_config_key(self) -> None:
         self.setup_standard_tree()
         set_git_config_key('machete.traverse.push', 'false')

@@ -213,7 +213,8 @@ def launch_internal(orig_args: List[str]) -> None:
         # Two reasons: (1) `parse_cmdline` may raise a `MacheteException`, whose message is rendered at `__init__`
         # against the *current* `markup.use_ansi_escapes_in_stdout` - without a reset, a stale value from a prior invocation
         # (most relevant in the test harness, where one Python process runs many `cli.launch` calls back-to-back) would leak in.
-        # (2) It keeps `parse_cmdline` itself side-effect-free; the actual `--color` override is applied below in `set_utils_global_variables`.
+        # (2) It keeps `parse_cmdline` itself side-effect-free;
+        # the actual `--color` override is applied below in `set_utils_global_variables`.
         markup.use_ansi_escapes_in_stdout = terminal.is_stdout_a_tty()
         markup.use_ansi_escapes_in_stderr = terminal.is_stderr_a_tty()
 
@@ -238,11 +239,10 @@ def launch_internal(orig_args: List[str]) -> None:
             print_fmt("Extra arguments after `--` are only allowed after `diff` and `log`")
             sys.exit(ExitCode.ARGUMENT_ERROR)
 
-        # `completion`, `help` and `version` don't use `cli_opts`, so skip the CLI-options population for them.
-        # Config keys that back tri-state options (`machete.traverse.push`, `machete.squashMergeDetection`) are read on demand
-        # in the client method that actually needs them, so a malformed value never blows up unrelated commands like `help` or `add`.
-        if cmd not in ("completion", "help", "version"):
-            _populate_cli_options(cli_opts, parsed)
+        # Config keys that back tri-state options (`machete.traverse.push`, `machete.squashMergeDetection`)
+        # are read on demand in the client method that actually needs them, so a malformed value never blows up
+        # unrelated commands like `help`, `version` or `add`.
+        _populate_cli_options(cli_opts, parsed)
 
         if cmd == "add":
             add_client = MacheteClient()
