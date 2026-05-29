@@ -419,6 +419,17 @@ class Git:
         is_detached: bool = False
         is_first_entry: bool = True
 
+        def complete_entry() -> None:
+            # Drop detached-HEAD entries (can't be looked up by branch name) and stale ones whose working dir
+            # was removed/moved out-of-band - `git worktree list` still emits the admin entry until
+            # `git worktree prune` / `git worktree repair` reconciles it, but rendering `[<basename>]` for a
+            # directory that no longer exists would just send the user `cd`-ing into a void. We check the path
+            # ourselves rather than relying on `--porcelain`'s `prunable` annotation, which wasn't emitted by
+            # older git versions (the annotation was added to porcelain output well after worktrees themselves).
+            if (latest_worktree_path and latest_branch is not None and
+                    not is_detached and os.path.isdir(latest_worktree_path)):
+                worktrees[latest_branch] = latest_worktree_path
+
         for line in result.stdout.strip().splitlines():
             if line.startswith('worktree '):
                 latest_worktree_path = AbsPath(line[len('worktree '):])
@@ -436,17 +447,12 @@ class Git:
                 is_detached = True
                 latest_branch = None
             elif line == '':
-                # Empty line marks end of worktree entry
-                # Only add worktrees that have a branch (not in detached HEAD state)
-                if latest_worktree_path and latest_branch is not None and not is_detached:
-                    worktrees[latest_branch] = latest_worktree_path
+                complete_entry()
                 latest_worktree_path = None
                 latest_branch = None
                 is_detached = False
 
-        # Handle last entry if no trailing newline
-        if latest_worktree_path and latest_branch is not None and not is_detached:
-            worktrees[latest_branch] = latest_worktree_path
+        complete_entry()
 
         return worktrees
 

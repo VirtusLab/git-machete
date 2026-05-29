@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import pytest
 from pytest_mock import MockerFixture
@@ -402,5 +403,98 @@ class TestStatusWorktrees(BaseTest):
               master * [<this worktree>]
               |
               o-develop
+            """,
+        )
+
+    def test_status_skips_stale_prunable_linked_worktree(self) -> None:
+        """If a user `rm -rf`s a linked worktree's directory (or moves it out-of-band) instead of running
+        `git worktree remove`, the admin entry under `.git/worktrees/<id>/` hangs around until
+        `git worktree prune` / `git worktree repair` clears it. In that interim state, `git worktree list --porcelain`
+        keeps emitting the entry but the path it points to no longer exists.
+
+        Rendering `[<stale_basename>]` for such an entry would just send the user `cd`-ing into a void, so the
+        porcelain parser drops entries whose path no longer exists on disk (we check `os.path.isdir` ourselves
+        rather than relying on `--porcelain`'s `prunable` annotation, which wasn't emitted by older git versions).
+        With *only* a stale linked worktree in the repo, the "any healthy linked worktree exists" gate doesn't fire,
+        and status reverts to its labels-free baseline - as if the broken worktree weren't there at all."""
+        create_repo()
+        new_branch("master")
+        commit()
+        check_out("master")
+        new_branch("develop")
+        commit()
+        check_out("master")
+        new_branch("feature")
+        commit()
+
+        rewrite_branch_layout_file(
+            """
+            master
+              develop
+              feature
+            """
+        )
+
+        check_out("master")
+        feature_worktree = add_worktree("feature")
+        # Simulate the out-of-band removal that puts the admin entry into `prunable` state.
+        shutil.rmtree(feature_worktree)
+
+        # No `[...]` brackets anywhere - the stale worktree must not pollute the output, AND must not be enough
+        # on its own to fire the gate (otherwise we'd see `[<this worktree>]` on `master` for an effectively
+        # single-worktree repo, which the no-labels-in-single-worktree-repo test explicitly forbids).
+        assert_success(
+            ["status"],
+            """
+              master *
+              |
+              o-develop
+              |
+              o-feature
+            """,
+        )
+
+    def test_status_skips_stale_worktree_but_keeps_healthy_one(self) -> None:
+        """When a healthy linked worktree coexists with a stale one (working dir `rm -rf`'d), only the healthy
+        one survives the parser. The gate still fires (one healthy linked worktree is enough), the healthy branch
+        gets its basename label, and the branch whose worktree got `rm -rf`'d gets no label - same as if that
+        branch had never been checked out anywhere except main."""
+        create_repo()
+        new_branch("master")
+        commit()
+        check_out("master")
+        new_branch("develop")
+        commit()
+        check_out("master")
+        new_branch("feature")
+        commit()
+
+        rewrite_branch_layout_file(
+            """
+            master
+              develop
+              feature
+            """
+        )
+
+        check_out("master")
+        develop_worktree = add_worktree("develop")
+        feature_worktree = add_worktree("feature")
+        # `feature`'s worktree goes stale; `develop`'s stays healthy.
+        shutil.rmtree(feature_worktree)
+
+        develop_label = os.path.basename(AbsPath(develop_worktree))
+        assert "/" not in develop_label
+
+        # `master` is current/main -> `<this worktree>`; `develop` keeps its basename label;
+        # `feature` gets no label because its working dir is gone and the parser drops the entry.
+        assert_success(
+            ["status"],
+            f"""
+              master * [<this worktree>]
+              |
+              o-develop [{develop_label}]
+              |
+              o-feature
             """,
         )
