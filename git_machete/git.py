@@ -764,6 +764,23 @@ class Git:
         """
         self._run_git("checkout", "--quiet", branch, "--", flush_caches=True)
 
+    def expect_branch_not_held_by_other_worktree(self, branch: LocalBranchShortName) -> None:
+        """If `<branch>` is checked out in a linked worktree other than the current one, raise a `MacheteException`
+        naming that worktree. Otherwise return silently.
+
+        Used both right before `git checkout` (see `checkout_in_current_worktree`) and as a *preflight* in
+        commands that mutate `.git/machete` ahead of a checkout/rebase chain (e.g. `slide-out`) - in that case
+        we have to refuse upfront, before any state mutation, otherwise the layout file ends up edited and the
+        post-hook ends up fired only to have `git checkout` then bail out with `fatal: '<branch>' is already used
+        by worktree at <path>` (see https://github.com/VirtusLab/git-machete/issues/1711).
+        """
+        target_worktree_root_dir = self.get_worktree_root_dirs_by_branch().get(branch)
+        if target_worktree_root_dir is not None and target_worktree_root_dir != self.get_current_worktree_root_dir():
+            raise MacheteException(
+                f"Branch <b>{branch}</b> is already checked out in another worktree at <b>{target_worktree_root_dir}</b>.\n"
+                f"Run `cd {target_worktree_root_dir}` to work on it there,\n"
+                f"or `git worktree remove {target_worktree_root_dir}` to drop that worktree.")
+
     def checkout_in_current_worktree(self, branch: LocalBranchShortName) -> None:
         """Like `checkout`, but if `<branch>` is already checked out in another linked worktree,
         raise a `MacheteException` naming that worktree instead of letting `git checkout` fail with
@@ -772,12 +789,7 @@ class Git:
         No `os.chdir` is performed: `os.chdir` only mutates the current Python process and cannot propagate
         back to the calling shell, so chdir-then-exit-0 would falsely signal success to interactive users and scripts.
         """
-        target_worktree_root_dir = self.get_worktree_root_dirs_by_branch().get(branch)
-        if target_worktree_root_dir is not None and target_worktree_root_dir != self.get_current_worktree_root_dir():
-            raise MacheteException(
-                f"Branch <b>{branch}</b> is already checked out in another worktree at <b>{target_worktree_root_dir}</b>.\n"
-                f"Run `cd {target_worktree_root_dir}` to work on it there,\n"
-                f"or `git worktree remove {target_worktree_root_dir}` to drop that worktree.")
+        self.expect_branch_not_held_by_other_worktree(branch)
         self.checkout(branch)
 
     def get_local_branches(self) -> List[LocalBranchShortName]:

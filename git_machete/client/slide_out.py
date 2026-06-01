@@ -66,6 +66,31 @@ class SlideOutMacheteClient(MacheteClient):
         new_parent = self._state.get_parent(branches_to_slide_out[0])
         new_children = self._state.get_children(branches_to_slide_out[-1]) or []
 
+        # Preflight: refuse upfront if any of the branches that the rest of slide-out would later need to
+        # `git checkout` is already held by another linked worktree. Without this check we'd write the layout
+        # file, fire the post-hook, and only THEN bail out at the first `git checkout` - leaving the layout
+        # mutated but the rebase never performed (https://github.com/VirtusLab/git-machete/issues/1711).
+        # Two sources of forthcoming checkouts:
+        #   1. If the user is standing on a slid-out branch, we'll land them on `new_parent` (or first child).
+        #   2. If `--no-rebase` wasn't passed, we'll check out each child to rebase/merge it onto `new_parent`,
+        #      except children whose annotation opts them out of both (mirror the same gate as the rebase loop
+        #      below so the preflight stays in lock-step with what actually gets checked out).
+        branches_that_will_be_checked_out: List[LocalBranchShortName] = []
+        if self._git.get_current_branch_or_none() in branches_to_slide_out:
+            if new_parent is not None:
+                branches_that_will_be_checked_out.append(new_parent)
+            elif new_children:
+                branches_that_will_be_checked_out.append(new_children[0])
+        if not opt_no_rebase and new_parent is not None:
+            for child in new_children:
+                anno = self._state.get_annotation(child)
+                use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
+                use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
+                if use_merge or use_rebase:
+                    branches_that_will_be_checked_out.append(child)
+        for branch in branches_that_will_be_checked_out:
+            self._git.expect_branch_not_held_by_other_worktree(branch)
+
         for branch in branches_to_slide_out:
             self._state.splice_out(branch)
 
