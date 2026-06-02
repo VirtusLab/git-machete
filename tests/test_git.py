@@ -4,6 +4,7 @@ import pytest
 
 from git_machete.git import (AnyBranchName, AnyRevision, FullCommitHash, Git,
                              LocalBranchShortName)
+from git_machete.git_version_thresholds import WORKTREE_COMMAND
 from tests.base_test import BaseTest
 from tests.git_repository import (add_worktree, check_out, commit, create_repo,
                                   get_current_commit_hash, get_git_version,
@@ -199,7 +200,7 @@ class TestGitOperations(BaseTest):
         # should raise an UnexpectedMacheteException.
         git.get_reflog(AnyBranchName.of("feature@foo"))
 
-    @pytest.mark.skipif(get_git_version() < (2, 5), reason="git worktree command was introduced in git 2.5")
+    @pytest.mark.skipif(get_git_version() < WORKTREE_COMMAND, reason="git worktree command was introduced in git 2.5")
     def test_get_worktree_root_dirs_by_branch(self) -> None:
         create_repo()
         new_branch("main")

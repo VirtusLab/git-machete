@@ -1,5 +1,6 @@
 from pytest_mock import MockerFixture
 
+from git_machete.git_version_thresholds import REBASE_EMPTY_DROP
 from git_machete.utils.exceptions import UnderlyingGitException
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
@@ -110,7 +111,7 @@ class TestUpdate(BaseTest):
         # Let's substitute the editor opened by git for interactive rebase to-do list
         # so that the test can run in a fully automated manner.
         with overridden_environment(GIT_SEQUENCE_EDITOR=":"):
-            if get_git_version() >= (2, 26, 0):
+            if get_git_version() >= REBASE_EMPTY_DROP:
                 launch_command("update")
             else:
                 with fixed_author_and_committer_date_in_past():

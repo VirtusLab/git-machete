@@ -4,6 +4,7 @@ import shutil
 import pytest
 from pytest_mock import MockerFixture
 
+from git_machete.git_version_thresholds import WORKTREE_COMMAND
 from git_machete.utils.paths import AbsPath
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
@@ -13,7 +14,7 @@ from tests.git_repository import (add_worktree, check_out, commit, create_repo,
                                   get_git_version, new_branch)
 
 pytestmark = pytest.mark.skipif(  # noqa: F841
-    get_git_version() < (2, 5),
+    get_git_version() < WORKTREE_COMMAND,
     reason="git worktree command was introduced in git 2.5"
 )
 

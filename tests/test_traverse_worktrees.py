@@ -4,6 +4,8 @@ import subprocess
 import pytest
 from pytest_mock import MockerFixture
 
+from git_machete.git_version_thresholds import (REBASE_EMPTY_DROP,
+                                                WORKTREE_COMMAND)
 from git_machete.utils.exceptions import UnderlyingGitException
 from git_machete.utils.paths import AbsPath
 from tests.base_test import BaseTest
@@ -21,7 +23,7 @@ from tests.mockers import (fixed_author_and_committer_date_in_past,
 # It applies the specified marks to all test functions in this module.
 # This skips all tests in this file if git version < 2.5 (when worktree was introduced).
 pytestmark = pytest.mark.skipif(  # noqa: F841
-    get_git_version() < (2, 5),
+    get_git_version() < WORKTREE_COMMAND,
     reason="git worktree command was introduced in git 2.5"
 )
 
@@ -753,7 +755,7 @@ class TestTraverseWorktrees(BaseTest):
         assert "git-machete-worktree-" not in " ".join(get_worktree_dirs())
 
     # The expected error message includes `--empty=drop` which is only passed on git >= 2.26.0.
-    @pytest.mark.skipif(get_git_version() < (2, 26, 0), reason="--empty=drop is only passed to git rebase since git 2.26.0")
+    @pytest.mark.skipif(get_git_version() < REBASE_EMPTY_DROP, reason="--empty=drop is only passed to git rebase since git 2.26.0")
     def test_traverse_rebase_conflict_in_worktree(self) -> None:
         create_repo_with_remote()
         with fixed_author_and_committer_date_in_past():

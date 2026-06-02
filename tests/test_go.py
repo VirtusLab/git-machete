@@ -3,6 +3,7 @@ import os
 import pytest
 from pytest_mock import MockerFixture
 
+from git_machete.git_version_thresholds import WORKTREE_COMMAND
 from git_machete.utils.paths import AbsPath
 from tests.base_test import BaseTest
 from tests.cli_runner import (assert_failure, assert_success, launch_command,
@@ -484,7 +485,7 @@ class TestGo(BaseTest):
           * git machete gitlab checkout-mrs --mine"""
         assert_failure(["g", "root"], expected_error_message)
 
-    @pytest.mark.skipif(get_git_version() < (2, 5), reason="git worktree command was introduced in git 2.5")
+    @pytest.mark.skipif(get_git_version() < WORKTREE_COMMAND, reason="git worktree command was introduced in git 2.5")
     def test_go_with_worktree(self) -> None:
         """`go down` fails with an actionable machete-level error (not the raw `git checkout` error)
         when the target branch is already checked out in a linked worktree, and the user's cwd is

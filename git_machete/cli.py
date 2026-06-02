@@ -520,7 +520,8 @@ def launch_internal(orig_args: List[str]) -> None:
         else:  # rejected by the parser
             raise UnexpectedMacheteException(f"Unknown command: `{cmd}`")
     finally:
-        # Has been fixed in git itself as of 2.35.0, but we still defend against pre-2.35 + the underlying-checkout-moves-cwd case:
+        # Has been fixed in git itself as of version `CWD_REMOVAL_HANDLED_BY_GIT`, but we still defend against older git
+        # + the underlying-checkout-moves-cwd case:
         # see https://github.com/git/git/blob/master/Documentation/RelNotes/2.35.0.txt#L81
         if initial_current_directory and not does_directory_exist(initial_current_directory):
             nearest_existing_parent_directory: AbsPath = initial_current_directory

@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from tempfile import mkdtemp
 
+from git_machete.git_version_thresholds import WORKTREE_COMMAND
 from git_machete.utils.exceptions import UnderlyingGitException
 from tests.base_test import BaseTest
 from tests.cli_runner import assert_failure, launch_command
@@ -31,7 +32,7 @@ class TestFile(BaseTest):
         branch_layout_file_path_relative_to_git_dir = '/'.join(branch_layout_file_path[-2:]).rstrip('\n')
         assert branch_layout_file_path_relative_to_git_dir == '.git/machete'
 
-        if get_git_version() >= (2, 5):  # `git worktree` command was introduced in git version 2.5
+        if get_git_version() >= WORKTREE_COMMAND:  # `git worktree` command was introduced in git version 2.5
             # check branch layout file path when inside a worktree using the default `True` value
             # for the `machete.worktree.useTopLevelMacheteFile` key
             execute("git worktree add -f -b snickers_feature snickers_worktree develop")

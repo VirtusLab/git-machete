@@ -8,6 +8,8 @@ from typing import ClassVar, Optional, Tuple
 import pytest
 from pytest_mock import MockerFixture
 
+from git_machete.git_version_thresholds import (CWD_REMOVAL_HANDLED_BY_GIT,
+                                                REBASE_EMPTY_DROP)
 from git_machete.utils.exceptions import UnderlyingGitException
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
@@ -1784,7 +1786,7 @@ class TestTraverse(BaseTest):
 
             Reached branch without-directory which has no successor; nothing left to update
             """
-        if get_git_version() >= (2, 35, 0):
+        if get_git_version() >= CWD_REMOVAL_HANDLED_BY_GIT:
             # See https://github.com/git/git/blob/master/Documentation/RelNotes/2.35.0.txt#L81 for the fix
             assert_success(
                 ["traverse", "-y"],
@@ -2014,7 +2016,7 @@ class TestTraverse(BaseTest):
         )
 
     # The expected error message includes `--empty=drop` which is only passed on git >= 2.26.0.
-    @pytest.mark.skipif(get_git_version() < (2, 26, 0), reason="--empty=drop is only passed to git rebase since git 2.26.0")
+    @pytest.mark.skipif(get_git_version() < REBASE_EMPTY_DROP, reason="--empty=drop is only passed to git rebase since git 2.26.0")
     def test_traverse_rebase_conflict(self) -> None:
         create_repo()
         with fixed_author_and_committer_date_in_past():

@@ -9,6 +9,13 @@ from typing import (Any, Dict, Iterator, List, Match, NamedTuple, Optional,
                     Set, Tuple)
 
 from git_machete.constants import MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
+from git_machete.git_version_thresholds import (PATCH_ID_UNSTABLE_OUTPUT_ORDER,
+                                                PUSH_FORCE_IF_INCLUDES,
+                                                PUSH_FORCE_WITH_LEASE,
+                                                REBASE_EMPTY_DROP,
+                                                RELIABLE_MULTI_BRANCH_REFLOG,
+                                                WORKTREE_COMMAND,
+                                                WORKTREE_REMOVE_COMMAND)
 from git_machete.utils._subproc import PopenResult
 from git_machete.utils.cmd import get_cmd_shell_repr, popen_cmd, run_cmd
 from git_machete.utils.collections import get_non_empty_lines
@@ -192,10 +199,10 @@ HEAD = AnyRevision.of("HEAD")
 
 # Explicitly suppress showing GPG signatures in `git log` operations to simplify log parsing.
 # This option must be passed as a configuration parameter because the `git log` command's `--no-show-signature` flag
-# does not exist prior to `git` version 2.10.0;
+# does not exist prior to `git` version `LOG_SHOW_SIGNATURE_CONFIG`;
 # `git` does not emit an error if it is passed via the `-c` flag a configuration setting that does not exist,
-# so compatibility with `git` versions earlier than version 2.10.0 is preserved,
-# even though the `log.showSignature` setting also does not exist prior to version 2.10.0.
+# so compatibility with `git` versions earlier than that is preserved,
+# even though the `log.showSignature` setting also does not exist prior to that version.
 # Fixes a bug documented in GitHub issue #1286.
 GIT_EXEC = ("git", "-c", "log.showSignature=false")
 
@@ -345,8 +352,7 @@ class Git:
         Returns the path to the main worktree (not a linked worktree).
         """
         if self.__main_worktree_root_dir is None:
-            if self.get_git_version() < (2, 5):
-                # git worktree command was introduced in git 2.5
+            if self.get_git_version() < WORKTREE_COMMAND:
                 # If worktrees aren't supported, just return the current root dir
                 self.__main_worktree_root_dir = self.get_current_worktree_root_dir()
             else:
@@ -407,8 +413,7 @@ class Git:
         and it lets `get_main_worktree_root_dir` reuse our parse output rather than running
         `git worktree list --porcelain` a second time when both getters are called together (as `status` does).
         """
-        if self.get_git_version() < (2, 5):
-            # git worktree command was introduced in git 2.5
+        if self.get_git_version() < WORKTREE_COMMAND:
             return {}
 
         result = self._popen_git("worktree", "list", "--porcelain")
@@ -460,7 +465,7 @@ class Git:
         self._run_git("worktree", "add", path, branch, flush_caches=False)
 
     def worktree_remove(self, path: Path) -> None:
-        if self.get_git_version() >= (2, 17):
+        if self.get_git_version() >= WORKTREE_REMOVE_COMMAND:
             self._run_git("worktree", "remove", "-f", path, flush_caches=False)
         else:
             import shutil
@@ -597,9 +602,9 @@ class Git:
     def push(self, remote: str, branch: LocalBranchShortName, *, force_with_lease: bool = False) -> None:  # noqa: KW
         if not force_with_lease:
             opt_force = []
-        elif self.get_git_version() >= (2, 30, 0):  # earliest version of git to support 'push --force-with-lease --force-if-includes'
+        elif self.get_git_version() >= PUSH_FORCE_IF_INCLUDES:
             opt_force = ["--force-with-lease", "--force-if-includes"]
-        elif self.get_git_version() >= (1, 8, 5):  # earliest version of git to support 'push --force-with-lease'
+        elif self.get_git_version() >= PUSH_FORCE_WITH_LEASE:
             opt_force = ["--force-with-lease"]
         else:
             opt_force = ["--force"]
@@ -738,7 +743,11 @@ class Git:
     # so we need to check .git/worktrees/<worktree>/<file> rather than .git/<file>
 
     def is_am_in_progress(self) -> bool:
-        # As of git 2.24.1, this is how 'cmd_rebase()' in builtin/rebase.c checks whether am is in progress.
+        # This mirrors how git itself detects an in-progress `git am`: it writes a `rebase-apply/applying` marker file
+        # for a standalone `git am` (vs `rebase-apply/rebasing` when am is driven by rebase), and checks for that exact
+        # file before letting a rebase start. The marker and the check are stable across our whole supported range -
+        # `cmd_rebase()` in builtin/rebase.c on git 2.54.0, and git-rebase.sh back on git 1.8.0 - so this needs no
+        # version guard.
         return os.path.isfile(self.get_current_worktree_git_subpath("rebase-apply", "applying"))
 
     def is_bisect_in_progress(self) -> bool:
@@ -919,9 +928,9 @@ class Git:
             self.__reflogs_cached[any_branch_name] += [GitReflogEntry(hash=FullCommitHash.of(hash), reflog_subject=subject)]
 
     def get_reflog(self, branch: AnyBranchName) -> List[GitReflogEntry]:
-        # git version 2.14.2 fixed a bug that caused fetching reflog of more than
+        # Git version `RELIABLE_MULTI_BRANCH_REFLOG` fixed a bug that made fetching reflog of more than
         # one branch at the same time unreliable in certain cases
-        if self.get_git_version() >= (2, 14, 2):
+        if self.get_git_version() >= RELIABLE_MULTI_BRANCH_REFLOG:
             if self.__reflogs_cached is None:
                 self.__load_all_reflogs()
             assert self.__reflogs_cached is not None
@@ -1229,7 +1238,7 @@ class Git:
             # Line uncovered by tests as we actually always pass a non-empty patch to this method.
             return None
         # The output of patch-id is "<patch-id> <commit-hash>".
-        # Here the bug introduced in git patch-id v2.46.1 (issue #1329) doesn't affect us
+        # Here the bug introduced in git patch-id in version `PATCH_ID_UNSTABLE_OUTPUT_ORDER` (issue #1329) doesn't affect us
         # as we only care about the patch-id, not commit-hash.
         return FullPatchId.of(lines[0].split(' ')[0])
 
@@ -1240,8 +1249,8 @@ class Git:
         patch_id_output = self._popen_git("patch-id", input=patches).stdout
 
         patch_id_for_commit: Dict[FullCommitHash, FullPatchId] = {}
-        # See issue #1329 for why git v2.46.1 (but not <=2.46.0 or >=2.46.2) needs a special treatment
-        if self.get_git_version() == (2, 46, 1):
+        # See issue #1329 for why git version `PATCH_ID_UNSTABLE_OUTPUT_ORDER` (but not <=2.46.0 or >=2.46.2) needs a special treatment
+        if self.get_git_version() == PATCH_ID_UNSTABLE_OUTPUT_ORDER:
             commit_hashes = [line.replace('commit ', '') for line in patches.splitlines()
                              if re.fullmatch('commit [0-9a-f]{40}', line)]  # noqa: FS003
             for line, commit_hash in zip(patch_id_output.splitlines(), commit_hashes):
@@ -1303,7 +1312,7 @@ class Git:
         try:
             if not opt_no_interactive_rebase:
                 rebase_opts.append("--interactive")
-            if self.get_git_version() >= (2, 26, 0):
+            if self.get_git_version() >= REBASE_EMPTY_DROP:
                 rebase_opts.append("--empty=drop")
             self._run_git("rebase", *rebase_opts, "--onto", onto, from_exclusive, branch, flush_caches=True)
         finally:
