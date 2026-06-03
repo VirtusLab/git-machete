@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.42.1
+
 ## New in git-machete 3.42.0
 
 - added: `git machete status` now annotates each branch checked out in a worktree with a `[<worktree>]` label (suggested by @mikechristiansenvae)
