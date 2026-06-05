@@ -282,11 +282,15 @@ _git_machete() {
                   COMPREPLY=('')
                 fi ;;
               slide-out)
-                if [[ $COMP_CWORD -eq 3 ]]; then
-                  __gitcomp_nl "$(git machete list slidable 2>/dev/null)"
-                else
-                  __gitcomp_nl "$(git machete list slidable-after "$prev" 2>/dev/null)"
-                fi ;;
+                # Suggest all managed branches, minus the ones already given earlier on this command line.
+                local already_given=" ${COMP_WORDS[*]:3:COMP_CWORD-3} "
+                local managed_branches="" slide_out_branch
+                while IFS= read -r slide_out_branch; do
+                  if [[ -n "$slide_out_branch" && "$already_given" != *" $slide_out_branch "* ]]; then
+                    managed_branches+="$slide_out_branch"$'\n'
+                  fi
+                done < <(git machete list managed 2>/dev/null)
+                __gitcomp_nl "$managed_branches" ;;
                 # Not perfect (kinda-completes an empty string), but at least local file paths aren't completed by default
               *) COMPREPLY=('') ;;
             esac ;;

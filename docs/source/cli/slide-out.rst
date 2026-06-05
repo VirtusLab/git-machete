@@ -17,9 +17,10 @@ If no branch has been specified, current branch is slid out.
 If ``--removed-from-remote`` is specified, all branches that have been removed from the remote
 and do **not** have a child branch are slid out instead.
 
-Also, if the last branch in the specified chain of ``[<branch> [<branch>]]`` had any children,
-these children are synced to the parent of the first specified branch.
-Sync is performed either by rebase (default) or by merge (if ``--merge`` option passed).
+Each specified branch is removed independently: its children (the ones that are **not** themselves being slid out)
+are reattached to its nearest ancestor that is **not** being slid out.
+Unless ``--no-rebase`` is passed, those reattached children are then synced to their new parent,
+either by rebase (default) or by merge (if ``--merge`` option passed).
 
 For example, let's assume the following dependency tree:
 
@@ -45,7 +46,10 @@ and ``change-table`` and ``add-notification`` will be rebased onto develop (fork
 
 The most common use is to slide out a single branch whose upstream was a ``develop``/``master`` branch and that has been recently merged.
 
-The provided branches must form a chain --- for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch.
+The provided branches don't need to form a chain or be related in any way.
+The only restriction (in rebase/merge mode --- that is, unless ``--no-rebase`` is passed) is that at most one of the slid-out branches
+may have children that are not themselves being slid out --- otherwise there would be no single branch to rebase/merge those children onto.
+Pass ``--no-rebase`` to lift this restriction: the children are then only reattached to their new parents, never rebased or merged.
 
 Root branches (branches without an upstream) can also be slid out.
 When a root branch is slid out, its children become new root branches, and no rebase or merge is performed (since there is no upstream to rebase/merge onto).

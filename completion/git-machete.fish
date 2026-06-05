@@ -29,6 +29,15 @@ function __machete_slidable_branches
   git machete list slidable | sed 's/$/\tSlidable Branch/'
 end
 
+function __machete_managed_branches_not_yet_specified
+  set -l already_given (commandline -opc)
+  for branch in (git machete list managed)
+    if not contains -- $branch $already_given
+      echo $branch\tManaged Branch
+    end
+  end
+end
+
 function __machete_with_overridden_fork_point_branches
   git machete list with-overridden-fork-point | sed 's/$/\tBranch with overridden fork point/'
 end
@@ -205,7 +214,7 @@ complete -c git-machete -n "__fish_seen_subcommand_from show; and not __fish_see
 
 # git machete slide-out
 complete -c git-machete -n "not __fish_seen_subcommand_from $__machete_commands" -f -a slide-out -d 'Slide out the current branch and sync its downstream (child) branches with its upstream (parent) branch via rebase or merge'
-complete -c git-machete -n "__fish_seen_subcommand_from slide-out"               -f -a '(__machete_slidable_branches)'
+complete -c git-machete -n "__fish_seen_subcommand_from slide-out"               -f -a '(__machete_managed_branches_not_yet_specified)'
 complete -c git-machete -n "__fish_seen_subcommand_from slide-out; and not __fish_seen_subcommand_from --removed-from-remote -d --down-fork-point -M --merge -n --no-edit-merge --no-interactive-rebase --no-rebase" -f -l removed-from-remote                         -d 'Slide out all branches removed from the remote'
 complete -c git-machete -n "__fish_seen_subcommand_from slide-out; and not __fish_seen_subcommand_from --removed-from-remote --merge -M --no-rebase"                                                        -x -l down-fork-point -s d -a '(__fish_git_refs)' -d 'If updating by rebase, specifies the alternative fork point for downstream branches for the operation. Not allowed if updating by merge'
 complete -c git-machete -n "__fish_seen_subcommand_from slide-out; and not __fish_seen_subcommand_from --delete"                                                                                                  -f -l delete                                      -d 'Delete branches after sliding them out'

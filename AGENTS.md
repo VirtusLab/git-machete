@@ -49,6 +49,16 @@
   and survive moving a file across packages without a silent semantic change.
   Enforced by `ci/checks/prohibit-relative-imports.sh`.
 
+## Strings
+
+- Use f-strings for interpolation - never `str.format()` (or `%`-formatting).
+  An f-string keeps the value next to its placeholder, so the whole string can be read in one place,
+  whereas a `.format()` template hides the arguments in a separate call below.
+  `flake8-string-format` (`FS003`) also flags any `{...}` placeholder living in a string without an `f` prefix,
+  so a `.format()` template trips the linter even when the interpolation is actually supplied later.
+  If you genuinely need a reusable template parameterized at several call sites, wrap an f-string in a small helper function
+  (`def msg(x: str) -> str: return f"... {x} ..."`) rather than reaching for `.format()`.
+
 ## Comments
 
 - Don't add code comments that narrate test-harness internals or explain why an assertion's expected value was massaged

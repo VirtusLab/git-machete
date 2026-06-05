@@ -1,6 +1,10 @@
 # Release notes
 
-## New in git-machete 3.42.1
+## New in git-machete 3.43.0
+
+- changed: `git machete slide-out` no longer requires the given branches to form a chain; any set of branches can be slid out at once, the only remaining restriction (unless `--no-rebase` is passed) being that at most one of them may have children that are not themselves being slid out
+- changed: shell completion for `git machete slide-out` now suggests all managed branches (excluding the ones already given on the command line), rather than only those forming a valid chain
+- deprecated: `git machete list slidable` (now equivalent to `git machete list managed`) and `git machete list slidable-after`, as `git machete slide-out`'s shell completion no longer relies on either
 
 ## New in git-machete 3.42.0
 

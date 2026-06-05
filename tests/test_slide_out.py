@@ -218,6 +218,39 @@ class TestSlideOut(BaseTest):
         write_to_file(".git/hooks/machete-post-slide-out", "#!/bin/sh\nexit 1")
         assert_failure(["slide-out", "-n", "branch-2"], "The machete-post-slide-out hook exited with 1, aborting.")
 
+    def test_slide_out_multiple_pivots_fires_post_slide_out_hook_per_pivot(self) -> None:
+        # With `--no-rebase` multiple branches with surviving children can be slid out at once;
+        # the post-slide-out hook then fires once per such pivot (each with its own new parent and children).
+        create_repo()
+        new_branch('master')
+        commit()
+        new_branch('a')
+        commit()
+        new_branch('x')
+        commit()
+        check_out('master')
+        new_branch('b')
+        commit()
+        new_branch('y')
+        commit()
+
+        body: str = \
+            """
+            master
+                a
+                    x
+                b
+                    y
+            """
+        rewrite_branch_layout_file(body)
+
+        write_to_file(".git/hooks/machete-post-slide-out", '#!/bin/sh\necho "$@" >> machete-post-slide-out-output')
+        set_file_executable(".git/hooks/machete-post-slide-out")
+
+        check_out('master')
+        launch_command("slide-out", "--no-rebase", "a", "b")
+        assert read_file("machete-post-slide-out-output").splitlines() == ["master a x", "master b y"]
+
     def test_slide_out_root_branch_with_post_slide_out_hook(self) -> None:
         """Test that post-slide-out hook receives empty string for new_upstream when sliding out root branch."""
         create_repo()
@@ -294,7 +327,7 @@ class TestSlideOut(BaseTest):
 
         assert_failure(
             ['slide-out', '-d=@~', 'branch-1'],
-            "Last branch to slide out must have a child branch if option --down-fork-point is passed"
+            "Branch to slide out must have a child branch if option --down-fork-point is passed"
         )
 
     def test_slide_out_with_down_fork_point_and_single_child_of_last_branch(self) -> None:
@@ -419,10 +452,10 @@ class TestSlideOut(BaseTest):
 
         assert_failure(
             ['slide-out', '-n', 'branch-1', '-d', hash_of_only_commit_on_branch_2b],
-            "Last branch to slide out can't have more than one child branch if option --down-fork-point is passed"
+            "Branch to slide out can't have more than one child branch if option --down-fork-point is passed"
         )
 
-    def test_slide_out_with_invalid_sequence_of_branches(self) -> None:
+    def test_slide_out_with_multiple_pivots_in_rebase_mode(self) -> None:
         create_repo()
         new_branch('branch-0')
         commit()
@@ -446,18 +479,121 @@ class TestSlideOut(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        assert_failure(
-            ['slide-out', 'branch-3', 'branch-2a'],
-            "No downstream branch defined for branch-3, cannot slide out"
-        )
+        # In rebase/merge mode at most one slid-out branch may have surviving (not-also-slid-out) children,
+        # so there's a single branch to rebase those children onto. Here both `branch-1` (surviving child `branch-2b`)
+        # and `branch-2a` (surviving child `branch-3`) would need their children reattached, hence the error.
+        def multiple_pivots_failure(pivots: str) -> str:
+            return (
+                f"Multiple branches to slide out have child branches that would need to be reattached: {pivots}.\n"
+                "git-machete can't pick a single branch to rebase/merge their children onto.\n"
+                "Pass --no-rebase to slide out without syncing the children, or slide out the branches in separate runs."
+            )
         assert_failure(
             ['slide-out', 'branch-2a', 'branch-1'],
-            "branch-1 is not downstream of branch-2a, cannot slide out"
+            multiple_pivots_failure("branch-2a, branch-1")
         )
         assert_failure(
             ['slide-out', 'branch-1', 'branch-2a'],
-            "Multiple downstream branches defined for branch-1: branch-2a, branch-2b; cannot slide out"
+            multiple_pivots_failure("branch-1, branch-2a")
         )
+
+    def test_slide_out_non_chain_branches(self) -> None:
+        # Sliding out a set of branches that do NOT form a chain used to fail with a cryptic
+        # "No downstream branch defined for ..." error; now it just removes them from the layout.
+        create_repo()
+        new_branch('master')
+        commit()
+        new_branch('a')
+        commit()
+        check_out('master')
+        new_branch('b')
+        commit()
+        check_out('master')
+        new_branch('c')
+        commit()
+
+        body: str = \
+            """
+            master
+                a
+                b
+                c
+            """
+        rewrite_branch_layout_file(body)
+
+        check_out('master')
+        assert_success(['slide-out', 'a', 'b'], "")
+
+        assert read_branch_layout_file().splitlines() == ["master", "    c"]
+
+    def test_slide_out_branch_and_its_only_child_together(self) -> None:
+        # Sliding out a branch together with its only child (which is therefore a leaf) leaves no surviving
+        # children to reattach, so there's nothing to rebase - and no chain requirement to satisfy.
+        create_repo()
+        new_branch('branch-0')
+        commit()
+        new_branch('branch-1')
+        commit()
+        new_branch('branch-2a')
+        commit()
+        new_branch('branch-3')
+        commit()
+        check_out('branch-1')
+        new_branch('branch-2b')
+        commit()
+
+        body: str = \
+            """
+            branch-0
+                branch-1
+                    branch-2a
+                        branch-3
+                    branch-2b
+            """
+        rewrite_branch_layout_file(body)
+
+        launch_command('slide-out', '-n', 'branch-3', 'branch-2a')
+
+        assert read_branch_layout_file().splitlines() == [
+            "branch-0",
+            "    branch-1",
+            "        branch-2b",
+        ]
+
+    def test_slide_out_multiple_pivots_with_no_rebase(self) -> None:
+        # `--no-rebase` lifts the single-pivot restriction: each slid-out branch's children are simply
+        # reattached to their own nearest surviving ancestor, with no rebase/merge.
+        create_repo()
+        new_branch('master')
+        commit()
+        new_branch('a')
+        commit()
+        new_branch('x')
+        commit()
+        check_out('master')
+        new_branch('b')
+        commit()
+        new_branch('y')
+        commit()
+
+        body: str = \
+            """
+            master
+                a
+                    x
+                b
+                    y
+            """
+        rewrite_branch_layout_file(body)
+
+        check_out('master')
+        launch_command('slide-out', '--no-rebase', 'a', 'b')
+
+        assert read_branch_layout_file().splitlines() == [
+            "master",
+            "    x",
+            "    y",
+        ]
 
     def test_slide_out_down_fork_point_with_merge(self) -> None:
         assert_failure(

@@ -1131,23 +1131,25 @@ long_docs: Dict[str, str] = {
 
         List all branches that fall into one of the specified categories:
 
-           * `addable`: all branches (local or remote) than can be added to the branch layout file,
+           * `addable`: all branches (local or remote) than can be added to the branch layout file
 
-           * `childless`: all managed branches that do not possess child branches,
+           * `childless`: all managed branches that do not possess child branches
 
-           * `managed`: all branches that appear in the branch layout file,
+           * `managed`: all branches that appear in the branch layout file
 
-           * `slidable`: branches that can be slid out with `slide-out` command; currently just equivalent to `managed`
+           * `slidable`: <b>Deprecated</b>, use `managed` instead.
+             Equivalent to `managed`; `slide-out` now accepts any set of managed branches, so shell completion suggests `managed` directly
 
-           * `slidable-after <branch>`: the downstream branch of the <branch>, if it exists and is the only downstream of <branch>
-             (and thus can be slid out immediately following <branch>),
+           * `slidable-after <branch>`: <b>Deprecated</b>.
+             The downstream branch of the <branch>, if it exists and is the only downstream of <branch>;
+             it was only ever used to drive `slide-out` completion of the second and further branches, which now suggests `managed` directly
 
-           * `unmanaged`: all local branches that don't appear in the branch layout file,
+           * `unmanaged`: all local branches that don't appear in the branch layout file
 
            * `with-overridden-fork-point`: all local branches that have a `fork point` override set up
              (even if this override does not affect the location of their fork point anymore)
 
-        This command is generally not meant for a day-to-day use, it's mostly needed for the sake of branch name completion in shell.
+        This command is generally not meant for a day-to-day use, it's mostly needed for branch name completion in shell.
    """,
     "log": """
         <b>Usage:</b><b>
@@ -1256,9 +1258,10 @@ long_docs: Dict[str, str] = {
         If `--removed-from-remote` is specified, all branches that have been removed from the remote
         and do <b>not</b> have a child branch are slid out instead.
 
-        Also, if the last branch in the specified chain of `[<branch> [<branch>]]` had any children,
-        these children are synced to the parent of the first specified branch.
-        Sync is performed either by rebase (default) or by merge (if `--merge` option passed).
+        Each specified branch is removed independently: its children (the ones that are <b>not</b> themselves being slid out)
+        are reattached to its nearest ancestor that is <b>not</b> being slid out.
+        Unless `--no-rebase` is passed, those reattached children are then synced to their new parent,
+        either by rebase (default) or by merge (if `--merge` option passed).
 
         For example, let's assume the following dependency tree:
         <dim>
@@ -1280,7 +1283,10 @@ long_docs: Dict[str, str] = {
 
         The most common use is to slide out a single branch whose upstream was a `develop`/`master` branch and that has been recently merged.
 
-        The provided branches must form a chain — for i=1..N-1, (i+1)-th branch must be the only downstream (child) branch of the i-th branch.
+        The provided branches don't need to form a chain or be related in any way.
+        The only restriction (in rebase/merge mode — that is, unless `--no-rebase` is passed) is that at most one of the slid-out branches
+        may have children that are not themselves being slid out — otherwise there would be no single branch to rebase/merge those children onto.
+        Pass `--no-rebase` to lift this restriction: the children are then only reattached to their new parents, never rebased or merged.
 
         Root branches (branches without an upstream) can also be slid out.
         When a root branch is slid out, its children become new root branches, and no rebase or merge is performed (since there is no upstream to rebase/merge onto).

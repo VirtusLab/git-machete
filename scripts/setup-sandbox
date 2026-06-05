@@ -35,6 +35,9 @@ newrepo machete-sandbox-remote --bare
 newrepo machete-sandbox
 git remote add origin $root_dir/machete-sandbox-remote
 
+# Keep the IDE's project folder from polluting `git status` once the sandbox is opened in an IDE.
+echo '.idea/' >>.git/info/exclude
+
 newb root
   cmt Root
 newb develop

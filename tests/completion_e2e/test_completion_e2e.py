@@ -19,15 +19,15 @@ test_cases: Dict[str, str] = {
     "git machete a":
         "add advance anno",
     "git machete add ":
-        "feature",
+        "drop-constraint",
     "git machete add -":
         "-R --as-first-child --as-root --debug -f -h --help -o --onto -v --verbose -y --yes",
     "git machete add -o ":
-        "develop master",
+        "allow-ownership-link build-chain call-ws develop hotfix/add-trigger master",
     "git machete add --onto ":
-        "develop master",
+        "allow-ownership-link build-chain call-ws develop hotfix/add-trigger master",
     "git machete add --onto=":
-        "develop master",
+        "allow-ownership-link build-chain call-ws develop hotfix/add-trigger master",
     # Mutex: with --as-root on the cmdline,
     # `-f`/`--as-first-child` and `-o`/`--onto` MUST NOT be suggested.
     "git machete add --as-root -":
@@ -45,11 +45,11 @@ test_cases: Dict[str, str] = {
     "git machete anno -":
         "-H -L -b --branch --debug -h --help --sync-github-prs --sync-gitlab-mrs -v --verbose",
     "git machete anno -b ":
-        "develop master",
+        "allow-ownership-link build-chain call-ws develop hotfix/add-trigger master",
     "git machete anno --branch ":
-        "develop master",
+        "allow-ownership-link build-chain call-ws develop hotfix/add-trigger master",
     "git machete anno --branch=":
-        "develop master",
+        "allow-ownership-link build-chain call-ws develop hotfix/add-trigger master",
     # Mutex: with --sync-github-prs (== -H) on the cmdline,
     # `-L`/`--sync-gitlab-mrs` MUST NOT be suggested.
     "git machete anno --sync-github-prs -":
@@ -63,9 +63,9 @@ test_cases: Dict[str, str] = {
     "git machete delete-unmanaged -":
         "--debug -h --help -v --verbose -y --yes",
     "git machete d ":
-        "develop feature master",
+        "allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete diff ":
-        "develop feature master",
+        "allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete discover -":
         "-C --checked-out-since --debug -h --help -l --list-commits -r --roots -v --verbose -y --yes",
     "git machete e":
@@ -73,12 +73,12 @@ test_cases: Dict[str, str] = {
     "git machete f":
         "file fork-point",
     "git machete fork-point ":
-        "develop feature master",
+        "allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete fork-point -":
         "--debug --explain -h --help --inferred --override-to "
         "--override-to-inferred --override-to-parent --unset-override -v --verbose",
     "git machete fork-point --inferred ":
-        "develop feature master",
+        "allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     # Mutex: with --inferred on the cmdline,
     # `--override-to=`, `--override-to-parent`, `--override-to-inferred`,
     # `--unset-override` MUST NOT be suggested.
@@ -101,7 +101,7 @@ test_cases: Dict[str, str] = {
     "git machete fork-point --override-to-inferred -":
         "--debug -h --help -v --verbose",
     "git machete fork-point --override-to=":
-        "HEAD develop feature master",
+        "HEAD allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete fork-point --unset-override ":
         "develop",
     "git machete github ":
@@ -117,7 +117,7 @@ test_cases: Dict[str, str] = {
     "git machete github retarget-pr --":
         "--branch --debug --help --ignore-if-missing --update-related-descriptions --verbose",
     "git machete github retarget-pr -b ":
-        "develop master",
+        "allow-ownership-link build-chain call-ws develop hotfix/add-trigger master",
     "git machete github update-pr-descriptions -":
         "--all --by --debug -h --help --mine --related -v --verbose",
     "git machete gitlab ":
@@ -133,7 +133,7 @@ test_cases: Dict[str, str] = {
     "git machete gitlab retarget-mr --":
         "--branch --debug --help --ignore-if-missing --update-related-descriptions --verbose",
     "git machete gitlab retarget-mr -b ":
-        "develop master",
+        "allow-ownership-link build-chain call-ws develop hotfix/add-trigger master",
     "git machete gitlab update-mr-descriptions -":
         "--all --by --debug -h --help --mine --related -v --verbose",
     "git machete g ":
@@ -144,37 +144,50 @@ test_cases: Dict[str, str] = {
         "add advance anno completion config delete-unmanaged diff discover edit file fork-point format github gitlab "
         "go help hooks is-managed list log reapply rename show slide-out squash status traverse update version",
     "git machete is-managed ":
-        "develop feature master",
+        "allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete list ":
         "addable childless managed slidable slidable-after unmanaged with-overridden-fork-point",
     "git machete l ":
-        "develop feature master",
+        "allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete log ":
-        "develop feature master",
+        "allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete reapply -":
         "--debug -f --fork-point -h --help -v --verbose",
     "git machete reapply --fork-point ":
-        "HEAD develop feature master",
+        "HEAD allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete rename -":
         "-b --branch --debug -h --help --repoint-tracking -v --verbose",
     "git machete rename -b ":
-        "develop master",
+        "allow-ownership-link build-chain call-ws develop hotfix/add-trigger master",
     "git machete rename --branch ":
-        "develop master",
+        "allow-ownership-link build-chain call-ws develop hotfix/add-trigger master",
     "git machete rename --branch=":
-        "develop master",
+        "allow-ownership-link build-chain call-ws develop hotfix/add-trigger master",
     "git machete s -":
         "-L --color --debug -h --help -l --list-commits --list-commits-with-hashes "
         "--no-detect-squash-merges --squash-merge-detection -v --verbose",
     "git machete show ":
         "current down first last next prev root up",
     "git machete slide-out ":
-        "develop master",
+        "allow-ownership-link build-chain call-ws develop hotfix/add-trigger master",
+    # slide-out now suggests all managed branches (not just a valid chain),
+    # excluding the ones already given earlier on the command line.
+    "git machete slide-out develop ":
+        "allow-ownership-link build-chain call-ws hotfix/add-trigger master",
+    # A branch name containing a slash is excluded just like any other.
+    "git machete slide-out hotfix/add-trigger ":
+        "allow-ownership-link build-chain call-ws develop master",
+    # Several branches already given: all of them are excluded from the suggestions.
+    "git machete slide-out call-ws develop ":
+        "allow-ownership-link build-chain hotfix/add-trigger master",
+    # All-but-one already given: only the remaining managed branch is suggested.
+    "git machete slide-out allow-ownership-link build-chain call-ws develop hotfix/add-trigger ":
+        "master",
     "git machete slide-out -":
         "-M -d --debug --delete --down-fork-point -h --help --merge -n "
         "--no-edit-merge --no-interactive-rebase --no-rebase --removed-from-remote -v --verbose",
     "git machete slide-out --down-fork-point=":
-        "HEAD develop feature master",
+        "HEAD allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     # Mutex: with --merge on the cmdline, `-d`/`--down-fork-point=`,
     # `--no-rebase`, `--no-interactive-rebase`, `--removed-from-remote`
     # MUST NOT be suggested.
@@ -203,9 +216,9 @@ test_cases: Dict[str, str] = {
     "git machete squash -":
         "--debug -f --fork-point -h --help -v --verbose",
     "git machete squash --fork-point ":
-        "HEAD develop feature master",
+        "HEAD allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete squash --fork-point=":
-        "HEAD develop feature master",
+        "HEAD allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete status -":
         "-L --color --debug -h --help -l --list-commits --list-commits-with-hashes "
         "--no-detect-squash-merges --squash-merge-detection -v --verbose",
@@ -227,9 +240,9 @@ test_cases: Dict[str, str] = {
     "git machete t --return-to=":
         "HERE NEAREST-REMAINING STAY",
     "git machete t --start-from ":
-        "FIRST-ROOT HERE ROOT develop feature master",
+        "FIRST-ROOT HERE ROOT allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete t --start-from=":
-        "FIRST-ROOT HERE ROOT develop feature master",
+        "FIRST-ROOT HERE ROOT allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete traverse -":
         "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
         "-n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase "
@@ -244,11 +257,11 @@ test_cases: Dict[str, str] = {
     "git machete traverse --squash-merge-detection=":
         "exact none simple",
     "git machete traverse --start-from ":
-        "FIRST-ROOT HERE ROOT develop feature master",
+        "FIRST-ROOT HERE ROOT allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete traverse --stop-after ":
-        "develop feature master",
+        "allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     "git machete traverse --stop-after=":
-        "develop feature master",
+        "allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     # Mutex: with --push on the cmdline, `--no-push` MUST NOT be suggested.
     "git machete traverse --push -":
         "-F -H -L -M -W --debug --fetch -h --help -l --list-commits --merge "
@@ -332,7 +345,7 @@ test_cases: Dict[str, str] = {
     "git machete update -":
         "-M --debug -f --fork-point -h --help --merge -n --no-edit-merge --no-interactive-rebase -v --verbose",
     "git machete update -f ":
-        "HEAD develop feature master",
+        "HEAD allow-ownership-link build-chain call-ws develop drop-constraint hotfix/add-trigger master",
     # Mutex: with -n on the cmdline,
     # `--no-edit-merge` and `--no-interactive-rebase` MUST NOT be suggested.
     "git machete update -n -":
@@ -349,16 +362,35 @@ class TestCompletionEndToEnd:
 
     @classmethod
     def setup_class(cls) -> None:
-        new_branch("master")
-        commit()
+        # Branch names mirror `scripts/setup-sandbox` for consistency.
+        # The actual commit/ancestry relationship between the branches is irrelevant for completion
+        # (only the branch names and the layout file matter), so we don't reproduce the sandbox's exact history.
         new_branch("develop")
         commit()
         set_git_config_key("machete.overrideForkPoint.develop.to", get_current_commit_hash())
         commit()
-        new_branch("feature")
+        new_branch("allow-ownership-link")
+        commit()
+        new_branch("build-chain")
+        commit()
+        check_out("develop")
+        new_branch("call-ws")
+        commit()
+        new_branch("drop-constraint")  # deliberately left out of the layout, so it stays unmanaged
+        commit()
+        new_branch("master")
+        commit()
+        new_branch("hotfix/add-trigger")
         commit()
         check_out("master")
-        rewrite_branch_layout_file("master\n\tdevelop")
+        rewrite_branch_layout_file(
+            "develop\n"
+            "\tallow-ownership-link\n"
+            "\t\tbuild-chain\n"
+            "\tcall-ws\n"
+            "master\n"
+            "\thotfix/add-trigger\n"
+        )
 
     def test_fish_version(self) -> None:
         raw = popen("fish --version")

@@ -120,9 +120,8 @@ _git-machete() {
             "${common_flags[@]}"
           ;;
         (slide-out)
-          # TODO (#113): suggest further branches based on the previous specified branch (like in Bash completion script)
           _arguments \
-            '*:: :__git_machete_list_slidable' \
+            '*:: :__git_machete_slide_out_branches' \
             '(--removed-from-remote -M --merge --no-rebase -d --down-fork-point)'{-d,--down-fork-point=}'[If updating by rebase, specify fork point commit after which the rebased part of history of the downstream branch is meant to start]: :__git_references' \
             '(--delete)'--delete'[Delete branches after sliding them out]' \
             '(--removed-from-remote -d --down-fork-point --no-interactive-rebase --no-rebase -M --merge)'{-M,--merge}'[Update by merge rather than by rebase]' \
@@ -474,10 +473,12 @@ __git_machete_list_managed() {
   _describe 'managed branch' result
 }
 
-__git_machete_list_slidable() {
+__git_machete_slide_out_branches() {
   local result
-  IFS=$'\n' result=($(git machete list slidable 2>/dev/null))
-  _describe 'slidable branch' result
+  IFS=$'\n' result=($(git machete list managed 2>/dev/null))
+  # Don't re-suggest branches already given earlier on the command line.
+  result=(${result:|words})
+  _describe 'managed branch' result
 }
 
 __git_machete_list_with_overridden_fork_point() {

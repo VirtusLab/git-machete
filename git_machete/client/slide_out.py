@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from git_machete.client.base import MacheteClient
 from git_machete.client.state import ManagedBranchName
@@ -34,53 +34,88 @@ class SlideOutMacheteClient(MacheteClient):
                 raise MacheteException(f"Branch <b>{managed}</b> is annotated with `slide-out=no` qualifier, aborting.\n"
                                        f"Remove the qualifier using `git machete anno` or edit branch layout file directly.")
 
+        # The set of branches being removed from the layout. The branches need not form a chain (or be related at all):
+        # each one is spliced out independently, with its surviving children rewired to its nearest surviving ancestor.
+        slide_out_set = set(branches_to_slide_out)
+
+        def nearest_surviving_ancestor(branch: LocalBranchShortName) -> Optional[ManagedBranchName]:
+            ancestor = self._state.get_parent(branch)
+            while ancestor is not None and ancestor in slide_out_set:
+                ancestor = self._state.get_parent(ancestor)
+            return ancestor
+
+        def surviving_children(branch: LocalBranchShortName) -> List[ManagedBranchName]:
+            return [child for child in (self.children_of(branch) or []) if child not in slide_out_set]
+
+        # "Pivots" are the slid-out branches that have at least one child which is NOT itself being slid out.
+        # Those surviving children are the ones that get reattached (and, unless `--no-rebase`, synced) to a new parent.
+        # In the classic "slide out a chain b1 -> ... -> bN" case there's exactly one pivot (bN); the interior branches
+        # have their only child slid out alongside them, so they contribute no surviving children.
+        pivots: List[ManagedBranchName] = [branch for branch in branches_to_slide_out if surviving_children(branch)]
+
+        # The only restriction left in rebase/merge mode: all the children that need to be synced must hang off a single
+        # slid-out branch, so there's an unambiguous branch to rebase/merge them onto. With `--no-rebase` the children are
+        # merely reattached (each to its own nearest surviving ancestor), so multiple pivots are perfectly fine.
+        if not opt_no_rebase and len(pivots) > 1:
+            flat_pivots = ", ".join(f"<b>{pivot}</b>" for pivot in pivots)
+            raise MacheteException(
+                f"Multiple branches to slide out have child branches that would need to be reattached: {flat_pivots}.\n"
+                f"git-machete can't pick a single branch to rebase/merge their children onto.\n"
+                f"Pass `--no-rebase` to slide out without syncing the children, or slide out the branches in separate runs.")
+
         if opt_down_fork_point:
-            last_branch_to_slide_out = branches_to_slide_out[-1]
-            children_of_the_last_branch_to_slide_out = self.children_of(last_branch_to_slide_out)
-
-            if children_of_the_last_branch_to_slide_out and len(children_of_the_last_branch_to_slide_out) > 1:
-                raise MacheteException("Last branch to slide out can't have more than one child branch "
+            # `--down-fork-point` conflicts with `--no-rebase` (rejected in the CLI), so the single-pivot rule above holds.
+            if not pivots:
+                raise MacheteException("Branch to slide out must have a child branch if option `--down-fork-point` is passed")
+            pivot_children = surviving_children(pivots[0])
+            if len(pivot_children) > 1:
+                raise MacheteException("Branch to slide out can't have more than one child branch "
                                        "if option `--down-fork-point` is passed")
+            self.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
+                fork_point=opt_down_fork_point,
+                branch=pivot_children[0])
 
-            if children_of_the_last_branch_to_slide_out:
-                self.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
-                    fork_point=opt_down_fork_point,
-                    branch=children_of_the_last_branch_to_slide_out[0])
+        # Read the connections we need for the post-hook, checkout and rebase logic before mutating state.
+        # The single-pivot rule guarantees at most one rebase target when rebasing.
+        rebase_pivot: Optional[ManagedBranchName] = pivots[0] if pivots else None
+        new_parent: Optional[ManagedBranchName] = nearest_surviving_ancestor(rebase_pivot) if rebase_pivot is not None else None
+        new_children: List[ManagedBranchName] = surviving_children(rebase_pivot) if rebase_pivot is not None else []
+
+        # Where to land if the current branch is one of the branches about to disappear from the layout:
+        # its nearest surviving ancestor, or - failing that (it was effectively a root) - its first surviving child.
+        current_branch = self._git.get_current_branch_or_none()
+        landing_branch: Optional[LocalBranchShortName] = None
+        if current_branch is not None and current_branch in slide_out_set:
+            ancestor = nearest_surviving_ancestor(current_branch)
+            if ancestor is not None:
+                landing_branch = ancestor
             else:
-                raise MacheteException("Last branch to slide out must have a child branch "
-                                       "if option `--down-fork-point` is passed")
+                current_surviving_children = surviving_children(current_branch)
+                if current_surviving_children:
+                    landing_branch = current_surviving_children[0]
 
-        # Verify that all "interior" slide-out branches have a single child pointing to the next slide-out
-        for bu, bd in zip(branches_to_slide_out[:-1], branches_to_slide_out[1:]):
-            children = self.children_of(bu)
-            if not children or len(children) == 0:
-                raise MacheteException(f"No downstream branch defined for <b>{bu}</b>, cannot slide out")
-            elif len(children) > 1:
-                flat_children = ", ".join(f"<b>{x}</b>" for x in children)
-                raise MacheteException(
-                    f"Multiple downstream branches defined for <b>{bu}</b>: {flat_children}; cannot slide out")
-            elif children != [bd]:
-                raise MacheteException(f"<b>{bd}</b> is not downstream of <b>{bu}</b>, cannot slide out")
-
-        # Read the connections we need for post-hook and checkout logic before mutating state
-        new_parent = self._state.get_parent(branches_to_slide_out[0])
-        new_children = self._state.get_children(branches_to_slide_out[-1]) or []
+        # Post-slide-out hook payloads, computed before the splice mutates the tree. The hook fires once per pivot
+        # (the branch(es) whose children are reparented); if nothing has surviving children we preserve the historical
+        # single firing for the last specified branch (with an empty downstream list).
+        hook_invocations: List[Tuple[Optional[ManagedBranchName], ManagedBranchName, List[ManagedBranchName]]]
+        if pivots:
+            hook_invocations = [(nearest_surviving_ancestor(pivot), pivot, surviving_children(pivot)) for pivot in pivots]
+        else:
+            last_branch = branches_to_slide_out[-1]
+            hook_invocations = [(nearest_surviving_ancestor(last_branch), last_branch, [])]
 
         # Preflight: refuse upfront if any of the branches that the rest of slide-out would later need to
         # `git checkout` is already held by another linked worktree. Without this check we'd write the layout
         # file, fire the post-hook, and only THEN bail out at the first `git checkout` - leaving the layout
         # mutated but the rebase never performed (https://github.com/VirtusLab/git-machete/issues/1711).
         # Two sources of forthcoming checkouts:
-        #   1. If the user is standing on a slid-out branch, we'll land them on `new_parent` (or first child).
+        #   1. If the user is standing on a slid-out branch, we'll land them on `landing_branch`.
         #   2. If `--no-rebase` wasn't passed, we'll check out each child to rebase/merge it onto `new_parent`,
         #      except children whose annotation opts them out of both (mirror the same gate as the rebase loop
         #      below so the preflight stays in lock-step with what actually gets checked out).
         branches_that_will_be_checked_out: List[LocalBranchShortName] = []
-        if self._git.get_current_branch_or_none() in branches_to_slide_out:
-            if new_parent is not None:
-                branches_that_will_be_checked_out.append(new_parent)
-            elif new_children:
-                branches_that_will_be_checked_out.append(new_children[0])
+        if landing_branch is not None:
+            branches_that_will_be_checked_out.append(landing_branch)
         if not opt_no_rebase and new_parent is not None:
             for child in new_children:
                 anno = self._state.get_annotation(child)
@@ -96,23 +131,18 @@ class SlideOutMacheteClient(MacheteClient):
 
         # Update definition, fire post-hook, and perform the branch update
         self.save_branch_layout_file()
-        self._run_post_slide_out_hook(
-            new_parent=new_parent,
-            slid_out_branch=branches_to_slide_out[-1],
-            new_children=new_children)
+        for hook_new_parent, hook_slid_out_branch, hook_new_children in hook_invocations:
+            self._run_post_slide_out_hook(
+                new_parent=hook_new_parent,
+                slid_out_branch=hook_slid_out_branch,
+                new_children=hook_new_children)
 
-        # Check out new parent if we were on a slid-out branch, but only if there is a parent
-        if self._git.get_current_branch_or_none() in branches_to_slide_out:
-            if new_parent is not None:
-                print_fmt(f"Checking out <b>{new_parent}</b>... ", newline=False)
-                self._git.checkout_in_current_worktree(new_parent)
-                print_fmt(green_ok())
-            elif new_children:
-                # If no parent and there are children, check out the first child
-                print_fmt(f"Checking out <b>{new_children[0]}</b>... ", newline=False)
-                self._git.checkout_in_current_worktree(new_children[0])
-                print_fmt(green_ok())
-            # Otherwise, stay on the current (slid-out) branch
+        # Check out the landing branch if we were on a slid-out branch (and there's somewhere to land);
+        # otherwise stay on the current (slid-out) branch.
+        if landing_branch is not None:
+            print_fmt(f"Checking out <b>{landing_branch}</b>... ", newline=False)
+            self._git.checkout_in_current_worktree(landing_branch)
+            print_fmt(green_ok())
 
         # Only perform rebase/merge if there is a new parent
         if not opt_no_rebase and new_parent is not None:
