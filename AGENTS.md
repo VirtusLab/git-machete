@@ -32,6 +32,13 @@
 - Skip tests that require a minimum Git version with `@pytest.mark.skipif(get_git_version() < (X, Y), reason="...")`,
   not with an `if get_git_version() < (X, Y): return` early-return at the top of the test body.
   The decorator surfaces the skip in pytest's report (and in the JUnit XML CI uploads); the early-return silently masquerades as a pass.
+- Prefer `assert_success(cmd_and_args, expected_output)` over a bare `launch_command(cmd_and_args)` whenever a command is run for its effect.
+  A bare `launch_command` throws the command's entire output on the floor, so any regression in what it prints (a reworded message,
+  a wrong/missing branch name, a stray extra line, a wrong singular/plural) goes completely unnoticed - the call still "passes".
+  `assert_success` pins the *whole* output down, so it doubles as the regression test for that output.
+  Reserve a bare `launch_command` for the cases where asserting the full output is genuinely troublesome
+  (non-deterministic output such as commit hashes or `--verbose`/git-subprocess noise leaking into the captured text),
+  and even then prefer asserting whatever deterministic prefix/suffix you can.
 - Assert on the *full* command output rather than substring presence.
   Use `assert_success(cmd_and_args, expected_output)` (or, for ANSI/colored runs where `--color=always` produces escape codes,
   `raw_output = launch_command(...); assert raw_output == expected_ansi`) so the whole rendering is pinned down at once.
@@ -78,3 +85,7 @@
   the line-length limit is 140 (see `[flake8]` in `tox.ini`).
   Break on sentence or clause boundaries instead, so each line carries one thought rather than a fragment chopped by column count.
   Prefer one sentence per line; for a sentence that exceeds 140 columns, split at a natural clause boundary (semicolons, parentheticals, conjunctions, ...).
+- This matters especially for PR descriptions (and commit message bodies): never insert mid-sentence line breaks at a fixed column.
+  Write them in natural flow - one sentence per line, exactly like code comments - and let GitHub / the git client wrap them for display.
+  Note that a PR opened from a single commit inherits that commit's message verbatim, so a hard-wrapped commit body produces a hard-wrapped PR description;
+  keep the commit body unwrapped too.

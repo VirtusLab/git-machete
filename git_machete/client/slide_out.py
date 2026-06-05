@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import Dict, List, NamedTuple, Optional
 
 from git_machete.client.base import MacheteClient
 from git_machete.client.state import ManagedBranchName
@@ -6,6 +6,17 @@ from git_machete.config import SquashMergeDetection
 from git_machete.git import AnyRevision, LocalBranchShortName
 from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.markup import green_ok, print_fmt
+
+
+class Reattachment(NamedTuple):
+    children: List[ManagedBranchName]
+    new_parent: Optional[ManagedBranchName]
+
+
+class HookInvocation(NamedTuple):
+    new_parent: Optional[ManagedBranchName]
+    slid_out_branch: ManagedBranchName
+    new_children: List[ManagedBranchName]
 
 
 class SlideOutMacheteClient(MacheteClient):
@@ -51,7 +62,16 @@ class SlideOutMacheteClient(MacheteClient):
         # Those surviving children are the ones that get reattached (and, unless `--no-rebase`, synced) to a new parent.
         # In the classic "slide out a chain b1 -> ... -> bN" case there's exactly one pivot (bN); the interior branches
         # have their only child slid out alongside them, so they contribute no surviving children.
-        pivots: List[ManagedBranchName] = [branch for branch in branches_to_slide_out if surviving_children(branch)]
+        # `reattachment_by_pivot` records, for each pivot, where its surviving children will be reattached. It's computed
+        # once here (before the splice mutates the tree) and reused for the down-fork-point check, the rebase target,
+        # the worktree preflight, the post-slide-out hook payloads and the user-visible summary.
+        pivots: List[ManagedBranchName] = []
+        reattachment_by_pivot: Dict[LocalBranchShortName, Reattachment] = {}
+        for branch in branches_to_slide_out:
+            children = surviving_children(branch)
+            if children:
+                pivots.append(branch)
+                reattachment_by_pivot[branch] = Reattachment(children, nearest_surviving_ancestor(branch))
 
         # The only restriction left in rebase/merge mode: all the children that need to be synced must hang off a single
         # slid-out branch, so there's an unambiguous branch to rebase/merge them onto. With `--no-rebase` the children are
@@ -67,7 +87,7 @@ class SlideOutMacheteClient(MacheteClient):
             # `--down-fork-point` conflicts with `--no-rebase` (rejected in the CLI), so the single-pivot rule above holds.
             if not pivots:
                 raise MacheteException("Branch to slide out must have a child branch if option `--down-fork-point` is passed")
-            pivot_children = surviving_children(pivots[0])
+            pivot_children = reattachment_by_pivot[pivots[0]].children
             if len(pivot_children) > 1:
                 raise MacheteException("Branch to slide out can't have more than one child branch "
                                        "if option `--down-fork-point` is passed")
@@ -75,39 +95,33 @@ class SlideOutMacheteClient(MacheteClient):
                 fork_point=opt_down_fork_point,
                 branch=pivot_children[0])
 
-        # Read the connections we need for the post-hook, checkout and rebase logic before mutating state.
         # The single-pivot rule guarantees at most one rebase target when rebasing.
         rebase_pivot: Optional[ManagedBranchName] = pivots[0] if pivots else None
-        new_parent: Optional[ManagedBranchName] = nearest_surviving_ancestor(rebase_pivot) if rebase_pivot is not None else None
-        new_children: List[ManagedBranchName] = surviving_children(rebase_pivot) if rebase_pivot is not None else []
+        new_parent: Optional[ManagedBranchName] = reattachment_by_pivot[rebase_pivot].new_parent if rebase_pivot is not None else None
+        new_children: List[ManagedBranchName] = reattachment_by_pivot[rebase_pivot].children if rebase_pivot is not None else []
 
         # Where to land if the current branch is one of the branches about to disappear from the layout:
         # its nearest surviving ancestor, or - failing that (it was effectively a root) - its first surviving child.
         current_branch = self._git.get_current_branch_or_none()
         landing_branch: Optional[LocalBranchShortName] = None
         if current_branch is not None and current_branch in slide_out_set:
-            ancestor = nearest_surviving_ancestor(current_branch)
-            if ancestor is not None:
-                landing_branch = ancestor
+            reattachment = reattachment_by_pivot.get(current_branch)
+            if reattachment is not None:
+                landing_branch = reattachment.new_parent or reattachment.children[0]
             else:
-                current_surviving_children = surviving_children(current_branch)
-                if current_surviving_children:
-                    landing_branch = current_surviving_children[0]
+                landing_branch = nearest_surviving_ancestor(current_branch)
 
         # Post-slide-out hook payloads, computed before the splice mutates the tree. The hook fires once per pivot
         # (the branch(es) whose children are reparented); if nothing has surviving children we preserve the historical
         # single firing for the last specified branch (with an empty downstream list).
-        hook_invocations: List[Tuple[Optional[ManagedBranchName], ManagedBranchName, List[ManagedBranchName]]]
+        hook_invocations: List[HookInvocation]
         if pivots:
-            hook_invocations = [(nearest_surviving_ancestor(pivot), pivot, surviving_children(pivot)) for pivot in pivots]
+            hook_invocations = [
+                HookInvocation(reattachment_by_pivot[pivot].new_parent, pivot, reattachment_by_pivot[pivot].children)
+                for pivot in pivots]
         else:
             last_branch = branches_to_slide_out[-1]
-            hook_invocations = [(nearest_surviving_ancestor(last_branch), last_branch, [])]
-
-        # Where each pivot's surviving children will be reattached - precomputed before the splice mutates the tree,
-        # purely so we can print a user-visible summary of the reparenting that's about to happen.
-        reattachments: List[Tuple[List[ManagedBranchName], Optional[ManagedBranchName]]] = [
-            (surviving_children(pivot), nearest_surviving_ancestor(pivot)) for pivot in pivots]
+            hook_invocations = [HookInvocation(nearest_surviving_ancestor(last_branch), last_branch, [])]
 
         # Preflight: refuse upfront if any of the branches that the rest of slide-out would later need to
         # `git checkout` is already held by another linked worktree. Without this check we'd write the layout
@@ -135,20 +149,21 @@ class SlideOutMacheteClient(MacheteClient):
             print_fmt(f"Sliding out <b>{branch}</b>")
             self._state.splice_out(branch)
 
-        for reattach_children, reattach_parent in reattachments:
-            flat_children = ", ".join(f"<b>{child}</b>" for child in reattach_children)
-            if reattach_parent is not None:
-                print_fmt(f"Reattaching {flat_children} under <b>{reattach_parent}</b>")
+        for reattachment in reattachment_by_pivot.values():
+            flat_children = ", ".join(f"<b>{child}</b>" for child in reattachment.children)
+            if reattachment.new_parent is not None:
+                print_fmt(f"Reattaching {flat_children} under <b>{reattachment.new_parent}</b>")
             else:
-                print_fmt(f"Reattaching {flat_children} as new root branches")
+                noun = "branch" if len(reattachment.children) == 1 else "branches"
+                print_fmt(f"Reattaching {flat_children} as new root {noun}")
 
         # Update definition, fire post-hook, and perform the branch update
         self.save_branch_layout_file()
-        for hook_new_parent, hook_slid_out_branch, hook_new_children in hook_invocations:
+        for hook_invocation in hook_invocations:
             self._run_post_slide_out_hook(
-                new_parent=hook_new_parent,
-                slid_out_branch=hook_slid_out_branch,
-                new_children=hook_new_children)
+                new_parent=hook_invocation.new_parent,
+                slid_out_branch=hook_invocation.slid_out_branch,
+                new_children=hook_invocation.new_children)
 
         # Check out the landing branch if we were on a slid-out branch (and there's somewhere to land);
         # otherwise stay on the current (slid-out) branch.

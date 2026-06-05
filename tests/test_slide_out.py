@@ -78,8 +78,15 @@ class TestSlideOut(BaseTest):
         # Slide-out a single interior branch with one downstream. (child_c)
         # This rebases the single downstream onto the new upstream. (child_b -> child_d)
 
-        launch_command("go", "up")
-        launch_command("slide-out", "-n")
+        assert_success(["go", "up"], "Checking out child_c... OK\n")
+        assert_success(
+            ["slide-out", "-n"],
+            "Sliding out child_c\n"
+            "Reattaching child_d under child_b\n"
+            "Checking out child_b... OK\n"
+            "Checking out child_d... OK\n"
+            "Rebasing child_d onto child_b...\n"
+        )
 
         assert_success(
             ["status", "-l"],
@@ -102,8 +109,8 @@ class TestSlideOut(BaseTest):
 
         # Slide-out an interior branch with multiple downstreams (slide_root).
         # This rebases all the downstreams onto the new upstream (develop -> [child_a, child_b]).
-        launch_command("go", "up")
-        launch_command("go", "up")
+        assert_success(["go", "up"], "Checking out child_b... OK\n")
+        assert_success(["go", "up"], "Checking out slide_root... OK\n")
 
         assert_success(
             ["status", "-l"],
@@ -125,7 +132,17 @@ class TestSlideOut(BaseTest):
         )
 
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
-        launch_command("slide-out", "-n", "--delete", "--merge")
+        assert_success(
+            ["slide-out", "-n", "--delete", "--merge"],
+            "Sliding out slide_root\n"
+            "Reattaching child_a, child_b under develop\n"
+            "Checking out develop... OK\n"
+            "Checking out child_a... OK\n"
+            "Merging develop into child_a...\n"
+            "Checking out child_b... OK\n"
+            "Merging develop into child_b...\n"
+            "Delete branch slide_root (merged to HEAD)? (y, N, q)\n"
+        )
 
         assert_success(
             ["status", "-l"],
@@ -147,7 +164,11 @@ class TestSlideOut(BaseTest):
 
         # Slide-out and delete a terminal branch (child_d).
         # This just slices the branch off the tree.
-        launch_command("go", "down")
+        assert_success(
+            ["go", "down"],
+            "Checking out child_d... OK\n"
+            "Tip: run git machete go (without a direction) to pick a branch interactively.\n"
+        )
         assert "child_d" in get_local_branches()
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         assert_success(
@@ -190,7 +211,7 @@ class TestSlideOut(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        launch_command("slide-out", "branch-1")
+        assert_success(["slide-out", "branch-1"], "Sliding out branch-1\n")
         # Branch should not be changed by slide-out if the current branch has NOT been slid out
         assert get_current_branch() == "branch-2"
 
@@ -213,7 +234,13 @@ class TestSlideOut(BaseTest):
 
         write_to_file(".git/hooks/machete-post-slide-out", '#!/bin/sh\necho "$@" > machete-post-slide-out-output')
         set_file_executable(".git/hooks/machete-post-slide-out")
-        launch_command("slide-out", "-n", "branch-1")
+        assert_success(
+            ["slide-out", "-n", "branch-1"],
+            "Sliding out branch-1\n"
+            "Reattaching branch-2 under branch-0\n"
+            "Checking out branch-2... OK\n"
+            "Rebasing branch-2 onto branch-0...\n"
+        )
         assert "branch-0 branch-1 branch-2" == read_file("machete-post-slide-out-output").strip()
 
         write_to_file(".git/hooks/machete-post-slide-out", "#!/bin/sh\nexit 1")
@@ -249,7 +276,13 @@ class TestSlideOut(BaseTest):
         set_file_executable(".git/hooks/machete-post-slide-out")
 
         check_out('master')
-        launch_command("slide-out", "--no-rebase", "a", "b")
+        assert_success(
+            ["slide-out", "--no-rebase", "a", "b"],
+            "Sliding out a\n"
+            "Sliding out b\n"
+            "Reattaching x under master\n"
+            "Reattaching y under master\n"
+        )
         assert read_file("machete-post-slide-out-output").splitlines() == ["master a x", "master b y"]
 
     def test_slide_out_root_branch_with_post_slide_out_hook(self) -> None:
@@ -276,7 +309,11 @@ class TestSlideOut(BaseTest):
                       '"$#" "$1" "$2" "$3" "$4" > machete-post-slide-out-output'
         write_to_file(".git/hooks/machete-post-slide-out", hook_script)
         set_file_executable(".git/hooks/machete-post-slide-out")
-        launch_command("slide-out", "-n", "root")
+        assert_success(
+            ["slide-out", "-n", "root"],
+            "Sliding out root\n"
+            "Reattaching child-1, child-2 as new root branches\n"
+        )
         # Hook receives: "" (empty new_upstream), "root" (slid out branch), "child-1" "child-2" (new downstreams)
         hook_output = read_file("machete-post-slide-out-output").strip()
         assert hook_output == "argc=4 arg1=[] arg2=[root] arg3=[child-1] arg4=[child-2]", \
@@ -354,9 +391,14 @@ class TestSlideOut(BaseTest):
                         branch-3
             """
         rewrite_branch_layout_file(body)
-        launch_command(
-            'slide-out', '-n', 'branch-1', 'branch-2', '-d',
-            hash_of_second_commit_on_branch_3)
+        assert_success(
+            ['slide-out', '-n', 'branch-1', 'branch-2', '-d', hash_of_second_commit_on_branch_3],
+            "Sliding out branch-1\n"
+            "Sliding out branch-2\n"
+            "Reattaching branch-3 under branch-0\n"
+            "Checking out branch-3... OK\n"
+            "Rebasing branch-3 onto branch-0...\n"
+        )
 
         expected_status_output = (
             """
@@ -559,7 +601,11 @@ class TestSlideOut(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        launch_command('slide-out', '-n', 'branch-3', 'branch-2a')
+        assert_success(
+            ['slide-out', '-n', 'branch-3', 'branch-2a'],
+            "Sliding out branch-3\n"
+            "Sliding out branch-2a\n"
+        )
 
         assert read_branch_layout_file().splitlines() == [
             "branch-0",
@@ -594,7 +640,13 @@ class TestSlideOut(BaseTest):
         rewrite_branch_layout_file(body)
 
         check_out('master')
-        launch_command('slide-out', '--no-rebase', 'a', 'b')
+        assert_success(
+            ['slide-out', '--no-rebase', 'a', 'b'],
+            "Sliding out a\n"
+            "Sliding out b\n"
+            "Reattaching x under master\n"
+            "Reattaching y under master\n"
+        )
 
         assert read_branch_layout_file().splitlines() == [
             "master",
@@ -738,7 +790,11 @@ class TestSlideOut(BaseTest):
         branch_2_commit_before = get_current_commit_hash()
 
         # Slide out branch-1 with --no-rebase, branch-2 should not be rebased
-        launch_command("slide-out", "branch-1", "--no-rebase")
+        assert_success(
+            ["slide-out", "branch-1", "--no-rebase"],
+            "Sliding out branch-1\n"
+            "Reattaching branch-2 under root\n"
+        )
 
         # Verify that branch-2 is now a child of root in the layout
         expected_layout = ["root", "    branch-2"]
@@ -811,7 +867,12 @@ class TestSlideOut(BaseTest):
 
         # Slide out the root branch
         check_out("root")
-        launch_command("slide-out")
+        assert_success(
+            ["slide-out"],
+            "Sliding out root\n"
+            "Reattaching child-1, child-3 as new root branches\n"
+            "Checking out child-1... OK\n"
+        )
 
         # Verify that child-1 and child-3 are now root branches in the layout
         expected_layout = ["child-1", "    child-2", "child-3"]
@@ -833,13 +894,12 @@ class TestSlideOut(BaseTest):
         assert child_3_commit_before == child_3_commit_after
 
     def test_slide_out_root_branch_with_no_rebase(self) -> None:
-        """Test that root branches can be slid out with --no-rebase flag (though it's redundant)."""
+        """Test that a root branch with a single child can be slid out with --no-rebase flag (though it's redundant)."""
         create_repo()
         new_branch("root")
         commit("root commit")
         new_branch("child-1")
         commit("child-1 commit")
-        check_out("root")
         new_branch("child-2")
         commit("child-2 commit")
 
@@ -847,7 +907,7 @@ class TestSlideOut(BaseTest):
             """
             root
                 child-1
-                child-2
+                    child-2
             """
         rewrite_branch_layout_file(body)
 
@@ -859,10 +919,15 @@ class TestSlideOut(BaseTest):
 
         # Slide out the root branch with --no-rebase
         check_out("root")
-        launch_command("slide-out", "--no-rebase")
+        assert_success(
+            ["slide-out", "--no-rebase"],
+            "Sliding out root\n"
+            "Reattaching child-1 as new root branch\n"
+            "Checking out child-1... OK\n"
+        )
 
-        # Verify that child-1 and child-2 are now root branches in the layout
-        expected_layout = ["child-1", "child-2"]
+        # Verify that child-1 became a root branch (keeping child-2 underneath) in the layout
+        expected_layout = ["child-1", "    child-2"]
         assert read_branch_layout_file().splitlines() == expected_layout
 
         # Verify we're on child-1 (first downstream)
@@ -893,7 +958,7 @@ class TestSlideOut(BaseTest):
 
         # Slide out root-2 (which has no downstreams)
         check_out("root-2")
-        launch_command("slide-out")
+        assert_success(["slide-out"], "Sliding out root-2\n")
 
         # Verify that only root-1 remains in the layout
         expected_layout = ["root-1"]
