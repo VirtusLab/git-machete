@@ -152,6 +152,7 @@ class TestSlideOut(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         assert_success(
             ["slide-out", "-n", "--delete"],
+            "Sliding out child_d\n"
             "Checking out child_b... OK\n"
             "Delete branch child_d (unmerged to HEAD)? (y, N, q)\n"
         )
@@ -390,6 +391,8 @@ class TestSlideOut(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning_y)
         assert_success(
             ['slide-out', '-n', 'branch-1', '--delete'],
+            "Sliding out branch-1\n"
+            "Reattaching branch-2 under branch-0\n"
             "Delete branch branch-1 (unmerged to HEAD)? (y, N, q)\n"
         )
 
@@ -522,7 +525,11 @@ class TestSlideOut(BaseTest):
         rewrite_branch_layout_file(body)
 
         check_out('master')
-        assert_success(['slide-out', 'a', 'b'], "")
+        assert_success(
+            ['slide-out', 'a', 'b'],
+            "Sliding out a\n"
+            "Sliding out b\n"
+        )
 
         assert read_branch_layout_file().splitlines() == ["master", "    c"]
 
@@ -920,9 +927,9 @@ class TestSlideOut(BaseTest):
 
         delete_branch('branch-1')
 
-        # The explicit slide-out should produce no output (no warning, no error)
+        # The explicit slide-out should succeed cleanly (no warning, no error)
         # and remove the (now-orphaned-in-git) branch from the layout.
-        assert_success(["slide-out", "branch-1"], "")
+        assert_success(["slide-out", "branch-1"], "Sliding out branch-1\n")
 
         expected_layout = ["branch-0", "    branch-2"]
         assert read_branch_layout_file().splitlines() == expected_layout

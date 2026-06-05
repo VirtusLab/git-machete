@@ -104,6 +104,11 @@ class SlideOutMacheteClient(MacheteClient):
             last_branch = branches_to_slide_out[-1]
             hook_invocations = [(nearest_surviving_ancestor(last_branch), last_branch, [])]
 
+        # Where each pivot's surviving children will be reattached - precomputed before the splice mutates the tree,
+        # purely so we can print a user-visible summary of the reparenting that's about to happen.
+        reattachments: List[Tuple[List[ManagedBranchName], Optional[ManagedBranchName]]] = [
+            (surviving_children(pivot), nearest_surviving_ancestor(pivot)) for pivot in pivots]
+
         # Preflight: refuse upfront if any of the branches that the rest of slide-out would later need to
         # `git checkout` is already held by another linked worktree. Without this check we'd write the layout
         # file, fire the post-hook, and only THEN bail out at the first `git checkout` - leaving the layout
@@ -127,7 +132,15 @@ class SlideOutMacheteClient(MacheteClient):
             self._git.expect_branch_not_held_by_other_worktree(branch)
 
         for branch in branches_to_slide_out:
+            print_fmt(f"Sliding out <b>{branch}</b>")
             self._state.splice_out(branch)
+
+        for reattach_children, reattach_parent in reattachments:
+            flat_children = ", ".join(f"<b>{child}</b>" for child in reattach_children)
+            if reattach_parent is not None:
+                print_fmt(f"Reattaching {flat_children} under <b>{reattach_parent}</b>")
+            else:
+                print_fmt(f"Reattaching {flat_children} as new root branches")
 
         # Update definition, fire post-hook, and perform the branch update
         self.save_branch_layout_file()
