@@ -26,7 +26,7 @@ executors:
     resource_class: windows.large
 
 orbs:
-  codecov: codecov/codecov@5.4.3
+  codecov: codecov/codecov@6.0.0
 
 commands:
   python_git_tests:
