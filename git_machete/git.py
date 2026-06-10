@@ -429,7 +429,16 @@ class Git:
         does).
         """
         if self.get_git_version() < WORKTREE_COMMAND:
-            return {}
+            # `git worktree list --porcelain` doesn't exist yet on git < 2.5, but the *current*
+            # worktree obviously still does - report it as a single-entry dict rather than `{}`.
+            # If we returned `{}` here, callers asking "where is branch X checked out?" would
+            # get `None` even when X is the current branch in the (sole) current worktree, and
+            # `TraverseMacheteClient._switch_branch` would then fall into its "branch not
+            # checked out anywhere" path and issue a redundant `git checkout` (which is what
+            # broke the yellow-edge and PR-sync traverse tests on the git 1.8.0 CI runner).
+            current_path = self.get_current_worktree_root_dir()
+            self.__main_worktree_root_dir = current_path  # side-effect cache; mirrors the >= 2.5 branch
+            return {current_path: self.get_current_branch_or_none()}
 
         result = self._popen_git("worktree", "list", "--porcelain")
         worktrees: Dict[AbsPath, Optional[LocalBranchShortName]] = {}
