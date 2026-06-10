@@ -414,11 +414,13 @@ class Git:
         in a worktree besides the main one"). We don't special-case the foot-gun any harder since
         vanilla `git worktree add` blocks the path that would produce it.
 
-        Uncached on purpose: in practice each CLI invocation calls this at most once per logical
-        operation (`status` reads it once for the worktree-label render; `traverse` reads it once on
-        startup and then owns a local copy that it mutates incrementally as it adds/removes worktrees).
-        Adding a cache here would just buy invalidation bookkeeping (every `worktree add` / `worktree
-        remove` / `checkout` would have to remember to clear it) without saving any real git calls.
+        Uncached on purpose: `git worktree list --porcelain` is a single subprocess with very
+        small output, so callers can re-invoke this method freely - `status` reads it once for the
+        worktree-label render, while `traverse` calls it on every `_switch_branch` to locate where
+        each upcoming target branch lives. Adding a cache here would just buy invalidation
+        bookkeeping (every `worktree add` / `worktree remove` / `checkout` would have to remember
+        to clear it) for negligible win, and the live re-query has the side benefit of seeing any
+        concurrent out-of-band worktree mutations during a long-running traversal.
 
         The main worktree path *is* cached on `__main_worktree_root_dir` (populated as a side effect of
         the parse below) - that one's safe because the main worktree path doesn't change during a CLI

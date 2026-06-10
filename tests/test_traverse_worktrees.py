@@ -215,8 +215,13 @@ class TestTraverseWorktrees(BaseTest):
             """
         )
 
-    def test_traverse_updates_worktree_cache_on_checkout(self) -> None:
-        """Test that the worktree cache is properly updated when checking out in the same worktree."""
+    def test_traverse_reflects_post_checkout_worktree_state_in_status(self) -> None:
+        """After traverse checks out a new branch in the current worktree, the worktree label
+        rendered by the post-rebase status block must reflect the new checkout (`branch-2` is
+        now in the main worktree, not `root`). This exercises the live re-query of
+        `git worktree list --porcelain` inside `_find_worktree_for_branch`/`_compute_worktree_label_by_branch`
+        - any stale snapshot would still report `root` as the branch held by the main worktree
+        and the `[<this worktree>]` label would land on the wrong row."""
         (local_path, _) = create_repo_with_remote()
         new_branch("root")
         commit()
@@ -236,23 +241,21 @@ class TestTraverseWorktrees(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        # Setup: Main worktree on root, create a linked worktree for branch-1
+        # Setup: Main worktree on root, create a linked worktree for branch-1.
         check_out("root")
         branch_1_worktree = add_worktree("branch-1")
         # Single linked worktree: strip_longest_common_path_prefix falls back to the basename.
         branch_1_label = os.path.basename(AbsPath(branch_1_worktree))
 
-        # Run traverse from root in main worktree
-        # This will:
-        # 1. Initial cache: {root: main_worktree_path, branch-1: linked_worktree_path}
-        # 2. Visit root (already checked out in main worktree) - no operation
-        # 3. Visit branch-1 (in linked worktree, but no action needed so don't cd)
-        # 4. Visit branch-2 (not checked out anywhere) - checkout branch-2 in main worktree
-        #    - When checking out branch-2, _update_worktrees_cache_after_checkout is called
-        #    - Tests the cache update logic (deletes old entry, adds new entry)
-
-        # Note: branch-2 was created on top of branch-1, so it will appear yellow (?)
-        # because the fork point inference will see that branch-2 doesn't contain branch-1
+        # Traverse plan:
+        # 1. Visit root (already checked out in main worktree) - no operation.
+        # 2. Visit branch-1 (in linked worktree, no action needed - don't cd).
+        # 3. Visit branch-2 (not checked out anywhere) - checkout branch-2 in main worktree.
+        # The post-checkout status block (printed after the rebase/push step) must show
+        # `branch-2 * [<this worktree>]` because the main worktree now holds branch-2.
+        #
+        # Note: branch-2 was created on top of branch-1, so it appears yellow (?) - the fork
+        # point inference sees that branch-2 doesn't contain branch-1.
         assert_success(
             ["traverse", "-y"],
             f"""
