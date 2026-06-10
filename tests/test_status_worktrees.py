@@ -10,7 +10,8 @@ from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
 from tests.cli_runner import (assert_success, launch_command,
                               rewrite_branch_layout_file)
-from tests.git_repository import (add_worktree, check_out, commit, create_repo,
+from tests.git_repository import (add_detached_worktree, add_worktree,
+                                  check_out, commit, create_repo, detach_head,
                                   get_git_version, new_branch)
 
 pytestmark = pytest.mark.skipif(  # noqa: F841
@@ -317,6 +318,107 @@ class TestStatusWorktrees(BaseTest):
             """,
         )
 
+    def test_status_labels_fire_when_the_only_linked_worktree_is_detached(self) -> None:
+        """A linked worktree in detached HEAD state must count for the worktree-label gate just like
+        an on-branch linked worktree does: the user has opted into the multi-worktree workflow either
+        way, so labels need to render so they can tell from `status` that they're not in a
+        single-worktree repo. The detached worktree itself gets no label row (no branch to label),
+        but every *other* managed branch checked out somewhere should carry the usual label.
+
+        The precise trigger of the regression this test guards against is "every linked worktree is
+        in detached HEAD state". The main worktree is not special: it can be on a branch (as here)
+        or itself detached - see `test_status_labels_fire_when_main_worktree_is_detached` for the
+        latter half of that matrix. As soon as a single linked worktree has a non-detached HEAD the
+        gate passes and labels render - which is why a status-worktree suite exercising only
+        on-branch linked worktrees would miss this case entirely.
+        """
+        create_repo()
+        new_branch("master")
+        commit()
+        check_out("master")
+        new_branch("develop")
+        commit()
+
+        rewrite_branch_layout_file(
+            """
+            master
+              develop
+            """
+        )
+
+        check_out("master")
+        add_detached_worktree()
+
+        # `master` is current/main -> `<this worktree>`; `develop` is not checked out anywhere,
+        # so no label. The detached linked worktree has no branch to label, but its mere existence
+        # must still fire the gate so the user knows from `status` that they're in a multi-worktree
+        # repo.
+        assert_success(
+            ["status"],
+            """
+              master * [<this worktree>]
+              |
+              o-develop
+            """,
+        )
+
+    def test_status_labels_fire_when_main_worktree_is_detached(self) -> None:
+        """The companion to `test_status_labels_fire_when_the_only_linked_worktree_is_detached`: this
+        time the *main* worktree is the one in detached HEAD, the layout has multiple linked worktrees
+        in mixed HEAD state (one on a branch, one detached), and labels must still render for the
+        on-branch linked worktree. The detached main worktree's path-keyed entry sits in the snapshot
+        with `branch=None`, so it doesn't end up labeled (no branch to label), but it doesn't suppress
+        the gate either - sibling on-branch linked worktrees keep their basename labels.
+
+        No branch carries the `<this worktree>` or `<main worktree>` literals here: with main detached,
+        no managed branch is checked out in either the current worktree or the main worktree, so the
+        two literal-label arms of the rendering loop are dead code for this scenario. The on-branch
+        linked worktree's basename label is the only label that surfaces.
+        """
+        create_repo()
+        new_branch("master")
+        commit()
+        check_out("master")
+        new_branch("develop")
+        commit()
+        check_out("master")
+        new_branch("feature")
+        commit()
+
+        rewrite_branch_layout_file(
+            """
+            master
+              develop
+              feature
+            """
+        )
+
+        check_out("master")
+        develop_worktree = add_worktree("develop")
+        add_detached_worktree()
+        # Detach main last - we needed master checked out earlier so the linked worktrees could
+        # be added without `master` being the foot-gun "same branch in two worktrees" target.
+        detach_head()
+
+        develop_label = os.path.basename(AbsPath(develop_worktree))
+        # Sanity-check: with two sibling linked worktrees under `mkdtemp`, the stripped label is
+        # just the trailing component (no remaining `/` after stripping the common prefix).
+        assert "/" not in develop_label
+
+        # `master` has no `*` (current HEAD is detached, no current branch), no label (not held by
+        # any worktree in the snapshot - both its prior locations are now detached). `develop`
+        # carries the linked basename label; `feature` is unchecked-out, so no label.
+        assert_success(
+            ["status"],
+            f"""
+              master
+              |
+              o-develop [{develop_label}]
+              |
+              o-feature
+            """,
+        )
+
     def test_status_no_labels_in_single_worktree_repo(self) -> None:
         """In a repo with no linked worktrees, the feature must not kick in - otherwise every plain
         `git machete status` would suddenly carry a `[<this worktree>]` tag on the current branch,
@@ -352,12 +454,13 @@ class TestStatusWorktrees(BaseTest):
         by worktree at <path>`), but `-f` overrides that, and the test harness's `add_worktree` uses `-f` so it can
         set up arbitrary scenarios. This test pins down what `status` does when the foot-gun fires:
 
-        `get_worktree_root_dirs_by_branch` collapses the branch->path mapping to "last porcelain entry wins". Since
-        `git worktree list --porcelain` puts the main worktree first and linked worktrees after it, the linked entry
-        wins - so a branch checked out in both main and a linked worktree is labeled as the *linked* one regardless
-        of where the user is standing. That's why the `master` row below carries `[<linked basename>]` when status
-        is run from main (even though `master` *is also* in the current/main worktree), and `[<this worktree>]`
-        when run from the linked worktree (where the "last wins" winner happens to coincide with `current_path`).
+        `_compute_worktree_label_by_branch`'s rendering loop iterates `load_branch_by_worktree_root_dir`'s
+        path-keyed dict in porcelain order (main first, linked after) and lets later writes to `labels[branch]`
+        overwrite earlier ones. So a branch checked out in both main and a linked worktree is labeled as the
+        *linked* one regardless of where the user is standing. That's why the `master` row below carries
+        `[<linked basename>]` when status is run from main (even though `master` *is also* in the current/main
+        worktree), and `[<this worktree>]` when run from the linked worktree (where the "last wins" winner
+        happens to coincide with `current_path`).
 
         We don't try to be cleverer than that - the underlying state is one git itself disallows by default,
         and any in-band warning would just add noise for the much commoner unmanaged-branch-in-linked-worktree case.

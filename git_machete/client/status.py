@@ -482,22 +482,31 @@ class StatusMacheteClient(MacheteClient):
         repo we don't want a `[<this worktree>]` tag stuck on the current branch of every status output,
         since the user hasn't opted into the multi-worktree workflow and there's nothing to disambiguate.
         """
-        worktree_path_by_branch = self._git.get_worktree_root_dirs_by_branch()
-        if not worktree_path_by_branch:
+        branch_by_worktree_path = self._git.load_branch_by_worktree_root_dir()
+        if not branch_by_worktree_path:
             return {}
 
         main_path = self._git.get_main_worktree_root_dir()
         current_path = self._git.get_current_worktree_root_dir()
 
-        linked_paths = sorted({p for p in worktree_path_by_branch.values() if p != main_path})
+        # `.keys()` covers detached-HEAD linked worktrees too - this is what makes the gate fire
+        # in repos whose only linked worktree happens to be detached.
+        linked_paths = sorted({p for p in branch_by_worktree_path.keys() if p != main_path})
         if not linked_paths:
             return {}
 
         stripped = strip_longest_common_path_prefix([str(p) for p in linked_paths])
         label_by_linked_path = dict(zip(linked_paths, stripped))
 
+        # For the same-branch-in-multiple-worktrees foot-gun, multiple iterations write to
+        # `labels[branch]` - the last write wins. Since porcelain emits main first and linked
+        # after (and `load_branch_by_worktree_root_dir` preserves insertion order), the linked
+        # entry overwrites the main one - so the branch's label points at the linked worktree,
+        # which is the surprising one of the two locations and the more useful one to surface.
         labels: Dict[LocalBranchShortName, str] = {}
-        for branch, path in worktree_path_by_branch.items():
+        for path, branch in branch_by_worktree_path.items():
+            if branch is None:
+                continue
             if path == current_path:
                 labels[branch] = "<this worktree>"
             elif path == main_path:

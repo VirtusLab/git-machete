@@ -1,16 +1,19 @@
 import os
+from tempfile import mkdtemp
+from typing import Dict, Optional
 
 import pytest
 
 from git_machete.git import (AnyBranchName, AnyRevision, FullCommitHash, Git,
                              LocalBranchShortName)
 from git_machete.git_version_thresholds import WORKTREE_COMMAND
+from git_machete.utils.paths import AbsPath
 from tests.base_test import BaseTest
 from tests.git_repository import (add_worktree, check_out, commit, create_repo,
                                   get_current_commit_hash, get_git_version,
                                   is_ancestor_or_equal, new_branch,
                                   new_orphan_branch, set_git_config_key)
-from tests.shell import read_file, write_to_file
+from tests.shell import execute, read_file, write_to_file
 
 
 class TestGitOperations(BaseTest):
@@ -201,7 +204,12 @@ class TestGitOperations(BaseTest):
         git.get_reflog(AnyBranchName.of("feature@foo"))
 
     @pytest.mark.skipif(get_git_version() < WORKTREE_COMMAND, reason="git worktree command was introduced in git 2.5")
-    def test_get_worktree_root_dirs_by_branch(self) -> None:
+    def test_load_branch_by_worktree_root_dir(self) -> None:
+        """Direct unit test of `Git.load_branch_by_worktree_root_dir`. Walks through every interesting
+        permutation of (main vs linked) X (on-branch vs detached) and asserts the full returned dict
+        each time, pinning down both the keying direction (path -> Optional[branch]) and the contract
+        that detached-HEAD worktrees stay first-class entries with `value=None` rather than being
+        filtered out for lack of a branch name."""
         create_repo()
         new_branch("main")
         commit("main commit")
@@ -215,87 +223,84 @@ class TestGitOperations(BaseTest):
         git = Git()
         main_worktree_path = git.get_current_worktree_root_dir()
 
+        def by_real_path(d: Dict[AbsPath, Optional[LocalBranchShortName]]) -> Dict[str, Optional[LocalBranchShortName]]:
+            # macOS resolves `mkdtemp` paths under `/private/...`, so the porcelain output and the
+            # `add_worktree` return value can disagree by a `/private` prefix. Normalize both sides
+            # to `os.path.realpath` so each step can assert on the full mapping in one go.
+            return {os.path.realpath(p): b for p, b in d.items()}
+
+        main = LocalBranchShortName.of("main")
+        feature1 = LocalBranchShortName.of("feature-1")
+        feature2 = LocalBranchShortName.of("feature-2")
+
         # Test 1: Main worktree on a branch, no linked worktrees
         check_out("main")
-        worktrees = git.get_worktree_root_dirs_by_branch()
-        assert len(worktrees) == 1
-        assert worktrees.get(LocalBranchShortName.of("main")) == main_worktree_path
-        assert git.get_worktree_root_dirs_by_branch().get(LocalBranchShortName.of("main")) == main_worktree_path
-        assert git.get_worktree_root_dirs_by_branch().get(LocalBranchShortName.of("feature-1")) is None
+        assert by_real_path(git.load_branch_by_worktree_root_dir()) == {
+            os.path.realpath(main_worktree_path): main,
+        }
 
-        # Test 2: Create linked worktrees
+        # Test 2: Add two linked worktrees, each on its own branch
         feature1_worktree = add_worktree("feature-1")
         feature2_worktree = add_worktree("feature-2")
 
-        worktrees = git.get_worktree_root_dirs_by_branch()
-        assert len(worktrees) == 3
-        assert worktrees.get(LocalBranchShortName.of("main")) == main_worktree_path
-        # On macOS, paths may have /private prefix, so use realpath to normalize
-        feature1_path = worktrees.get(LocalBranchShortName.of("feature-1"))
-        assert feature1_path is not None
-        assert os.path.realpath(feature1_path) == os.path.realpath(feature1_worktree)
-        feature2_path = worktrees.get(LocalBranchShortName.of("feature-2"))
-        assert feature2_path is not None
-        assert os.path.realpath(feature2_path) == os.path.realpath(feature2_worktree)
-        assert git.get_worktree_root_dirs_by_branch().get(LocalBranchShortName.of("feature-3")) is None
+        assert by_real_path(git.load_branch_by_worktree_root_dir()) == {
+            os.path.realpath(main_worktree_path): main,
+            os.path.realpath(feature1_worktree): feature1,
+            os.path.realpath(feature2_worktree): feature2,
+        }
 
-        # Test 3: Main worktree in detached HEAD (should NOT be in dict)
-        main_commit = git.get_commit_hash_by_revision(LocalBranchShortName.of("main"))
+        # Test 3: Detach HEAD in the main worktree. The entry stays in the snapshot, but with
+        # `value=None` to signal "this worktree exists, but no branch is checked out here".
+        main_commit = git.get_commit_hash_by_revision(main)
         assert main_commit is not None
-        check_out(main_commit)  # Detach HEAD in main worktree
+        check_out(main_commit)
 
-        worktrees = git.get_worktree_root_dirs_by_branch()
-        assert len(worktrees) == 2  # Only feature-1 and feature-2, not the detached main
-        assert LocalBranchShortName.of("main") not in worktrees
-        feature1_path = worktrees.get(LocalBranchShortName.of("feature-1"))
-        assert feature1_path is not None
-        assert os.path.realpath(feature1_path) == os.path.realpath(feature1_worktree)
-        feature2_path = worktrees.get(LocalBranchShortName.of("feature-2"))
-        assert feature2_path is not None
-        assert os.path.realpath(feature2_path) == os.path.realpath(feature2_worktree)
+        assert by_real_path(git.load_branch_by_worktree_root_dir()) == {
+            os.path.realpath(main_worktree_path): None,
+            os.path.realpath(feature1_worktree): feature1,
+            os.path.realpath(feature2_worktree): feature2,
+        }
 
-        # Test 4: Linked worktree in detached HEAD (should NOT be in dict)
+        # Test 4: Detach HEAD in a linked worktree too. Both detached entries coexist as distinct
+        # rows - one per worktree path - rather than collapsing onto each other.
         initial_dir = os.getcwd()
         os.chdir(feature1_worktree)
-        feature1_commit = git.get_commit_hash_by_revision(LocalBranchShortName.of("feature-1"))
+        feature1_commit = git.get_commit_hash_by_revision(feature1)
         assert feature1_commit is not None
-        check_out(feature1_commit)  # Detach HEAD in feature-1 worktree
+        check_out(feature1_commit)
         os.chdir(initial_dir)
 
-        worktrees = git.get_worktree_root_dirs_by_branch()
-        assert len(worktrees) == 1  # Only feature-2, not main (detached) or feature-1 (detached)
-        assert LocalBranchShortName.of("main") not in worktrees
-        assert LocalBranchShortName.of("feature-1") not in worktrees
-        feature2_path = worktrees.get(LocalBranchShortName.of("feature-2"))
-        assert feature2_path is not None
-        assert os.path.realpath(feature2_path) == os.path.realpath(feature2_worktree)
+        assert by_real_path(git.load_branch_by_worktree_root_dir()) == {
+            os.path.realpath(main_worktree_path): None,
+            os.path.realpath(feature1_worktree): None,
+            os.path.realpath(feature2_worktree): feature2,
+        }
 
-        # Test 5: Create another worktree in detached HEAD to ensure they don't overwrite each other
-        # This tests the bug fix where multiple detached HEADs would overwrite each other with None key
-        from tempfile import mkdtemp
-
-        from tests.shell import execute
+        # Test 5: Add a *third* detached worktree (pointing at the `feature-3` commit but not on the
+        # branch) - three coexisting `None`-value rows confirm that detached entries are addressed
+        # per-worktree rather than collapsing under any shared "no branch here" key.
         feature3_worktree = mkdtemp()
         execute(f"git worktree add -f --detach {feature3_worktree} feature-3")
 
-        worktrees = git.get_worktree_root_dirs_by_branch()
-        # Should still be 1 (only feature-2), detached worktrees should not be included
-        assert len(worktrees) == 1
-        assert LocalBranchShortName.of("feature-3") not in worktrees
+        assert by_real_path(git.load_branch_by_worktree_root_dir()) == {
+            os.path.realpath(main_worktree_path): None,
+            os.path.realpath(feature1_worktree): None,
+            os.path.realpath(feature2_worktree): feature2,
+            os.path.realpath(feature3_worktree): None,
+        }
 
-        # Test 6: Check out branch in the detached worktree, should now appear
+        # Test 6: Re-checkout `feature-1` in its (currently detached) linked worktree - the entry
+        # flips from None back to the branch name without changing keys.
         os.chdir(feature1_worktree)
-        check_out("feature-1")  # Back on branch
+        check_out("feature-1")
         os.chdir(initial_dir)
 
-        worktrees = git.get_worktree_root_dirs_by_branch()
-        assert len(worktrees) == 2  # feature-1 and feature-2
-        feature1_path = worktrees.get(LocalBranchShortName.of("feature-1"))
-        assert feature1_path is not None
-        assert os.path.realpath(feature1_path) == os.path.realpath(feature1_worktree)
-        feature2_path = worktrees.get(LocalBranchShortName.of("feature-2"))
-        assert feature2_path is not None
-        assert os.path.realpath(feature2_path) == os.path.realpath(feature2_worktree)
+        assert by_real_path(git.load_branch_by_worktree_root_dir()) == {
+            os.path.realpath(main_worktree_path): None,
+            os.path.realpath(feature1_worktree): feature1,
+            os.path.realpath(feature2_worktree): feature2,
+            os.path.realpath(feature3_worktree): None,
+        }
 
     def test_merge_base_cache_loading_and_saving(self) -> None:
         """Test merge-base cache with various edge cases."""

@@ -166,6 +166,22 @@ def add_worktree(branch: str) -> str:
     return worktree_path
 
 
+def add_detached_worktree() -> str:
+    """
+    Create a new worktree with detached HEAD (no branch ref) in a temporary directory.
+    Returns the path to the created worktree.
+    """
+    worktree_path = mkdtemp()
+    execute(f"git worktree add -f --detach {worktree_path}")
+    return worktree_path
+
+
+def detach_head() -> None:
+    """Detach HEAD at its current position in the current worktree (so the worktree no longer has
+    a checked-out branch, but the working tree's contents stay the same)."""
+    execute("git checkout --detach HEAD")
+
+
 def get_worktree_dirs() -> List[str]:
     lines = popen("git worktree list --porcelain").splitlines()
     return [line[len("worktree "):] for line in lines if line.startswith("worktree ")]

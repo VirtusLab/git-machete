@@ -356,10 +356,10 @@ class Git:
                 # If worktrees aren't supported, just return the current root dir
                 self.__main_worktree_root_dir = self.get_current_worktree_root_dir()
             else:
-                # `get_worktree_root_dirs_by_branch` parses the same porcelain output and sets
+                # `load_branch_by_worktree_root_dir` parses the same porcelain output and sets
                 # `__main_worktree_root_dir` as a side effect on its way past the first entry,
                 # so reuse it here rather than running `git worktree list --porcelain` a second time.
-                self.get_worktree_root_dirs_by_branch()
+                self.load_branch_by_worktree_root_dir()
                 if self.__main_worktree_root_dir is None:
                     # Should not happen in practice: `git worktree list --porcelain` always emits at least the main worktree.
                     # If it did, we'd have already raised inside `__parse_worktree_list_porcelain`.
@@ -387,53 +387,67 @@ class Git:
         # Let's use /-style paths even on Windows, for consistency with what git itself returns.
         return self.get_main_worktree_git_dir().join_fragments(*fragments)
 
-    def get_worktree_root_dirs_by_branch(self) -> Dict[LocalBranchShortName, AbsPath]:
+    def load_branch_by_worktree_root_dir(self) -> Dict[AbsPath, Optional[LocalBranchShortName]]:
         """
-        Returns a dict mapping branch names to their worktree paths.
-        The main worktree's current branch is included if it's on a branch.
-        Branches not checked out in any worktree are not in the dict.
-        Worktrees in detached HEAD state are not included (since they can't be looked up by branch name).
+        Returns a dict mapping every (non-stale) worktree path - main *and* linked - to the branch
+        checked out there, or to `None` for detached-HEAD worktrees. Stale worktrees (the admin entry
+        survives `rm -rf <worktree>` until `git worktree prune` / `git worktree repair` reconciles it)
+        are filtered out so we never render labels (or `cd` suggestions) for a directory that no longer
+        exists.
 
-        Same-branch-in-multiple-worktrees (only reachable via `git worktree add -f`, which is what the test harness
-        uses to set up some scenarios; vanilla `git worktree add` refuses with `fatal: '<branch>' is already used
-        by worktree at <path>`) collapses to "last entry from the porcelain output wins". The porcelain output puts
-        the main worktree first and linked worktrees after it, so this picks the linked entry over the main one -
-        which happens to be the more useful answer for our callers (they typically want "where else is this branch
-        held besides the main worktree") and also matches a human's intuition. We don't bother special-casing it
-        because the state is one git itself disallows by default.
+        Keying by path - rather than the natural-feeling "branch -> path" inverse - lets detached
+        worktrees stay first-class entries (with `branch=None`) rather than getting filtered out for
+        having no key. That in turn lets the worktree-label gate in `status` answer "is there *any*
+        linked worktree?" by simply asking `path in dict.keys()`, without first having to reason
+        about HEAD state - i.e. a repo with N linked worktrees all in detached HEAD looks correctly
+        like a multi-worktree repo for the purpose of label gating, rather than collapsing into the
+        single-worktree shape.
 
-        Uncached on purpose: in practice each CLI invocation calls this at most once per logical operation
-        (`status` reads it once for the worktree-label render; `traverse` reads it once on startup and then
-        owns a local copy that it mutates incrementally as it adds/removes worktrees). Adding a cache here
-        would just buy invalidation bookkeeping (every `worktree add` / `worktree remove` / `checkout` would
-        have to remember to clear it) without saving any real git calls.
+        Same-branch-in-multiple-worktrees (only reachable via `git worktree add -f`;
+        vanilla `git worktree add` refuses with `fatal: '<branch>' is already used by worktree at <path>`)
+        is represented honestly here - each worktree path is a distinct key, so both entries coexist.
+        The "last entry from the porcelain output wins" tiebreak still applies wherever a caller
+        needs to collapse the relation back to a single answer per branch:
+        since Python dicts preserve insertion order and porcelain emits the main worktree
+        first, a final-write-wins loop or a last-match scan picks the linked entry over the main one
+        (matching the spirit of `expect_branch_not_held_by_other_worktree` - "refuse to hold a branch
+        in a worktree besides the main one"). We don't special-case the foot-gun any harder since
+        vanilla `git worktree add` blocks the path that would produce it.
 
-        The main worktree path *is* cached on `__main_worktree_root_dir` (populated as a side effect of the
-        parse below) - that one's safe because the main worktree path doesn't change during a CLI invocation,
-        and it lets `get_main_worktree_root_dir` reuse our parse output rather than running
-        `git worktree list --porcelain` a second time when both getters are called together (as `status` does).
+        Uncached on purpose: in practice each CLI invocation calls this at most once per logical
+        operation (`status` reads it once for the worktree-label render; `traverse` reads it once on
+        startup and then owns a local copy that it mutates incrementally as it adds/removes worktrees).
+        Adding a cache here would just buy invalidation bookkeeping (every `worktree add` / `worktree
+        remove` / `checkout` would have to remember to clear it) without saving any real git calls.
+
+        The main worktree path *is* cached on `__main_worktree_root_dir` (populated as a side effect of
+        the parse below) - that one's safe because the main worktree path doesn't change during a CLI
+        invocation, and it lets `get_main_worktree_root_dir` reuse our parse output rather than running
+        `git worktree list --porcelain` a second time when both getters are called together (as `status`
+        does).
         """
         if self.get_git_version() < WORKTREE_COMMAND:
             return {}
 
         result = self._popen_git("worktree", "list", "--porcelain")
-        worktrees: Dict[LocalBranchShortName, AbsPath] = {}
+        worktrees: Dict[AbsPath, Optional[LocalBranchShortName]] = {}
 
         latest_worktree_path: Optional[AbsPath] = None
         latest_branch: Optional[LocalBranchShortName] = None
-        is_detached: bool = False
         is_first_entry: bool = True
 
         def complete_entry() -> None:
-            # Drop detached-HEAD entries (can't be looked up by branch name) and stale ones whose working dir
-            # was removed/moved out-of-band - `git worktree list` still emits the admin entry until
-            # `git worktree prune` / `git worktree repair` reconciles it, but rendering `[<basename>]` for a
-            # directory that no longer exists would just send the user `cd`-ing into a void. We check the path
-            # ourselves rather than relying on `--porcelain`'s `prunable` annotation, which wasn't emitted by
-            # older git versions (the annotation was added to porcelain output well after worktrees themselves).
-            if (latest_worktree_path and latest_branch is not None and
-                    not is_detached and os.path.isdir(latest_worktree_path)):
-                worktrees[latest_branch] = latest_worktree_path
+            # Drop stale entries whose working dir was removed/moved out-of-band - `git worktree list`
+            # keeps emitting the admin entry until `git worktree prune` / `git worktree repair`
+            # reconciles it, but recording `[<basename>]` for a directory that no longer exists would
+            # just send the user `cd`-ing into a void. We check the path ourselves rather than relying
+            # on `--porcelain`'s `prunable` annotation, which wasn't emitted by older git versions
+            # (the annotation was added to porcelain output well after worktrees themselves).
+            # Detached-HEAD entries are NOT dropped: they're recorded with `latest_branch=None` so the
+            # status label gate can still see that the worktree exists (and `traverse` can still warn
+            # about a `cd` away from the initial worktree even if HEAD there is detached).
+            if latest_worktree_path and os.path.isdir(latest_worktree_path):
+                worktrees[latest_worktree_path] = latest_branch
 
         for line in result.stdout.strip().splitlines():
             if line.startswith('worktree '):
@@ -447,15 +461,12 @@ class Git:
                 # Format: "branch refs/heads/<branch-name>"
                 branch_ref = line[len('branch '):]
                 latest_branch = LocalBranchFullName.of(branch_ref).to_short_name()
-                is_detached = False
             elif line.startswith('detached'):
-                is_detached = True
                 latest_branch = None
             elif line == '':
                 complete_entry()
                 latest_worktree_path = None
                 latest_branch = None
-                is_detached = False
 
         complete_entry()
 
@@ -783,7 +794,15 @@ class Git:
         post-hook ends up fired only to have `git checkout` then bail out with `fatal: '<branch>' is already used
         by worktree at <path>` (see https://github.com/VirtusLab/git-machete/issues/1711).
         """
-        target_worktree_root_dir = self.get_worktree_root_dirs_by_branch().get(branch)
+        # "Last porcelain entry wins" tiebreak for the same-branch-in-two-worktrees foot-gun: the
+        # final matching path overwrites earlier ones, and porcelain emits the main worktree first
+        # and linked worktrees after, so we end up picking the linked entry over the main one - i.e.
+        # we refuse the operation when the user is in main with a copy of `branch` *also* held by
+        # some linked worktree, but accept it when the user is already standing in that linked one.
+        target_worktree_root_dir: Optional[AbsPath] = None
+        for path, b in self.load_branch_by_worktree_root_dir().items():
+            if b == branch:
+                target_worktree_root_dir = path
         if target_worktree_root_dir is not None and target_worktree_root_dir != self.get_current_worktree_root_dir():
             raise MacheteException(
                 f"Branch <b>{branch}</b> is already checked out in another worktree at <b>{target_worktree_root_dir}</b>.\n"
