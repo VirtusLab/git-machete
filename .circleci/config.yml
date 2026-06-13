@@ -181,7 +181,12 @@ jobs:
     executor: macos_executor
     steps:
       - checkout: {method: blobless}
-      - run: brew install fish zsh
+      # `HOMEBREW_NO_ASK=1` opts out of Homebrew's "ask before install" confirmation prompt
+      # (enabled by default for `HOMEBREW_DEVELOPER`/`HOMEBREW_ASK`, only when stdin/stdout are TTYs).
+      # CircleCI's macOS executor allocates a pty for `run` steps, so without this opt-out
+      # `brew install` hangs on `Do you want to proceed with the installation? [y/n]` until the step is killed.
+      # `HOMEBREW_NO_AUTO_UPDATE=1` skips the (slow, unrelated) auto-update of outdated formulae before our install.
+      - run: HOMEBREW_NO_ASK=1 HOMEBREW_NO_AUTO_UPDATE=1 brew install fish zsh
       - run: pip install tox
       # TODO (#1005): make zsh completion tests pass on macOS machine on CI
       - run: tox -e test-completions -- -vv -k "not zsh"
@@ -298,7 +303,7 @@ only_special_branches: &only_special_branches
   filters:
     branches:
       only:
-        - "/.*(aur|ci[/-]|cross-platform|dependabot.pip|deploy|dry.run|hotfix|macos|nix|publish|release|windows).*/"
+        - "/.*(aur|ci[/-]|cross-platform|dependabot.pip|deploy|dry.run|homebrew|hotfix|macos|nix|publish|release|windows).*/"
         - "develop"
         - "master"
 
