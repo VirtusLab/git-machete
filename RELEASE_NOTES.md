@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.43.1
+
 ## New in git-machete 3.43.0
 
 - changed: `git machete slide-out` no longer requires the given branches to form a chain; literally any set of managed branches can be slid out at once, with each slid-out branch's surviving children reattached to (and, unless `--no-rebase` is passed, rebased/merged onto) that branch's nearest surviving ancestor
