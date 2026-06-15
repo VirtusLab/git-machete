@@ -46,10 +46,9 @@ and ``change-table`` and ``add-notification`` will be rebased onto develop (fork
 
 The most common use is to slide out a single branch whose upstream was a ``develop``/``master`` branch and that has been recently merged.
 
-The provided branches don't need to form a chain or be related in any way.
-The only restriction (in rebase/merge mode --- that is, unless ``--no-rebase`` is passed) is that at most one of the slid-out branches
-may have children that are not themselves being slid out --- otherwise there would be no single branch to rebase/merge those children onto.
-Pass ``--no-rebase`` to lift this restriction: the children are then only reattached to their new parents, never rebased or merged.
+The provided branches don't need to form a chain or be related in any way --- literally any set of managed branches can be slid out at once.
+When several of the slid-out branches have surviving children, each branch's children are rebased/merged onto that branch's own new parent
+(unless ``--no-rebase`` is passed, in which case the children are only reattached to their new parents, never rebased or merged).
 
 Root branches (branches without an upstream) can also be slid out.
 When a root branch is slid out, its children become new root branches, and no rebase or merge is performed (since there is no upstream to rebase/merge onto).

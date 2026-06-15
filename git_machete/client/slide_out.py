@@ -62,8 +62,10 @@ class SlideOutMacheteClient(MacheteClient):
         # Those surviving children are the ones that get reattached (and, unless `--no-rebase`, synced) to a new parent.
         # In the classic "slide out a chain b1 -> ... -> bN" case there's exactly one pivot (bN); the interior branches
         # have their only child slid out alongside them, so they contribute no surviving children.
+        # Any set of branches may be slid out at once: each pivot's children are reattached to (and, unless `--no-rebase`,
+        # rebased/merged onto) that pivot's own nearest surviving ancestor, so multiple independent pivots are fine.
         # `reattachment_by_pivot` records, for each pivot, where its surviving children will be reattached. It's computed
-        # once here (before the splice mutates the tree) and reused for the down-fork-point check, the rebase target,
+        # once here (before the splice mutates the tree) and reused for the down-fork-point check, the rebase/merge,
         # the worktree preflight, the post-slide-out hook payloads and the user-visible summary.
         pivots: List[ManagedBranchName] = []
         reattachment_by_pivot: Dict[LocalBranchShortName, Reattachment] = {}
@@ -73,32 +75,18 @@ class SlideOutMacheteClient(MacheteClient):
                 pivots.append(branch)
                 reattachment_by_pivot[branch] = Reattachment(children, nearest_surviving_ancestor(branch))
 
-        # The only restriction left in rebase/merge mode: all the children that need to be synced must hang off a single
-        # slid-out branch, so there's an unambiguous branch to rebase/merge them onto. With `--no-rebase` the children are
-        # merely reattached (each to its own nearest surviving ancestor), so multiple pivots are perfectly fine.
-        if not opt_no_rebase and len(pivots) > 1:
-            flat_pivots = ", ".join(f"<b>{pivot}</b>" for pivot in pivots)
-            raise MacheteException(
-                f"Multiple branches to slide out have child branches that would need to be reattached: {flat_pivots}.\n"
-                f"git-machete can't pick a single branch to rebase/merge their children onto.\n"
-                f"Pass `--no-rebase` to slide out without syncing the children, or slide out the branches in separate runs.")
-
         if opt_down_fork_point:
-            # `--down-fork-point` conflicts with `--no-rebase` (rejected in the CLI), so the single-pivot rule above holds.
-            if not pivots:
+            # `--down-fork-point` supplies a single fork point for a single rebase, so it only makes sense when there's
+            # exactly one child to sync across all pivots. (`--down-fork-point` also conflicts with `--no-rebase`, rejected in the CLI.)
+            children_to_sync = [child for pivot in pivots for child in reattachment_by_pivot[pivot].children]
+            if not children_to_sync:
                 raise MacheteException("Branch to slide out must have a child branch if option `--down-fork-point` is passed")
-            pivot_children = reattachment_by_pivot[pivots[0]].children
-            if len(pivot_children) > 1:
+            if len(children_to_sync) > 1:
                 raise MacheteException("Branch to slide out can't have more than one child branch "
                                        "if option `--down-fork-point` is passed")
             self.check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
                 fork_point=opt_down_fork_point,
-                branch=pivot_children[0])
-
-        # The single-pivot rule guarantees at most one rebase target when rebasing.
-        rebase_pivot: Optional[ManagedBranchName] = pivots[0] if pivots else None
-        new_parent: Optional[ManagedBranchName] = reattachment_by_pivot[rebase_pivot].new_parent if rebase_pivot is not None else None
-        new_children: List[ManagedBranchName] = reattachment_by_pivot[rebase_pivot].children if rebase_pivot is not None else []
+                branch=children_to_sync[0])
 
         # Where to land if the current branch is one of the branches about to disappear from the layout:
         # its nearest surviving ancestor, or - failing that (it was effectively a root) - its first surviving child.
@@ -129,19 +117,22 @@ class SlideOutMacheteClient(MacheteClient):
         # mutated but the rebase never performed (https://github.com/VirtusLab/git-machete/issues/1711).
         # Two sources of forthcoming checkouts:
         #   1. If the user is standing on a slid-out branch, we'll land them on `landing_branch`.
-        #   2. If `--no-rebase` wasn't passed, we'll check out each child to rebase/merge it onto `new_parent`,
-        #      except children whose annotation opts them out of both (mirror the same gate as the rebase loop
+        #   2. If `--no-rebase` wasn't passed, we'll check out each surviving child to rebase/merge it onto its pivot's
+        #      new parent, except children whose annotation opts them out of both (mirror the same gate as the rebase loop
         #      below so the preflight stays in lock-step with what actually gets checked out).
         branches_that_will_be_checked_out: List[LocalBranchShortName] = []
         if landing_branch is not None:
             branches_that_will_be_checked_out.append(landing_branch)
-        if not opt_no_rebase and new_parent is not None:
-            for child in new_children:
-                anno = self._state.get_annotation(child)
-                use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
-                use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
-                if use_merge or use_rebase:
-                    branches_that_will_be_checked_out.append(child)
+        if not opt_no_rebase:
+            for reattachment in reattachment_by_pivot.values():
+                if reattachment.new_parent is None:
+                    continue
+                for child in reattachment.children:
+                    anno = self._state.get_annotation(child)
+                    use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
+                    use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
+                    if use_merge or use_rebase:
+                        branches_that_will_be_checked_out.append(child)
         for branch in branches_that_will_be_checked_out:
             self._git.expect_branch_not_held_by_other_worktree(branch)
 
@@ -172,30 +163,35 @@ class SlideOutMacheteClient(MacheteClient):
             self._git.checkout_in_current_worktree(landing_branch)
             print_fmt(green_ok())
 
-        # Only perform rebase/merge if there is a new parent
-        if not opt_no_rebase and new_parent is not None:
-            for child in new_children:
-                anno = self._state.get_annotation(child)
-                use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
-                use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
-                if use_merge or use_rebase:
-                    print_fmt(f"Checking out <b>{child}</b>... ", newline=False)
-                    self._git.checkout_in_current_worktree(child)
-                    print_fmt(green_ok())
-                if use_merge:
-                    print_fmt(f"Merging <b>{new_parent}</b> into <b>{child}</b>...")
-                    self._git.merge(
-                        branch=new_parent,
-                        into=child,
-                        opt_no_edit_merge=opt_no_edit_merge)
-                elif use_rebase:
-                    print_fmt(f"Rebasing <b>{child}</b> onto <b>{new_parent}</b>...")
-                    child_fork_point = opt_down_fork_point or self.fork_point(child, use_overrides=True)
-                    self.rebase(
-                        onto=new_parent.full_name(),
-                        from_exclusive=child_fork_point,
-                        branch=child,
-                        opt_no_interactive_rebase=opt_no_interactive_rebase)
+        # Sync each pivot's surviving children onto that pivot's new parent (unless `--no-rebase`).
+        # Pivots whose children became new roots (no surviving ancestor) have nothing to sync onto.
+        if not opt_no_rebase:
+            for reattachment in reattachment_by_pivot.values():
+                new_parent = reattachment.new_parent
+                if new_parent is None:
+                    continue
+                for child in reattachment.children:
+                    anno = self._state.get_annotation(child)
+                    use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
+                    use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
+                    if use_merge or use_rebase:
+                        print_fmt(f"Checking out <b>{child}</b>... ", newline=False)
+                        self._git.checkout_in_current_worktree(child)
+                        print_fmt(green_ok())
+                    if use_merge:
+                        print_fmt(f"Merging <b>{new_parent}</b> into <b>{child}</b>...")
+                        self._git.merge(
+                            branch=new_parent,
+                            into=child,
+                            opt_no_edit_merge=opt_no_edit_merge)
+                    elif use_rebase:
+                        print_fmt(f"Rebasing <b>{child}</b> onto <b>{new_parent}</b>...")
+                        child_fork_point = opt_down_fork_point or self.fork_point(child, use_overrides=True)
+                        self.rebase(
+                            onto=new_parent.full_name(),
+                            from_exclusive=child_fork_point,
+                            branch=child,
+                            opt_no_interactive_rebase=opt_no_interactive_rebase)
 
         if opt_delete:
             self._delete_branches(branches_to_delete=branches_to_slide_out,

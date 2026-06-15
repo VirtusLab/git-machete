@@ -500,7 +500,10 @@ class TestSlideOut(BaseTest):
             "Branch to slide out can't have more than one child branch if option --down-fork-point is passed"
         )
 
-    def test_slide_out_with_multiple_pivots_in_rebase_mode(self) -> None:
+    def test_slide_out_multiple_pivots_in_rebase_mode(self) -> None:
+        # Multiple slid-out branches may each have surviving (not-also-slid-out) children: every pivot's children
+        # are rebased onto that pivot's own new parent. Here both `branch-1` (surviving child `branch-2b`) and
+        # `branch-2a` (surviving child `branch-3`) are slid out, so both children reattach to and rebase onto `branch-0`.
         create_repo()
         new_branch('branch-0')
         commit()
@@ -524,23 +527,23 @@ class TestSlideOut(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        # In rebase/merge mode at most one slid-out branch may have surviving (not-also-slid-out) children,
-        # so there's a single branch to rebase those children onto. Here both `branch-1` (surviving child `branch-2b`)
-        # and `branch-2a` (surviving child `branch-3`) would need their children reattached, hence the error.
-        def multiple_pivots_failure(pivots: str) -> str:
-            return (
-                f"Multiple branches to slide out have child branches that would need to be reattached: {pivots}.\n"
-                "git-machete can't pick a single branch to rebase/merge their children onto.\n"
-                "Pass --no-rebase to slide out without syncing the children, or slide out the branches in separate runs."
-            )
-        assert_failure(
-            ['slide-out', 'branch-2a', 'branch-1'],
-            multiple_pivots_failure("branch-2a, branch-1")
+        assert_success(
+            ['slide-out', '-n', 'branch-1', 'branch-2a'],
+            "Sliding out branch-1\n"
+            "Sliding out branch-2a\n"
+            "Reattaching branch-2b under branch-0\n"
+            "Reattaching branch-3 under branch-0\n"
+            "Checking out branch-2b... OK\n"
+            "Rebasing branch-2b onto branch-0...\n"
+            "Checking out branch-3... OK\n"
+            "Rebasing branch-3 onto branch-0...\n"
         )
-        assert_failure(
-            ['slide-out', 'branch-1', 'branch-2a'],
-            multiple_pivots_failure("branch-1, branch-2a")
-        )
+
+        assert read_branch_layout_file().splitlines() == [
+            "branch-0",
+            "    branch-3",
+            "    branch-2b",
+        ]
 
     def test_slide_out_non_chain_branches(self) -> None:
         # Sliding out a set of branches that do NOT form a chain used to fail with a cryptic
