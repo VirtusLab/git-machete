@@ -19,6 +19,27 @@
     The GitHub repository (the part after ``/`` in ``organization/repository``); otherwise inferred from the remote URL.
     For example, ``git config machete.github.repository git-machete``
 
+``machete.github.baseRemote``
+    Like ``machete.github.remote``, but used to locate the base repository that the pull request targets,
+    which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+    Defaults to ``machete.github.remote`` when unset.
+    For example, ``git config machete.github.baseRemote upstream``
+
+``machete.github.baseOrganization``
+    Like ``machete.github.organization``, but for the base repository that the pull request targets.
+    Unless both this key and ``machete.github.baseRepository`` are set, the base organization and repository are derived
+    from the URL of ``machete.github.baseRemote``; there is no fall back to ``machete.github.organization``.
+    Must be set together with ``machete.github.baseRepository``.
+    For example, ``git config machete.github.baseOrganization VirtusLab``
+
+``machete.github.baseRepository``
+    Like ``machete.github.repository``, but for the base repository that the pull request targets.
+    Unless both this key and ``machete.github.baseOrganization`` are set, the base organization and repository are derived
+    from the URL of ``machete.github.baseRemote``; there is no fall back to ``machete.github.repository``.
+    Must be set together with ``machete.github.baseOrganization``.
+    For example, ``git config machete.github.baseRepository git-machete``
+
 Note that you do **not** need to set all four keys at once.
 For example, in a typical usage of GitHub Enterprise, it should be enough to just set ``machete.github.domain``.
-Only ``machete.github.organization`` and ``machete.github.repository`` must be specified together.
+Only ``machete.github.organization`` and ``machete.github.repository`` must be specified together,
+as must ``machete.github.baseOrganization`` and ``machete.github.baseRepository``.

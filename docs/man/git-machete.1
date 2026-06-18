@@ -30,7 +30,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .TH "GIT-MACHETE" "1" "" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.43.1
+git-machete \- git-machete 3.44.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -321,7 +321,7 @@ Note: \fBconfig\fP is not a command as such, just a help topic (there is no \fBg
 \fBGit config keys\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.github.{domain,remote,organization,repository}\fP
+.B \fBmachete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}\fP
 .INDENT 7.0
 .TP
 .B \fBmachete.github.domain\fP
@@ -344,11 +344,32 @@ For example, \fBgit config machete.github.organization VirtusLab\fP
 .B \fBmachete.github.repository\fP
 The GitHub repository (the part after \fB/\fP in \fBorganization/repository\fP); otherwise inferred from the remote URL.
 For example, \fBgit config machete.github.repository git\-machete\fP
+.TP
+.B \fBmachete.github.baseRemote\fP
+Like \fBmachete.github.remote\fP, but used to locate the base repository that the pull request targets,
+which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+Defaults to \fBmachete.github.remote\fP when unset.
+For example, \fBgit config machete.github.baseRemote upstream\fP
+.TP
+.B \fBmachete.github.baseOrganization\fP
+Like \fBmachete.github.organization\fP, but for the base repository that the pull request targets.
+Unless both this key and \fBmachete.github.baseRepository\fP are set, the base organization and repository are derived
+from the URL of \fBmachete.github.baseRemote\fP; there is no fall back to \fBmachete.github.organization\fP\&.
+Must be set together with \fBmachete.github.baseRepository\fP\&.
+For example, \fBgit config machete.github.baseOrganization VirtusLab\fP
+.TP
+.B \fBmachete.github.baseRepository\fP
+Like \fBmachete.github.repository\fP, but for the base repository that the pull request targets.
+Unless both this key and \fBmachete.github.baseOrganization\fP are set, the base organization and repository are derived
+from the URL of \fBmachete.github.baseRemote\fP; there is no fall back to \fBmachete.github.repository\fP\&.
+Must be set together with \fBmachete.github.baseOrganization\fP\&.
+For example, \fBgit config machete.github.baseRepository git\-machete\fP
 .UNINDENT
 .sp
 Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
-Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together.
+Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together,
+as must \fBmachete.github.baseOrganization\fP and \fBmachete.github.baseRepository\fP\&.
 .TP
 .B \fBmachete.github.annotateWithUrls\fP
 Setting this config key to \fBtrue\fP will cause all commands that write GitHub PR numbers into annotations
@@ -379,7 +400,7 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .UNINDENT
 .UNINDENT
 .TP
-.B \fBmachete.gitlab.{domain,remote,namespace,project}\fP
+.B \fBmachete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}\fP
 .INDENT 7.0
 .TP
 .B \fBmachete.gitlab.domain\fP
@@ -402,11 +423,32 @@ For example, \fBgit config machete.gitlab.namespace foo/bar\fP
 .B \fBmachete.gitlab.project\fP
 The GitLab project (the part after the final \fB/\fP in \fBnamespace/project\fP); otherwise inferred from the remote URL.
 For example, \fBgit config machete.gitlab.project hello\-world\fP
+.TP
+.B \fBmachete.gitlab.baseRemote\fP
+Like \fBmachete.gitlab.remote\fP, but used to locate the target project that the merge request targets,
+which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+Defaults to \fBmachete.gitlab.remote\fP when unset.
+For example, \fBgit config machete.gitlab.baseRemote upstream\fP
+.TP
+.B \fBmachete.gitlab.baseNamespace\fP
+Like \fBmachete.gitlab.namespace\fP, but for the target project that the merge request targets.
+Unless both this key and \fBmachete.gitlab.baseProject\fP are set, the target namespace and project are derived
+from the URL of \fBmachete.gitlab.baseRemote\fP; there is no fall back to \fBmachete.gitlab.namespace\fP\&.
+Must be set together with \fBmachete.gitlab.baseProject\fP\&.
+For example, \fBgit config machete.gitlab.baseNamespace foo/bar\fP
+.TP
+.B \fBmachete.gitlab.baseProject\fP
+Like \fBmachete.gitlab.project\fP, but for the target project that the merge request targets.
+Unless both this key and \fBmachete.gitlab.baseNamespace\fP are set, the target namespace and project are derived
+from the URL of \fBmachete.gitlab.baseRemote\fP; there is no fall back to \fBmachete.gitlab.project\fP\&.
+Must be set together with \fBmachete.gitlab.baseNamespace\fP\&.
+For example, \fBgit config machete.gitlab.baseProject hello\-world\fP
 .UNINDENT
 .sp
 Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage for GitLab self\-managed instance, it should be enough to just set \fBmachete.gitlab.domain\fP\&.
-Only \fBmachete.gitlab.namespace\fP and \fBmachete.gitlab.project\fP must be specified together.
+Only \fBmachete.gitlab.namespace\fP and \fBmachete.gitlab.project\fP must be specified together,
+as must \fBmachete.gitlab.baseNamespace\fP and \fBmachete.gitlab.baseProject\fP\&.
 .TP
 .B \fBmachete.gitlab.annotateWithUrls\fP
 Setting this config key to \fBtrue\fP will cause all commands that write GitLab MR numbers into annotations
@@ -1159,7 +1201,7 @@ Update PR descriptions for all PRs both upstream and downstream of the PR for th
 \fBGit config keys\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.github.{domain,remote,organization,repository}\fP (all subcommands)
+.B \fBmachete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}\fP (all subcommands)
 .INDENT 7.0
 .TP
 .B \fBmachete.github.domain\fP
@@ -1182,11 +1224,32 @@ For example, \fBgit config machete.github.organization VirtusLab\fP
 .B \fBmachete.github.repository\fP
 The GitHub repository (the part after \fB/\fP in \fBorganization/repository\fP); otherwise inferred from the remote URL.
 For example, \fBgit config machete.github.repository git\-machete\fP
+.TP
+.B \fBmachete.github.baseRemote\fP
+Like \fBmachete.github.remote\fP, but used to locate the base repository that the pull request targets,
+which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+Defaults to \fBmachete.github.remote\fP when unset.
+For example, \fBgit config machete.github.baseRemote upstream\fP
+.TP
+.B \fBmachete.github.baseOrganization\fP
+Like \fBmachete.github.organization\fP, but for the base repository that the pull request targets.
+Unless both this key and \fBmachete.github.baseRepository\fP are set, the base organization and repository are derived
+from the URL of \fBmachete.github.baseRemote\fP; there is no fall back to \fBmachete.github.organization\fP\&.
+Must be set together with \fBmachete.github.baseRepository\fP\&.
+For example, \fBgit config machete.github.baseOrganization VirtusLab\fP
+.TP
+.B \fBmachete.github.baseRepository\fP
+Like \fBmachete.github.repository\fP, but for the base repository that the pull request targets.
+Unless both this key and \fBmachete.github.baseOrganization\fP are set, the base organization and repository are derived
+from the URL of \fBmachete.github.baseRemote\fP; there is no fall back to \fBmachete.github.repository\fP\&.
+Must be set together with \fBmachete.github.baseOrganization\fP\&.
+For example, \fBgit config machete.github.baseRepository git\-machete\fP
 .UNINDENT
 .sp
 Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
-Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together.
+Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together,
+as must \fBmachete.github.baseOrganization\fP and \fBmachete.github.baseRepository\fP\&.
 .TP
 .B \fBmachete.github.annotateWithUrls\fP (all subcommands)
 Setting this config key to \fBtrue\fP will cause all commands that write GitHub PR numbers into annotations
@@ -1433,7 +1496,7 @@ Update MR descriptions for all MRs both upstream and downstream of the MR for th
 \fBGit config keys\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.gitlab.{domain,remote,namespace,project}\fP (all subcommands)
+.B \fBmachete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}\fP (all subcommands)
 .INDENT 7.0
 .TP
 .B \fBmachete.gitlab.domain\fP
@@ -1456,11 +1519,32 @@ For example, \fBgit config machete.gitlab.namespace foo/bar\fP
 .B \fBmachete.gitlab.project\fP
 The GitLab project (the part after the final \fB/\fP in \fBnamespace/project\fP); otherwise inferred from the remote URL.
 For example, \fBgit config machete.gitlab.project hello\-world\fP
+.TP
+.B \fBmachete.gitlab.baseRemote\fP
+Like \fBmachete.gitlab.remote\fP, but used to locate the target project that the merge request targets,
+which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+Defaults to \fBmachete.gitlab.remote\fP when unset.
+For example, \fBgit config machete.gitlab.baseRemote upstream\fP
+.TP
+.B \fBmachete.gitlab.baseNamespace\fP
+Like \fBmachete.gitlab.namespace\fP, but for the target project that the merge request targets.
+Unless both this key and \fBmachete.gitlab.baseProject\fP are set, the target namespace and project are derived
+from the URL of \fBmachete.gitlab.baseRemote\fP; there is no fall back to \fBmachete.gitlab.namespace\fP\&.
+Must be set together with \fBmachete.gitlab.baseProject\fP\&.
+For example, \fBgit config machete.gitlab.baseNamespace foo/bar\fP
+.TP
+.B \fBmachete.gitlab.baseProject\fP
+Like \fBmachete.gitlab.project\fP, but for the target project that the merge request targets.
+Unless both this key and \fBmachete.gitlab.baseNamespace\fP are set, the target namespace and project are derived
+from the URL of \fBmachete.gitlab.baseRemote\fP; there is no fall back to \fBmachete.gitlab.project\fP\&.
+Must be set together with \fBmachete.gitlab.baseNamespace\fP\&.
+For example, \fBgit config machete.gitlab.baseProject hello\-world\fP
 .UNINDENT
 .sp
 Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage for GitLab self\-managed instance, it should be enough to just set \fBmachete.gitlab.domain\fP\&.
-Only \fBmachete.gitlab.namespace\fP and \fBmachete.gitlab.project\fP must be specified together.
+Only \fBmachete.gitlab.namespace\fP and \fBmachete.gitlab.project\fP must be specified together,
+as must \fBmachete.gitlab.baseNamespace\fP and \fBmachete.gitlab.baseProject\fP\&.
 .TP
 .B \fBmachete.gitlab.annotateWithUrls\fP (all subcommands)
 Setting this config key to \fBtrue\fP will cause all commands that write GitLab MR numbers into annotations

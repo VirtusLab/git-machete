@@ -244,7 +244,7 @@ long_docs: Dict[str, str] = {
 
         <b>Git config keys</b>
 
-           `machete.github.{domain,remote,organization,repository}`
+           `machete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}`
              `machete.github.domain`
                 The domain of the GitHub API server, for use with GitHub Enterprise; otherwise inferred from the remote URL.
                 For example, `git config machete.github.domain git.example.org`
@@ -266,9 +266,30 @@ long_docs: Dict[str, str] = {
                 The GitHub repository (the part after `/` in `organization/repository`); otherwise inferred from the remote URL.
                 For example, `git config machete.github.repository git-machete`
 
+             `machete.github.baseRemote`
+                Like `machete.github.remote`, but used to locate the base repository that the pull request targets,
+                which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+                Defaults to `machete.github.remote` when unset.
+                For example, `git config machete.github.baseRemote upstream`
+
+             `machete.github.baseOrganization`
+                Like `machete.github.organization`, but for the base repository that the pull request targets.
+                Unless both this key and `machete.github.baseRepository` are set, the base organization and repository are derived
+                from the URL of `machete.github.baseRemote`; there is no fall back to `machete.github.organization`.
+                Must be set together with `machete.github.baseRepository`.
+                For example, `git config machete.github.baseOrganization VirtusLab`
+
+             `machete.github.baseRepository`
+                Like `machete.github.repository`, but for the base repository that the pull request targets.
+                Unless both this key and `machete.github.baseOrganization` are set, the base organization and repository are derived
+                from the URL of `machete.github.baseRemote`; there is no fall back to `machete.github.repository`.
+                Must be set together with `machete.github.baseOrganization`.
+                For example, `git config machete.github.baseRepository git-machete`
+
              Note that you do <b>not</b> need to set all four keys at once.
              For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
-             Only `machete.github.organization` and `machete.github.repository` must be specified together.
+             Only `machete.github.organization` and `machete.github.repository` must be specified together,
+             as must `machete.github.baseOrganization` and `machete.github.baseRepository`.
 
            `machete.github.annotateWithUrls`
              Setting this config key to `true` will cause all commands that write GitHub PR numbers into annotations
@@ -289,7 +310,7 @@ long_docs: Dict[str, str] = {
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only PR numbers & titles)
               * `none`                — prepend no intro to the PR description at all
 
-           `machete.gitlab.{domain,remote,namespace,project}`
+           `machete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}`
              `machete.gitlab.domain`
                 The domain of the GitLab API server, for use with a GitLab self-managed instance; otherwise inferred from the remote URL.
                 For example, `git config machete.gitlab.domain git.example.org`
@@ -311,9 +332,30 @@ long_docs: Dict[str, str] = {
                 The GitLab project (the part after the final `/` in `namespace/project`); otherwise inferred from the remote URL.
                 For example, `git config machete.gitlab.project hello-world`
 
+             `machete.gitlab.baseRemote`
+                Like `machete.gitlab.remote`, but used to locate the target project that the merge request targets,
+                which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+                Defaults to `machete.gitlab.remote` when unset.
+                For example, `git config machete.gitlab.baseRemote upstream`
+
+             `machete.gitlab.baseNamespace`
+                Like `machete.gitlab.namespace`, but for the target project that the merge request targets.
+                Unless both this key and `machete.gitlab.baseProject` are set, the target namespace and project are derived
+                from the URL of `machete.gitlab.baseRemote`; there is no fall back to `machete.gitlab.namespace`.
+                Must be set together with `machete.gitlab.baseProject`.
+                For example, `git config machete.gitlab.baseNamespace foo/bar`
+
+             `machete.gitlab.baseProject`
+                Like `machete.gitlab.project`, but for the target project that the merge request targets.
+                Unless both this key and `machete.gitlab.baseNamespace` are set, the target namespace and project are derived
+                from the URL of `machete.gitlab.baseRemote`; there is no fall back to `machete.gitlab.project`.
+                Must be set together with `machete.gitlab.baseNamespace`.
+                For example, `git config machete.gitlab.baseProject hello-world`
+
              Note that you do <b>not</b> need to set all four keys at once.
              For example, in a typical usage for GitLab self-managed instance, it should be enough to just set `machete.gitlab.domain`.
-             Only `machete.gitlab.namespace` and `machete.gitlab.project` must be specified together.
+             Only `machete.gitlab.namespace` and `machete.gitlab.project` must be specified together,
+             as must `machete.gitlab.baseNamespace` and `machete.gitlab.baseProject`.
 
            `machete.gitlab.annotateWithUrls`
              Setting this config key to `true` will cause all commands that write GitLab MR numbers into annotations
@@ -789,7 +831,7 @@ long_docs: Dict[str, str] = {
 
         <b>Git config keys</b>
 
-           `machete.github.{domain,remote,organization,repository}` (all subcommands)
+           `machete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}` (all subcommands)
              `machete.github.domain`
                 The domain of the GitHub API server, for use with GitHub Enterprise; otherwise inferred from the remote URL.
                 For example, `git config machete.github.domain git.example.org`
@@ -811,9 +853,30 @@ long_docs: Dict[str, str] = {
                 The GitHub repository (the part after `/` in `organization/repository`); otherwise inferred from the remote URL.
                 For example, `git config machete.github.repository git-machete`
 
+             `machete.github.baseRemote`
+                Like `machete.github.remote`, but used to locate the base repository that the pull request targets,
+                which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+                Defaults to `machete.github.remote` when unset.
+                For example, `git config machete.github.baseRemote upstream`
+
+             `machete.github.baseOrganization`
+                Like `machete.github.organization`, but for the base repository that the pull request targets.
+                Unless both this key and `machete.github.baseRepository` are set, the base organization and repository are derived
+                from the URL of `machete.github.baseRemote`; there is no fall back to `machete.github.organization`.
+                Must be set together with `machete.github.baseRepository`.
+                For example, `git config machete.github.baseOrganization VirtusLab`
+
+             `machete.github.baseRepository`
+                Like `machete.github.repository`, but for the base repository that the pull request targets.
+                Unless both this key and `machete.github.baseOrganization` are set, the base organization and repository are derived
+                from the URL of `machete.github.baseRemote`; there is no fall back to `machete.github.repository`.
+                Must be set together with `machete.github.baseOrganization`.
+                For example, `git config machete.github.baseRepository git-machete`
+
              Note that you do <b>not</b> need to set all four keys at once.
              For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
-             Only `machete.github.organization` and `machete.github.repository` must be specified together.
+             Only `machete.github.organization` and `machete.github.repository` must be specified together,
+             as must `machete.github.baseOrganization` and `machete.github.baseRepository`.
 
            `machete.github.annotateWithUrls` (all subcommands)
              Setting this config key to `true` will cause all commands that write GitHub PR numbers into annotations
@@ -988,7 +1051,7 @@ long_docs: Dict[str, str] = {
 
         <b>Git config keys</b>
 
-           `machete.gitlab.{domain,remote,namespace,project}` (all subcommands)
+           `machete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}` (all subcommands)
              `machete.gitlab.domain`
                 The domain of the GitLab API server, for use with a GitLab self-managed instance; otherwise inferred from the remote URL.
                 For example, `git config machete.gitlab.domain git.example.org`
@@ -1010,9 +1073,30 @@ long_docs: Dict[str, str] = {
                 The GitLab project (the part after the final `/` in `namespace/project`); otherwise inferred from the remote URL.
                 For example, `git config machete.gitlab.project hello-world`
 
+             `machete.gitlab.baseRemote`
+                Like `machete.gitlab.remote`, but used to locate the target project that the merge request targets,
+                which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+                Defaults to `machete.gitlab.remote` when unset.
+                For example, `git config machete.gitlab.baseRemote upstream`
+
+             `machete.gitlab.baseNamespace`
+                Like `machete.gitlab.namespace`, but for the target project that the merge request targets.
+                Unless both this key and `machete.gitlab.baseProject` are set, the target namespace and project are derived
+                from the URL of `machete.gitlab.baseRemote`; there is no fall back to `machete.gitlab.namespace`.
+                Must be set together with `machete.gitlab.baseProject`.
+                For example, `git config machete.gitlab.baseNamespace foo/bar`
+
+             `machete.gitlab.baseProject`
+                Like `machete.gitlab.project`, but for the target project that the merge request targets.
+                Unless both this key and `machete.gitlab.baseNamespace` are set, the target namespace and project are derived
+                from the URL of `machete.gitlab.baseRemote`; there is no fall back to `machete.gitlab.project`.
+                Must be set together with `machete.gitlab.baseNamespace`.
+                For example, `git config machete.gitlab.baseProject hello-world`
+
              Note that you do <b>not</b> need to set all four keys at once.
              For example, in a typical usage for GitLab self-managed instance, it should be enough to just set `machete.gitlab.domain`.
-             Only `machete.gitlab.namespace` and `machete.gitlab.project` must be specified together.
+             Only `machete.gitlab.namespace` and `machete.gitlab.project` must be specified together,
+             as must `machete.gitlab.baseNamespace` and `machete.gitlab.baseProject`.
 
            `machete.gitlab.annotateWithUrls` (all subcommands)
              Setting this config key to `true` will cause all commands that write GitLab MR numbers into annotations

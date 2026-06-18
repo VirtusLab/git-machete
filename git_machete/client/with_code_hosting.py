@@ -253,7 +253,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         domain = self.__derive_code_hosting_domain()
         head_org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=head)
-        base_org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=base)
+        base_org_repo_remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=base, is_base=True)
         debug(f"head_org_repo_remote={head_org_repo_remote}, base_org_repo_remote={base_org_repo_remote}")
 
         base_org_repo = base_org_repo_remote.extract_org_and_repo()
@@ -593,29 +593,39 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
     def __derive_org_repo_and_remote(
             self,
             domain: str,
-            branch_used_for_tracking_data: Optional[LocalBranchShortName] = None
+            branch_used_for_tracking_data: Optional[LocalBranchShortName] = None,
+            *,
+            is_base: bool = False
     ) -> OrganizationAndRepositoryAndRemote:
         spec = self.code_hosting_spec
         keys = spec.git_config_keys
-        remote_from_config = self._config.code_hosting_remote(keys)
-        org_from_config = self._config.code_hosting_organization(keys)
-        repo_from_config = self._config.code_hosting_repository(keys)
+        if is_base:
+            remote_key, org_key, repo_key = keys.base_remote, keys.base_organization, keys.base_repository
+            # The base remote falls back to the (non-base) remote; the base organization/repository have no such fallback.
+            remote_from_config = self._config.code_hosting_base_remote(keys) or self._config.code_hosting_remote(keys)
+            org_from_config = self._config.code_hosting_base_organization(keys)
+            repo_from_config = self._config.code_hosting_base_repository(keys)
+        else:
+            remote_key, org_key, repo_key = keys.remote, keys.organization, keys.repository
+            remote_from_config = self._config.code_hosting_remote(keys)
+            org_from_config = self._config.code_hosting_organization(keys)
+            repo_from_config = self._config.code_hosting_repository(keys)
 
         url_for_remote: Dict[str, str] = self.__get_url_for_remote()
         if not url_for_remote:
             raise MacheteException('No remotes defined for this repository (see `git remote`)')
 
         if org_from_config and not repo_from_config:
-            raise MacheteException(f'`{keys.organization}` git config key is present, '
-                                   f'but `{keys.repository}` is missing. Both keys must be present to take effect')
+            raise MacheteException(f'`{org_key}` git config key is present, '
+                                   f'but `{repo_key}` is missing. Both keys must be present to take effect')
 
         if not org_from_config and repo_from_config:
-            raise MacheteException(f'`{keys.repository}` git config key is present, '
-                                   f'but `{keys.organization}` is missing. Both keys must be present to take effect')
+            raise MacheteException(f'`{repo_key}` git config key is present, '
+                                   f'but `{org_key}` is missing. Both keys must be present to take effect')
 
         if remote_from_config:
             if remote_from_config not in url_for_remote:
-                raise MacheteException(f'`{keys.remote}` git config key points to `{remote_from_config}` remote, '
+                raise MacheteException(f'`{remote_key}` git config key points to `{remote_from_config}` remote, '
                                        'but such remote does not exist')
 
         if remote_from_config and org_from_config and repo_from_config:
@@ -625,7 +635,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             url = url_for_remote[remote_from_config]
             org_and_repo = OrganizationAndRepository.from_url(domain, url)
             if not org_and_repo:
-                raise MacheteException(f'`{keys.remote}` git config key points to `{remote_from_config}` remote, '
+                raise MacheteException(f'`{remote_key}` git config key points to `{remote_from_config}` remote, '
                                        f'but its URL `{url}` does not correspond to a valid {spec.display_name} {spec.repository_name}')
             return OrganizationAndRepositoryAndRemote(org_and_repo.organization, org_and_repo.repository, remote_from_config)
 
@@ -636,10 +646,10 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                         OrganizationAndRepository(org_from_config, repo_from_config):
                     return OrganizationAndRepositoryAndRemote(org_from_config, repo_from_config, remote)
             raise MacheteException(
-                f'Both `{keys.organization}` and `{keys.repository}` git config keys are defined, '
+                f'Both `{org_key}` and `{repo_key}` git config keys are defined, '
                 f'but no remote seems to correspond to `{org_from_config}/{repo_from_config}` '
                 f'({spec.organization_name}/{spec.repository_name}) on {spec.display_name}.\n'
-                f'Consider pointing to the remote via `{keys.remote}` config key')
+                f'Consider pointing to the remote via `{remote_key}` config key')
 
         remote_and_organization_and_repository_from_urls: Dict[str, OrganizationAndRepositoryAndRemote] = {
             remote: OrganizationAndRepositoryAndRemote(oar.organization, oar.repository, remote) for remote, oar in (

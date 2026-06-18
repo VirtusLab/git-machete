@@ -35,3 +35,7 @@ parts/
 prime/
 *.snap
 stage/
+
+# Tooling artifacts
+.local/
+pyrefly.toml

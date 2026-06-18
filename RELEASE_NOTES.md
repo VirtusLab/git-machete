@@ -1,7 +1,9 @@
 # Release notes
 
-## New in git-machete 3.43.1
+## New in git-machete 3.44.0
 
+- added: `machete.github.{baseRemote,baseOrganization,baseRepository}` and `machete.gitlab.{baseRemote,baseNamespace,baseProject}` git config keys
+  to locate the base/target repository of a pull/merge request independently of the head/source repository
 - changed: `git machete {github,gitlab} create-{pr,mr}` and `restack-{pr,mr}` now push the head/source branch to the remote
   determined by the code-hosting logic (the `machete.{github,gitlab}.remote` git config key when set, otherwise the remote inferred from the matching remote URL), consistently with how the base/target branch is already handled;
   in an ambiguous multi-remote setup with no remote configured, they now abort asking for the relevant git config keys rather than prompting to pick a remote interactively

@@ -116,26 +116,35 @@ class MacheteConfig:
         # We still unset the now-deprecated whileDescendantOf key.
         self._git.unset_config_attr(_override_fork_point_while_descendant_of_key(branch))
 
-    def code_hosting_domain(self, spec: CodeHostingGitConfigKeys) -> Optional[str]:
-        return self._git.get_config_attr_or_none(key=spec.domain)
+    def code_hosting_domain(self, keys: CodeHostingGitConfigKeys) -> Optional[str]:
+        return self._git.get_config_attr_or_none(key=keys.domain)
 
-    def code_hosting_remote(self, spec: CodeHostingGitConfigKeys) -> Optional[str]:
-        return self._git.get_config_attr_or_none(key=spec.remote)
+    def code_hosting_remote(self, keys: CodeHostingGitConfigKeys) -> Optional[str]:
+        return self._git.get_config_attr_or_none(key=keys.remote)
 
-    def code_hosting_organization(self, spec: CodeHostingGitConfigKeys) -> Optional[str]:
-        return self._git.get_config_attr_or_none(key=spec.organization)
+    def code_hosting_organization(self, keys: CodeHostingGitConfigKeys) -> Optional[str]:
+        return self._git.get_config_attr_or_none(key=keys.organization)
 
-    def code_hosting_repository(self, spec: CodeHostingGitConfigKeys) -> Optional[str]:
-        return self._git.get_config_attr_or_none(key=spec.repository)
+    def code_hosting_repository(self, keys: CodeHostingGitConfigKeys) -> Optional[str]:
+        return self._git.get_config_attr_or_none(key=keys.repository)
 
-    def code_hosting_annotate_with_urls(self, spec: CodeHostingGitConfigKeys) -> bool:
-        return self._git.get_boolean_config_attr(key=spec.annotate_with_urls, default_value=False)
+    def code_hosting_base_remote(self, keys: CodeHostingGitConfigKeys) -> Optional[str]:
+        return self._git.get_config_attr_or_none(key=keys.base_remote)
 
-    def code_hosting_force_description_from_commit_message(self, spec: CodeHostingGitConfigKeys) -> bool:
-        return self._git.get_boolean_config_attr(key=spec.force_description_from_commit_message, default_value=False)
+    def code_hosting_base_organization(self, keys: CodeHostingGitConfigKeys) -> Optional[str]:
+        return self._git.get_config_attr_or_none(key=keys.base_organization)
 
-    def code_hosting_pr_description_intro_style(self, spec: CodeHostingGitConfigKeys) -> PRDescriptionIntroStyle:
-        value = self._git.get_config_attr(spec.pr_description_intro_style, default_value="up-only")
+    def code_hosting_base_repository(self, keys: CodeHostingGitConfigKeys) -> Optional[str]:
+        return self._git.get_config_attr_or_none(key=keys.base_repository)
+
+    def code_hosting_annotate_with_urls(self, keys: CodeHostingGitConfigKeys) -> bool:
+        return self._git.get_boolean_config_attr(key=keys.annotate_with_urls, default_value=False)
+
+    def code_hosting_force_description_from_commit_message(self, keys: CodeHostingGitConfigKeys) -> bool:
+        return self._git.get_boolean_config_attr(key=keys.force_description_from_commit_message, default_value=False)
+
+    def code_hosting_pr_description_intro_style(self, keys: CodeHostingGitConfigKeys) -> PRDescriptionIntroStyle:
+        value = self._git.get_config_attr(keys.pr_description_intro_style, default_value="up-only")
         return PRDescriptionIntroStyle.from_string(
             value=value,
-            from_where=f"`{spec.pr_description_intro_style}` git config key")
+            from_where=f"`{keys.pr_description_intro_style}` git config key")

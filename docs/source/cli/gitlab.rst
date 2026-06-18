@@ -156,7 +156,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 
 **Git config keys**
 
-``machete.gitlab.{domain,remote,namespace,project}`` (all subcommands)
+``machete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}`` (all subcommands)
   .. include:: git-config-keys/gitlab_access.rst
 
 ``machete.gitlab.annotateWithUrls`` (all subcommands)

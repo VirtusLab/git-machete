@@ -154,6 +154,9 @@ class CodeHostingGitConfigKeys(NamedTuple):
     organization: str
     repository: str
     remote: str
+    base_organization: str
+    base_repository: str
+    base_remote: str
     annotate_with_urls: str
     force_description_from_commit_message: str
     pr_description_intro_style: str

@@ -165,7 +165,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
 
 **Git config keys**
 
-``machete.github.{domain,remote,organization,repository}`` (all subcommands)
+``machete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}`` (all subcommands)
   .. include:: git-config-keys/github_access.rst
 
 ``machete.github.annotateWithUrls`` (all subcommands)
