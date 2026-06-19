@@ -2,14 +2,10 @@ from pytest_mock import MockerFixture
 
 from tests import mockers_github, mockers_gitlab
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_argument_error, assert_success,
-                              launch_command, rewrite_branch_layout_file)
-from tests.git_repository import (add_remote, check_out, commit, create_repo,
-                                  create_repo_with_remote, new_branch)
-from tests.mockers_github import (MockGitHubAPIState,
-                                  mock_github_token_for_domain_fake)
-from tests.mockers_gitlab import (MockGitLabAPIState,
-                                  mock_gitlab_token_for_domain_fake)
+from tests.cli_runner import assert_argument_error, assert_success, launch_command, rewrite_branch_layout_file
+from tests.git_repository import add_remote, check_out, commit, create_repo, create_repo_with_remote, new_branch
+from tests.mockers_github import MockGitHubAPIState, mock_github_token_for_domain_fake
+from tests.mockers_gitlab import MockGitLabAPIState, mock_gitlab_token_for_domain_fake
 
 
 class TestAnno(BaseTest):

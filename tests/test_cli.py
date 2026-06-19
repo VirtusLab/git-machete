@@ -7,8 +7,7 @@ from pytest_mock import MockerFixture
 from git_machete.cli import main
 from git_machete.utils.exceptions import ExitCode
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_argument_error,
-                              launch_command_capturing_output_and_exception)
+from tests.cli_runner import assert_argument_error, launch_command_capturing_output_and_exception
 from tests.git_repository import create_repo
 
 

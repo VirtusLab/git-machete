@@ -1,8 +1,7 @@
 """Generic collection / iteration helpers."""
 
 import itertools
-from typing import (Any, Callable, Iterable, List, Optional, Sequence, Tuple,
-                    TypeVar)
+from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple, TypeVar
 
 T = TypeVar('T')
 U = TypeVar('U')

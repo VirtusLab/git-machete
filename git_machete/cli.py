@@ -30,12 +30,8 @@ from git_machete.github import GITHUB_API_SPEC
 from git_machete.gitlab import GITLAB_API_SPEC
 from git_machete.help import alias_by_command, get_help_description, version
 from git_machete.utils import cmd, debug_log, markup, terminal
-from git_machete.utils.exceptions import (ExitCode, InteractionStopped,
-                                          MacheteException,
-                                          UnderlyingGitException,
-                                          UnexpectedMacheteException)
-from git_machete.utils.fs import (does_directory_exist,
-                                  get_current_directory_or_none)
+from git_machete.utils.exceptions import ExitCode, InteractionStopped, MacheteException, UnderlyingGitException, UnexpectedMacheteException
+from git_machete.utils.fs import does_directory_exist, get_current_directory_or_none
 from git_machete.utils.markup import print_fmt, warn
 from git_machete.utils.paths import AbsPath
 

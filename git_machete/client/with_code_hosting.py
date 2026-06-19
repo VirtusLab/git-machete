@@ -5,22 +5,16 @@ from typing import Dict, Iterator, List, Optional, Set, Tuple
 from git_machete.annotation import Annotation, Qualifiers
 from git_machete.client.state import ManagedBranchName
 from git_machete.client.status import StatusMacheteClient
-from git_machete.code_hosting import (CodeHostingApi, CodeHostingSpec,
-                                      OrganizationAndRepository,
-                                      OrganizationAndRepositoryAndRemote,
+from git_machete.code_hosting import (CodeHostingApi, CodeHostingSpec, OrganizationAndRepository, OrganizationAndRepositoryAndRemote,
                                       PullRequest, is_matching_remote_url)
 from git_machete.config import PRDescriptionIntroStyle, SquashMergeDetection
-from git_machete.git import (GitFormatPatterns, GitLogEntry,
-                             LocalBranchShortName, RemoteBranchShortName,
-                             SyncToRemoteStatus)
+from git_machete.git import GitFormatPatterns, GitLogEntry, LocalBranchShortName, RemoteBranchShortName, SyncToRemoteStatus
 from git_machete.utils import date
 from git_machete.utils.collections import find_or_none, get_non_empty_lines
 from git_machete.utils.debug_log import debug
-from git_machete.utils.exceptions import (MacheteException,
-                                          UnexpectedMacheteException)
+from git_machete.utils.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.utils.fs import slurp_file
-from git_machete.utils.markup import (colored_yes_no, green_ok, pretty_choices,
-                                      print_fmt, warn)
+from git_machete.utils.markup import colored_yes_no, green_ok, pretty_choices, print_fmt, warn
 from git_machete.utils.paths import AbsPath
 
 

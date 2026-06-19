@@ -15,9 +15,7 @@ import itertools
 import sys
 from typing import Any, Dict, Iterable, List, NoReturn, Optional, Tuple
 
-from git_machete.cli_commands import (COMMAND_BY_NAME_OR_ALIAS, COMMON_OPTIONS,
-                                      CommandSpec, MutexGroup, OptSpec,
-                                      ParsedCmd, PositionalSpec,
+from git_machete.cli_commands import (COMMAND_BY_NAME_OR_ALIAS, COMMON_OPTIONS, CommandSpec, MutexGroup, OptSpec, ParsedCmd, PositionalSpec,
                                       SubcommandSpec)
 from git_machete.utils.exceptions import ExitCode, MacheteException
 

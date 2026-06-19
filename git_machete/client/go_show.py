@@ -3,8 +3,7 @@ from typing import List, Optional, Sequence
 from git_machete.client.base import MacheteClient, PickRoot
 from git_machete.client.state import ManagedBranchName
 from git_machete.git import LocalBranchShortName
-from git_machete.utils.exceptions import (MacheteException,
-                                          UnexpectedMacheteException)
+from git_machete.utils.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.utils.markup import green_ok, print_fmt
 
 

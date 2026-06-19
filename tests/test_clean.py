@@ -1,12 +1,8 @@
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_success, launch_command,
-                              read_branch_layout_file,
-                              rewrite_branch_layout_file)
-from tests.git_repository import (add_remote, check_out, commit, create_repo,
-                                  create_repo_with_remote, get_local_branches,
-                                  new_branch, push)
+from tests.cli_runner import assert_success, launch_command, read_branch_layout_file, rewrite_branch_layout_file
+from tests.git_repository import add_remote, check_out, commit, create_repo, create_repo_with_remote, get_local_branches, new_branch, push
 from tests.mockers import mock_input_returning_y
 from tests.mockers_github import mock_github_token_for_domain_none
 

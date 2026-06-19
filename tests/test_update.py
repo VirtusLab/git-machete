@@ -4,18 +4,11 @@ from git_machete.git_version_thresholds import REBASE_EMPTY_DROP
 from git_machete.utils.exceptions import UnderlyingGitException
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_failure, assert_success, launch_command,
-                              rewrite_branch_layout_file)
-from tests.git_repository import (add_file_and_commit, check_out, commit,
-                                  create_repo, get_commit_hash,
-                                  get_current_commit_hash, get_git_version,
-                                  is_ancestor_or_equal, new_branch,
-                                  new_orphan_branch)
-from tests.mockers import (fixed_author_and_committer_date_in_past,
-                           mock_input_returning, mock_input_returning_y,
-                           overridden_environment)
-from tests.shell import (execute, execute_ignoring_exit_code, popen, read_file,
-                         set_file_executable, write_to_file)
+from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
+from tests.git_repository import (add_file_and_commit, check_out, commit, create_repo, get_commit_hash, get_current_commit_hash,
+                                  get_git_version, is_ancestor_or_equal, new_branch, new_orphan_branch)
+from tests.mockers import fixed_author_and_committer_date_in_past, mock_input_returning, mock_input_returning_y, overridden_environment
+from tests.shell import execute, execute_ignoring_exit_code, popen, read_file, set_file_executable, write_to_file
 
 
 class TestUpdate(BaseTest):

@@ -5,9 +5,7 @@ from typing import Dict
 import pytest
 
 from tests.cli_runner import rewrite_branch_layout_file
-from tests.git_repository import (check_out, commit, create_repo,
-                                  get_current_commit_hash, new_branch,
-                                  set_git_config_key)
+from tests.git_repository import check_out, commit, create_repo, get_current_commit_hash, new_branch, set_git_config_key
 from tests.shell import popen
 
 test_cases: Dict[str, str] = {

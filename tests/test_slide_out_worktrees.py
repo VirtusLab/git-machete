@@ -5,10 +5,8 @@ import pytest
 from git_machete.git_version_thresholds import WORKTREE_COMMAND
 from git_machete.utils.paths import AbsPath
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_failure, read_branch_layout_file,
-                              rewrite_branch_layout_file)
-from tests.git_repository import (add_worktree, check_out, commit, create_repo,
-                                  get_git_version, new_branch)
+from tests.cli_runner import assert_failure, read_branch_layout_file, rewrite_branch_layout_file
+from tests.git_repository import add_worktree, check_out, commit, create_repo, get_git_version, new_branch
 
 # pytestmark is a special variable that pytest recognizes automatically.
 # It applies the specified marks to all test functions in this module.

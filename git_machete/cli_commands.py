@@ -8,8 +8,7 @@ Keeping types + data together (rather than splitting types into the parser modul
 keeps `cli_parser.py → cli_commands.py` as a one-way dependency and removes the need for any forward references or parameterization.
 """
 
-from typing import (Any, Callable, Dict, FrozenSet, List, NamedTuple, Optional,
-                    Tuple)
+from typing import Any, Callable, Dict, FrozenSet, List, NamedTuple, Optional, Tuple
 
 from git_machete.help import commands_and_aliases
 

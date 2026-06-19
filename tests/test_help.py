@@ -1,12 +1,10 @@
 from typing import List
 
 from git_machete.generated_docs import long_docs
-from git_machete.help import (alias_by_command, command_groups,
-                              commands_and_aliases)
+from git_machete.help import alias_by_command, command_groups, commands_and_aliases
 from git_machete.utils.exceptions import ExitCode
 from tests.base_test import BaseTest
-from tests.cli_runner import (launch_command,
-                              launch_command_capturing_output_and_exception)
+from tests.cli_runner import launch_command, launch_command_capturing_output_and_exception
 from tests.git_repository import create_repo, set_git_config_key
 
 

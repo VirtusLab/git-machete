@@ -7,11 +7,9 @@ from git_machete.annotation import Annotation, Qualifiers
 from git_machete.client.base import PickRoot
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.code_hosting import CodeHostingSpec, PullRequest
-from git_machete.config import (SquashMergeDetection,
-                                TraverseWhenBranchNotCheckedOutInAnyWorktree)
+from git_machete.config import SquashMergeDetection, TraverseWhenBranchNotCheckedOutInAnyWorktree
 from git_machete.git import LocalBranchShortName, SyncToRemoteStatus
-from git_machete.utils.exceptions import (MacheteException, ParsableEnum,
-                                          UnexpectedMacheteException)
+from git_machete.utils.exceptions import MacheteException, ParsableEnum, UnexpectedMacheteException
 from git_machete.utils.markup import green_ok, pretty_choices, print_fmt, warn
 from git_machete.utils.paths import AbsPath
 

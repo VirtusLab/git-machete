@@ -8,11 +8,9 @@ from git_machete.git_version_thresholds import WORKTREE_COMMAND
 from git_machete.utils.paths import AbsPath
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_success, launch_command,
-                              rewrite_branch_layout_file)
-from tests.git_repository import (add_detached_worktree, add_worktree,
-                                  check_out, commit, create_repo, detach_head,
-                                  get_git_version, new_branch)
+from tests.cli_runner import assert_success, launch_command, rewrite_branch_layout_file
+from tests.git_repository import (add_detached_worktree, add_worktree, check_out, commit, create_repo, detach_head, get_git_version,
+                                  new_branch)
 
 pytestmark = pytest.mark.skipif(  # noqa: F841
     get_git_version() < WORKTREE_COMMAND,

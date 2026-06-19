@@ -9,18 +9,13 @@ except ImportError:  # pragma: no cover; Windows-specific
     termios = None  # type: ignore[assignment]
     tty = None  # type: ignore[assignment]
 
-from git_machete.client.status import (StatusData, StatusFlags,
-                                       StatusMacheteClient)
+from git_machete.client.status import StatusData, StatusFlags, StatusMacheteClient
 from git_machete.git import LocalBranchShortName
 from git_machete.utils import terminal
 from git_machete.utils.collections import index_or_none
-from git_machete.utils.exceptions import (MacheteException,
-                                          UnexpectedMacheteException)
+from git_machete.utils.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.utils.markup import green_ok, print_fmt, warn
-from git_machete.utils.terminal import (AnsiInputCodes,
-                                        BasicTerminalAnsiOutputCodes,
-                                        FullTerminalAnsiOutputCodes,
-                                        is_terminal_fully_fledged)
+from git_machete.utils.terminal import AnsiInputCodes, BasicTerminalAnsiOutputCodes, FullTerminalAnsiOutputCodes, is_terminal_fully_fledged
 
 AI = AnsiInputCodes
 

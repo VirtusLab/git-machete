@@ -9,17 +9,13 @@ import urllib.parse
 import urllib.request
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from git_machete.code_hosting import (CodeHostingApi, CodeHostingGitConfigKeys,
-                                      CodeHostingSpec,
-                                      OrganizationAndRepository,
-                                      OrganizationAndRepositoryAndGitUrl,
-                                      PullRequest)
+from git_machete.code_hosting import (CodeHostingApi, CodeHostingGitConfigKeys, CodeHostingSpec, OrganizationAndRepository,
+                                      OrganizationAndRepositoryAndGitUrl, PullRequest)
 from git_machete.git import LocalBranchShortName
 from git_machete.utils.cmd import popen_cmd
 from git_machete.utils.collections import map_truthy_only
 from git_machete.utils.debug_log import compact_dict, debug
-from git_machete.utils.exceptions import (MacheteException,
-                                          UnexpectedMacheteException)
+from git_machete.utils.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.utils.fs import slurp_file
 from git_machete.utils.paths import AbsPath
 

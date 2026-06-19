@@ -10,8 +10,7 @@ from git_machete.annotation import Annotation
 from git_machete.client.base import MacheteClient
 from git_machete.client.state import ManagedBranchName
 from git_machete.config import SquashMergeDetection
-from git_machete.git import (BranchPair, FullCommitHash, GitLogEntry,
-                             LocalBranchShortName, SyncToRemoteStatus)
+from git_machete.git import BranchPair, FullCommitHash, GitLogEntry, LocalBranchShortName, SyncToRemoteStatus
 from git_machete.utils import markup
 from git_machete.utils._subproc import PopenResult
 from git_machete.utils.cmd import popen_cmd

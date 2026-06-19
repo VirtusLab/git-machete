@@ -6,8 +6,7 @@ from git_machete.git_version_thresholds import WORKTREE_COMMAND
 from git_machete.utils.exceptions import UnderlyingGitException
 from tests.base_test import BaseTest
 from tests.cli_runner import assert_failure, launch_command
-from tests.git_repository import (commit, create_repo, get_git_version,
-                                  new_branch, set_git_config_key)
+from tests.git_repository import commit, create_repo, get_git_version, new_branch, set_git_config_key
 from tests.shell import execute
 
 

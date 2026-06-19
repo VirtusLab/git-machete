@@ -4,21 +4,14 @@ import textwrap
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_failure, assert_success, launch_command,
-                              rewrite_branch_layout_file)
-from tests.git_repository import (add_remote, amend_commit, check_out, commit,
-                                  create_repo, create_repo_with_remote,
-                                  delete_branch, delete_remote_branch,
-                                  new_branch, push, remove_remote, reset_to,
-                                  set_git_config_key,
+from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
+from tests.git_repository import (add_remote, amend_commit, check_out, commit, create_repo, create_repo_with_remote, delete_branch,
+                                  delete_remote_branch, new_branch, push, remove_remote, reset_to, set_git_config_key,
                                   wait_to_bump_commit_timestamp)
-from tests.mockers import (fixed_author_and_committer_date_in_past,
-                           mock_input_returning, mock_input_returning_y)
+from tests.mockers import fixed_author_and_committer_date_in_past, mock_input_returning, mock_input_returning_y
 from tests.mockers_code_hosting import mock_from_url
-from tests.mockers_github import (MockGitHubAPIState,
-                                  mock_github_token_for_domain_fake,
-                                  mock_github_token_for_domain_none,
-                                  mock_pr_json, mock_urlopen)
+from tests.mockers_github import (MockGitHubAPIState, mock_github_token_for_domain_fake, mock_github_token_for_domain_none, mock_pr_json,
+                                  mock_urlopen)
 from tests.shell import execute, write_to_file
 
 

@@ -8,24 +8,15 @@ from typing import ClassVar, Optional, Tuple
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.git_version_thresholds import (CWD_REMOVAL_HANDLED_BY_GIT,
-                                                REBASE_EMPTY_DROP)
+from git_machete.git_version_thresholds import CWD_REMOVAL_HANDLED_BY_GIT, REBASE_EMPTY_DROP
 from git_machete.utils.exceptions import UnderlyingGitException
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_argument_error, assert_failure,
-                              assert_success, launch_command,
-                              rewrite_branch_layout_file)
-from tests.git_repository import (add_file_and_commit, add_remote,
-                                  amend_commit, check_out, commit, create_repo,
-                                  create_repo_with_remote, delete_branch,
-                                  get_current_branch, get_git_version, merge,
-                                  new_branch, push, remove_remote, reset_to,
-                                  set_git_config_key, set_remote_url,
-                                  wait_to_bump_commit_timestamp)
-from tests.mockers import (fixed_author_and_committer_date_in_past,
-                           mock_input_returning, mock_input_returning_y,
-                           overridden_environment)
+from tests.cli_runner import assert_argument_error, assert_failure, assert_success, launch_command, rewrite_branch_layout_file
+from tests.git_repository import (add_file_and_commit, add_remote, amend_commit, check_out, commit, create_repo, create_repo_with_remote,
+                                  delete_branch, get_current_branch, get_git_version, merge, new_branch, push, remove_remote, reset_to,
+                                  set_git_config_key, set_remote_url, wait_to_bump_commit_timestamp)
+from tests.mockers import fixed_author_and_committer_date_in_past, mock_input_returning, mock_input_returning_y, overridden_environment
 from tests.shell import write_to_file
 
 

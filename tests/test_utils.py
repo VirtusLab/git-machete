@@ -11,8 +11,7 @@ from git_machete.utils.date import get_current_date
 from git_machete.utils.debug_log import debug, hex_repr
 from git_machete.utils.markup import _fmt
 from git_machete.utils.paths import AbsPath, strip_longest_common_path_prefix
-from git_machete.utils.terminal import (BasicTerminalAnsiOutputCodes,
-                                        FullTerminalAnsiOutputCodes)
+from git_machete.utils.terminal import BasicTerminalAnsiOutputCodes, FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
 
 

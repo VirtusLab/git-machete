@@ -4,20 +4,14 @@ import subprocess
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.git_version_thresholds import (REBASE_EMPTY_DROP,
-                                                WORKTREE_COMMAND)
+from git_machete.git_version_thresholds import REBASE_EMPTY_DROP, WORKTREE_COMMAND
 from git_machete.utils.exceptions import UnderlyingGitException
 from git_machete.utils.paths import AbsPath
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_failure, assert_success, launch_command,
-                              rewrite_branch_layout_file)
-from tests.git_repository import (add_file_and_commit, add_worktree, check_out,
-                                  commit, create_repo_with_remote,
-                                  get_current_branch, get_git_version,
-                                  get_worktree_dirs, new_branch, push,
-                                  set_git_config_key)
-from tests.mockers import (fixed_author_and_committer_date_in_past,
-                           mock_input_returning)
+from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
+from tests.git_repository import (add_file_and_commit, add_worktree, check_out, commit, create_repo_with_remote, get_current_branch,
+                                  get_git_version, get_worktree_dirs, new_branch, push, set_git_config_key)
+from tests.mockers import fixed_author_and_committer_date_in_past, mock_input_returning
 
 # pytestmark is a special variable that pytest recognizes automatically.
 # It applies the specified marks to all test functions in this module.

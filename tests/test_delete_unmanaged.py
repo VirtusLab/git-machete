@@ -1,15 +1,10 @@
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_success, launch_command,
-                              rewrite_branch_layout_file)
-from tests.git_repository import (add_file_and_commit, amend_commit, check_out,
-                                  commit, create_repo, create_repo_with_remote,
-                                  get_local_branches, new_branch, push,
-                                  set_git_config_key)
-from tests.mockers import (fixed_author_and_committer_date_in_past,
-                           mock__run_cmd_and_forward_stdout,
-                           mock_input_returning)
+from tests.cli_runner import assert_success, launch_command, rewrite_branch_layout_file
+from tests.git_repository import (add_file_and_commit, amend_commit, check_out, commit, create_repo, create_repo_with_remote,
+                                  get_local_branches, new_branch, push, set_git_config_key)
+from tests.mockers import fixed_author_and_committer_date_in_past, mock__run_cmd_and_forward_stdout, mock_input_returning
 from tests.shell import execute
 
 

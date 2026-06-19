@@ -2,8 +2,7 @@ from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.cli_runner import assert_success
-from tests.git_repository import (add_file_and_commit, create_repo_with_remote,
-                                  new_branch, push)
+from tests.git_repository import add_file_and_commit, create_repo_with_remote, new_branch, push
 from tests.mockers import mock__run_cmd_and_forward_stdout
 from tests.shell import write_to_file
 

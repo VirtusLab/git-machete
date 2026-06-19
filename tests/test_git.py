@@ -4,15 +4,12 @@ from typing import Dict, Optional
 
 import pytest
 
-from git_machete.git import (AnyBranchName, AnyRevision, FullCommitHash, Git,
-                             LocalBranchShortName)
+from git_machete.git import AnyBranchName, AnyRevision, FullCommitHash, Git, LocalBranchShortName
 from git_machete.git_version_thresholds import WORKTREE_COMMAND
 from git_machete.utils.paths import AbsPath
 from tests.base_test import BaseTest
-from tests.git_repository import (add_worktree, check_out, commit, create_repo,
-                                  get_current_commit_hash, get_git_version,
-                                  is_ancestor_or_equal, new_branch,
-                                  new_orphan_branch, set_git_config_key)
+from tests.git_repository import (add_worktree, check_out, commit, create_repo, get_current_commit_hash, get_git_version,
+                                  is_ancestor_or_equal, new_branch, new_orphan_branch, set_git_config_key)
 from tests.shell import execute, read_file, write_to_file
 
 

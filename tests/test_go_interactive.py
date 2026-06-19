@@ -7,11 +7,9 @@ from typing import Any, Tuple, Type
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.utils.terminal import (AnsiInputCodes,
-                                        FullTerminalAnsiOutputCodes)
+from git_machete.utils.terminal import AnsiInputCodes, FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_failure, launch_command,
-                              rewrite_branch_layout_file)
+from tests.cli_runner import assert_failure, launch_command, rewrite_branch_layout_file
 from tests.git_repository import check_out, commit, create_repo, new_branch
 
 AI = AnsiInputCodes

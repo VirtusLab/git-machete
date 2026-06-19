@@ -9,19 +9,13 @@ from pytest_mock import MockerFixture
 from git_machete.code_hosting import OrganizationAndRepository
 from git_machete.github import GitHubApi, GitHubToken
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_failure, assert_success, launch_command,
-                              rewrite_branch_layout_file)
-from tests.git_repository import (add_remote, check_out, commit, create_repo,
-                                  create_repo_with_remote, delete_branch,
-                                  new_branch, push, set_git_config_key,
-                                  unset_git_config_key)
-from tests.mockers import (fake_executables_on_path, mock_input_returning_y,
-                           overridden_environment, temporary_home_directory)
+from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
+from tests.git_repository import (add_remote, check_out, commit, create_repo, create_repo_with_remote, delete_branch, new_branch, push,
+                                  set_git_config_key, unset_git_config_key)
+from tests.mockers import fake_executables_on_path, mock_input_returning_y, overridden_environment, temporary_home_directory
 from tests.mockers_code_hosting import mock_from_url
-from tests.mockers_github import (MockGitHubAPIState,
-                                  mock_github_token_for_domain_fake,
-                                  mock_github_token_for_domain_none,
-                                  mock_pr_json, mock_urlopen)
+from tests.mockers_github import (MockGitHubAPIState, mock_github_token_for_domain_fake, mock_github_token_for_domain_none, mock_pr_json,
+                                  mock_urlopen)
 from tests.shell import write_to_file
 
 # A `gh` fake that fails its very first call (`gh --version`), so callers

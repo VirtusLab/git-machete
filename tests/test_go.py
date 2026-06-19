@@ -6,10 +6,8 @@ from pytest_mock import MockerFixture
 from git_machete.git_version_thresholds import WORKTREE_COMMAND
 from git_machete.utils.paths import AbsPath
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_failure, assert_success, launch_command,
-                              rewrite_branch_layout_file)
-from tests.git_repository import (add_worktree, check_out, commit, create_repo,
-                                  get_commit_hash, get_git_version, new_branch,
+from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
+from tests.git_repository import (add_worktree, check_out, commit, create_repo, get_commit_hash, get_git_version, new_branch,
                                   new_orphan_branch)
 from tests.mockers import mock_input_returning
 

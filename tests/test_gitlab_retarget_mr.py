@@ -3,16 +3,11 @@ import textwrap
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_failure, assert_success, launch_command,
-                              rewrite_branch_layout_file)
-from tests.git_repository import (add_remote, check_out, commit, create_repo,
-                                  create_repo_with_remote, new_branch, push,
-                                  remove_remote, set_git_config_key,
-                                  set_remote_url)
+from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
+from tests.git_repository import (add_remote, check_out, commit, create_repo, create_repo_with_remote, new_branch, push, remove_remote,
+                                  set_git_config_key, set_remote_url)
 from tests.mockers_code_hosting import mock_from_url
-from tests.mockers_gitlab import (MockGitLabAPIState,
-                                  mock_gitlab_token_for_domain_fake,
-                                  mock_mr_json, mock_urlopen)
+from tests.mockers_gitlab import MockGitLabAPIState, mock_gitlab_token_for_domain_fake, mock_mr_json, mock_urlopen
 
 
 class TestGitLabRetargetMR(BaseTest):

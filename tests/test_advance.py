@@ -6,14 +6,10 @@ from pytest_mock import MockerFixture
 from git_machete.utils.exceptions import ExitCode, UnderlyingGitException
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
-from tests.cli_runner import (assert_failure, assert_success, launch_command,
-                              launch_command_capturing_output_and_exception,
+from tests.cli_runner import (assert_failure, assert_success, launch_command, launch_command_capturing_output_and_exception,
                               rewrite_branch_layout_file)
-from tests.git_repository import (check_out, commit, create_repo,
-                                  create_repo_with_remote, fetch,
-                                  get_commit_hash, get_current_commit_hash,
-                                  new_branch, push, reset_to,
-                                  wait_to_bump_commit_timestamp)
+from tests.git_repository import (check_out, commit, create_repo, create_repo_with_remote, fetch, get_commit_hash, get_current_commit_hash,
+                                  new_branch, push, reset_to, wait_to_bump_commit_timestamp)
 from tests.mockers import mock_input_returning, mock_input_returning_y
 
 
