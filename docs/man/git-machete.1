@@ -321,8 +321,12 @@ Note: \fBconfig\fP is not a command as such, just a help topic (there is no \fBg
 \fBGit config keys\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.github.{remote,domain,organization,repository}\fP
+.B \fBmachete.github.{domain,remote,organization,repository}\fP
 .INDENT 7.0
+.TP
+.B \fBmachete.github.domain\fP
+The domain of the GitHub API server, for use with GitHub Enterprise; otherwise inferred from the remote URL.
+For example, \fBgit config machete.github.domain git.example.org\fP
 .TP
 .B \fBmachete.github.remote\fP
 The name of the git remote (as in \fBgit remote\fP) that git\-machete pushes the head branch to.
@@ -332,10 +336,6 @@ The pull request is operated on through the GitHub API, which addresses that org
 By default (when this key is unset), if exactly one remote\(aqs URL corresponds to GitHub, that remote is selected automatically;
 set this key to disambiguate when more than one remote points to GitHub.
 For example, \fBgit config machete.github.remote origin\fP
-.TP
-.B \fBmachete.github.domain\fP
-The domain of the GitHub API server, for use with GitHub Enterprise; otherwise inferred from the remote URL.
-For example, \fBgit config machete.github.domain git.example.org\fP
 .TP
 .B \fBmachete.github.organization\fP
 The GitHub organization (the part before \fB/\fP in \fBorganization/repository\fP); otherwise inferred from the remote URL.
@@ -379,8 +379,12 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .UNINDENT
 .UNINDENT
 .TP
-.B \fBmachete.gitlab.{remote,domain,namespace,project}\fP
+.B \fBmachete.gitlab.{domain,remote,namespace,project}\fP
 .INDENT 7.0
+.TP
+.B \fBmachete.gitlab.domain\fP
+The domain of the GitLab API server, for use with a GitLab self\-managed instance; otherwise inferred from the remote URL.
+For example, \fBgit config machete.gitlab.domain git.example.org\fP
 .TP
 .B \fBmachete.gitlab.remote\fP
 The name of the git remote (as in \fBgit remote\fP) that git\-machete pushes the source branch to.
@@ -390,10 +394,6 @@ The merge request is operated on through the GitLab API, which addresses that na
 By default (when this key is unset), if exactly one remote\(aqs URL corresponds to GitLab, that remote is selected automatically;
 set this key to disambiguate when more than one remote points to GitLab.
 For example, \fBgit config machete.gitlab.remote origin\fP
-.TP
-.B \fBmachete.gitlab.domain\fP
-The domain of the GitLab API server, for use with a GitLab self\-managed instance; otherwise inferred from the remote URL.
-For example, \fBgit config machete.gitlab.domain git.example.org\fP
 .TP
 .B \fBmachete.gitlab.namespace\fP
 The GitLab namespace (the part before the final \fB/\fP in \fBnamespace/project\fP); otherwise inferred from the remote URL.
@@ -1159,8 +1159,12 @@ Update PR descriptions for all PRs both upstream and downstream of the PR for th
 \fBGit config keys\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.github.{remote,domain,organization,repository}\fP (all subcommands)
+.B \fBmachete.github.{domain,remote,organization,repository}\fP (all subcommands)
 .INDENT 7.0
+.TP
+.B \fBmachete.github.domain\fP
+The domain of the GitHub API server, for use with GitHub Enterprise; otherwise inferred from the remote URL.
+For example, \fBgit config machete.github.domain git.example.org\fP
 .TP
 .B \fBmachete.github.remote\fP
 The name of the git remote (as in \fBgit remote\fP) that git\-machete pushes the head branch to.
@@ -1170,10 +1174,6 @@ The pull request is operated on through the GitHub API, which addresses that org
 By default (when this key is unset), if exactly one remote\(aqs URL corresponds to GitHub, that remote is selected automatically;
 set this key to disambiguate when more than one remote points to GitHub.
 For example, \fBgit config machete.github.remote origin\fP
-.TP
-.B \fBmachete.github.domain\fP
-The domain of the GitHub API server, for use with GitHub Enterprise; otherwise inferred from the remote URL.
-For example, \fBgit config machete.github.domain git.example.org\fP
 .TP
 .B \fBmachete.github.organization\fP
 The GitHub organization (the part before \fB/\fP in \fBorganization/repository\fP); otherwise inferred from the remote URL.
@@ -1433,8 +1433,12 @@ Update MR descriptions for all MRs both upstream and downstream of the MR for th
 \fBGit config keys\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.gitlab.{remote,domain,namespace,project}\fP (all subcommands)
+.B \fBmachete.gitlab.{domain,remote,namespace,project}\fP (all subcommands)
 .INDENT 7.0
+.TP
+.B \fBmachete.gitlab.domain\fP
+The domain of the GitLab API server, for use with a GitLab self\-managed instance; otherwise inferred from the remote URL.
+For example, \fBgit config machete.gitlab.domain git.example.org\fP
 .TP
 .B \fBmachete.gitlab.remote\fP
 The name of the git remote (as in \fBgit remote\fP) that git\-machete pushes the source branch to.
@@ -1444,10 +1448,6 @@ The merge request is operated on through the GitLab API, which addresses that na
 By default (when this key is unset), if exactly one remote\(aqs URL corresponds to GitLab, that remote is selected automatically;
 set this key to disambiguate when more than one remote points to GitLab.
 For example, \fBgit config machete.gitlab.remote origin\fP
-.TP
-.B \fBmachete.gitlab.domain\fP
-The domain of the GitLab API server, for use with a GitLab self\-managed instance; otherwise inferred from the remote URL.
-For example, \fBgit config machete.gitlab.domain git.example.org\fP
 .TP
 .B \fBmachete.gitlab.namespace\fP
 The GitLab namespace (the part before the final \fB/\fP in \fBnamespace/project\fP); otherwise inferred from the remote URL.

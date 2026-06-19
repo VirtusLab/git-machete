@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 from tests.base_test import BaseTest
 from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
 from tests.git_repository import (add_remote, amend_commit, check_out, commit, create_repo, create_repo_with_remote, delete_branch,
-                                  delete_remote_branch, new_branch, push, remove_remote, reset_to, set_git_config_key,
+                                  delete_remote_branch, new_branch, push, remove_remote, reset_to, set_git_config_key, unset_git_config_key,
                                   wait_to_bump_commit_timestamp)
 from tests.mockers import fixed_author_and_committer_date_in_past, mock_input_returning, mock_input_returning_y
 from tests.mockers_code_hosting import mock_from_url
@@ -547,31 +547,8 @@ class TestGitHubCreatePR(BaseTest):
             """
         rewrite_branch_layout_file(body)
 
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('q'))
-        expected_result = """
-        Branch feature is untracked and there's no origin remote.
-        [1] origin_1
-        [2] origin_2
-        Select number 1..2 to specify the destination remote repository, or 'q' to quit the operation:
-        """
-        assert_success(
-            ['github', 'create-pr'],
-            expected_result
-        )
-
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('3'))
-        assert_failure(
-            ['github', 'create-pr'],
-            "Invalid index: 3"
-        )
-
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('xd'))
-        assert_failure(
-            ['github', 'create-pr'],
-            "Could not establish remote repository, operation interrupted."
-        )
-
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'n'))
+        # feature exists on both non-origin remotes, but has no tracking data and there's no `origin` remote,
+        # so the code-hosting logic cannot determine a unique remote -> create-pr aborts (no interactive remote picker).
         assert_failure(
             ['github', 'create-pr'],
             "Multiple non-origin remotes correspond to GitHub in this repository: origin_1, origin_2 -> aborting.\n"
@@ -579,44 +556,9 @@ class TestGitHubCreatePR(BaseTest):
             "machete.github.domain, machete.github.organization, machete.github.repository, machete.github.remote\n"
         )
 
+        # Once the head remote is unambiguous (here pinned via tracking data), create-pr pushes to / checks against it.
+        execute("git branch --set-upstream-to=origin_1/feature feature")
         expected_result = """
-        Branch feature is untracked and there's no origin remote.
-        [1] origin_1
-        [2] origin_2
-        Select number 1..2 to specify the destination remote repository, or 'q' to quit the operation:
-        Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
-        Set the remote of feature to origin_1 without pushing or pulling? (y, N, q, yq)
-        """  # noqa: E501
-
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'q'))
-        assert_success(
-            ['github', 'create-pr'],
-            expected_result
-        )
-
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'yq'))
-        assert_success(
-            ['github', 'create-pr'],
-            expected_result
-        )
-
-        execute("git branch --unset-upstream feature")
-
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'y'))
-        expected_result = """
-        Branch feature is untracked and there's no origin remote.
-        [1] origin_1
-        [2] origin_2
-        Select number 1..2 to specify the destination remote repository, or 'q' to quit the operation:
-        Branch feature is untracked, but its remote counterpart candidate origin_1/feature already exists and both branches point to the same commit.
-        Set the remote of feature to origin_1 without pushing or pulling? (y, N, q, yq)
-
-          root
-          |
-          o-branch-1
-            |
-            o-feature *
-
         Warn: base branch branch-1 lives in example-org/example-repo-2 repository,
         while head branch feature lives in example-org/example-repo-1 repository.
         git-machete will now attempt to create a PR in example-org/example-repo-2.
@@ -699,20 +641,17 @@ class TestGitHubCreatePR(BaseTest):
             expected_result
         )
 
-        # branch feature_2 not present in any of the remotes, remote origin_1 picked manually via mock_input()
+        # branch feature_2 not present in any of the remotes; the head remote is pinned via the `remote` config key.
         check_out('feature')
         new_branch('feature_2')
         commit('introduce feature 2')
 
-        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', '1', 'y'))
+        set_git_config_key('machete.github.remote', 'origin_1')
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('y', 'y'))
 
         expected_result = """
         Add feature_2 onto the inferred upstream (parent) branch feature? (y, N)
         Added branch feature_2 onto feature
-        Branch feature_2 is untracked and there's no origin remote.
-        [1] origin_1
-        [2] origin_2
-        Select number 1..2 to specify the destination remote repository, or 'q' to quit the operation:
         Push untracked branch feature_2 to origin_1? (y, Q)
 
           root
@@ -735,6 +674,7 @@ class TestGitHubCreatePR(BaseTest):
             ['github', 'create-pr'],
             expected_result
         )
+        unset_git_config_key('machete.github.remote')
 
         # branch feature_2 present in only one remote: origin_1, no tracking data
         check_out('feature_2')
@@ -897,6 +837,8 @@ class TestGitHubCreatePR(BaseTest):
         )
 
     def test_github_create_pr_for_untracked_branch(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+
         create_repo_with_remote()
         new_branch("master")
         commit()
@@ -913,6 +855,8 @@ class TestGitHubCreatePR(BaseTest):
         )
 
     def test_github_create_pr_for_branch_diverged_from_and_newer_than_remote(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+
         create_repo_with_remote()
 
         new_branch("master")
@@ -937,6 +881,8 @@ class TestGitHubCreatePR(BaseTest):
         )
 
     def test_github_create_pr_quit_on_branch_diverged_from_and_newer_than_remote(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+
         create_repo_with_remote()
 
         new_branch("master")
@@ -961,6 +907,8 @@ class TestGitHubCreatePR(BaseTest):
         )
 
     def test_github_create_pr_quit_on_ahead_branch(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+
         create_repo_with_remote()
 
         new_branch("master")

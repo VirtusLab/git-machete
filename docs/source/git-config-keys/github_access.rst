@@ -1,3 +1,7 @@
+``machete.github.domain``
+    The domain of the GitHub API server, for use with GitHub Enterprise; otherwise inferred from the remote URL.
+    For example, ``git config machete.github.domain git.example.org``
+
 ``machete.github.remote``
     The name of the git remote (as in ``git remote``) that git-machete pushes the head branch to.
     Unless both ``machete.github.organization`` and ``machete.github.repository`` are set, this remote's URL is also inspected
@@ -6,10 +10,6 @@
     By default (when this key is unset), if exactly one remote's URL corresponds to GitHub, that remote is selected automatically;
     set this key to disambiguate when more than one remote points to GitHub.
     For example, ``git config machete.github.remote origin``
-
-``machete.github.domain``
-    The domain of the GitHub API server, for use with GitHub Enterprise; otherwise inferred from the remote URL.
-    For example, ``git config machete.github.domain git.example.org``
 
 ``machete.github.organization``
     The GitHub organization (the part before ``/`` in ``organization/repository``); otherwise inferred from the remote URL.

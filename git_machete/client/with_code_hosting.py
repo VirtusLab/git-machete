@@ -1,6 +1,6 @@
 import itertools
 import os
-from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple
+from typing import Dict, Iterator, List, Optional, Set, Tuple
 
 from git_machete.annotation import Annotation, Qualifiers
 from git_machete.client.state import ManagedBranchName
@@ -118,6 +118,15 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 return remote
         return None
 
+    def __get_sync_to_remote_status_against(self, *, branch: LocalBranchShortName, remote: str) -> SyncToRemoteStatus:
+        # Unlike `git.get_combined_remote_sync_status`, which compares the branch against its tracking/inferred
+        # counterpart (which may live on a different remote), this compares it specifically against `remote` -
+        # the remote determined by the code-hosting logic, i.e. the only remote that {github,gitlab} commands push to.
+        remote_branch = RemoteBranchShortName(f"{remote}/{branch}")
+        if not self._git.get_commit_hash_by_revision(remote_branch):
+            return SyncToRemoteStatus.UNTRACKED
+        return self._git.get_relation_to_remote_counterpart(branch, remote_branch)
+
     def sync_before_creating_pull_request(self, *, opt_yes: bool) -> None:
         spec = self.code_hosting_spec
         self.expect_at_least_one_managed_branch()
@@ -153,7 +162,13 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 f'All commits in <b>{current_branch}</b> branch are already included in <b>{up_branch}</b> branch.\n'
                 f'Cannot create {spec.pr_full_name}.')
 
-        s, remote = self._git.get_combined_remote_sync_status(current_branch)
+        if not self._git.get_remotes():
+            raise MacheteException(
+                f"Could not create {spec.pr_full_name} - there are no remote repositories!")
+
+        domain = self.__derive_code_hosting_domain()
+        remote = self.__derive_org_repo_and_remote(domain=domain, branch_used_for_tracking_data=current_branch).remote
+        s = self.__get_sync_to_remote_status_against(branch=current_branch, remote=remote)
         statuses_to_push = (
             SyncToRemoteStatus.UNTRACKED,
             SyncToRemoteStatus.AHEAD_OF_REMOTE,
@@ -162,7 +177,6 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             anno = self._state.get_annotation(current_branch)
             if anno is None or anno.qualifiers.push:
                 if s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
-                    assert remote is not None
                     self.__handle_ahead_state(
                         current_branch=current_branch,
                         remote=remote,
@@ -171,11 +185,10 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 elif s == SyncToRemoteStatus.UNTRACKED:
                     self.__handle_untracked_state(
                         branch=current_branch,
-                        opt_push_tracked=True,
+                        new_remote=remote,
                         opt_push_untracked=True,
                         opt_yes=opt_yes)
                 elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                    assert remote is not None
                     self.__handle_diverged_and_newer_state(
                         current_branch=current_branch,
                         remote=remote,
@@ -204,9 +217,6 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 self._ensure_blank_separator()
                 ans = self.ask_if(f"Proceed with creating {spec.pr_full_name}?" + pretty_choices('y', 'Q'),
                                   f"Proceeding with {spec.pr_full_name} creation...", opt_yes=opt_yes)
-            elif s == SyncToRemoteStatus.NO_REMOTES:
-                raise MacheteException(
-                    f"Could not create {spec.pr_full_name} - there are no remote repositories!")
             else:
                 ans = 'y'  # only IN SYNC status is left
 
@@ -318,7 +328,6 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             self.__handle_untracked_branch(
                 branch=base,
                 new_remote=base_org_repo_remote.remote,
-                opt_push_tracked=False,
                 opt_push_untracked=True,
                 opt_yes=opt_yes)
 
@@ -433,7 +442,8 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         self._mark_trailing_blank_line()
         current_branch = self._git.get_current_branch()
-        s, remote = self._git.get_combined_remote_sync_status(current_branch)
+        remote = org_repo_remote.remote
+        s = self.__get_sync_to_remote_status_against(branch=current_branch, remote=remote)
         statuses_to_push = (
             SyncToRemoteStatus.UNTRACKED,
             SyncToRemoteStatus.AHEAD_OF_REMOTE,
@@ -455,7 +465,6 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                                        opt_update_related_descriptions=opt_update_related_descriptions)
 
             if s == SyncToRemoteStatus.AHEAD_OF_REMOTE:
-                assert remote is not None
                 self.__handle_ahead_state(
                     current_branch=current_branch,
                     remote=remote,
@@ -464,11 +473,10 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             elif s == SyncToRemoteStatus.UNTRACKED:
                 self.__handle_untracked_state(
                     branch=current_branch,
-                    opt_push_tracked=True,
+                    new_remote=remote,
                     opt_push_untracked=True,
                     opt_yes=True)
             elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                assert remote is not None
                 self.__handle_diverged_and_newer_state(
                     current_branch=current_branch,
                     remote=remote,
@@ -995,157 +1003,42 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             new_remote: str,
             branch: LocalBranchShortName,
             opt_push_untracked: bool,
-            opt_push_tracked: bool,
             opt_yes: bool
     ) -> None:
-        remote_branch = RemoteBranchShortName.of(f"{new_remote}/{branch}")
-        if not self._git.get_commit_hash_by_revision(remote_branch):
-            ask_message = f"Push untracked branch <b>{branch}</b> to <b>{new_remote}</b>?" + pretty_choices('y', 'Q')
-            ask_opt_yes_message = f"Pushing untracked branch <b>{branch}</b> to <b>{new_remote}</b>..."
-            ans = self.ask_if(
-                ask_message,
-                ask_opt_yes_message,
-                opt_yes=opt_yes,
-                override_answer=None if opt_push_untracked else "N")
-            if ans in ('y', 'yes'):
-                self._git.push(new_remote, branch)
-            else:
-                raise InteractionStopped
-            return
-
-        relation = self._git.get_relation_to_remote_counterpart(branch, remote_branch)
-
-        message: str = {
-            SyncToRemoteStatus.IN_SYNC_WITH_REMOTE:
-                f"Branch <b>{branch}</b> is untracked, but its remote counterpart candidate <b>{remote_branch}</b> "
-                f"already exists and both branches point to the same commit.",
-            SyncToRemoteStatus.BEHIND_REMOTE:
-                f"Branch <b>{branch}</b> is untracked, but its remote counterpart candidate <b>{remote_branch}</b> "
-                f"already exists and is ahead of <b>{branch}</b>.",
-            SyncToRemoteStatus.AHEAD_OF_REMOTE:
-                f"Branch <b>{branch}</b> is untracked, but its remote counterpart candidate <b>{remote_branch}</b> "
-                f"already exists and is behind <b>{branch}</b>.",
-            SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
-                f"Branch <b>{branch}</b> is untracked, it diverged from its remote counterpart candidate <b>{remote_branch}</b>, "
-                f"and has <b>older</b> commits than <b>{remote_branch}</b>.",
-            SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE:
-                f"Branch <b>{branch}</b> is untracked, it diverged from its remote counterpart candidate <b>{remote_branch}</b>, "
-                f"and has <b>newer</b> commits than <b>{remote_branch}</b>."
-        }[SyncToRemoteStatus(relation)]
-
-        ask_message, ask_opt_yes_message = {
-            SyncToRemoteStatus.IN_SYNC_WITH_REMOTE: (
-                f"Set the remote of <b>{branch}</b> to <b>{new_remote}</b> without pushing or pulling?" +
-                pretty_choices('y', 'N', 'q', 'yq'),
-                f"Setting the remote of <b>{branch}</b> to <b>{new_remote}</b>..."
-            ),
-            SyncToRemoteStatus.BEHIND_REMOTE: (
-                f"Pull <b>{branch}</b> (fast-forward only) from <b>{new_remote}</b>?" +
-                pretty_choices('y', 'N', 'q', 'yq'),
-                f"Pulling <b>{branch}</b> (fast-forward only) from <b>{new_remote}</b>..."
-            ),
-            SyncToRemoteStatus.AHEAD_OF_REMOTE: (
-                f"Push branch <b>{branch}</b> to <b>{new_remote}</b>?" + pretty_choices('y', 'N', 'q', 'yq'),
-                f"Pushing branch <b>{branch}</b> to <b>{new_remote}</b>..."
-            ),
-            SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: (
-                f"Reset branch <b>{branch}</b> to the commit pointed by <b>{remote_branch}</b>?" +
-                pretty_choices('y', 'N', 'q', 'yq'),
-                f"Resetting branch <b>{branch}</b> to the commit pointed by <b>{remote_branch}</b>..."
-            ),
-            SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: (
-                f"Push branch <b>{branch}</b> with force-with-lease to <b>{new_remote}</b>?" +
-                pretty_choices('y', 'N', 'q', 'yq'),
-                f"Pushing branch <b>{branch}</b> with force-with-lease to <b>{new_remote}</b>..."
-            )
-        }[SyncToRemoteStatus(relation)]
-
-        override_answer: Optional[str] = {
-            SyncToRemoteStatus.IN_SYNC_WITH_REMOTE: None,
-            SyncToRemoteStatus.BEHIND_REMOTE: None,
-            SyncToRemoteStatus.AHEAD_OF_REMOTE: None if opt_push_tracked else "N",
-            SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: None,
-            SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: None if opt_push_tracked else "N",
-        }[SyncToRemoteStatus(relation)]
-
-        yes_action: Callable[[], None] = {
-            SyncToRemoteStatus.IN_SYNC_WITH_REMOTE: lambda: self._git.set_upstream_to(remote_branch),
-            SyncToRemoteStatus.BEHIND_REMOTE: lambda: self._git.pull_ff_only(new_remote, remote_branch),
-            SyncToRemoteStatus.AHEAD_OF_REMOTE: lambda: self._git.push(new_remote, branch),
-            SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: lambda: self._git.reset_keep(remote_branch),
-            SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: lambda: self._git.push(
-                new_remote, branch, force_with_lease=True)
-        }[SyncToRemoteStatus(relation)]
-
-        print_fmt(message)
-        ans = self.ask_if(ask_message, ask_opt_yes_message, override_answer=override_answer, opt_yes=opt_yes)
-        if ans in ('y', 'yes', 'yq'):
-            yes_action()
-            if ans == 'yq':
-                raise InteractionStopped
-        elif ans in ('q', 'quit'):
+        # In the {github,gitlab} flows this is only ever reached for a branch whose `<new_remote>/<branch>` counterpart
+        # does not exist yet: the sync-to-remote status is computed against that exact remote (see
+        # `__get_sync_to_remote_status_against`), so an already-existing counterpart yields a non-UNTRACKED status
+        # handled by the ahead/diverged/etc. branches instead. Hence - unlike the traverse variant - there is no
+        # remote-counterpart-already-exists case (set upstream / pull / reset / force-push) to handle here.
+        ask_message = f"Push untracked branch <b>{branch}</b> to <b>{new_remote}</b>?" + pretty_choices('y', 'Q')
+        ask_opt_yes_message = f"Pushing untracked branch <b>{branch}</b> to <b>{new_remote}</b>..."
+        ans = self.ask_if(
+            ask_message,
+            ask_opt_yes_message,
+            opt_yes=opt_yes,
+            override_answer=None if opt_push_untracked else "N")
+        if ans in ('y', 'yes'):
+            self._git.push(new_remote, branch)
+        else:
             raise InteractionStopped
 
     def __handle_untracked_state(
             self,
             *,
             branch: LocalBranchShortName,
-            opt_push_tracked: bool,
+            new_remote: str,
             opt_push_untracked: bool,
             opt_yes: bool
     ) -> None:
-        remotes: List[str] = self._git.get_remotes()
+        # In {github,gitlab} commands the destination remote is determined by the code-hosting logic
+        # (the `machete.{github,gitlab}.remote` git config key when set, otherwise the remote inferred from the
+        # matching remote URL), so - unlike `traverse` - there's no generic origin/single-remote/interactive selection here.
         self._ensure_blank_separator()
-        if len(remotes) == 1:
-            self.__handle_untracked_branch(
-                new_remote=remotes[0],
-                branch=branch,
-                opt_push_untracked=opt_push_untracked,
-                opt_push_tracked=opt_push_tracked,
-                opt_yes=opt_yes)
-        elif "origin" in remotes:
-            self.__handle_untracked_branch(
-                new_remote="origin",
-                branch=branch,
-                opt_push_untracked=opt_push_untracked,
-                opt_push_tracked=opt_push_tracked,
-                opt_yes=opt_yes)
-        else:
-            # We know that there is at least 1 remote, otherwise sync-to-remote state would be NO_REMOTES and not UNTRACKED
-            print_fmt(f"Branch <b>{branch}</b> is untracked and there's no <b>origin</b> remote.")
-            self.__pick_remote(
-                branch=branch,
-                opt_push_untracked=opt_push_untracked,
-                opt_push_tracked=opt_push_tracked,
-                opt_yes=opt_yes)
-
-    def __pick_remote(
-            self,
-            *,
-            branch: LocalBranchShortName,
-            opt_push_untracked: bool,
-            opt_push_tracked: bool,
-            opt_yes: bool
-    ) -> None:
-        rems = self._git.get_remotes()
-        print("\n".join(f"[{index + 1}] {rem}" for index, rem in enumerate(rems)))
-        msg = f"Select number 1..{len(rems)} to specify the destination remote " \
-            "repository, or 'q' to quit the operation: "
-        ans = input(msg).lower()
-        if ans in ('q', 'quit'):
-            raise InteractionStopped
-        try:
-            index = int(ans) - 1
-            if index not in range(len(rems)):
-                raise MacheteException(f"Invalid index: {index + 1}")
-            self.__handle_untracked_branch(
-                new_remote=rems[index],
-                branch=branch,
-                opt_push_untracked=opt_push_untracked,
-                opt_push_tracked=opt_push_tracked,
-                opt_yes=opt_yes)
-        except ValueError:
-            raise MacheteException('Could not establish remote repository, operation interrupted.')
+        self.__handle_untracked_branch(
+            new_remote=new_remote,
+            branch=branch,
+            opt_push_untracked=opt_push_untracked,
+            opt_yes=opt_yes)
 
     def __handle_ahead_state(
             self,

@@ -8,7 +8,7 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 **Git config keys**
 
-``machete.github.{remote,domain,organization,repository}``
+``machete.github.{domain,remote,organization,repository}``
   .. include:: git-config-keys/github_access.rst
 
 ``machete.github.annotateWithUrls``
@@ -20,7 +20,7 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 ``machete.github.prDescriptionIntroStyle``
   .. include:: git-config-keys/github_prDescriptionIntroStyle.rst
 
-``machete.gitlab.{remote,domain,namespace,project}``
+``machete.gitlab.{domain,remote,namespace,project}``
   .. include:: git-config-keys/gitlab_access.rst
 
 ``machete.gitlab.annotateWithUrls``

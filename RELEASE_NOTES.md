@@ -2,6 +2,10 @@
 
 ## New in git-machete 3.43.1
 
+- changed: `git machete {github,gitlab} create-{pr,mr}` and `restack-{pr,mr}` now push the head/source branch to the remote
+  determined by the code-hosting logic (the `machete.{github,gitlab}.remote` git config key when set, otherwise the remote inferred from the matching remote URL), consistently with how the base/target branch is already handled;
+  in an ambiguous multi-remote setup with no remote configured, they now abort asking for the relevant git config keys rather than prompting to pick a remote interactively
+
 ## New in git-machete 3.43.0
 
 - changed: `git machete slide-out` no longer requires the given branches to form a chain; literally any set of managed branches can be slid out at once, with each slid-out branch's surviving children reattached to (and, unless `--no-rebase` is passed, rebased/merged onto) that branch's nearest surviving ancestor
