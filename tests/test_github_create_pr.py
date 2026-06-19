@@ -936,6 +936,120 @@ class TestGitHubCreatePR(BaseTest):
             """
         )
 
+    def test_github_create_pr_quit_on_branch_diverged_from_and_newer_than_remote(self, mocker: MockerFixture) -> None:
+        create_repo_with_remote()
+
+        new_branch("master")
+        commit()
+        push()
+
+        new_branch("develop")
+        commit()
+        push()
+
+        amend_commit("Different commit message")
+
+        rewrite_branch_layout_file("master\n\tdevelop")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('q'))
+        assert_success(
+            ['github', 'create-pr'],
+            """
+            Branch develop diverged from (and has newer commits than) its remote counterpart origin/develop.
+            Push develop with force-with-lease to origin? (y, N, q)
+            """
+        )
+
+    def test_github_create_pr_quit_on_ahead_branch(self, mocker: MockerFixture) -> None:
+        create_repo_with_remote()
+
+        new_branch("master")
+        commit()
+        push()
+
+        new_branch("develop")
+        commit()
+        push()
+        commit()
+
+        rewrite_branch_layout_file("master\n\tdevelop")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('q'))
+        assert_success(
+            ['github', 'create-pr'],
+            "Push develop to origin? (y, N, q)\n"
+        )
+
+    def test_github_create_pr_for_ahead_branch_declining_push(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
+
+        create_repo_with_remote()
+
+        new_branch("master")
+        commit()
+        push()
+
+        new_branch("develop")
+        commit()
+        push()
+        commit()
+
+        rewrite_branch_layout_file("master\n\tdevelop")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('n'))
+        assert_success(
+            ['github', 'create-pr'],
+            """
+            Push develop to origin? (y, N, q)
+
+              master
+              |
+              o-develop * (ahead of origin)
+
+            Checking if head branch develop exists in origin remote... YES
+            Checking if base branch master exists in origin remote... YES
+            Creating a PR from develop to master... OK, see www.github.com
+            """
+        )
+
+    def test_github_create_pr_for_branch_diverged_from_and_newer_than_remote_declining_push(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
+
+        create_repo_with_remote()
+
+        new_branch("master")
+        commit()
+        push()
+
+        new_branch("develop")
+        commit()
+        push()
+
+        amend_commit("Different commit message")
+
+        rewrite_branch_layout_file("master\n\tdevelop")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('n'))
+        assert_success(
+            ['github', 'create-pr'],
+            """
+            Branch develop diverged from (and has newer commits than) its remote counterpart origin/develop.
+            Push develop with force-with-lease to origin? (y, N, q)
+
+              master
+              |
+              o-develop * (diverged from origin)
+
+            Checking if head branch develop exists in origin remote... YES
+            Checking if base branch master exists in origin remote... YES
+            Creating a PR from develop to master... OK, see www.github.com
+            """
+        )
+
     def test_github_create_pr_for_branch_diverged_from_and_older_than_remote(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)

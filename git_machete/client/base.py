@@ -3,24 +3,19 @@ import shlex
 import sys
 import textwrap
 from enum import Enum, auto
-from typing import (Callable, Dict, Iterator, List, NoReturn, Optional,
-                    Sequence, Tuple, TypeVar)
+from typing import Callable, Dict, Iterator, List, NoReturn, Optional, Sequence, Tuple, TypeVar
 
 from git_machete.client import branch_layout
 from git_machete.client.state import MacheteState, ManagedBranchName
 from git_machete.config import MacheteConfig, SquashMergeDetection
-from git_machete.constants import (INITIAL_COMMIT_COUNT_FOR_LOG,
-                                   TOTAL_COMMIT_COUNT_FOR_LOG)
-from git_machete.git import (HEAD, AnyBranchName, AnyRevision, BranchPair,
-                             ForkPointOverrideData, FullCommitHash, Git,
-                             LocalBranchShortName, RemoteBranchShortName,
-                             SyncToRemoteStatus)
+from git_machete.constants import INITIAL_COMMIT_COUNT_FOR_LOG, TOTAL_COMMIT_COUNT_FOR_LOG
+from git_machete.git import (HEAD, AnyBranchName, AnyRevision, BranchPair, ForkPointOverrideData, FullCommitHash, Git, LocalBranchShortName,
+                             RemoteBranchShortName, SyncToRemoteStatus)
 from git_machete.utils import fs
 from git_machete.utils.cmd import run_cmd
 from git_machete.utils.collections import excluding, get_second, tupled
 from git_machete.utils.debug_log import debug
-from git_machete.utils.exceptions import (MacheteException,
-                                          UnexpectedMacheteException)
+from git_machete.utils.exceptions import MacheteException, UnexpectedMacheteException
 from git_machete.utils.markup import input_fmt, pretty_choices, print_fmt, warn
 from git_machete.utils.paths import AbsPath, Path
 

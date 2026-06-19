@@ -1936,6 +1936,142 @@ class TestTraverse(BaseTest):
             """
         )
 
+    def test_traverse_untracked_branch_with_existing_remote_counterpart(self, mocker: MockerFixture) -> None:
+        # Multiple non-origin remotes (so that git-machete does not auto-infer the remote counterpart and the branch stays untracked),
+        # with the branch already pushed to the manually-picked remote so that its remote counterpart candidate exists.
+        create_repo()
+        origin_1_remote_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        origin_2_remote_path = create_repo("remote-2", bare=True, switch_dir_to_new_repo=False)
+        add_remote("origin-1", origin_1_remote_path)
+        add_remote("origin-2", origin_2_remote_path)
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        push(remote="origin-1", set_upstream=False)
+        push(remote="origin-2", set_upstream=False)
+        rewrite_branch_layout_file("master\n\tdevelop")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'q'))
+        assert_success(
+            ["traverse"],
+            """
+            Branch develop is untracked and there's no origin remote.
+            [1] origin-1
+            [2] origin-2
+            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
+            Branch develop is untracked, but its remote counterpart candidate origin-1/develop already exists and both branches point to the same commit.
+            Set the remote of develop to origin-1 without pushing or pulling? (y, N, q, yq, o[ther-remote])
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'yq'))
+        assert_success(
+            ["traverse"],
+            """
+            Branch develop is untracked and there's no origin remote.
+            [1] origin-1
+            [2] origin-2
+            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
+            Branch develop is untracked, but its remote counterpart candidate origin-1/develop already exists and both branches point to the same commit.
+            Set the remote of develop to origin-1 without pushing or pulling? (y, N, q, yq, o[ther-remote])
+            """
+        )
+
+    def test_traverse_untracked_branch_with_existing_remote_counterpart_set_or_skip(self, mocker: MockerFixture) -> None:
+        create_repo()
+        origin_1_remote_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        origin_2_remote_path = create_repo("remote-2", bare=True, switch_dir_to_new_repo=False)
+        add_remote("origin-1", origin_1_remote_path)
+        add_remote("origin-2", origin_2_remote_path)
+        new_branch("master")
+        commit()
+        new_branch("develop")
+        commit()
+        push(remote="origin-1", set_upstream=False)
+        push(remote="origin-2", set_upstream=False)
+        rewrite_branch_layout_file("master\n\tdevelop")
+
+        # Decline ('n') keeps the branch untracked, so the picked-remote setup can be reused for the 'y' case below.
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'n'))
+        assert_success(
+            ["traverse"],
+            """
+            Branch develop is untracked and there's no origin remote.
+            [1] origin-1
+            [2] origin-2
+            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
+            Branch develop is untracked, but its remote counterpart candidate origin-1/develop already exists and both branches point to the same commit.
+            Set the remote of develop to origin-1 without pushing or pulling? (y, N, q, yq, o[ther-remote])
+
+              master (untracked)
+              |
+              o-develop * (untracked)
+
+            Reached branch develop which has no successor; nothing left to update
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('1', 'y'))
+        assert_success(
+            ["traverse"],
+            """
+            Branch develop is untracked and there's no origin remote.
+            [1] origin-1
+            [2] origin-2
+            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
+            Branch develop is untracked, but its remote counterpart candidate origin-1/develop already exists and both branches point to the same commit.
+            Set the remote of develop to origin-1 without pushing or pulling? (y, N, q, yq, o[ther-remote])
+
+              master (untracked)
+              |
+              o-develop *
+
+            Reached branch develop which has no successor; nothing left to update
+            """
+        )
+
+    def test_traverse_untracked_origin_among_multiple_remotes(self, mocker: MockerFixture) -> None:
+        create_repo_with_remote()
+        second_remote_path = create_repo("remote-2", bare=True, switch_dir_to_new_repo=False)
+        add_remote("origin-2", second_remote_path)
+        new_branch("master")
+        commit()
+        rewrite_branch_layout_file("master")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('q'))
+        assert_success(
+            ["traverse"],
+            "Push untracked branch master to origin? (y, N, q, yq, o[ther-remote])\n"
+        )
+
+    def test_traverse_untracked_pick_remote_quit_and_invalid_index(self, mocker: MockerFixture) -> None:
+        create_repo()
+        origin_1_remote_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        origin_2_remote_path = create_repo("remote-2", bare=True, switch_dir_to_new_repo=False)
+        add_remote("origin-1", origin_1_remote_path)
+        add_remote("origin-2", origin_2_remote_path)
+        new_branch("master")
+        commit()
+        rewrite_branch_layout_file("master")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('q'))
+        assert_success(
+            ["traverse"],
+            """
+            Branch master is untracked and there's no origin remote.
+            [1] origin-1
+            [2] origin-2
+            Select number 1..2 to specify the destination remote repository, or 'n' to skip this branch, or 'q' to quit the traverse:
+            """
+        )
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning('3'))
+        assert_failure(
+            ["traverse"],
+            "Invalid index: 3"
+        )
+
     def test_traverse_yellow_edges(self, mocker: MockerFixture) -> None:
         E = FullTerminalAnsiOutputCodes
         self.patch_symbol(mocker, "git_machete.utils.terminal.is_stdout_a_tty", lambda: True)
