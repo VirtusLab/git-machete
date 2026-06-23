@@ -8,9 +8,8 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 **Git config keys:**
 
-``machete.github.{domain,remote,organization,repository}``:
+``machete.github.{remote,domain,organization,repository}``:
   .. include:: git-config-keys/github_access.rst
-      :start-line: 3
 
 ``machete.github.annotateWithUrls``:
   .. include:: git-config-keys/github_annotateWithUrls.rst
@@ -21,9 +20,8 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 ``machete.github.prDescriptionIntroStyle``:
   .. include:: git-config-keys/github_prDescriptionIntroStyle.rst
 
-``machete.gitlab.{domain,remote,namespace,project}``:
+``machete.gitlab.{remote,domain,namespace,project}``:
   .. include:: git-config-keys/gitlab_access.rst
-      :start-line: 3
 
 ``machete.gitlab.annotateWithUrls``:
   .. include:: git-config-keys/gitlab_annotateWithUrls.rst
@@ -47,6 +45,8 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 ``machete.status.extraSpaceBeforeBranchName``:
     .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
+
+    .. include:: git-config-keys/status_extraSpaceBeforeBranchName_example.rst
 
 ``machete.traverse.fetch.<remote>``:
     .. include:: git-config-keys/traverse_fetch_remote.rst

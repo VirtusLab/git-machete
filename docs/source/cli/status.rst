@@ -72,6 +72,8 @@ When colors are disabled, relation between branches is represented in the follow
 
 .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
 
+.. include:: git-config-keys/status_extraSpaceBeforeBranchName_example.rst
+
 **Options:**
 
 --color=WHEN                      Colorize the output; WHEN can be ``always``, ``auto`` (default: colorize only if stdout is a terminal), or ``never``.
@@ -95,4 +97,3 @@ When colors are disabled, relation between branches is represented in the follow
 
 ``machete.status.extraSpaceBeforeBranchName``:
     .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
-      :end-line: 3

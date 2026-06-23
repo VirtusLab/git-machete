@@ -244,15 +244,27 @@ long_docs: Dict[str, str] = {
 
         <b>Git config keys:</b>
 
-           `machete.github.{domain,remote,organization,repository}`:
-                GitHub Enterprise domain
-                    E.g. `git config machete.github.domain git.example.org`
+           `machete.github.{remote,domain,organization,repository}`:
+             `machete.github.remote`
+                The name of the git remote (as in `git remote`) that git-machete pushes the head branch to.
+                Unless both `machete.github.organization` and `machete.github.repository` are set, this remote's URL is also inspected
+                to derive the GitHub organization and repository that the pull request resides in.
+                The pull request is operated on through the GitHub API, which addresses that organization/repository rather than a git remote.
+                By default (when this key is unset), if exactly one remote's URL corresponds to GitHub, that remote is selected automatically;
+                set this key to disambiguate when more than one remote points to GitHub.
+                For example, `git config machete.github.remote origin`
 
-                Remote name (as in `git remote`)
-                    E.g. `git config machete.github.remote origin`
+             `machete.github.domain`
+                The domain of the GitHub API server, for use with GitHub Enterprise; otherwise inferred from the remote URL.
+                For example, `git config machete.github.domain git.example.org`
 
-                Organization and repository name
-                    E.g. `git config machete.github.organization VirtusLab; git config machete.github.repository git-machete`
+             `machete.github.organization`
+                The GitHub organization (the part before `/` in `organization/repository`); otherwise inferred from the remote URL.
+                For example, `git config machete.github.organization VirtusLab`
+
+             `machete.github.repository`
+                The GitHub repository (the part after `/` in `organization/repository`); otherwise inferred from the remote URL.
+                For example, `git config machete.github.repository git-machete`
 
              Note that you do <b>not</b> need to set all four keys at once.
              For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
@@ -277,15 +289,27 @@ long_docs: Dict[str, str] = {
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only PR numbers & titles)
               * `none`                — prepend no intro to the PR description at all
 
-           `machete.gitlab.{domain,remote,namespace,project}`:
-                GitLab self-managed domain
-                    E.g. `git config machete.gitlab.domain git.example.org`
+           `machete.gitlab.{remote,domain,namespace,project}`:
+             `machete.gitlab.remote`
+                The name of the git remote (as in `git remote`) that git-machete pushes the source branch to.
+                Unless both `machete.gitlab.namespace` and `machete.gitlab.project` are set, this remote's URL is also inspected
+                to derive the GitLab namespace and project that the merge request resides in.
+                The merge request is operated on through the GitLab API, which addresses that namespace/project rather than a git remote.
+                By default (when this key is unset), if exactly one remote's URL corresponds to GitLab, that remote is selected automatically;
+                set this key to disambiguate when more than one remote points to GitLab.
+                For example, `git config machete.gitlab.remote origin`
 
-                Remote name (as in `git remote`)
-                    E.g. `git config machete.gitlab.remote origin`
+             `machete.gitlab.domain`
+                The domain of the GitLab API server, for use with a GitLab self-managed instance; otherwise inferred from the remote URL.
+                For example, `git config machete.gitlab.domain git.example.org`
 
-                Namespace and project name
-                    E.g. `git config machete.gitlab.namespace foo/bar; git config machete.gitlab.project hello-world`
+             `machete.gitlab.namespace`
+                The GitLab namespace (the part before the final `/` in `namespace/project`); otherwise inferred from the remote URL.
+                For example, `git config machete.gitlab.namespace foo/bar`
+
+             `machete.gitlab.project`
+                The GitLab project (the part after the final `/` in `namespace/project`); otherwise inferred from the remote URL.
+                For example, `git config machete.gitlab.project hello-world`
 
              Note that you do <b>not</b> need to set all four keys at once.
              For example, in a typical usage for GitLab self-managed instance, it should be enough to just set `machete.gitlab.domain`.
@@ -765,18 +789,27 @@ long_docs: Dict[str, str] = {
 
         <b>Git config keys:</b>
 
-           `machete.github.{domain,remote,organization,repository}` (all subcommands):
-             GitHub API server URL will be inferred from `git remote`.
-             You can alter the default behavior by setting the following git config keys:
+           `machete.github.{remote,domain,organization,repository}` (all subcommands):
+             `machete.github.remote`
+                The name of the git remote (as in `git remote`) that git-machete pushes the head branch to.
+                Unless both `machete.github.organization` and `machete.github.repository` are set, this remote's URL is also inspected
+                to derive the GitHub organization and repository that the pull request resides in.
+                The pull request is operated on through the GitHub API, which addresses that organization/repository rather than a git remote.
+                By default (when this key is unset), if exactly one remote's URL corresponds to GitHub, that remote is selected automatically;
+                set this key to disambiguate when more than one remote points to GitHub.
+                For example, `git config machete.github.remote origin`
 
-                GitHub Enterprise domain
-                    E.g. `git config machete.github.domain git.example.org`
+             `machete.github.domain`
+                The domain of the GitHub API server, for use with GitHub Enterprise; otherwise inferred from the remote URL.
+                For example, `git config machete.github.domain git.example.org`
 
-                Remote name (as in `git remote`)
-                    E.g. `git config machete.github.remote origin`
+             `machete.github.organization`
+                The GitHub organization (the part before `/` in `organization/repository`); otherwise inferred from the remote URL.
+                For example, `git config machete.github.organization VirtusLab`
 
-                Organization and repository name
-                    E.g. `git config machete.github.organization VirtusLab; git config machete.github.repository git-machete`
+             `machete.github.repository`
+                The GitHub repository (the part after `/` in `organization/repository`); otherwise inferred from the remote URL.
+                For example, `git config machete.github.repository git-machete`
 
              Note that you do <b>not</b> need to set all four keys at once.
              For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
@@ -955,18 +988,27 @@ long_docs: Dict[str, str] = {
 
         <b>Git config keys:</b>
 
-           `machete.gitlab.{domain,remote,namespace,project}` (all subcommands):
-             GitLab API server URL will be inferred from `git remote`.
-             You can alter the default behavior by setting the following git config keys:
+           `machete.gitlab.{remote,domain,namespace,project}` (all subcommands):
+             `machete.gitlab.remote`
+                The name of the git remote (as in `git remote`) that git-machete pushes the source branch to.
+                Unless both `machete.gitlab.namespace` and `machete.gitlab.project` are set, this remote's URL is also inspected
+                to derive the GitLab namespace and project that the merge request resides in.
+                The merge request is operated on through the GitLab API, which addresses that namespace/project rather than a git remote.
+                By default (when this key is unset), if exactly one remote's URL corresponds to GitLab, that remote is selected automatically;
+                set this key to disambiguate when more than one remote points to GitLab.
+                For example, `git config machete.gitlab.remote origin`
 
-                GitLab self-managed domain
-                    E.g. `git config machete.gitlab.domain git.example.org`
+             `machete.gitlab.domain`
+                The domain of the GitLab API server, for use with a GitLab self-managed instance; otherwise inferred from the remote URL.
+                For example, `git config machete.gitlab.domain git.example.org`
 
-                Remote name (as in `git remote`)
-                    E.g. `git config machete.gitlab.remote origin`
+             `machete.gitlab.namespace`
+                The GitLab namespace (the part before the final `/` in `namespace/project`); otherwise inferred from the remote URL.
+                For example, `git config machete.gitlab.namespace foo/bar`
 
-                Namespace and project name
-                    E.g. `git config machete.gitlab.namespace foo/bar; git config machete.gitlab.project hello-world`
+             `machete.gitlab.project`
+                The GitLab project (the part after the final `/` in `namespace/project`); otherwise inferred from the remote URL.
+                For example, `git config machete.gitlab.project hello-world`
 
              Note that you do <b>not</b> need to set all four keys at once.
              For example, in a typical usage for GitLab self-managed instance, it should be enough to just set `machete.gitlab.domain`.

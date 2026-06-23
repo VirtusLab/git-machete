@@ -1,41 +1,19 @@
 import os
 import re
-from itertools import takewhile
 from os.path import isfile, join
 from textwrap import dedent, indent
 from typing import List
 
 
 def resolve_includes(rst_content: str, docs_source_dir: str) -> str:
-    matches = re.findall(r'(.*)\.\. include:: (.*)\n(.* :(.*): ([0-9]*)\n)?(.* :(.*): ([0-9]*)\n)?', rst_content)
-    # example matches:
-    #     .. include:: status_extraSpaceBeforeBranchName_config_key.rst
-    #
-    #     .. include:: status_extraSpaceBeforeBranchName_config_key.rst
-    #         :start-line: 2
-    #
-    #     .. include:: status_extraSpaceBeforeBranchName_config_key.rst
-    #         :start-line: 2
-    #         :end-line: 6
-    for include_indent, included_file, opt1_line, opt1_key, opt1_value, opt2_line, opt2_key, opt2_value in matches:
+    matches = re.findall(r'(.*)\.\. include:: (.*)\n', rst_content)
+    # example match:
+    #     .. include:: status_extraSpaceBeforeBranchName.rst
+    for include_indent, included_file in matches:
         with open(f'{docs_source_dir}/{included_file}', 'r') as handle:
-            include_text = handle.readlines()
+            include_text = handle.read()
         replace_from = f'{include_indent}.. include:: {included_file}'
-
-        start_line, end_line = 0, len(include_text)
-        if opt1_key == 'start-line':
-            start_line = int(opt1_value)
-            replace_from += f'\n{opt1_line}'
-            if opt2_key == 'end-line':
-                end_line = int(opt2_value)
-                replace_from += opt2_line
-        elif opt1_key == 'end-line':
-            end_line = int(opt1_value)
-            replace_from += f'\n{opt1_line}'
-
-        include_text = include_text[start_line:end_line]
-        include_text = takewhile(lambda line: not line == "..\n", include_text)
-        replace_to = indent(dedent(''.join(include_text)), include_indent)
+        replace_to = indent(dedent(include_text), include_indent)
         rst_content = rst_content.replace(replace_from, replace_to, 1)
     return rst_content
 
