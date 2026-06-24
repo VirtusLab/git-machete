@@ -31,7 +31,7 @@ class TestHelp(BaseTest):
             if command not in help_topics:
                 output, e = launch_command_capturing_output_and_exception(command, "--help")
                 assert output is not None
-                assert "Usage:" in output
+                assert "Usage" in output
                 assert type(e) is SystemExit
                 assert e.code == ExitCode.SUCCESS
             else:

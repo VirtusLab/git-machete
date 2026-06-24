@@ -2,7 +2,7 @@
 
 update
 ======
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -17,7 +17,7 @@ See help for :ref:`fork-point` for more details.
 
 If updating by merge, merges the upstream (parent) branch into the current branch.
 
-**Options:**
+**Options**
 
 -f, --fork-point=<fork-point-commit>    If updating by rebase, specifies the alternative fork point commit after which the rebased
                                         part of history is meant to start. Not allowed if updating by merge.
@@ -33,7 +33,7 @@ If updating by merge, merges the upstream (parent) branch into the current branc
 --no-interactive-rebase                 If updating by rebase, run ``git rebase`` in non-interactive mode (without ``-i/--interactive`` flag).
                                         Not allowed if updating by merge.
 
-**Environment variables:**
+**Environment variables**
 
 ``GIT_MACHETE_REBASE_OPTS``
     .. include:: env-vars/git_machete_rebase_opts.rst

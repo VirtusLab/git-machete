@@ -2,7 +2,7 @@
 
 edit
 ====
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -29,7 +29,7 @@ but not for any other actions that may be indirectly triggered by git machete, i
 The branch layout file can be always accessed and edited directly under the path returned by ``git machete file``
 (usually ``.git/machete``, unless worktrees or submodules are involved).
 
-**Environment variables:**
+**Environment variables**
 
 ``GIT_MACHETE_EDITOR``
     Name of the editor executable.

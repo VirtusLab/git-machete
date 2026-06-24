@@ -2,7 +2,7 @@
 
 is-managed
 ==========
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 

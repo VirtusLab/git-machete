@@ -2,7 +2,7 @@
 
 reapply
 =======
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -18,11 +18,11 @@ Note: the current reapplied branch does not need to occur in the branch layout f
 Tip: ``reapply`` can be used for squashing the commits on the current branch to make history more condensed before push to the remote,
 but there is also dedicated ``squash`` command that achieves the same goal without running ``git rebase``.
 
-**Options:**
+**Options**
 
 -f, --fork-point=<fork-point-commit>    Specifies the alternative fork point commit after which the rebased part of history is meant to start.
 
-**Environment variables:**
+**Environment variables**
 
 ``GIT_MACHETE_REBASE_OPTS``
     .. include:: env-vars/git_machete_rebase_opts.rst

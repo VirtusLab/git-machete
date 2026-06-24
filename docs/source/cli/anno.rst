@@ -2,7 +2,7 @@
 
 anno
 ====
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -40,7 +40,7 @@ Note: ``anno`` command is able to overwrite the existing branch qualifiers, for 
 
 Note: all the effects of ``anno`` can be always achieved by manually editing the branch layout file.
 
-**Options:**
+**Options**
 
 -b, --branch=<branch>     Branch to set the annotation for.
 

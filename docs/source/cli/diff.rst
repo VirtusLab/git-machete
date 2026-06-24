@@ -2,7 +2,7 @@
 
 diff
 ====
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -14,7 +14,7 @@ See help for :ref:`fork-point` for more details.
 
 Note: the branch in question does not need to occur in the branch layout file.
 
-**Options:**
+**Options**
 
 -- <pass-through-arguments>    Arguments to pass directly to the underlying ``git diff``, for example ``git machete diff -- --name-only``.
 

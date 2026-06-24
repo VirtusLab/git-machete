@@ -2,7 +2,7 @@
 
 help
 ====
-**Usage:**
+**Usage**
 
 .. code-block:: awk
 

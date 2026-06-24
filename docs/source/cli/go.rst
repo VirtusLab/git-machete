@@ -2,7 +2,7 @@
 
 go
 ==
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -12,7 +12,7 @@ where <direction> is one of: ``d[own]``, ``f[irst]``, ``l[ast]``, ``n[ext]``, ``
 
 If ``<direction>`` is not provided, an interactive mode is launched where you can navigate the branch tree using arrow keys and select a branch to check out.
 
-**Interactive mode controls:**
+**Interactive mode controls**
 
 * **↑/↓**: Navigate up/down through branches
 * **Shift+↑**: Jump to the first branch

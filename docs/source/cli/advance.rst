@@ -2,7 +2,7 @@
 
 advance
 =======
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -54,7 +54,7 @@ If the current branch ``C`` is annotated with ``push=no`` qualifier, the push is
 If the downstream branch ``D`` is annotated with ``slide-out=no`` qualifier, the slide-out is not performed.
 See help for :ref:`traverse` for more details on the qualifiers.
 
-**Options:**
+**Options**
 
 -y, --yes         Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream.
                   Fails if the current branch has more than one :green:`green-edge` downstream branch.

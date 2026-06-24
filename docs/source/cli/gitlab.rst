@@ -2,7 +2,7 @@
 
 gitlab
 ======
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -40,9 +40,9 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
           glpat-myothertoken_for_git_example_org git.example.org
           glpat-yetanothertoken_for_git_example_com git.example.com
 
-**Subcommands:**
+**Subcommands**
 
-``anno-mrs [--with-urls]``:
+``anno-mrs [--with-urls]``
     Annotate the branches based on their corresponding GitLab MR numbers and authors.
     Any existing annotations are overwritten for the branches that have an opened MR; annotations for the other branches remain untouched.
     Equivalent to ``git machete anno --sync-gitlab-mrs``.
@@ -55,7 +55,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
     --with-urls                   Also include full MR URLs in the annotations (rather than just MR number).
 
 
-``checkout-mrs [--all | --by=<gitlab-login> | --mine | <MR-number-1> ... <MR-number-N>]``:
+``checkout-mrs [--all | --by=<gitlab-login> | --mine | <MR-number-1> ... <MR-number-N>]``
     Check out the source branch of the given merge requests (specified by numbers or by a flag),
     also traverse chain of merge requests upwards, adding branches one by one to git-machete and check them out locally.
     Once the specified merge requests are checked out locally, annotate local branches with corresponding merge request numbers.
@@ -76,7 +76,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 
     ``<MR-number-1> ... <MR-number-N>``    Merge request numbers to checkout.
 
-``create-mr [--draft] [--title=<title>] [-U|--update-related-descriptions] [-y|--yes]``:
+``create-mr [--draft] [--title=<title>] [-U|--update-related-descriptions] [-y|--yes]``
     Create an MR for the current branch, using the upstream (parent) branch as the MR source branch.
     Once the MR is successfully created, annotate the current branch with the new MR's number.
 
@@ -105,7 +105,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 
     -y, --yes                          Do not ask for confirmation whether to push the branch.
 
-``restack-mr [-U|--update-related-descriptions]``:
+``restack-mr [-U|--update-related-descriptions]``
     Perform the following sequence of actions:
 
     #. If the MR for the current branch is ready for review, it gets converted into a draft.
@@ -121,7 +121,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
     -U, --update-related-descriptions  Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs.
                                        See help for ``git machete gitlab update-mr-descriptions --related`` for details.
 
-``retarget-mr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]``:
+``retarget-mr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]``
     Set the target of the current (or specified) branch's MR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
     If after changing the base the MR ends up stacked atop another MR, the MR description posted to GitLab will include
@@ -138,7 +138,7 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
     -U, --update-related-descriptions  Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs.
                                        See help for ``git machete gitlab update-mr-descriptions --related`` for details.
 
-``update-mr-descriptions [--all | --by=<gitlab-login> | --mine | --related]``:
+``update-mr-descriptions [--all | --by=<gitlab-login> | --mine | --related]``
     Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs
     (depending on ``machete.gitlab.mrDescriptionIntroStyle`` git config key).
 
@@ -154,21 +154,21 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 
     --related            Update MR descriptions for all MRs both upstream and downstream of the MR for the current branch (the entire stack). This is the default if no flag is given.
 
-**Git config keys:**
+**Git config keys**
 
-``machete.gitlab.{remote,domain,namespace,project}`` (all subcommands):
+``machete.gitlab.{remote,domain,namespace,project}`` (all subcommands)
   .. include:: git-config-keys/gitlab_access.rst
 
-``machete.gitlab.annotateWithUrls`` (all subcommands):
+``machete.gitlab.annotateWithUrls`` (all subcommands)
   .. include:: git-config-keys/gitlab_annotateWithUrls.rst
 
-``machete.gitlab.forceDescriptionFromCommitMessage`` (``create-mr`` only):
+``machete.gitlab.forceDescriptionFromCommitMessage`` (``create-mr`` only)
   .. include:: git-config-keys/gitlab_forceDescriptionFromCommitMessage.rst
 
-``machete.gitlab.mrDescriptionIntroStyle`` (``create-mr``, ``restack-mr`` and ``retarget-mr``):
+``machete.gitlab.mrDescriptionIntroStyle`` (``create-mr``, ``restack-mr`` and ``retarget-mr``)
   .. include:: git-config-keys/gitlab_mrDescriptionIntroStyle.rst
 
-**Environment variables (all subcommands):**
+**Environment variables (all subcommands)**
 
 ``GITLAB_TOKEN``
     GitLab API token.

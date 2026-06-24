@@ -2,7 +2,7 @@
 
 version
 =======
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 

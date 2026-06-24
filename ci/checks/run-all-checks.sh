@@ -34,6 +34,7 @@ _ enforce-yq-check-for-each-y-yes-yq-check
 _ prohibit-a-mr
 _ prohibit-all-caps-not-in-rst
 _ prohibit-bash-usages-from-python
+_ prohibit-colon-after-header-in-rst
 _ prohibit-current-date-in-tests
 _ prohibit-deploy-step-in-circleci
 _ prohibit-double-backticks-in-python

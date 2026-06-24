@@ -2,7 +2,7 @@
 
 traverse
 ========
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -89,7 +89,7 @@ when the current user is **not** the author of the PR/MR associated with that br
 If a branch is not checked out in any worktree, by default ``traverse`` will change directory to the main worktree before checking out the branch.
 This behavior can be customized using ``machete.traverse.whenBranchNotCheckedOutInAnyWorktree`` git config key (see below).
 
-**Options:**
+**Options**
 
 -F, --fetch                    Fetch the remotes of all managed branches at the beginning of traversal (no ``git pull`` involved, only ``git fetch``).
 
@@ -153,21 +153,21 @@ This behavior can be customized using ``machete.traverse.whenBranchNotCheckedOut
 
 -y, --yes                      Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies ``-n``.
 
-**Git config keys:**
+**Git config keys**
 
-``machete.squashMergeDetection``:
+``machete.squashMergeDetection``
     .. include:: git-config-keys/squashMergeDetection.rst
 
-``machete.traverse.fetch.<remote>``:
+``machete.traverse.fetch.<remote>``
     .. include:: git-config-keys/traverse_fetch_remote.rst
 
-``machete.traverse.push``:
+``machete.traverse.push``
     .. include:: git-config-keys/traverse_push.rst
 
-``machete.traverse.whenBranchNotCheckedOutInAnyWorktree``:
+``machete.traverse.whenBranchNotCheckedOutInAnyWorktree``
     .. include:: git-config-keys/traverse_whenBranchNotCheckedOutInAnyWorktree.rst
 
-**Environment variables:**
+**Environment variables**
 
 ``GIT_MACHETE_REBASE_OPTS``
     .. include:: env-vars/git_machete_rebase_opts.rst

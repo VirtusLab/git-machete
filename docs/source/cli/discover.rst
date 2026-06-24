@@ -2,7 +2,7 @@
 
 discover
 ========
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -15,7 +15,7 @@ and saves the new tree under the usual ``$GIT_DIR/machete`` path.
 If the reply was ``e[dit]``, additionally an editor is opened (as in: ``git machete`` :ref:`edit`) after saving the new branch layout file.
 ``discover`` retains the existing branch qualifiers used by ``git machete traverse`` (see help for :ref:`traverse`).
 
-**Options:**
+**Options**
 
 -C, --checked-out-since=<date>   Only consider branches checked out at least once since the given date.
                                  ``<date>`` can be, for example, ``2 weeks ago`` or ``2020-06-01``, as in ``git log --since=<date>``.

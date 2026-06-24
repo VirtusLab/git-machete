@@ -132,7 +132,7 @@ Print version and exit.
 .UNINDENT
 .SH ADD
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -159,7 +159,7 @@ If the upstream branch can be inferred, the user will be presented with inferred
 .sp
 Note: all the effects of \fBadd\fP (except git branch creation) can as well be achieved by manually editing the branch layout file.
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .B  \-f\fP,\fB  \-\-as\-first\-child
@@ -178,7 +178,7 @@ Don\(aqt ask for confirmation whether to create the branch or whether to add ont
 .UNINDENT
 .SH ADVANCE
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -246,7 +246,7 @@ If the current branch \fBC\fP is annotated with \fBpush=no\fP qualifier, the pus
 If the downstream branch \fBD\fP is annotated with \fBslide\-out=no\fP qualifier, the slide\-out is not performed.
 See help for traverse for more details on the qualifiers.
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .B  \-y\fP,\fB  \-\-yes
@@ -255,7 +255,7 @@ Fails if the current branch has more than one green\-edge downstream branch.
 .UNINDENT
 .SH ANNO
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -300,7 +300,7 @@ Note: \fBanno\fP command is able to overwrite the existing branch qualifiers, fo
 .sp
 Note: all the effects of \fBanno\fP can be always achieved by manually editing the branch layout file.
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .BI \-b\fP,\fB  \-\-branch\fB= <branch>
@@ -318,10 +318,10 @@ Documentation about available \fBgit machete\fP git config keys and environment 
 .sp
 Note: \fBconfig\fP is not a command as such, just a help topic (there is no \fBgit machete config\fP command).
 .sp
-\fBGit config keys:\fP
+\fBGit config keys\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.github.{remote,domain,organization,repository}\fP:
+.B \fBmachete.github.{remote,domain,organization,repository}\fP
 .INDENT 7.0
 .TP
 .B \fBmachete.github.remote\fP
@@ -350,18 +350,18 @@ Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
 Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together.
 .TP
-.B \fBmachete.github.annotateWithUrls\fP:
+.B \fBmachete.github.annotateWithUrls\fP
 Setting this config key to \fBtrue\fP will cause all commands that write GitHub PR numbers into annotations
 to not only include PR number and author (if different from the current user), but also the full URL of the PR.
 .sp
 The affected (sub)commands clearly include \fBanno \-\-sync\-github\-prs\fP and \fBgithub anno\-prs\fP,
 but also \fBgithub checkout\-prs\fP, \fBgithub create\-pr\fP, \fBgithub retarget\-pr\fP and \fBgithub restack\-pr\fP\&.
 .TP
-.B \fBmachete.github.forceDescriptionFromCommitMessage\fP:
+.B \fBmachete.github.forceDescriptionFromCommitMessage\fP
 Setting this config key to \fBtrue\fP will force \fBgit machete github create\-pr\fP to take PR description
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.github/pull_request_template.md\fP is present.
 .TP
-.B \fBmachete.github.prDescriptionIntroStyle\fP:
+.B \fBmachete.github.prDescriptionIntroStyle\fP
 .INDENT 7.0
 .TP
 .B Select the style of the generated section (\(dqintro\(dq) added to the PR description:
@@ -379,7 +379,7 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .UNINDENT
 .UNINDENT
 .TP
-.B \fBmachete.gitlab.{remote,domain,namespace,project}\fP:
+.B \fBmachete.gitlab.{remote,domain,namespace,project}\fP
 .INDENT 7.0
 .TP
 .B \fBmachete.gitlab.remote\fP
@@ -408,18 +408,18 @@ Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage for GitLab self\-managed instance, it should be enough to just set \fBmachete.gitlab.domain\fP\&.
 Only \fBmachete.gitlab.namespace\fP and \fBmachete.gitlab.project\fP must be specified together.
 .TP
-.B \fBmachete.gitlab.annotateWithUrls\fP:
+.B \fBmachete.gitlab.annotateWithUrls\fP
 Setting this config key to \fBtrue\fP will cause all commands that write GitLab MR numbers into annotations
 to not only include MR number and author (if different from the current user), but also the full URL of the MR.
 .sp
 The affected (sub)commands clearly include \fBanno \-\-sync\-gitlab\-mrs\fP and \fBgitlab anno\-mrs\fP,
 but also \fBgitlab checkout\-mrs\fP, \fBgitlab create\-mr\fP, \fBgitlab retarget\-mr\fP and \fBgitlab restack\-mr\fP\&.
 .TP
-.B \fBmachete.gitlab.forceDescriptionFromCommitMessage\fP:
+.B \fBmachete.gitlab.forceDescriptionFromCommitMessage\fP
 Setting this config key to \fBtrue\fP will force \fBgit machete gitlab create\-mr\fP to take MR description
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.gitlab/merge_request_templates/Default.md\fP is present.
 .TP
-.B \fBmachete.gitlab.mrDescriptionIntroStyle\fP:
+.B \fBmachete.gitlab.mrDescriptionIntroStyle\fP
 .INDENT 7.0
 .TP
 .B Select the style of the generated section (\(dqintro\(dq) added to the MR description:
@@ -437,7 +437,7 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .UNINDENT
 .UNINDENT
 .TP
-.B \fBmachete.overrideForkPoint.<branch>.to\fP:
+.B \fBmachete.overrideForkPoint.<branch>.to\fP
 Executing \fBgit machete fork\-point \-\-override\-to[\-parent|\-inferred|=<revision>] [<branch>]\fP sets up a fork point override for \fB<branch>\fP\&.
 .sp
 The override data is stored under \fBmachete.overrideForkPoint.<branch>.to\fP git config key.
@@ -445,7 +445,7 @@ The override data is stored under \fBmachete.overrideForkPoint.<branch>.to\fP gi
 There should be \fBno\fP need for the user to interact with this key directly,
 \fBgit machete fork\-point\fP with flags should be used instead.
 .TP
-.B \fBmachete.squashMergeDetection\fP:
+.B \fBmachete.squashMergeDetection\fP
 Select the algorithm used to detect squash merges. Possible values are:
 .INDENT 7.0
 .IP \(bu 2
@@ -467,7 +467,7 @@ whether a gray edge is displayed in \fBstatus\fP,
 whether \fBtraverse\fP suggests to slide out the branch.
 .UNINDENT
 .TP
-.B \fBmachete.status.extraSpaceBeforeBranchName\fP:
+.B \fBmachete.status.extraSpaceBeforeBranchName\fP
 To make it easier to select branch name from the \fBstatus\fP output on certain terminals (like Alacritty \%<https://\:github\:.com/\:alacritty/\:alacritty>),
 you can add an extra space between └─ and branch name by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .sp
@@ -499,18 +499,18 @@ develop
 .UNINDENT
 .UNINDENT
 .TP
-.B \fBmachete.traverse.fetch.<remote>\fP:
+.B \fBmachete.traverse.fetch.<remote>\fP
 Configure the behavior of \fBgit machete traverse\fP command for the given remote when \fB\-\-fetch\fP flag is used.
 If set to \fBfalse\fP, this remote will not be fetched before the traversal.
 The default value of this key is \fBtrue\fP\&.
 This is useful for excluding remotes that are temporarily offline, or take a long time to respond.
 .TP
-.B \fBmachete.traverse.push\fP:
+.B \fBmachete.traverse.push\fP
 Set to \fBfalse\fP to change the behavior of \fBgit machete traverse\fP so that it doesn\(aqt push branches by default.
 The default value of this key is \fBtrue\fP\&.
 Configuration key value can be overridden by the presence of the \fB\-\-push\fP or \fB\-\-push\-untracked\fP flags.
 .TP
-.B \fBmachete.traverse.whenBranchNotCheckedOutInAnyWorktree\fP:
+.B \fBmachete.traverse.whenBranchNotCheckedOutInAnyWorktree\fP
 Controls the behavior of \fBgit machete traverse\fP when it needs to act on a branch that is not currently checked out in any worktree.
 .sp
 Allowed values:
@@ -526,7 +526,7 @@ and remove this temporary worktree once \fBtraverse\fP moves on to the next bran
 This ensures that no existing (non\-temporary) worktree has its checked\-out branch changed by \fBtraverse\fP\&.
 .UNINDENT
 .TP
-.B \fBmachete.worktree.useTopLevelMacheteFile\fP:
+.B \fBmachete.worktree.useTopLevelMacheteFile\fP
 The default value of this key is \fBtrue\fP, which means that the path to branch layout file will be \fB\&.git/machete\fP
 for both regular directory and worktree.
 .sp
@@ -534,7 +534,7 @@ If you want the worktree to have its own branch layout file (located under \fB\&
 set \fBgit config machete.worktree.useTopLevelMacheteFile false\fP\&.
 .UNINDENT
 .sp
-\fBEnvironment variables:\fP
+\fBEnvironment variables\fP
 .INDENT 0.0
 .TP
 .B \fBGIT_MACHETE_EDITOR\fP
@@ -554,7 +554,7 @@ Used to store GitLab API token. Used by commands such as \fBanno \-\-sync\-gitla
 .UNINDENT
 .SH CLEAN
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -589,7 +589,7 @@ For enterprise domains, non\-standard URLs etc., check git config keys in \fBgit
 .UNINDENT
 .UNINDENT
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .B  \-H\fP,\fB  \-\-checkout\-my\-github\-prs
@@ -599,7 +599,7 @@ Checkout your open PRs into local branches.
 Don\(aqt ask for confirmation when deleting branches from git.
 .UNINDENT
 .sp
-\fBEnvironment variables:\fP
+\fBEnvironment variables\fP
 .INDENT 0.0
 .TP
 .B \fBGITHUB_TOKEN\fP
@@ -607,7 +607,7 @@ GitHub API token.
 .UNINDENT
 .SH COMPLETION
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -621,7 +621,7 @@ where \fB<shell>\fP is one of: \fBbash\fP, \fBfish\fP, \fBzsh\fP\&.
 .sp
 Prints out completion scripts.
 .sp
-\fBSupported shells:\fP
+\fBSupported shells\fP
 .sp
 \fBbash\fP
 .sp
@@ -662,7 +662,7 @@ source <(git machete completion zsh)
 .UNINDENT
 .SH DELETE-UNMANAGED
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -680,7 +680,7 @@ Note: this should be used with care since deleting local branches can sometimes 
 for \fBgit machete\fP to properly figure out fork points.
 See help for fork\-point for more details.
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .B  \-y\fP,\fB  \-\-yes
@@ -688,7 +688,7 @@ Don\(aqt ask for confirmation.
 .UNINDENT
 .SH DIFF
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -704,7 +704,7 @@ See help for fork\-point for more details.
 .sp
 Note: the branch in question does not need to occur in the branch layout file.
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .sp
 \-\- <pass\-through\-arguments>    Arguments to pass directly to the underlying \fBgit diff\fP, for example \fBgit machete diff \-\- \-\-name\-only\fP\&.
 .INDENT 0.0
@@ -714,7 +714,7 @@ Make \fBgit machete diff\fP pass \fB\-\-stat\fP option to \fBgit diff\fP, so tha
 .UNINDENT
 .SH DISCOVER
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -731,7 +731,7 @@ and saves the new tree under the usual \fB$GIT_DIR/machete\fP path.
 If the reply was \fBe[dit]\fP, additionally an editor is opened (as in: \fBgit machete\fP edit) after saving the new branch layout file.
 \fBdiscover\fP retains the existing branch qualifiers used by \fBgit machete traverse\fP (see help for traverse).
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .BI \-C\fP,\fB  \-\-checked\-out\-since\fB= <date>
@@ -754,7 +754,7 @@ Mostly useful in scripts; not recommended for manual use.
 .UNINDENT
 .SH EDIT
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -794,7 +794,7 @@ but not for any other actions that may be indirectly triggered by git machete, i
 The branch layout file can be always accessed and edited directly under the path returned by \fBgit machete file\fP
 (usually \fB\&.git/machete\fP, unless worktrees or submodules are involved).
 .sp
-\fBEnvironment variables:\fP
+\fBEnvironment variables\fP
 .INDENT 0.0
 .TP
 .B \fBGIT_MACHETE_EDITOR\fP
@@ -802,7 +802,7 @@ Name of the editor executable.
 .UNINDENT
 .SH FILE
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -834,7 +834,7 @@ if \fBgit machete\fP is executed from a \fBsubmodule\fP, this file is located in
 .UNINDENT
 .SH FORK-POINT
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -938,7 +938,7 @@ Tabs or any number of spaces can be used as indentation.
 It\(aqs only important to use indentation characters consistently between all lines.
 .SH GITHUB
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -996,10 +996,10 @@ ghp_yetanothertoken_for_git_example_com git.example.com
 .UNINDENT
 .UNINDENT
 .sp
-\fBSubcommands:\fP
+\fBSubcommands\fP
 .INDENT 0.0
 .TP
-.B \fBanno\-prs [\-\-with\-urls]\fP:
+.B \fBanno\-prs [\-\-with\-urls]\fP
 Annotate the branches based on their corresponding GitHub PR numbers and authors.
 Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
 Equivalent to \fBgit machete anno \-\-sync\-github\-prs\fP\&.
@@ -1014,7 +1014,7 @@ so that you don\(aqt rebase or push someone else\(aqs PR by accident (see help f
 Also include full PR URLs in the annotations (rather than just PR number).
 .UNINDENT
 .TP
-.B \fBcheckout\-prs [\-\-all | \-\-by=<github\-login> | \-\-mine | <PR\-number\-1> ... <PR\-number\-N>]\fP:
+.B \fBcheckout\-prs [\-\-all | \-\-by=<github\-login> | \-\-mine | <PR\-number\-1> ... <PR\-number\-N>]\fP
 Check out the head branch of the given pull requests (specified by numbers or by a flag),
 also traverse chain of pull requests upwards, adding branches one by one to git\-machete and check them out locally.
 Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
@@ -1040,7 +1040,7 @@ Checkout open PRs for the current user associated with the GitHub token.
 .sp
 \fB<PR\-number\-1> ... <PR\-number\-N>\fP    Pull request numbers to checkout.
 .TP
-.B \fBcreate\-pr [\-\-draft] [\-\-title=<title>] [\-U|\-\-update\-related\-descriptions] [\-y|\-\-yes]\fP:
+.B \fBcreate\-pr [\-\-draft] [\-\-title=<title>] [\-U|\-\-update\-related\-descriptions] [\-y|\-\-yes]\fP
 Create a PR for the current branch, using the upstream (parent) branch as the PR base.
 Once the PR is successfully created, annotate the current branch with the new PR\(aqs number.
 .sp
@@ -1073,7 +1073,7 @@ See help for \fBgit machete github update\-pr\-descriptions \-\-related\fP for d
 Do not ask for confirmation whether to push the branch.
 .UNINDENT
 .TP
-.B \fBrestack\-pr [\-U|\-\-update\-related\-descriptions]\fP:
+.B \fBrestack\-pr [\-U|\-\-update\-related\-descriptions]\fP
 Perform the following sequence of actions:
 .INDENT 7.0
 .IP 1. 3
@@ -1097,7 +1097,7 @@ Update the generated sections (\(dqintros\(dq) of PR descriptions that list the 
 See help for \fBgit machete github update\-pr\-descriptions \-\-related\fP for details.
 .UNINDENT
 .TP
-.B \fBretarget\-pr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing] [\-U|\-\-update\-related\-descriptions]\fP:
+.B \fBretarget\-pr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing] [\-U|\-\-update\-related\-descriptions]\fP
 Set the base of the current (or specified) branch\(aqs PR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).
 .sp
 If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will include
@@ -1119,7 +1119,7 @@ Update the generated sections (\(dqintros\(dq) of PR descriptions that list the 
 See help for \fBgit machete github update\-pr\-descriptions \-\-related\fP for details.
 .UNINDENT
 .TP
-.B \fBsync\fP:
+.B \fBsync\fP
 \fBDeprecated.\fP Use \fBgithub checkout\-prs \-\-mine\fP, \fBdelete\-unmanaged\fP and \fBslide\-out \-\-removed\-from\-remote\fP\&.
 .sp
 Synchronize with the remote repository:
@@ -1133,7 +1133,7 @@ delete unmanaged branches,
 delete untracked managed branches that have no downstream branch.
 .UNINDENT
 .TP
-.B \fBupdate\-pr\-descriptions [\-\-all | \-\-by=<github\-login> | \-\-mine | \-\-related]\fP:
+.B \fBupdate\-pr\-descriptions [\-\-all | \-\-by=<github\-login> | \-\-mine | \-\-related]\fP
 Update the generated sections (\(dqintros\(dq) of PR descriptions that list the upstream and/or downstream PRs
 (depending on \fBmachete.github.prDescriptionIntroStyle\fP git config key).
 .sp
@@ -1156,10 +1156,10 @@ Update PR descriptions for all PRs both upstream and downstream of the PR for th
 .UNINDENT
 .UNINDENT
 .sp
-\fBGit config keys:\fP
+\fBGit config keys\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.github.{remote,domain,organization,repository}\fP (all subcommands):
+.B \fBmachete.github.{remote,domain,organization,repository}\fP (all subcommands)
 .INDENT 7.0
 .TP
 .B \fBmachete.github.remote\fP
@@ -1188,18 +1188,18 @@ Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage of GitHub Enterprise, it should be enough to just set \fBmachete.github.domain\fP\&.
 Only \fBmachete.github.organization\fP and \fBmachete.github.repository\fP must be specified together.
 .TP
-.B \fBmachete.github.annotateWithUrls\fP (all subcommands):
+.B \fBmachete.github.annotateWithUrls\fP (all subcommands)
 Setting this config key to \fBtrue\fP will cause all commands that write GitHub PR numbers into annotations
 to not only include PR number and author (if different from the current user), but also the full URL of the PR.
 .sp
 The affected (sub)commands clearly include \fBanno \-\-sync\-github\-prs\fP and \fBgithub anno\-prs\fP,
 but also \fBgithub checkout\-prs\fP, \fBgithub create\-pr\fP, \fBgithub retarget\-pr\fP and \fBgithub restack\-pr\fP\&.
 .TP
-.B \fBmachete.github.forceDescriptionFromCommitMessage\fP (\fBcreate\-pr\fP only):
+.B \fBmachete.github.forceDescriptionFromCommitMessage\fP (\fBcreate\-pr\fP only)
 Setting this config key to \fBtrue\fP will force \fBgit machete github create\-pr\fP to take PR description
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.github/pull_request_template.md\fP is present.
 .TP
-.B \fBmachete.github.prDescriptionIntroStyle\fP (\fBcreate\-pr\fP, \fBrestack\-pr\fP and \fBretarget\-pr\fP):
+.B \fBmachete.github.prDescriptionIntroStyle\fP (\fBcreate\-pr\fP, \fBrestack\-pr\fP and \fBretarget\-pr\fP)
 .INDENT 7.0
 .TP
 .B Select the style of the generated section (\(dqintro\(dq) added to the PR description:
@@ -1218,7 +1218,7 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .UNINDENT
 .UNINDENT
 .sp
-\fBEnvironment variables (all subcommands):\fP
+\fBEnvironment variables (all subcommands)\fP
 .INDENT 0.0
 .TP
 .B \fBGITHUB_TOKEN\fP
@@ -1226,7 +1226,7 @@ GitHub API token.
 .UNINDENT
 .SH GITLAB
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -1282,10 +1282,10 @@ glpat\-yetanothertoken_for_git_example_com git.example.com
 .UNINDENT
 .UNINDENT
 .sp
-\fBSubcommands:\fP
+\fBSubcommands\fP
 .INDENT 0.0
 .TP
-.B \fBanno\-mrs [\-\-with\-urls]\fP:
+.B \fBanno\-mrs [\-\-with\-urls]\fP
 Annotate the branches based on their corresponding GitLab MR numbers and authors.
 Any existing annotations are overwritten for the branches that have an opened MR; annotations for the other branches remain untouched.
 Equivalent to \fBgit machete anno \-\-sync\-gitlab\-mrs\fP\&.
@@ -1300,7 +1300,7 @@ so that you don\(aqt rebase or push someone else\(aqs MR by accident (see help f
 Also include full MR URLs in the annotations (rather than just MR number).
 .UNINDENT
 .TP
-.B \fBcheckout\-mrs [\-\-all | \-\-by=<gitlab\-login> | \-\-mine | <MR\-number\-1> ... <MR\-number\-N>]\fP:
+.B \fBcheckout\-mrs [\-\-all | \-\-by=<gitlab\-login> | \-\-mine | <MR\-number\-1> ... <MR\-number\-N>]\fP
 Check out the source branch of the given merge requests (specified by numbers or by a flag),
 also traverse chain of merge requests upwards, adding branches one by one to git\-machete and check them out locally.
 Once the specified merge requests are checked out locally, annotate local branches with corresponding merge request numbers.
@@ -1326,7 +1326,7 @@ Checkout open MRs for the current user associated with the GitLab token.
 .sp
 \fB<MR\-number\-1> ... <MR\-number\-N>\fP    Merge request numbers to checkout.
 .TP
-.B \fBcreate\-mr [\-\-draft] [\-\-title=<title>] [\-U|\-\-update\-related\-descriptions] [\-y|\-\-yes]\fP:
+.B \fBcreate\-mr [\-\-draft] [\-\-title=<title>] [\-U|\-\-update\-related\-descriptions] [\-y|\-\-yes]\fP
 Create an MR for the current branch, using the upstream (parent) branch as the MR source branch.
 Once the MR is successfully created, annotate the current branch with the new MR\(aqs number.
 .sp
@@ -1361,7 +1361,7 @@ See help for \fBgit machete gitlab update\-mr\-descriptions \-\-related\fP for d
 Do not ask for confirmation whether to push the branch.
 .UNINDENT
 .TP
-.B \fBrestack\-mr [\-U|\-\-update\-related\-descriptions]\fP:
+.B \fBrestack\-mr [\-U|\-\-update\-related\-descriptions]\fP
 Perform the following sequence of actions:
 .INDENT 7.0
 .IP 1. 3
@@ -1385,7 +1385,7 @@ Update the generated sections (\(dqintros\(dq) of MR descriptions that list the 
 See help for \fBgit machete gitlab update\-mr\-descriptions \-\-related\fP for details.
 .UNINDENT
 .TP
-.B \fBretarget\-mr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing] [\-U|\-\-update\-related\-descriptions]\fP:
+.B \fBretarget\-mr [\-b|\-\-branch=<branch>] [\-\-ignore\-if\-missing] [\-U|\-\-update\-related\-descriptions]\fP
 Set the target of the current (or specified) branch\(aqs MR to upstream (parent) branch, as seen by git machete (see \fBgit machete show up\fP).
 .sp
 If after changing the base the MR ends up stacked atop another MR, the MR description posted to GitLab will include
@@ -1407,7 +1407,7 @@ Update the generated sections (\(dqintros\(dq) of MR descriptions that list the 
 See help for \fBgit machete gitlab update\-mr\-descriptions \-\-related\fP for details.
 .UNINDENT
 .TP
-.B \fBupdate\-mr\-descriptions [\-\-all | \-\-by=<gitlab\-login> | \-\-mine | \-\-related]\fP:
+.B \fBupdate\-mr\-descriptions [\-\-all | \-\-by=<gitlab\-login> | \-\-mine | \-\-related]\fP
 Update the generated sections (\(dqintros\(dq) of MR descriptions that list the upstream and/or downstream MRs
 (depending on \fBmachete.gitlab.mrDescriptionIntroStyle\fP git config key).
 .sp
@@ -1430,10 +1430,10 @@ Update MR descriptions for all MRs both upstream and downstream of the MR for th
 .UNINDENT
 .UNINDENT
 .sp
-\fBGit config keys:\fP
+\fBGit config keys\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.gitlab.{remote,domain,namespace,project}\fP (all subcommands):
+.B \fBmachete.gitlab.{remote,domain,namespace,project}\fP (all subcommands)
 .INDENT 7.0
 .TP
 .B \fBmachete.gitlab.remote\fP
@@ -1462,18 +1462,18 @@ Note that you do \fBnot\fP need to set all four keys at once.
 For example, in a typical usage for GitLab self\-managed instance, it should be enough to just set \fBmachete.gitlab.domain\fP\&.
 Only \fBmachete.gitlab.namespace\fP and \fBmachete.gitlab.project\fP must be specified together.
 .TP
-.B \fBmachete.gitlab.annotateWithUrls\fP (all subcommands):
+.B \fBmachete.gitlab.annotateWithUrls\fP (all subcommands)
 Setting this config key to \fBtrue\fP will cause all commands that write GitLab MR numbers into annotations
 to not only include MR number and author (if different from the current user), but also the full URL of the MR.
 .sp
 The affected (sub)commands clearly include \fBanno \-\-sync\-gitlab\-mrs\fP and \fBgitlab anno\-mrs\fP,
 but also \fBgitlab checkout\-mrs\fP, \fBgitlab create\-mr\fP, \fBgitlab retarget\-mr\fP and \fBgitlab restack\-mr\fP\&.
 .TP
-.B \fBmachete.gitlab.forceDescriptionFromCommitMessage\fP (\fBcreate\-mr\fP only):
+.B \fBmachete.gitlab.forceDescriptionFromCommitMessage\fP (\fBcreate\-mr\fP only)
 Setting this config key to \fBtrue\fP will force \fBgit machete gitlab create\-mr\fP to take MR description
 from the message body of the first unique commit of the branch, even if \fB\&.git/info/description\fP and/or \fB\&.gitlab/merge_request_templates/Default.md\fP is present.
 .TP
-.B \fBmachete.gitlab.mrDescriptionIntroStyle\fP (\fBcreate\-mr\fP, \fBrestack\-mr\fP and \fBretarget\-mr\fP):
+.B \fBmachete.gitlab.mrDescriptionIntroStyle\fP (\fBcreate\-mr\fP, \fBrestack\-mr\fP and \fBretarget\-mr\fP)
 .INDENT 7.0
 .TP
 .B Select the style of the generated section (\(dqintro\(dq) added to the MR description:
@@ -1492,7 +1492,7 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .UNINDENT
 .UNINDENT
 .sp
-\fBEnvironment variables (all subcommands):\fP
+\fBEnvironment variables (all subcommands)\fP
 .INDENT 0.0
 .TP
 .B \fBGITLAB_TOKEN\fP
@@ -1500,7 +1500,7 @@ GitLab API token.
 .UNINDENT
 .SH GO
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -1514,7 +1514,7 @@ where <direction> is one of: \fBd[own]\fP, \fBf[irst]\fP, \fBl[ast]\fP, \fBn[ext
 .sp
 If \fB<direction>\fP is not provided, an interactive mode is launched where you can navigate the branch tree using arrow keys and select a branch to check out.
 .sp
-\fBInteractive mode controls:\fP
+\fBInteractive mode controls\fP
 .INDENT 0.0
 .IP \(bu 2
 \fB↑/↓\fP: Navigate up/down through branches
@@ -1559,7 +1559,7 @@ since all branches are usually meant to be ultimately merged to one of those.
 This is roughly equivalent to \fBgit checkout $(git machete show <direction>)\fP\&.
 .SH HELP
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -1577,7 +1577,7 @@ All hooks are executed from the top\-level folder of the repository (or top\-lev
 .sp
 Note: \fBhooks\fP is not a command as such, just a help topic (there is no \fBgit machete hooks\fP command).
 .sp
-\fBHooks:\fP
+\fBHooks\fP
 .INDENT 0.0
 .TP
 .B \fBmachete\-post\-slide\-out <new\-upstream> <lowest\-slid\-out\-branch> [<new\-downstreams>...]\fP
@@ -1653,7 +1653,7 @@ Please see hook_samples \%<https://\:github\:.com/\:VirtusLab/\:git-machete/\:tr
 An example of using the standard git \fBpost\-commit hook\fP to \fBgit machete add\fP branches automatically is also included.
 .SH IS-MANAGED
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -1676,7 +1676,7 @@ the <branch> isn\(aqt provided and there\(aqs no current branch (detached HEAD).
 .UNINDENT
 .SH LIST
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -1713,7 +1713,7 @@ it was only ever used to drive \fBslide\-out\fP completion of the second and fur
 This command is generally not meant for a day\-to\-day use, it\(aqs mostly needed for branch name completion in shell.
 .SH LOG
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -1728,12 +1728,12 @@ See help for fork\-point for more details on meaning of the \fIfork point\fP\&.
 .sp
 Note: the branch in question does not need to occur in the branch layout file.
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .sp
 \-\- <pass\-through\-arguments>    Arguments to pass directly to the underlying \fBgit log\fP, for example \fBgit machete log \-\- \-\-patch\fP\&.
 .SH REAPPLY
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -1753,14 +1753,14 @@ Note: the current reapplied branch does not need to occur in the branch layout f
 Tip: \fBreapply\fP can be used for squashing the commits on the current branch to make history more condensed before push to the remote,
 but there is also dedicated \fBsquash\fP command that achieves the same goal without running \fBgit rebase\fP\&.
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .BI \-f\fP,\fB  \-\-fork\-point\fB= <fork\-point\-commit>
 Specifies the alternative fork point commit after which the rebased part of history is meant to start.
 .UNINDENT
 .sp
-\fBEnvironment variables:\fP
+\fBEnvironment variables\fP
 .INDENT 0.0
 .TP
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
@@ -1769,7 +1769,7 @@ Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq g
 .UNINDENT
 .SH RENAME
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -1790,7 +1790,7 @@ As a result, after the rename the local branch still tracks the same remote bran
 Note: \fBrename\fP does \fBnot\fP rename the branch on the remote — it only renames the local branch.
 The remote branch is left intact and can still be pushed to under its original name.
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .BI \-b\fP,\fB  \-\-branch\fB= <branch>
@@ -1804,7 +1804,7 @@ branch it pointed to before (for example \fBorigin/old\-name\fP).
 .UNINDENT
 .SH SHOW
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -1842,7 +1842,7 @@ since all branches are usually meant to be ultimately merged to one of those.
 .UNINDENT
 .SH SLIDE-OUT
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -1910,7 +1910,7 @@ Note: Unless \fB\-\-delete\fP is passed, \fBslide\-out\fP doesn\(aqt delete any 
 Note: if a child branch is annotated with \fBrebase=no\fP qualifier, the rebase is not performed.
 See help for traverse for more details on the qualifiers.
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .BI \-d\fP,\fB  \-\-down\-fork\-point\fB= <down\-fork\-point\-commit>
@@ -1957,7 +1957,7 @@ those that have at least one downstream (child) branch.
 .UNINDENT
 .UNINDENT
 .sp
-\fBEnvironment variables:\fP
+\fBEnvironment variables\fP
 .INDENT 0.0
 .TP
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
@@ -1966,7 +1966,7 @@ Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq g
 .UNINDENT
 .SH SQUASH
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -1988,7 +1988,7 @@ for example \fBgit machete squash \-\-fork\-point=HEAD~3\fP\&.
 Note: \fBsquash\fP does \fBnot\fP run \fBgit rebase\fP under the hood.
 For more complex scenarios that require rewriting the history of current branch, see \fBreapply\fP and \fBupdate\fP\&.
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .BI \-f\fP,\fB  \-\-fork\-point\fB= <fork\-point\-commit>
@@ -1996,7 +1996,7 @@ Specify the alternative fork point commit after which the squashed part of histo
 .UNINDENT
 .SH STATUS
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -2112,7 +2112,7 @@ develop
 .UNINDENT
 .UNINDENT
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .BI \-\-color\fB= WHEN
@@ -2135,10 +2135,10 @@ Specify the mode for detection of rebase/squash merges (gray edges).
 See the below paragraph on \fBmachete.squashMergeDetection\fP git config key for more details.
 .UNINDENT
 .sp
-\fBGit config keys:\fP
+\fBGit config keys\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.squashMergeDetection\fP:
+.B \fBmachete.squashMergeDetection\fP
 Select the algorithm used to detect squash merges. Possible values are:
 .INDENT 7.0
 .IP \(bu 2
@@ -2160,13 +2160,13 @@ whether a gray edge is displayed in \fBstatus\fP,
 whether \fBtraverse\fP suggests to slide out the branch.
 .UNINDENT
 .TP
-.B \fBmachete.status.extraSpaceBeforeBranchName\fP:
+.B \fBmachete.status.extraSpaceBeforeBranchName\fP
 To make it easier to select branch name from the \fBstatus\fP output on certain terminals (like Alacritty \%<https://\:github\:.com/\:alacritty/\:alacritty>),
 you can add an extra space between └─ and branch name by setting \fBgit config machete.status.extraSpaceBeforeBranchName true\fP\&.
 .UNINDENT
 .SH TRAVERSE
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -2283,7 +2283,7 @@ when the current user is \fBnot\fP the author of the PR/MR associated with that 
 If a branch is not checked out in any worktree, by default \fBtraverse\fP will change directory to the main worktree before checking out the branch.
 This behavior can be customized using \fBmachete.traverse.whenBranchNotCheckedOutInAnyWorktree\fP git config key (see below).
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .B  \-F\fP,\fB  \-\-fetch
@@ -2369,10 +2369,10 @@ Equivalent to \fB\-\-fetch \-\-whole\fP; useful for even more automated traversa
 Don\(aqt ask for any interactive input, including confirmation of rebase/push/pull. Implies \fB\-n\fP\&.
 .UNINDENT
 .sp
-\fBGit config keys:\fP
+\fBGit config keys\fP
 .INDENT 0.0
 .TP
-.B \fBmachete.squashMergeDetection\fP:
+.B \fBmachete.squashMergeDetection\fP
 Select the algorithm used to detect squash merges. Possible values are:
 .INDENT 7.0
 .IP \(bu 2
@@ -2394,18 +2394,18 @@ whether a gray edge is displayed in \fBstatus\fP,
 whether \fBtraverse\fP suggests to slide out the branch.
 .UNINDENT
 .TP
-.B \fBmachete.traverse.fetch.<remote>\fP:
+.B \fBmachete.traverse.fetch.<remote>\fP
 Configure the behavior of \fBgit machete traverse\fP command for the given remote when \fB\-\-fetch\fP flag is used.
 If set to \fBfalse\fP, this remote will not be fetched before the traversal.
 The default value of this key is \fBtrue\fP\&.
 This is useful for excluding remotes that are temporarily offline, or take a long time to respond.
 .TP
-.B \fBmachete.traverse.push\fP:
+.B \fBmachete.traverse.push\fP
 Set to \fBfalse\fP to change the behavior of \fBgit machete traverse\fP so that it doesn\(aqt push branches by default.
 The default value of this key is \fBtrue\fP\&.
 Configuration key value can be overridden by the presence of the \fB\-\-push\fP or \fB\-\-push\-untracked\fP flags.
 .TP
-.B \fBmachete.traverse.whenBranchNotCheckedOutInAnyWorktree\fP:
+.B \fBmachete.traverse.whenBranchNotCheckedOutInAnyWorktree\fP
 Controls the behavior of \fBgit machete traverse\fP when it needs to act on a branch that is not currently checked out in any worktree.
 .sp
 Allowed values:
@@ -2422,7 +2422,7 @@ This ensures that no existing (non\-temporary) worktree has its checked\-out bra
 .UNINDENT
 .UNINDENT
 .sp
-\fBEnvironment variables:\fP
+\fBEnvironment variables\fP
 .INDENT 0.0
 .TP
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
@@ -2431,7 +2431,7 @@ Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq g
 .UNINDENT
 .SH UPDATE
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -2450,7 +2450,7 @@ See help for fork\-point for more details.
 .sp
 If updating by merge, merges the upstream (parent) branch into the current branch.
 .sp
-\fBOptions:\fP
+\fBOptions\fP
 .INDENT 0.0
 .TP
 .BI \-f\fP,\fB  \-\-fork\-point\fB= <fork\-point\-commit>
@@ -2473,7 +2473,7 @@ If updating by rebase, run \fBgit rebase\fP in non\-interactive mode (without \f
 Not allowed if updating by merge.
 .UNINDENT
 .sp
-\fBEnvironment variables:\fP
+\fBEnvironment variables\fP
 .INDENT 0.0
 .TP
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
@@ -2482,7 +2482,7 @@ Example: \fBGIT_MACHETE_REBASE_OPTS=\(dq\-\-keep\-empty \-\-rebase\-merges\(dq g
 .UNINDENT
 .SH VERSION
 .sp
-\fBUsage:\fP
+\fBUsage\fP
 .INDENT 0.0
 .INDENT 3.5
 .sp

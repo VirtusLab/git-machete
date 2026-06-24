@@ -2,7 +2,7 @@
 
 show
 ====
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 

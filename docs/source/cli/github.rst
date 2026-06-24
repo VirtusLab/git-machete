@@ -2,7 +2,7 @@
 
 github
 ======
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -41,9 +41,9 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
           ghp_myothertoken_for_git_example_org git.example.org
           ghp_yetanothertoken_for_git_example_com git.example.com
 
-**Subcommands:**
+**Subcommands**
 
-``anno-prs [--with-urls]``:
+``anno-prs [--with-urls]``
     Annotate the branches based on their corresponding GitHub PR numbers and authors.
     Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
     Equivalent to ``git machete anno --sync-github-prs``.
@@ -56,7 +56,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
     --with-urls                   Also include full PR URLs in the annotations (rather than just PR number).
 
 
-``checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]``:
+``checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]``
     Check out the head branch of the given pull requests (specified by numbers or by a flag),
     also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
     Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
@@ -77,7 +77,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
 
     ``<PR-number-1> ... <PR-number-N>``    Pull request numbers to checkout.
 
-``create-pr [--draft] [--title=<title>] [-U|--update-related-descriptions] [-y|--yes]``:
+``create-pr [--draft] [--title=<title>] [-U|--update-related-descriptions] [-y|--yes]``
     Create a PR for the current branch, using the upstream (parent) branch as the PR base.
     Once the PR is successfully created, annotate the current branch with the new PR's number.
 
@@ -104,7 +104,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
 
     -y, --yes                          Do not ask for confirmation whether to push the branch.
 
-``restack-pr [-U|--update-related-descriptions]``:
+``restack-pr [-U|--update-related-descriptions]``
     Perform the following sequence of actions:
 
     #. If the PR for the current branch is ready for review, it gets converted into a draft.
@@ -120,7 +120,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
     -U, --update-related-descriptions  Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs.
                                        See help for ``git machete github update-pr-descriptions --related`` for details.
 
-``retarget-pr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]``:
+``retarget-pr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]``
     Set the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see ``git machete show up``).
 
     If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will include
@@ -137,7 +137,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
     -U, --update-related-descriptions  Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs.
                                        See help for ``git machete github update-pr-descriptions --related`` for details.
 
-``sync``:
+``sync``
     **Deprecated.** Use ``github checkout-prs --mine``, ``delete-unmanaged`` and ``slide-out --removed-from-remote``.
 
     Synchronize with the remote repository:
@@ -147,7 +147,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
     #. delete unmanaged branches,
     #. delete untracked managed branches that have no downstream branch.
 
-``update-pr-descriptions [--all | --by=<github-login> | --mine | --related]``:
+``update-pr-descriptions [--all | --by=<github-login> | --mine | --related]``
     Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs
     (depending on ``machete.github.prDescriptionIntroStyle`` git config key).
 
@@ -163,21 +163,21 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
 
     --related            Update PR descriptions for all PRs both upstream and downstream of the PR for the current branch (the entire stack). This is the default if no flag is given.
 
-**Git config keys:**
+**Git config keys**
 
-``machete.github.{remote,domain,organization,repository}`` (all subcommands):
+``machete.github.{remote,domain,organization,repository}`` (all subcommands)
   .. include:: git-config-keys/github_access.rst
 
-``machete.github.annotateWithUrls`` (all subcommands):
+``machete.github.annotateWithUrls`` (all subcommands)
   .. include:: git-config-keys/github_annotateWithUrls.rst
 
-``machete.github.forceDescriptionFromCommitMessage`` (``create-pr`` only):
+``machete.github.forceDescriptionFromCommitMessage`` (``create-pr`` only)
   .. include:: git-config-keys/github_forceDescriptionFromCommitMessage.rst
 
-``machete.github.prDescriptionIntroStyle`` (``create-pr``, ``restack-pr`` and ``retarget-pr``):
+``machete.github.prDescriptionIntroStyle`` (``create-pr``, ``restack-pr`` and ``retarget-pr``)
   .. include:: git-config-keys/github_prDescriptionIntroStyle.rst
 
-**Environment variables (all subcommands):**
+**Environment variables (all subcommands)**
 
 ``GITHUB_TOKEN``
     GitHub API token.

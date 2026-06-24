@@ -49,7 +49,7 @@ def rst2txt(rst: str) -> str:
         return lne
 
     def is_section_header(lne: str) -> bool:
-        return "Environment variables:" in lne or "Git config keys:" in lne or "Hooks:" in lne or "Subcommands:" in lne
+        return bool(re.fullmatch(r'\*\*(Environment variables|Git config keys|Hooks|Subcommands).*\*\*', lne.strip()))
 
     def process_new_option(lne: str) -> List[str]:
         lne = process_rst_formatting(lne)
@@ -61,13 +61,13 @@ def rst2txt(rst: str) -> str:
 
     for line in rst.splitlines():
         if line.startswith('=='):
-            if "**Usage:**" in rst:
+            if "**Usage**" in rst:
                 state = USAGE
             else:
                 state = NORMAL
         elif state == USAGE:
-            if "**Usage:**" in line:
-                result += ["<b>Usage:</b><b>"]
+            if "**Usage**" in line:
+                result += ["<b>Usage</b><b>"]
             elif line.startswith('    '):
                 result += [line[1:]]
             elif line and (line[0].isalpha() or line.startswith('**')):

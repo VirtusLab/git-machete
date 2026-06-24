@@ -2,7 +2,7 @@
 
 slide-out
 =========
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -58,7 +58,7 @@ Note: Unless ``--delete`` is passed, ``slide-out`` doesn't delete any branches f
 Note: if a child branch is annotated with ``rebase=no`` qualifier, the rebase is not performed.
 See help for :ref:`traverse` for more details on the qualifiers.
 
-**Options:**
+**Options**
 
 -d, --down-fork-point=<down-fork-point-commit>    If updating by rebase, specify the alternative fork point for downstream branches for the operation.
                                                   ``git machete fork-point`` overrides for downstream branches are recommended over use of this option.
@@ -90,7 +90,7 @@ See help for :ref:`traverse` for more details on the qualifiers.
                                                   * those whose remote tracking branches still exist (not deleted remotely),
                                                   * those that have at least one downstream (child) branch.
 
-**Environment variables:**
+**Environment variables**
 
 ``GIT_MACHETE_REBASE_OPTS``
     .. include:: env-vars/git_machete_rebase_opts.rst

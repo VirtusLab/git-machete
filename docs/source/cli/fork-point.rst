@@ -2,7 +2,7 @@
 
 fork-point
 ==========
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 

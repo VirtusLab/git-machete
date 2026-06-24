@@ -2,7 +2,7 @@
 
 clean
 =====
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -26,13 +26,13 @@ Equivalent of ``git machete github sync`` if invoked with ``-H`` or ``--checkout
   TL;DR: ``GITHUB_TOKEN`` env var or ``~/.github-token`` file or ``gh``/``hub`` CLI configs if exist.
   For enterprise domains, non-standard URLs etc., check git config keys in ``github`` help.
 
-**Options:**
+**Options**
 
 -H, --checkout-my-github-prs    Checkout your open PRs into local branches.
 
 -y, --yes                       Don't ask for confirmation when deleting branches from git.
 
-**Environment variables:**
+**Environment variables**
 
 ``GITHUB_TOKEN``
     GitHub API token.

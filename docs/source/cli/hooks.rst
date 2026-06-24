@@ -7,7 +7,7 @@ All hooks are executed from the top-level folder of the repository (or top-level
 
 Note: ``hooks`` is not a command as such, just a help topic (there is no ``git machete hooks`` command).
 
-**Hooks:**
+**Hooks**
 
 ``machete-post-slide-out <new-upstream> <lowest-slid-out-branch> [<new-downstreams>...]``
     The hook that is executed after a branch (or possibly multiple branches, in case of ``slide-out``)

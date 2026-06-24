@@ -2,7 +2,7 @@
 
 list
 ====
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 

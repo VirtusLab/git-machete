@@ -2,7 +2,7 @@
 
 file
 ====
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 

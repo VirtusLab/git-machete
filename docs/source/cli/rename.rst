@@ -2,7 +2,7 @@
 
 rename
 ======
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -19,7 +19,7 @@ As a result, after the rename the local branch still tracks the same remote bran
 Note: ``rename`` does **not** rename the branch on the remote — it only renames the local branch.
 The remote branch is left intact and can still be pushed to under its original name.
 
-**Options:**
+**Options**
 
 -b, --branch=<branch>   Branch to rename; if not given, the current branch is renamed.
 

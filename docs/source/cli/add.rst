@@ -2,7 +2,7 @@
 
 add
 ===
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -22,7 +22,7 @@ If the upstream branch can be inferred, the user will be presented with inferred
 
 Note: all the effects of ``add`` (except git branch creation) can as well be achieved by manually editing the branch layout file.
 
-**Options:**
+**Options**
 
 -f, --as-first-child                   Add the given branch as the first (instead of last) child of its parent.
                                        Cannot be specified together with ``-R/--as-root``.

@@ -2,7 +2,7 @@
 
 status
 ======
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -74,7 +74,7 @@ When colors are disabled, relation between branches is represented in the follow
 
 .. include:: git-config-keys/status_extraSpaceBeforeBranchName_example.rst
 
-**Options:**
+**Options**
 
 --color=WHEN                      Colorize the output; WHEN can be ``always``, ``auto`` (default: colorize only if stdout is a terminal), or ``never``.
 
@@ -90,10 +90,10 @@ When colors are disabled, relation between branches is represented in the follow
                                   ``MODE`` can be ``none`` (fastest, no squash merges are detected), ``simple`` (default) or ``exact`` (slowest).
                                   See the below paragraph on ``machete.squashMergeDetection`` git config key for more details.
 
-**Git config keys:**
+**Git config keys**
 
-``machete.squashMergeDetection``:
+``machete.squashMergeDetection``
     .. include:: git-config-keys/squashMergeDetection.rst
 
-``machete.status.extraSpaceBeforeBranchName``:
+``machete.status.extraSpaceBeforeBranchName``
     .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst

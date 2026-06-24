@@ -2,7 +2,7 @@
 
 squash
 ======
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -20,6 +20,6 @@ for example ``git machete squash --fork-point=HEAD~3``.
 Note: ``squash`` does **not** run ``git rebase`` under the hood.
 For more complex scenarios that require rewriting the history of current branch, see ``reapply`` and ``update``.
 
-**Options:**
+**Options**
 
 -f, --fork-point=<fork-point-commit>   Specify the alternative fork point commit after which the squashed part of history is meant to start.

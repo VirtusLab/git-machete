@@ -2,7 +2,7 @@
 
 completion
 ==========
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -12,7 +12,7 @@ where ``<shell>`` is one of: ``bash``, ``fish``, ``zsh``.
 
 Prints out completion scripts.
 
-**Supported shells:**
+**Supported shells**
 
 **bash**
 

@@ -39,7 +39,7 @@ short_docs: Dict[str, str] = {
 
 long_docs: Dict[str, str] = {
     "add": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete add [-o|--onto=<target-upstream-branch>] [-R|--as-root] [-y|--yes] [<branch>]</b>
 
         Adds the provided <branch> (or the current branch, if none specified) to the branch layout file.
@@ -56,7 +56,7 @@ long_docs: Dict[str, str] = {
 
         Note: all the effects of `add` (except git branch creation) can as well be achieved by manually editing the branch layout file.
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-f</b>, <b>--as-first-child</b>
               Add the given branch as the first (instead of last) child of its parent.
@@ -73,7 +73,7 @@ long_docs: Dict[str, str] = {
               Don't ask for confirmation whether to create the branch or whether to add onto the inferred upstream.
    """,
     "advance": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete advance [-y|--yes]</b>
 
         Fast forwards (as in `git merge --ff-only`) the current branch `C` to match its downstream `D`, pushes `C`
@@ -118,14 +118,14 @@ long_docs: Dict[str, str] = {
         If the downstream branch `D` is annotated with `slide-out=no` qualifier, the slide-out is not performed.
         See help for `traverse` for more details on the qualifiers.
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-y</b>, <b>--yes</b>
               Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream.
               Fails if the current branch has more than one <green>green-edge</green> downstream branch.
    """,
     "anno": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete anno [-b|--branch=<branch>] [<annotation text>]
            git machete anno -H|--sync-github-prs
            git machete anno -L|--sync-gitlab-mrs</b>
@@ -160,7 +160,7 @@ long_docs: Dict[str, str] = {
 
         Note: all the effects of `anno` can be always achieved by manually editing the branch layout file.
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-b</b>, <b>--branch=<branch></b>
               Branch to set the annotation for.
@@ -172,7 +172,7 @@ long_docs: Dict[str, str] = {
               Annotate with GitLab MR numbers and author logins where applicable.
    """,
     "clean": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete clean [-H|--checkout-my-github-prs] [-y|--yes]</b>
 
         <b>Deprecated.</b> Use `github checkout-prs --mine`, `delete-unmanaged` and `slide-out --removed-from-remote`.
@@ -193,7 +193,7 @@ long_docs: Dict[str, str] = {
              TL;DR: `GITHUB_TOKEN` env var or `~/.github-token` file or `gh`/`hub` CLI configs if exist.
              For enterprise domains, non-standard URLs etc., check git config keys in `github` help.
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-H</b>, <b>--checkout-my-github-prs</b>
               Checkout your open PRs into local branches.
@@ -201,20 +201,20 @@ long_docs: Dict[str, str] = {
            <b>-y</b>, <b>--yes</b>
               Don't ask for confirmation when deleting branches from git.
 
-        <b>Environment variables:</b>
+        <b>Environment variables</b>
 
            `GITHUB_TOKEN`
               GitHub API token.
    """,
     "completion": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete completion <shell></b>
 
         where `<shell>` is one of: `bash`, `fish`, `zsh`.
 
         Prints out completion scripts.
 
-        <b>Supported shells:</b>
+        <b>Supported shells</b>
 
         <b>bash</b>
 
@@ -242,9 +242,9 @@ long_docs: Dict[str, str] = {
 
         Note: `config` is not a command as such, just a help topic (there is no `git machete config` command).
 
-        <b>Git config keys:</b>
+        <b>Git config keys</b>
 
-           `machete.github.{remote,domain,organization,repository}`:
+           `machete.github.{remote,domain,organization,repository}`
              `machete.github.remote`
                 The name of the git remote (as in `git remote`) that git-machete pushes the head branch to.
                 Unless both `machete.github.organization` and `machete.github.repository` are set, this remote's URL is also inspected
@@ -270,18 +270,18 @@ long_docs: Dict[str, str] = {
              For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
              Only `machete.github.organization` and `machete.github.repository` must be specified together.
 
-           `machete.github.annotateWithUrls`:
+           `machete.github.annotateWithUrls`
              Setting this config key to `true` will cause all commands that write GitHub PR numbers into annotations
              to not only include PR number and author (if different from the current user), but also the full URL of the PR.
 
              The affected (sub)commands clearly include `anno --sync-github-prs` and `github anno-prs`,
              but also `github checkout-prs`, `github create-pr`, `github retarget-pr` and `github restack-pr`.
 
-           `machete.github.forceDescriptionFromCommitMessage`:
+           `machete.github.forceDescriptionFromCommitMessage`
              Setting this config key to `true` will force `git machete github create-pr` to take PR description
              from the message body of the first unique commit of the branch, even if `.git/info/description` and/or `.github/pull_request_template.md` is present.
 
-           `machete.github.prDescriptionIntroStyle`:
+           `machete.github.prDescriptionIntroStyle`
              Select the style of the generated section ("intro") added to the PR description:
               * `full`                — include both a chain of upstream PRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream PRs
               * `full-no-branches`    — same as `full`, but no branch names are included (only PR numbers & titles)
@@ -289,7 +289,7 @@ long_docs: Dict[str, str] = {
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only PR numbers & titles)
               * `none`                — prepend no intro to the PR description at all
 
-           `machete.gitlab.{remote,domain,namespace,project}`:
+           `machete.gitlab.{remote,domain,namespace,project}`
              `machete.gitlab.remote`
                 The name of the git remote (as in `git remote`) that git-machete pushes the source branch to.
                 Unless both `machete.gitlab.namespace` and `machete.gitlab.project` are set, this remote's URL is also inspected
@@ -315,18 +315,18 @@ long_docs: Dict[str, str] = {
              For example, in a typical usage for GitLab self-managed instance, it should be enough to just set `machete.gitlab.domain`.
              Only `machete.gitlab.namespace` and `machete.gitlab.project` must be specified together.
 
-           `machete.gitlab.annotateWithUrls`:
+           `machete.gitlab.annotateWithUrls`
              Setting this config key to `true` will cause all commands that write GitLab MR numbers into annotations
              to not only include MR number and author (if different from the current user), but also the full URL of the MR.
 
              The affected (sub)commands clearly include `anno --sync-gitlab-mrs` and `gitlab anno-mrs`,
              but also `gitlab checkout-mrs`, `gitlab create-mr`, `gitlab retarget-mr` and `gitlab restack-mr`.
 
-           `machete.gitlab.forceDescriptionFromCommitMessage`:
+           `machete.gitlab.forceDescriptionFromCommitMessage`
              Setting this config key to `true` will force `git machete gitlab create-mr` to take MR description
              from the message body of the first unique commit of the branch, even if `.git/info/description` and/or `.gitlab/merge_request_templates/Default.md` is present.
 
-           `machete.gitlab.mrDescriptionIntroStyle`:
+           `machete.gitlab.mrDescriptionIntroStyle`
              Select the style of the generated section ("intro") added to the MR description:
               * `full`                — include both a chain of upstream MRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream MRs
               * `full-no-branches`    — same as `full`, but no branch names are included (only MR numbers & titles)
@@ -334,7 +334,7 @@ long_docs: Dict[str, str] = {
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only MR numbers & titles)
               * `none`                — prepend no intro to the MR description at all
 
-           `machete.overrideForkPoint.<branch>.to`:
+           `machete.overrideForkPoint.<branch>.to`
               Executing `git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]` sets up a fork point override for `<branch>`.
 
               The override data is stored under `machete.overrideForkPoint.<branch>.to` git config key.
@@ -342,7 +342,7 @@ long_docs: Dict[str, str] = {
               There should be <b>no</b> need for the user to interact with this key directly,
               `git machete fork-point` with flags should be used instead.
 
-           `machete.squashMergeDetection`:
+           `machete.squashMergeDetection`
               Select the algorithm used to detect squash merges. Possible values are:
 
               * `none`: Fastest mode, with no squash merge/rebase detection. Only strict (fast-forward or 2-parent) merges are detected.
@@ -359,7 +359,7 @@ long_docs: Dict[str, str] = {
               * whether a gray edge is displayed in `status`,
               * whether `traverse` suggests to slide out the branch.
 
-           `machete.status.extraSpaceBeforeBranchName`:
+           `machete.status.extraSpaceBeforeBranchName`
               To make it easier to select branch name from the `status` output on certain terminals (like `Alacritty),
               you can add an extra space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
@@ -379,18 +379,18 @@ long_docs: Dict[str, str] = {
                    │
                    └─ feature_branch2
 
-           `machete.traverse.fetch.<remote>`:
+           `machete.traverse.fetch.<remote>`
               Configure the behavior of `git machete traverse` command for the given remote when `--fetch` flag is used.
               If set to `false`, this remote will not be fetched before the traversal.
               The default value of this key is `true`.
               This is useful for excluding remotes that are temporarily offline, or take a long time to respond.
 
-           `machete.traverse.push`:
+           `machete.traverse.push`
               Set to `false` to change the behavior of `git machete traverse` so that it doesn't push branches by default.
               The default value of this key is `true`.
               Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
 
-           `machete.traverse.whenBranchNotCheckedOutInAnyWorktree`:
+           `machete.traverse.whenBranchNotCheckedOutInAnyWorktree`
               Controls the behavior of `git machete traverse` when it needs to act on a branch that is not currently checked out in any worktree.
 
               Allowed values:
@@ -404,14 +404,14 @@ long_docs: Dict[str, str] = {
                 and remove this temporary worktree once `traverse` moves on to the next branch (or finishes).
                 This ensures that no existing (non-temporary) worktree has its checked-out branch changed by `traverse`.
 
-           `machete.worktree.useTopLevelMacheteFile`:
+           `machete.worktree.useTopLevelMacheteFile`
               The default value of this key is `true`, which means that the path to branch layout file will be `.git/machete`
               for both regular directory and worktree.
 
               If you want the worktree to have its own branch layout file (located under `.git/worktrees/.../machete`),
               set `git config machete.worktree.useTopLevelMacheteFile false`.
 
-        <b>Environment variables:</b>
+        <b>Environment variables</b>
 
            `GIT_MACHETE_EDITOR`
               Name of the editor used by `git machete e[dit]`, example: `vim` or `nano`.
@@ -429,7 +429,7 @@ long_docs: Dict[str, str] = {
               Used to store GitLab API token. Used by commands such as `anno --sync-gitlab-mrs` and `gitlab`.
    """,
     "delete-unmanaged": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete delete-unmanaged [-y|--yes]</b>
 
         Goes one-by-one through all the local git branches that don't exist in the branch layout file,
@@ -440,13 +440,13 @@ long_docs: Dict[str, str] = {
         for `git machete` to properly figure out fork points.
         See help for `fork-point` for more details.
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-y</b>, <b>--yes</b>
               Don't ask for confirmation.
    """,
     "diff": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete d[iff] [-s|--stat] [<branch>] [-- <pass-through-arguments>]</b>
 
         Runs `git diff` of the given branch tip against its fork point or, if none specified,
@@ -455,7 +455,7 @@ long_docs: Dict[str, str] = {
 
         Note: the branch in question does not need to occur in the branch layout file.
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-- <pass-through-arguments></b>
               Arguments to pass directly to the underlying `git diff`, for example `git machete diff -- --name-only`.
@@ -464,7 +464,7 @@ long_docs: Dict[str, str] = {
               Make `git machete diff` pass `--stat` option to `git diff`, so that only summary (diffstat) is printed.
    """,
     "discover": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete discover [-C|--checked-out-since=<date>] [-l|--list-commits] [-r|--roots=<branch1>,<branch2>,...] [-y|--yes]</b>
 
         Discovers and displays tree of branch dependencies using a heuristic based on reflogs
@@ -474,7 +474,7 @@ long_docs: Dict[str, str] = {
         If the reply was `e[dit]`, additionally an editor is opened (as in: `git machete` `edit`) after saving the new branch layout file.
         `discover` retains the existing branch qualifiers used by `git machete traverse` (see help for `traverse`).
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-C</b>, <b>--checked-out-since=<date></b>
               Only consider branches checked out at least once since the given date.
@@ -495,7 +495,7 @@ long_docs: Dict[str, str] = {
               Mostly useful in scripts; not recommended for manual use.
    """,
     "edit": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete e[dit]</b>
 
         Opens an editor and lets you edit the branch layout file manually.
@@ -519,13 +519,13 @@ long_docs: Dict[str, str] = {
         The branch layout file can be always accessed and edited directly under the path returned by `git machete file`
         (usually `.git/machete`, unless worktrees or submodules are involved).
 
-        <b>Environment variables:</b>
+        <b>Environment variables</b>
 
            `GIT_MACHETE_EDITOR`
               Name of the editor executable.
    """,
     "file": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete file</b>
 
         Outputs the absolute path of branch layout file.
@@ -545,7 +545,7 @@ long_docs: Dict[str, str] = {
            * if `git machete` is executed from a <b>submodule</b>, this file is located in the git folder of the submodule itself under `.git/modules/.../machete`.
    """,
     "fork-point": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete fork-point [--inferred] [--explain] [<branch>]
            git machete fork-point --override-to=<revision>|--override-to-inferred|--override-to-parent [<branch>]
            git machete fork-point --unset-override [<branch>]</b>
@@ -632,7 +632,7 @@ long_docs: Dict[str, str] = {
         It's only important to use indentation characters consistently between all lines.
    """,
     "github": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete github <subcommand></b>
 
         where `<subcommand>` is one of: `anno-prs`, `checkout-prs`, `create-pr`, `restack-pr`, `retarget-pr` or `update-pr-descriptions`.
@@ -666,9 +666,9 @@ long_docs: Dict[str, str] = {
                 ghp_myothertoken_for_git_example_org git.example.org
                 ghp_yetanothertoken_for_git_example_com git.example.com
         </dim>
-        <b>Subcommands:</b>
+        <b>Subcommands</b>
 
-           `anno-prs [--with-urls]`:
+           `anno-prs [--with-urls]`
               Annotate the branches based on their corresponding GitHub PR numbers and authors.
               Any existing annotations are overwritten for the branches that have an opened PR; annotations for the other branches remain untouched.
               Equivalent to `git machete anno --sync-github-prs`.
@@ -680,7 +680,7 @@ long_docs: Dict[str, str] = {
 
               --with-urls                   Also include full PR URLs in the annotations (rather than just PR number).
 
-           `checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]`:
+           `checkout-prs [--all | --by=<github-login> | --mine | <PR-number-1> ... <PR-number-N>]`
               Check out the head branch of the given pull requests (specified by numbers or by a flag),
               also traverse chain of pull requests upwards, adding branches one by one to git-machete and check them out locally.
               Once the specified pull requests are checked out locally, annotate local branches with corresponding pull request numbers.
@@ -701,7 +701,7 @@ long_docs: Dict[str, str] = {
 
               `<PR-number-1> ... <PR-number-N>`    Pull request numbers to checkout.
 
-           `create-pr [--draft] [--title=<title>] [-U|--update-related-descriptions] [-y|--yes]`:
+           `create-pr [--draft] [--title=<title>] [-U|--update-related-descriptions] [-y|--yes]`
               Create a PR for the current branch, using the upstream (parent) branch as the PR base.
               Once the PR is successfully created, annotate the current branch with the new PR's number.
 
@@ -728,7 +728,7 @@ long_docs: Dict[str, str] = {
 
               -y, --yes                          Do not ask for confirmation whether to push the branch.
 
-           `restack-pr [-U|--update-related-descriptions]`:
+           `restack-pr [-U|--update-related-descriptions]`
               Perform the following sequence of actions:
 
                * If the PR for the current branch is ready for review, it gets converted into a draft.
@@ -744,7 +744,7 @@ long_docs: Dict[str, str] = {
               -U, --update-related-descriptions  Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs.
                                                  See help for `git machete github update-pr-descriptions --related` for details.
 
-           `retarget-pr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]`:
+           `retarget-pr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]`
               Set the base of the current (or specified) branch's PR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
 
               If after changing the base the PR ends up stacked atop another PR, the PR description posted to GitHub will include
@@ -761,7 +761,7 @@ long_docs: Dict[str, str] = {
               -U, --update-related-descriptions  Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs.
                                                  See help for `git machete github update-pr-descriptions --related` for details.
 
-           `sync`:
+           `sync`
               <b>Deprecated.</b> Use `github checkout-prs --mine`, `delete-unmanaged` and `slide-out --removed-from-remote`.
 
               Synchronize with the remote repository:
@@ -771,7 +771,7 @@ long_docs: Dict[str, str] = {
                * delete unmanaged branches,
                * delete untracked managed branches that have no downstream branch.
 
-           `update-pr-descriptions [--all | --by=<github-login> | --mine | --related]`:
+           `update-pr-descriptions [--all | --by=<github-login> | --mine | --related]`
               Update the generated sections ("intros") of PR descriptions that list the upstream and/or downstream PRs
               (depending on `machete.github.prDescriptionIntroStyle` git config key).
 
@@ -787,9 +787,9 @@ long_docs: Dict[str, str] = {
 
               --related            Update PR descriptions for all PRs both upstream and downstream of the PR for the current branch (the entire stack). This is the default if no flag is given.
 
-        <b>Git config keys:</b>
+        <b>Git config keys</b>
 
-           `machete.github.{remote,domain,organization,repository}` (all subcommands):
+           `machete.github.{remote,domain,organization,repository}` (all subcommands)
              `machete.github.remote`
                 The name of the git remote (as in `git remote`) that git-machete pushes the head branch to.
                 Unless both `machete.github.organization` and `machete.github.repository` are set, this remote's URL is also inspected
@@ -815,18 +815,18 @@ long_docs: Dict[str, str] = {
              For example, in a typical usage of GitHub Enterprise, it should be enough to just set `machete.github.domain`.
              Only `machete.github.organization` and `machete.github.repository` must be specified together.
 
-           `machete.github.annotateWithUrls` (all subcommands):
+           `machete.github.annotateWithUrls` (all subcommands)
              Setting this config key to `true` will cause all commands that write GitHub PR numbers into annotations
              to not only include PR number and author (if different from the current user), but also the full URL of the PR.
 
              The affected (sub)commands clearly include `anno --sync-github-prs` and `github anno-prs`,
              but also `github checkout-prs`, `github create-pr`, `github retarget-pr` and `github restack-pr`.
 
-           `machete.github.forceDescriptionFromCommitMessage` (`create-pr` only):
+           `machete.github.forceDescriptionFromCommitMessage` (`create-pr` only)
              Setting this config key to `true` will force `git machete github create-pr` to take PR description
              from the message body of the first unique commit of the branch, even if `.git/info/description` and/or `.github/pull_request_template.md` is present.
 
-           `machete.github.prDescriptionIntroStyle` (`create-pr`, `restack-pr` and `retarget-pr`):
+           `machete.github.prDescriptionIntroStyle` (`create-pr`, `restack-pr` and `retarget-pr`)
              Select the style of the generated section ("intro") added to the PR description:
               * `full`                — include both a chain of upstream PRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream PRs
               * `full-no-branches`    — same as `full`, but no branch names are included (only PR numbers & titles)
@@ -834,13 +834,13 @@ long_docs: Dict[str, str] = {
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only PR numbers & titles)
               * `none`                — prepend no intro to the PR description at all
 
-        <b>Environment variables (all subcommands):</b>
+        <b>Environment variables (all subcommands)</b>
 
            `GITHUB_TOKEN`
               GitHub API token.
    """,
     "gitlab": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete gitlab <subcommand></b>
 
         where `<subcommand>` is one of: `anno-mrs`, `checkout-mrs`, `create-mr`, `restack-mr`, `retarget-mr` or `update-mr-descriptions`.
@@ -873,9 +873,9 @@ long_docs: Dict[str, str] = {
                 glpat-myothertoken_for_git_example_org git.example.org
                 glpat-yetanothertoken_for_git_example_com git.example.com
         </dim>
-        <b>Subcommands:</b>
+        <b>Subcommands</b>
 
-           `anno-mrs [--with-urls]`:
+           `anno-mrs [--with-urls]`
               Annotate the branches based on their corresponding GitLab MR numbers and authors.
               Any existing annotations are overwritten for the branches that have an opened MR; annotations for the other branches remain untouched.
               Equivalent to `git machete anno --sync-gitlab-mrs`.
@@ -887,7 +887,7 @@ long_docs: Dict[str, str] = {
 
               --with-urls                   Also include full MR URLs in the annotations (rather than just MR number).
 
-           `checkout-mrs [--all | --by=<gitlab-login> | --mine | <MR-number-1> ... <MR-number-N>]`:
+           `checkout-mrs [--all | --by=<gitlab-login> | --mine | <MR-number-1> ... <MR-number-N>]`
               Check out the source branch of the given merge requests (specified by numbers or by a flag),
               also traverse chain of merge requests upwards, adding branches one by one to git-machete and check them out locally.
               Once the specified merge requests are checked out locally, annotate local branches with corresponding merge request numbers.
@@ -908,7 +908,7 @@ long_docs: Dict[str, str] = {
 
               `<MR-number-1> ... <MR-number-N>`    Merge request numbers to checkout.
 
-           `create-mr [--draft] [--title=<title>] [-U|--update-related-descriptions] [-y|--yes]`:
+           `create-mr [--draft] [--title=<title>] [-U|--update-related-descriptions] [-y|--yes]`
               Create an MR for the current branch, using the upstream (parent) branch as the MR source branch.
               Once the MR is successfully created, annotate the current branch with the new MR's number.
 
@@ -937,7 +937,7 @@ long_docs: Dict[str, str] = {
 
               -y, --yes                          Do not ask for confirmation whether to push the branch.
 
-           `restack-mr [-U|--update-related-descriptions]`:
+           `restack-mr [-U|--update-related-descriptions]`
               Perform the following sequence of actions:
 
                * If the MR for the current branch is ready for review, it gets converted into a draft.
@@ -953,7 +953,7 @@ long_docs: Dict[str, str] = {
               -U, --update-related-descriptions  Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs.
                                                  See help for `git machete gitlab update-mr-descriptions --related` for details.
 
-           `retarget-mr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]`:
+           `retarget-mr [-b|--branch=<branch>] [--ignore-if-missing] [-U|--update-related-descriptions]`
               Set the target of the current (or specified) branch's MR to upstream (parent) branch, as seen by git machete (see `git machete show up`).
 
               If after changing the base the MR ends up stacked atop another MR, the MR description posted to GitLab will include
@@ -970,7 +970,7 @@ long_docs: Dict[str, str] = {
               -U, --update-related-descriptions  Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs.
                                                  See help for `git machete gitlab update-mr-descriptions --related` for details.
 
-           `update-mr-descriptions [--all | --by=<gitlab-login> | --mine | --related]`:
+           `update-mr-descriptions [--all | --by=<gitlab-login> | --mine | --related]`
               Update the generated sections ("intros") of MR descriptions that list the upstream and/or downstream MRs
               (depending on `machete.gitlab.mrDescriptionIntroStyle` git config key).
 
@@ -986,9 +986,9 @@ long_docs: Dict[str, str] = {
 
               --related            Update MR descriptions for all MRs both upstream and downstream of the MR for the current branch (the entire stack). This is the default if no flag is given.
 
-        <b>Git config keys:</b>
+        <b>Git config keys</b>
 
-           `machete.gitlab.{remote,domain,namespace,project}` (all subcommands):
+           `machete.gitlab.{remote,domain,namespace,project}` (all subcommands)
              `machete.gitlab.remote`
                 The name of the git remote (as in `git remote`) that git-machete pushes the source branch to.
                 Unless both `machete.gitlab.namespace` and `machete.gitlab.project` are set, this remote's URL is also inspected
@@ -1014,18 +1014,18 @@ long_docs: Dict[str, str] = {
              For example, in a typical usage for GitLab self-managed instance, it should be enough to just set `machete.gitlab.domain`.
              Only `machete.gitlab.namespace` and `machete.gitlab.project` must be specified together.
 
-           `machete.gitlab.annotateWithUrls` (all subcommands):
+           `machete.gitlab.annotateWithUrls` (all subcommands)
              Setting this config key to `true` will cause all commands that write GitLab MR numbers into annotations
              to not only include MR number and author (if different from the current user), but also the full URL of the MR.
 
              The affected (sub)commands clearly include `anno --sync-gitlab-mrs` and `gitlab anno-mrs`,
              but also `gitlab checkout-mrs`, `gitlab create-mr`, `gitlab retarget-mr` and `gitlab restack-mr`.
 
-           `machete.gitlab.forceDescriptionFromCommitMessage` (`create-mr` only):
+           `machete.gitlab.forceDescriptionFromCommitMessage` (`create-mr` only)
              Setting this config key to `true` will force `git machete gitlab create-mr` to take MR description
              from the message body of the first unique commit of the branch, even if `.git/info/description` and/or `.gitlab/merge_request_templates/Default.md` is present.
 
-           `machete.gitlab.mrDescriptionIntroStyle` (`create-mr`, `restack-mr` and `retarget-mr`):
+           `machete.gitlab.mrDescriptionIntroStyle` (`create-mr`, `restack-mr` and `retarget-mr`)
              Select the style of the generated section ("intro") added to the MR description:
               * `full`                — include both a chain of upstream MRs (typically leading to `main`, `master`, `develop` etc.) and a tree of downstream MRs
               * `full-no-branches`    — same as `full`, but no branch names are included (only MR numbers & titles)
@@ -1033,20 +1033,20 @@ long_docs: Dict[str, str] = {
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only MR numbers & titles)
               * `none`                — prepend no intro to the MR description at all
 
-        <b>Environment variables (all subcommands):</b>
+        <b>Environment variables (all subcommands)</b>
 
            `GITLAB_TOKEN`
               GitLab API token.
    """,
     "go": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete g[o] [<direction>]</b>
 
         where <direction> is one of: `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
 
         If `<direction>` is not provided, an interactive mode is launched where you can navigate the branch tree using arrow keys and select a branch to check out.
 
-        <b>Interactive mode controls:</b>
+        <b>Interactive mode controls</b>
 
            * <b>↑/↓</b>: Navigate up/down through branches
            * <b>Shift+↑</b>: Jump to the first branch
@@ -1081,7 +1081,7 @@ long_docs: Dict[str, str] = {
         This is roughly equivalent to `git checkout $(git machete show <direction>)`.
    """,
     "help": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete help [<command>]</b>
 
         Print a summary of this tool, or a detailed info on a command if provided.
@@ -1092,7 +1092,7 @@ long_docs: Dict[str, str] = {
 
         Note: `hooks` is not a command as such, just a help topic (there is no `git machete hooks` command).
 
-        <b>Hooks:</b>
+        <b>Hooks</b>
 
            `machete-post-slide-out <new-upstream> <lowest-slid-out-branch> [<new-downstreams>...]`
               The hook that is executed after a branch (or possibly multiple branches, in case of `slide-out`)
@@ -1154,7 +1154,7 @@ long_docs: Dict[str, str] = {
         An example of using the standard git `post-commit hook` to `git machete add` branches automatically is also included.
    """,
     "is-managed": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete is-managed [<branch>]</b>
 
         Return with zero exit code if the given branch (or current branch, if none specified) is <b>managed</b> by git machete (that is, listed in .git/machete).
@@ -1166,7 +1166,7 @@ long_docs: Dict[str, str] = {
            * the <branch> isn't provided and there's no current branch (detached HEAD).
    """,
     "list": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete list <category></b>
 
         where <category> is one of: `addable`, `childless`, `managed`, `slidable`, `slidable-after <branch>`, `unmanaged`, `with-overridden-fork-point`.
@@ -1194,7 +1194,7 @@ long_docs: Dict[str, str] = {
         This command is generally not meant for a day-to-day use, it's mostly needed for branch name completion in shell.
    """,
     "log": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete l[og] [<branch>] [-- <pass-through-arguments>]</b>
 
         Run `git log` for the range of commits from tip of the given branch (or current branch, if none specified) back to its fork point.
@@ -1202,13 +1202,13 @@ long_docs: Dict[str, str] = {
 
         Note: the branch in question does not need to occur in the branch layout file.
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-- <pass-through-arguments></b>
               Arguments to pass directly to the underlying `git log`, for example `git machete log -- --patch`.
    """,
     "reapply": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete reapply [-f|--fork-point=<fork-point-commit>]</b>
 
         Interactively rebase the current branch on the top of its computed fork point.
@@ -1221,19 +1221,19 @@ long_docs: Dict[str, str] = {
         Tip: `reapply` can be used for squashing the commits on the current branch to make history more condensed before push to the remote,
         but there is also dedicated `squash` command that achieves the same goal without running `git rebase`.
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-f</b>, <b>--fork-point=<fork-point-commit></b>
               Specifies the alternative fork point commit after which the rebased part of history is meant to start.
 
-        <b>Environment variables:</b>
+        <b>Environment variables</b>
 
            `GIT_MACHETE_REBASE_OPTS`
               Extra options to pass to the underlying `git rebase` invocations, space-separated.
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete <command>`.
    """,
     "rename": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete rename [-b|--branch=<branch>] [--repoint-tracking] <new-name></b>
 
         Renames the given branch (or the current branch, if `-b`/`--branch` is not specified) to `<new-name>`
@@ -1247,7 +1247,7 @@ long_docs: Dict[str, str] = {
         Note: `rename` does <b>not</b> rename the branch on the remote — it only renames the local branch.
         The remote branch is left intact and can still be pushed to under its original name.
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-b</b>, <b>--branch=<branch></b>
               Branch to rename; if not given, the current branch is renamed.
@@ -1259,7 +1259,7 @@ long_docs: Dict[str, str] = {
               branch it pointed to before (for example `origin/old-name`).
    """,
     "show": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete show <direction> [<branch>]</b>
 
         where <direction> is one of: `c[urrent]`, `d[own]`, `f[irst]`, `l[ast]`, `n[ext]`, `p[rev]`, `r[oot]`, `u[p]`
@@ -1288,7 +1288,7 @@ long_docs: Dict[str, str] = {
            * `up`:      the direct parent/upstream branch of the given branch.
    """,
     "slide-out": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete slide-out --removed-from-remote [--delete]
            git machete slide-out [-d|--down-fork-point=<down-fork-point-commit>] [--delete]
                                  [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]
@@ -1337,7 +1337,7 @@ long_docs: Dict[str, str] = {
         Note: if a child branch is annotated with `rebase=no` qualifier, the rebase is not performed.
         See help for `traverse` for more details on the qualifiers.
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-d</b>, <b>--down-fork-point=<down-fork-point-commit></b>
               If updating by rebase, specify the alternative fork point for downstream branches for the operation.
@@ -1377,14 +1377,14 @@ long_docs: Dict[str, str] = {
                  * those whose remote tracking branches still exist (not deleted remotely),
                  * those that have at least one downstream (child) branch.
 
-        <b>Environment variables:</b>
+        <b>Environment variables</b>
 
            `GIT_MACHETE_REBASE_OPTS`
               Extra options to pass to the underlying `git rebase` invocations, space-separated.
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete <command>`.
    """,
     "squash": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete squash [-f|--fork-point=<fork-point-commit>]</b>
 
         Squash the commits belonging uniquely to the current branch into a single commit.
@@ -1399,13 +1399,13 @@ long_docs: Dict[str, str] = {
         Note: `squash` does <b>not</b> run `git rebase` under the hood.
         For more complex scenarios that require rewriting the history of current branch, see `reapply` and `update`.
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-f</b>, <b>--fork-point=<fork-point-commit></b>
               Specify the alternative fork point commit after which the squashed part of history is meant to start.
    """,
     "status": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete s[tatus] [--color=WHEN]
                                 [-l|--list-commits] [-L|--list-commits-with-hashes]
                                 [--squash-merge-detection=MODE]</b>
@@ -1487,7 +1487,7 @@ long_docs: Dict[str, str] = {
            │
            └─ feature_branch2
         </dim>
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>--color=WHEN</b>
               Colorize the output; WHEN can be `always`, `auto` (default: colorize only if stdout is a terminal), or `never`.
@@ -1508,9 +1508,9 @@ long_docs: Dict[str, str] = {
               `MODE` can be `none` (fastest, no squash merges are detected), `simple` (default) or `exact` (slowest).
               See the below paragraph on `machete.squashMergeDetection` git config key for more details.
 
-        <b>Git config keys:</b>
+        <b>Git config keys</b>
 
-           `machete.squashMergeDetection`:
+           `machete.squashMergeDetection`
               Select the algorithm used to detect squash merges. Possible values are:
 
               * `none`: Fastest mode, with no squash merge/rebase detection. Only strict (fast-forward or 2-parent) merges are detected.
@@ -1527,12 +1527,12 @@ long_docs: Dict[str, str] = {
               * whether a gray edge is displayed in `status`,
               * whether `traverse` suggests to slide out the branch.
 
-           `machete.status.extraSpaceBeforeBranchName`:
+           `machete.status.extraSpaceBeforeBranchName`
               To make it easier to select branch name from the `status` output on certain terminals (like `Alacritty),
               you can add an extra space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
    """,
     "traverse": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
                                   [-n|--no-edit-merge|--no-interactive-rebase] [--[no-]push] [--[no-]push-untracked]
                                   [--return-to=WHERE] [--squash-merge-detection=MODE] [--start-from=WHERE] [--stop-after=BRANCH]
@@ -1614,7 +1614,7 @@ long_docs: Dict[str, str] = {
         If a branch is not checked out in any worktree, by default `traverse` will change directory to the main worktree before checking out the branch.
         This behavior can be customized using `machete.traverse.whenBranchNotCheckedOutInAnyWorktree` git config key (see below).
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-F</b>, <b>--fetch</b>
               Fetch the remotes of all managed branches at the beginning of traversal (no `git pull` involved, only `git fetch`).
@@ -1698,9 +1698,9 @@ long_docs: Dict[str, str] = {
            <b>-y</b>, <b>--yes</b>
               Don't ask for any interactive input, including confirmation of rebase/push/pull. Implies `-n`.
 
-        <b>Git config keys:</b>
+        <b>Git config keys</b>
 
-           `machete.squashMergeDetection`:
+           `machete.squashMergeDetection`
               Select the algorithm used to detect squash merges. Possible values are:
 
               * `none`: Fastest mode, with no squash merge/rebase detection. Only strict (fast-forward or 2-parent) merges are detected.
@@ -1717,18 +1717,18 @@ long_docs: Dict[str, str] = {
               * whether a gray edge is displayed in `status`,
               * whether `traverse` suggests to slide out the branch.
 
-           `machete.traverse.fetch.<remote>`:
+           `machete.traverse.fetch.<remote>`
               Configure the behavior of `git machete traverse` command for the given remote when `--fetch` flag is used.
               If set to `false`, this remote will not be fetched before the traversal.
               The default value of this key is `true`.
               This is useful for excluding remotes that are temporarily offline, or take a long time to respond.
 
-           `machete.traverse.push`:
+           `machete.traverse.push`
               Set to `false` to change the behavior of `git machete traverse` so that it doesn't push branches by default.
               The default value of this key is `true`.
               Configuration key value can be overridden by the presence of the `--push` or `--push-untracked` flags.
 
-           `machete.traverse.whenBranchNotCheckedOutInAnyWorktree`:
+           `machete.traverse.whenBranchNotCheckedOutInAnyWorktree`
               Controls the behavior of `git machete traverse` when it needs to act on a branch that is not currently checked out in any worktree.
 
               Allowed values:
@@ -1742,14 +1742,14 @@ long_docs: Dict[str, str] = {
                 and remove this temporary worktree once `traverse` moves on to the next branch (or finishes).
                 This ensures that no existing (non-temporary) worktree has its checked-out branch changed by `traverse`.
 
-        <b>Environment variables:</b>
+        <b>Environment variables</b>
 
            `GIT_MACHETE_REBASE_OPTS`
               Extra options to pass to the underlying `git rebase` invocations, space-separated.
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete <command>`.
    """,
     "update": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete update [-f|--fork-point=<fork-point-commit>] [-M|--merge] [-n|--no-edit-merge|--no-interactive-rebase]</b>
 
         Synchronize the current branch with its upstream (parent) branch either by rebase (default) or by merge (if `--merge` option passed).
@@ -1761,7 +1761,7 @@ long_docs: Dict[str, str] = {
 
         If updating by merge, merges the upstream (parent) branch into the current branch.
 
-        <b>Options:</b>
+        <b>Options</b>
 
            <b>-f</b>, <b>--fork-point=<fork-point-commit></b>
               If updating by rebase, specifies the alternative fork point commit after which the rebased
@@ -1782,14 +1782,14 @@ long_docs: Dict[str, str] = {
               If updating by rebase, run `git rebase` in non-interactive mode (without `-i/--interactive` flag).
               Not allowed if updating by merge.
 
-        <b>Environment variables:</b>
+        <b>Environment variables</b>
 
            `GIT_MACHETE_REBASE_OPTS`
               Extra options to pass to the underlying `git rebase` invocations, space-separated.
               Example: `GIT_MACHETE_REBASE_OPTS="--keep-empty --rebase-merges" git machete <command>`.
    """,
     "version": """
-        <b>Usage:</b><b>
+        <b>Usage</b><b>
            git machete version</b>
 
         Print the version and exit.

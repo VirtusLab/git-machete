@@ -2,7 +2,7 @@
 
 delete-unmanaged
 ================
-**Usage:**
+**Usage**
 
 .. code-block:: shell
 
@@ -16,6 +16,6 @@ Note: this should be used with care since deleting local branches can sometimes 
 for ``git machete`` to properly figure out fork points.
 See help for :ref:`fork-point` for more details.
 
-**Options:**
+**Options**
 
 -y, --yes          Don't ask for confirmation.
