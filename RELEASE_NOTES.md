@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.44.1
+
 ## New in git-machete 3.44.0
 
 - added: `machete.github.{baseRemote,baseOrganization,baseRepository}` and `machete.gitlab.{baseRemote,baseNamespace,baseProject}` git config keys
