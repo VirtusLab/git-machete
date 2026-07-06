@@ -86,7 +86,12 @@ class FullTerminalAnsiOutputCodes:
     DIM = '\033[2m'
     UNDERLINE = '\033[4m'
     GREEN = '\033[32m'
-    YELLOW = '\033[33m'
+    # Plain SGR 33 ("dark yellow") renders as a washed-out, barely-visible color on light/white-background
+    # terminals (#380). Gold1 from the 256-color palette reads clearly as "yellow" on both dark and light
+    # backgrounds; it was already used for exactly this reason back in 0b43361 ("Improved visibility on white
+    # terminal backgrounds"), but got silently overwritten by 21f9b8a while that commit was actually only
+    # trying to match a *different* yellow use (the hook-ignored-hook hint below) to git's own advice color.
+    YELLOW = '\033[00;38;5;220m'
     ORANGE = '\033[00;38;5;208m'
     RED = '\033[91m'
     REVERSE_VIDEO = '\033[7m'
@@ -107,5 +112,8 @@ class BasicTerminalAnsiOutputCodes(FullTerminalAnsiOutputCodes):
 
     UNDERLINE = '\033[36m'  # cyan
     ENDC_UNDERLINE = FullTerminalAnsiOutputCodes.ENDC
-    ORANGE = FullTerminalAnsiOutputCodes.YELLOW
+    # The 256-color YELLOW above isn't available on 8-color terminals; keep the plain SGR 33 here (and reuse
+    # it for ORANGE, which isn't available in 8 colors either) instead of inheriting the 256-color escape.
+    YELLOW = '\033[33m'
+    ORANGE = YELLOW
     RED = '\033[31m'  # dark red

@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.44.1
 
+- fixed: the yellow used e.g. for the yellow edge in `status`/`traverse` no longer renders as a washed-out, barely-visible color on light/white-background terminals
+
 ## New in git-machete 3.44.0
 
 - added: `machete.github.{baseRemote,baseOrganization,baseRepository}` and `machete.gitlab.{baseRemote,baseNamespace,baseProject}` git config keys

@@ -54,6 +54,15 @@ class TestUtils(BaseTest):
         expected_ascii = ' red yellow yellow_bold yellow_underlined yellow green  default  dimmed  green green_underlined default'
         assert _fmt(input_string, use_ansi_escapes=False) == expected_ascii
 
+    def test_yellow_is_not_the_washed_out_dark_yellow(self) -> None:
+        # Regression test for #380: plain SGR 33 ("dark yellow") renders as washed-out/barely-visible
+        # on light terminal backgrounds, so full-fledged (256-color) terminals must use a brighter yellow.
+        assert FullTerminalAnsiOutputCodes.YELLOW == '\033[00;38;5;220m'
+        assert FullTerminalAnsiOutputCodes.YELLOW != '\033[33m'
+        # 8-color terminals can't render the 256-color escape above, so they still get plain SGR 33.
+        assert BasicTerminalAnsiOutputCodes.YELLOW == '\033[33m'
+        assert BasicTerminalAnsiOutputCodes.ORANGE == '\033[33m'
+
     def test_get_current_date(self) -> None:
         assert re.fullmatch("20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]", get_current_date())
 
