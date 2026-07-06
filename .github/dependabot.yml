@@ -13,6 +13,8 @@ updates:
       default-days: 7
     reviewers:
       - PawelLipski
+    commit-message:
+      prefix: ""
     target-branch: develop
     groups:
       deps:
