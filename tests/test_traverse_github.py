@@ -133,9 +133,9 @@ class TestTraverseGitHub(BaseTest):
 
             Branch build-chain has a different PR base (develop) in GitHub than in machete file (allow-ownership-link).
             Retargeting PR #2 to allow-ownership-link...
-            Base branch of PR #2 has been switched to allow-ownership-link
-            Description of PR #2 has been updated
-            Description of PR #3 (call-ws -> build-chain) has been updated
+            Switching base branch of PR #2 to allow-ownership-link... OK
+            Updating description of PR #2... OK
+            Updating description of PR #3 (call-ws -> build-chain)... OK
 
               develop
               |
@@ -214,7 +214,7 @@ class TestTraverseGitHub(BaseTest):
 
             Branch build-chain has a different PR base (develop) in GitHub than in machete file (allow-ownership-link).
             Retargeting PR #2 to allow-ownership-link...
-            Base branch of PR #2 has been switched to allow-ownership-link
+            Switching base branch of PR #2 to allow-ownership-link... OK
 
               develop
               |

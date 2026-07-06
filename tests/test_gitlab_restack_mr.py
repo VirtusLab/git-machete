@@ -77,8 +77,8 @@ class TestGitLabRestackMR(BaseTest):
         assert_success(
             ['gitlab', 'restack-mr'],
             """
-            Target branch of MR !15 has been switched to master
-            Description of MR !15 has been updated
+            Switching target branch of MR !15 to master... OK
+            Updating description of MR !15... OK
             """
         )
         mr = gitlab_api_state.get_mr_by_number(15)
@@ -109,7 +109,8 @@ class TestGitLabRestackMR(BaseTest):
         assert_success(
             ['gitlab', 'restack-mr'],
             """
-            Target branch of MR !14 has been switched to master
+            Temporarily marking MR !14 as draft... OK (already a draft)
+            Switching target branch of MR !14 to master... OK
             Pushing untracked branch feature_1 to origin...
 
               master (untracked)
@@ -152,9 +153,9 @@ class TestGitLabRestackMR(BaseTest):
         assert_success(
             ['gitlab', 'restack-mr'],
             """
-            MR !15 has been temporarily marked as draft
-            Target branch of MR !15 has been switched to master
-            Description of MR !15 has been updated
+            Temporarily marking MR !15 as draft... OK
+            Switching target branch of MR !15 to master... OK
+            Updating description of MR !15... OK
             Branch feature diverged from (and has newer commits than) its remote counterpart origin/feature.
             Pushing feature with force-with-lease to origin...
 
@@ -162,7 +163,7 @@ class TestGitLabRestackMR(BaseTest):
               |
               o-feature *  MR !15 (some_other_user)
 
-            MR !15 has been marked as ready for review again
+            Marking MR !15 as ready for review again... OK
             """
         )
         mr = gitlab_api_state.get_mr_by_number(15)
@@ -196,16 +197,16 @@ class TestGitLabRestackMR(BaseTest):
         assert_success(
             ['gitlab', 'restack-mr'],
             """
-            MR !15 has been temporarily marked as draft
-            Target branch of MR !15 has been switched to master
-            Description of MR !15 has been updated
+            Temporarily marking MR !15 as draft... OK
+            Switching target branch of MR !15 to master... OK
+            Updating description of MR !15... OK
             Pushing feature to origin...
 
               master (untracked)
               |
               o-feature *  MR !15 (some_other_user)
 
-            MR !15 has been marked as ready for review again
+            Marking MR !15 as ready for review again... OK
             """
         )
         mr = gitlab_api_state.get_mr_by_number(15)
@@ -250,16 +251,16 @@ class TestGitLabRestackMR(BaseTest):
         assert_success(
             ['gitlab', 'restack-mr'],
             """
-            MR !15 has been temporarily marked as draft
-            Target branch of MR !15 has been switched to master
-            Description of MR !15 has been updated
+            Temporarily marking MR !15 as draft... OK
+            Switching target branch of MR !15 to master... OK
+            Updating description of MR !15... OK
             Pushing feature to origin...
 
               master (untracked)
               |
               o-feature *  MR !15 (some_other_user)
 
-            MR !15 has been marked as ready for review again
+            Marking MR !15 as ready for review again... OK
             """
         )
 
@@ -293,8 +294,8 @@ class TestGitLabRestackMR(BaseTest):
             """
             Warn: branch feature is behind its remote counterpart. Consider using git pull.
 
-            Target branch of MR !15 has been switched to master
-            Description of MR !15 has been updated
+            Switching target branch of MR !15 to master... OK
+            Updating description of MR !15... OK
             """
         )
 
@@ -326,8 +327,8 @@ class TestGitLabRestackMR(BaseTest):
             """
             Warn: branch feature is diverged from and older than its remote counterpart. Consider using git reset --keep.
 
-            Target branch of MR !15 has been switched to master
-            Description of MR !15 has been updated
+            Switching target branch of MR !15 to master... OK
+            Updating description of MR !15... OK
             """
         )
         mr = gitlab_api_state.get_mr_by_number(15)

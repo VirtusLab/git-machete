@@ -72,11 +72,12 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr'],
             """
+            Switching base branch of PR #15 to develop...
             Warn: GitHub API returned 307 HTTP status with error message: Temporary redirect.
             It looks like the organization or repository name got changed recently and is outdated.
             New organization is example-org and new repository is example-repo.
             You can update your remote repository via: git remote set-url <remote_name> <new_repository_url>.
-            Base branch of PR #15 has been switched to develop
+            OK
             """
         )
 
@@ -163,7 +164,7 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_success(
             ['github', 'retarget-pr', '--branch', 'feature'],
-            'Base branch of PR #15 has been switched to branch-1\n'
+            'Switching base branch of PR #15 to branch-1... OK\n'
         )
 
         expected_status_output = """
@@ -252,9 +253,9 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_success(
             ['github', 'retarget-pr'],
-            'Base branch of PR #20 has been switched to feature\n'
+            'Switching base branch of PR #20 to feature... OK\n'
             'Checking for open GitHub PRs... OK\n'
-            'Description of PR #20 has been updated\n'
+            'Updating description of PR #20... OK\n'
         )
         pr20 = github_api_state.get_pull_by_number(20)
         assert pr20 is not None
@@ -300,8 +301,8 @@ class TestGitHubRetargetPR(BaseTest):
         set_git_config_key("machete.github.prDescriptionIntroStyle", "none")
         assert_success(
             ['github', 'retarget-pr'],
-            'Base branch of PR #25 has been switched to feature\n'
-            'Description of PR #25 has been updated\n'
+            'Switching base branch of PR #25 to feature... OK\n'
+            'Updating description of PR #25... OK\n'
         )
         pr25 = github_api_state.get_pull_by_number(25)
         assert pr25 is not None
@@ -328,9 +329,9 @@ class TestGitHubRetargetPR(BaseTest):
         unset_git_config_key("machete.github.prDescriptionIntroStyle")
         assert_success(
             ['github', 'retarget-pr'],
-            'Base branch of PR #30 has been switched to feature_2\n'
+            'Switching base branch of PR #30 to feature_2... OK\n'
             'Checking for open GitHub PRs... OK\n'
-            'Description of PR #30 has been updated\n'
+            'Updating description of PR #30... OK\n'
         )
         pr30 = github_api_state.get_pull_by_number(30)
         assert pr30 is not None
@@ -368,9 +369,9 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_success(
             ['github', 'retarget-pr'],
-            'Base branch of PR #30 has been switched to feature\n'
+            'Switching base branch of PR #30 to feature... OK\n'
             'Checking for open GitHub PRs... OK\n'
-            'Description of PR #30 has been updated\n'
+            'Updating description of PR #30... OK\n'
         )
         pr30 = github_api_state.get_pull_by_number(30)
         assert pr30 is not None
@@ -405,8 +406,8 @@ class TestGitHubRetargetPR(BaseTest):
 
         assert_success(
             ['github', 'retarget-pr'],
-            'Base branch of PR #30 has been switched to root\n'
-            'Description of PR #30 has been updated\n'
+            'Switching base branch of PR #30 to root... OK\n'
+            'Updating description of PR #30... OK\n'
         )
         pr30 = github_api_state.get_pull_by_number(30)
         assert pr30 is not None
@@ -419,12 +420,12 @@ class TestGitHubRetargetPR(BaseTest):
         assert_success(
             ['github', 'retarget-pr', '-U'],
             """
-            Base branch of PR #15 has been switched to branch-1
+            Switching base branch of PR #15 to branch-1... OK
             Updating descriptions of other PRs...
             Checking for open GitHub PRs... OK
-            Description of PR #20 (feature_1 -> feature) has been updated
-            Description of PR #25 (feature_2 -> feature) has been updated
-            Description of PR #35 (feature_4 -> feature) has been updated
+            Updating description of PR #20 (feature_1 -> feature)... OK
+            Updating description of PR #25 (feature_2 -> feature)... OK
+            Updating description of PR #35 (feature_4 -> feature)... OK
             """
         )
         pr15 = github_api_state.get_pull_by_number(15)
@@ -438,7 +439,7 @@ class TestGitHubRetargetPR(BaseTest):
             """
             Base branch of PR #15 is already branch-1
             Checking for open GitHub PRs... OK
-            Description of PR #15 has been updated
+            Updating description of PR #15... OK
             Updating descriptions of other PRs...
             """
         )

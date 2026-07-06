@@ -78,9 +78,9 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             ['gitlab', 'update-mr-descriptions', '--related'],
             """
             Checking for open GitLab MRs... OK
-            Description of MR !1 (branch1 -> root) has been updated
-            Description of MR !2 (branch2 -> branch1) has been updated
-            Description of MR !3 (branch3 -> branch2) has been updated
+            Updating description of MR !1 (branch1 -> root)... OK
+            Updating description of MR !2 (branch2 -> branch1)... OK
+            Updating description of MR !3 (branch3 -> branch2)... OK
             """
         )
 
@@ -122,15 +122,15 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             """)
         check_out('branch2')
         # `full` style ensures every MR in the stack (incl. the topmost) has an intro
-        # to add, so all three of the related MRs surface a "has been updated" line.
+        # to add, so all three of the related MRs surface an "Updating description of ..." line.
         set_git_config_key("machete.gitlab.mrDescriptionIntroStyle", "full")
 
         assert_success(
             ['gitlab', 'update-mr-descriptions'],
             """
             Checking for open GitLab MRs... OK
-            Description of MR !1 (branch1 -> root) has been updated
-            Description of MR !2 (branch2 -> branch1) has been updated
+            Updating description of MR !1 (branch1 -> root)... OK
+            Updating description of MR !2 (branch2 -> branch1)... OK
             """
         )
 
@@ -223,7 +223,7 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             ['gitlab', 'update-mr-descriptions', '--mine'],
             """
             Checking for open GitLab MRs... OK
-            Description of MR !17 (restrict_access -> allow-ownership-link) has been updated
+            Updating description of MR !17 (restrict_access -> allow-ownership-link)... OK
             """
         )
 
@@ -231,7 +231,7 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             ['gitlab', 'update-mr-descriptions', '--by=other_user'],
             """
             Checking for open GitLab MRs... OK
-            Description of MR !12 (allow-ownership-link -> bugfix/feature) has been updated
+            Updating description of MR !12 (allow-ownership-link -> bugfix/feature)... OK
             """
         )
 
@@ -239,7 +239,7 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             ['gitlab', 'update-mr-descriptions', '--related'],
             """
             Checking for open GitLab MRs... OK
-            Description of MR !18 (chore/redundant_checks -> restrict_access) has been updated
+            Updating description of MR !18 (chore/redundant_checks -> restrict_access)... OK
             """
         )
         set_git_config_key("machete.gitlab.mrDescriptionIntroStyle", "full")
@@ -247,9 +247,9 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             ['gitlab', 'update-mr-descriptions', '--related'],
             """
             Checking for open GitLab MRs... OK
-            Description of MR !6 (bugfix/feature -> enhance/feature) has been updated
-            Description of MR !12 (allow-ownership-link -> bugfix/feature) has been updated
-            Description of MR !17 (restrict_access -> allow-ownership-link) has been updated
+            Updating description of MR !6 (bugfix/feature -> enhance/feature)... OK
+            Updating description of MR !12 (allow-ownership-link -> bugfix/feature)... OK
+            Updating description of MR !17 (restrict_access -> allow-ownership-link)... OK
             """
         )
 
@@ -257,8 +257,8 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             ['gitlab', 'update-mr-descriptions', '--all'],
             """
             Checking for open GitLab MRs... OK
-            Description of MR !22 (testing/add_user -> bugfix/add_user) has been updated
-            Description of MR !24 (chore/comments -> testing/add_user) has been updated
+            Updating description of MR !22 (testing/add_user -> bugfix/add_user)... OK
+            Updating description of MR !24 (chore/comments -> testing/add_user)... OK
             """
         )
 

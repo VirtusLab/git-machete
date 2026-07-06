@@ -425,10 +425,11 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                         ans_intro + f"Retargeting {pr.display_text()} to <b>{parent}</b>...",
                         opt_yes=opt_yes)
                     if ans in ('y', 'yes', 'yq'):
-                        self.code_hosting_client.set_base_of_pull_request(pr.number, base=parent)
                         print_fmt(
-                            f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} '
-                            f'has been switched to <b>{parent}</b>')
+                            f'Switching {spec.base_branch_name} branch of {pr.display_text()} '
+                            f'to <b>{parent}</b>... ', newline=False)
+                        self.code_hosting_client.set_base_of_pull_request(pr.number, base=parent)
+                        print_fmt(green_ok())
                         pr.base = parent
 
                         anno = self._state.get_annotation(branch)
@@ -439,18 +440,20 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
                         new_description = self._get_updated_pull_request_description(pr)
                         if pr.description != new_description:
+                            print_fmt(f'Updating description of {pr.display_text()}... ', newline=False)
                             self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
-                            print_fmt(f'Description of {pr.display_text()} has been updated')
+                            print_fmt(green_ok())
                             pr.description = new_description
 
                         applicable_prs: List[PullRequest] = self._get_applicable_pull_requests(related_to=pr)
                         for pr in applicable_prs:
                             new_description = self._get_updated_pull_request_description(pr)
                             if pr.description != new_description:
+                                print_fmt(f'Updating description of {pr.display_text()} '
+                                          f'(<b>{pr.head} <rarrow/> {pr.base}</b>)... ', newline=False)
                                 self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
                                 pr.description = new_description
-                                print_fmt(f'Description of {pr.display_text()} '
-                                          f'(<b>{pr.head} <rarrow/> {pr.base}</b>) has been updated')
+                                print_fmt(green_ok())
 
                         if ans == 'yq':
                             return

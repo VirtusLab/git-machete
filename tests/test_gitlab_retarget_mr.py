@@ -83,7 +83,7 @@ class TestGitLabRetargetMR(BaseTest):
         set_remote_url('new_origin', 'https://gitlab.com/example-org/example-repo.git')
         assert_success(
             ['gitlab', 'retarget-mr'],
-            "Target branch of MR !15 has been switched to develop\n"
+            "Switching target branch of MR !15 to develop... OK\n"
         )
 
         expected_status_output = """
@@ -169,7 +169,7 @@ class TestGitLabRetargetMR(BaseTest):
 
         assert_success(
             ['gitlab', 'retarget-mr', '--branch', 'feature'],
-            'Target branch of MR !15 has been switched to branch-1\n'
+            'Switching target branch of MR !15 to branch-1... OK\n'
         )
 
         expected_status_output = """
@@ -258,9 +258,9 @@ class TestGitLabRetargetMR(BaseTest):
 
         assert_success(
             ['gitlab', 'retarget-mr'],
-            'Target branch of MR !20 has been switched to feature\n'
+            'Switching target branch of MR !20 to feature... OK\n'
             'Checking for open GitLab MRs... OK\n'
-            'Description of MR !20 has been updated\n'
+            'Updating description of MR !20... OK\n'
         )
         mr20 = gitlab_api_state.get_mr_by_number(20)
         assert mr20 is not None
@@ -305,9 +305,9 @@ class TestGitLabRetargetMR(BaseTest):
 
         assert_success(
             ['gitlab', 'retarget-mr'],
-            'Target branch of MR !25 has been switched to feature\n'
+            'Switching target branch of MR !25 to feature... OK\n'
             'Checking for open GitLab MRs... OK\n'
-            'Description of MR !25 has been updated\n'
+            'Updating description of MR !25... OK\n'
         )
         mr25 = gitlab_api_state.get_mr_by_number(25)
         assert mr25 is not None
@@ -347,9 +347,9 @@ class TestGitLabRetargetMR(BaseTest):
 
         assert_success(
             ['gitlab', 'retarget-mr'],
-            'Target branch of MR !30 has been switched to feature_2\n'
+            'Switching target branch of MR !30 to feature_2... OK\n'
             'Checking for open GitLab MRs... OK\n'
-            'Description of MR !30 has been updated\n'
+            'Updating description of MR !30... OK\n'
         )
         mr30 = gitlab_api_state.get_mr_by_number(30)
         assert mr30 is not None
@@ -387,9 +387,9 @@ class TestGitLabRetargetMR(BaseTest):
 
         assert_success(
             ['gitlab', 'retarget-mr'],
-            'Target branch of MR !30 has been switched to feature\n'
+            'Switching target branch of MR !30 to feature... OK\n'
             'Checking for open GitLab MRs... OK\n'
-            'Description of MR !30 has been updated\n'
+            'Updating description of MR !30... OK\n'
         )
         mr30 = gitlab_api_state.get_mr_by_number(30)
         assert mr30 is not None
@@ -424,8 +424,8 @@ class TestGitLabRetargetMR(BaseTest):
 
         assert_success(
             ['gitlab', 'retarget-mr'],
-            'Target branch of MR !30 has been switched to root\n'
-            'Description of MR !30 has been updated\n'
+            'Switching target branch of MR !30 to root... OK\n'
+            'Updating description of MR !30... OK\n'
         )
         mr30 = gitlab_api_state.get_mr_by_number(30)
         assert mr30 is not None
@@ -438,12 +438,12 @@ class TestGitLabRetargetMR(BaseTest):
         assert_success(
             ['gitlab', 'retarget-mr', '-U'],
             """
-            Target branch of MR !15 has been switched to branch-1
+            Switching target branch of MR !15 to branch-1... OK
             Updating descriptions of other MRs...
             Checking for open GitLab MRs... OK
-            Description of MR !20 (feature_1 -> feature) has been updated
-            Description of MR !25 (feature_2 -> feature) has been updated
-            Description of MR !35 (feature_4 -> feature) has been updated
+            Updating description of MR !20 (feature_1 -> feature)... OK
+            Updating description of MR !25 (feature_2 -> feature)... OK
+            Updating description of MR !35 (feature_4 -> feature)... OK
             """
         )
         mr15 = gitlab_api_state.get_mr_by_number(15)
@@ -457,7 +457,7 @@ class TestGitLabRetargetMR(BaseTest):
             """
             Target branch of MR !15 is already branch-1
             Checking for open GitLab MRs... OK
-            Description of MR !15 has been updated
+            Updating description of MR !15... OK
             Updating descriptions of other MRs...
             """
         )

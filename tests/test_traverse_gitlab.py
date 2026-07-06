@@ -133,9 +133,9 @@ class TestTraverseGitLab(BaseTest):
 
             Branch build-chain has a different MR target (develop) in GitLab than in machete file (allow-ownership-link).
             Retargeting MR !2 to allow-ownership-link...
-            Target branch of MR !2 has been switched to allow-ownership-link
-            Description of MR !2 has been updated
-            Description of MR !3 (call-ws -> build-chain) has been updated
+            Switching target branch of MR !2 to allow-ownership-link... OK
+            Updating description of MR !2... OK
+            Updating description of MR !3 (call-ws -> build-chain)... OK
 
               develop
               |
@@ -215,5 +215,5 @@ class TestTraverseGitLab(BaseTest):
 
             Branch build-chain has a different MR target (develop) in GitLab than in machete file (allow-ownership-link).
             Retarget MR !2 to allow-ownership-link? (y, N, q, yq)
-            Target branch of MR !2 has been switched to allow-ownership-link
+            Switching target branch of MR !2 to allow-ownership-link... OK
             """)

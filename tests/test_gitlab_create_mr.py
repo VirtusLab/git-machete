@@ -240,8 +240,8 @@ class TestGitLabCreateMR(BaseTest):
             Adding foo, bar as reviewers to MR !6... OK
             Updating descriptions of other MRs...
             Checking for open GitLab MRs... OK
-            Description of MR !3 (ignore-trailing -> hotfix/add-trigger) has been updated
-            Description of MR !5 (chore/fields -> ignore-trailing) has been updated
+            Updating description of MR !3 (ignore-trailing -> hotfix/add-trigger)... OK
+            Updating description of MR !5 (chore/fields -> ignore-trailing)... OK
         """)
         mr5 = gitlab_api_state.get_mr_by_number(5)
         assert mr5 is not None

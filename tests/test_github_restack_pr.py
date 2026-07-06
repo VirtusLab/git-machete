@@ -78,8 +78,8 @@ class TestGitHubRestackPR(BaseTest):
         assert_success(
             ['github', 'restack-pr'],
             """
-            Base branch of PR #15 has been switched to master
-            Description of PR #15 has been updated
+            Switching base branch of PR #15 to master... OK
+            Updating description of PR #15... OK
             """
         )
         pr = github_api_state.get_pull_by_number(15)
@@ -110,7 +110,8 @@ class TestGitHubRestackPR(BaseTest):
         assert_success(
             ['github', 'restack-pr'],
             """
-            Base branch of PR #14 has been switched to master
+            Temporarily marking PR #14 as draft... OK (already a draft)
+            Switching base branch of PR #14 to master... OK
             Pushing untracked branch feature_1 to origin...
 
               master (untracked)
@@ -150,9 +151,9 @@ class TestGitHubRestackPR(BaseTest):
         assert_success(
             ['github', 'restack-pr'],
             """
-            PR #15 has been temporarily marked as draft
-            Base branch of PR #15 has been switched to master
-            Description of PR #15 has been updated
+            Temporarily marking PR #15 as draft... OK
+            Switching base branch of PR #15 to master... OK
+            Updating description of PR #15... OK
             Branch feature diverged from (and has newer commits than) its remote counterpart origin/feature.
             Pushing feature with force-with-lease to origin...
 
@@ -160,7 +161,7 @@ class TestGitHubRestackPR(BaseTest):
               |
               o-feature *  PR #15 (some_other_user)
 
-            PR #15 has been marked as ready for review again
+            Marking PR #15 as ready for review again... OK
             """
         )
         pr = github_api_state.get_pull_by_number(15)
@@ -193,16 +194,16 @@ class TestGitHubRestackPR(BaseTest):
         assert_success(
             ['github', 'restack-pr'],
             """
-            PR #15 has been temporarily marked as draft
-            Base branch of PR #15 has been switched to master
-            Description of PR #15 has been updated
+            Temporarily marking PR #15 as draft... OK
+            Switching base branch of PR #15 to master... OK
+            Updating description of PR #15... OK
             Pushing feature to origin...
 
               master (untracked)
               |
               o-feature *  PR #15 (some_other_user)
 
-            PR #15 has been marked as ready for review again
+            Marking PR #15 as ready for review again... OK
             """
         )
         pr = github_api_state.get_pull_by_number(15)
@@ -247,16 +248,16 @@ class TestGitHubRestackPR(BaseTest):
         assert_success(
             ['github', 'restack-pr'],
             """
-            PR #15 has been temporarily marked as draft
-            Base branch of PR #15 has been switched to master
-            Description of PR #15 has been updated
+            Temporarily marking PR #15 as draft... OK
+            Switching base branch of PR #15 to master... OK
+            Updating description of PR #15... OK
             Pushing feature to origin...
 
               master (untracked)
               |
               o-feature *  PR #15 (some_other_user)
 
-            PR #15 has been marked as ready for review again
+            Marking PR #15 as ready for review again... OK
             """
         )
         pr = github_api_state.get_pull_by_number(15)
@@ -289,8 +290,8 @@ class TestGitHubRestackPR(BaseTest):
             """
             Warn: branch feature is behind its remote counterpart. Consider using git pull.
 
-            Base branch of PR #15 has been switched to master
-            Description of PR #15 has been updated
+            Switching base branch of PR #15 to master... OK
+            Updating description of PR #15... OK
             """
         )
 
@@ -322,8 +323,8 @@ class TestGitHubRestackPR(BaseTest):
             """
             Warn: branch feature is diverged from and older than its remote counterpart. Consider using git reset --keep.
 
-            Base branch of PR #15 has been switched to master
-            Description of PR #15 has been updated
+            Switching base branch of PR #15 to master... OK
+            Updating description of PR #15... OK
             """
         )
         pr = github_api_state.get_pull_by_number(15)

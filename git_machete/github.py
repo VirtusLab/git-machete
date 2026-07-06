@@ -215,6 +215,7 @@ class GitHubApi(CodeHostingApi):
                 if 'A pull request already exists for' in error_reason:
                     raise MacheteException(error_reason)
                 elif 'Reviews may only be requested from collaborators.' in error_reason:
+                    # Break off the dangling `Adding ... as reviewer(s) to ...` in-progress line before warning.
                     print()
                     warn("there are some invalid reviewers (non-collaborators) in .git/info/reviewers file.\n"
                          "Skipped adding reviewers to the pull request.")
@@ -264,6 +265,9 @@ class GitHubApi(CodeHostingApi):
                         'Update your remote repository manually via: `git remote set-url <remote_name> <new_repository_url>`.')
                 new_path = re.sub("https://[^/]+", "", location)
                 result = self.__fire_github_api_request(method=method, path=new_path, request_body=request_body)
+                # Break off the dangling `... ` in-progress line before warning
+                # (the 307 is only reachable for mutations, each preceded by such a line).
+                print()
                 warn(f'GitHub API returned `{err.code}` HTTP status with error message: `{err.reason}`.\n'
                      'It looks like the organization or repository name got changed recently and is outdated.\n'
                      f'New organization is <b>{new_org}</b> and new repository is <b>{new_repo}</b>.\n'

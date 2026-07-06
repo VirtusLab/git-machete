@@ -78,9 +78,9 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             ['github', 'update-pr-descriptions', '--related'],
             """
             Checking for open GitHub PRs... OK
-            Description of PR #1 (branch1 -> root) has been updated
-            Description of PR #2 (branch2 -> branch1) has been updated
-            Description of PR #3 (branch3 -> branch2) has been updated
+            Updating description of PR #1 (branch1 -> root)... OK
+            Updating description of PR #2 (branch2 -> branch1)... OK
+            Updating description of PR #3 (branch3 -> branch2)... OK
             """
         )
 
@@ -122,15 +122,15 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             """)
         check_out('branch2')
         # `full` style ensures every PR in the stack (incl. the topmost) has an intro
-        # to add, so all three of the related PRs surface a "has been updated" line.
+        # to add, so all three of the related PRs surface an "Updating description of ..." line.
         set_git_config_key("machete.github.prDescriptionIntroStyle", "full")
 
         assert_success(
             ['github', 'update-pr-descriptions'],
             """
             Checking for open GitHub PRs... OK
-            Description of PR #1 (branch1 -> root) has been updated
-            Description of PR #2 (branch2 -> branch1) has been updated
+            Updating description of PR #1 (branch1 -> root)... OK
+            Updating description of PR #2 (branch2 -> branch1)... OK
             """
         )
 
@@ -223,7 +223,7 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             ['github', 'update-pr-descriptions', '--mine'],
             """
             Checking for open GitHub PRs... OK
-            Description of PR #17 (restrict_access -> allow-ownership-link) has been updated
+            Updating description of PR #17 (restrict_access -> allow-ownership-link)... OK
             """
         )
 
@@ -231,7 +231,7 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             ['github', 'update-pr-descriptions', '--by=other_user'],
             """
             Checking for open GitHub PRs... OK
-            Description of PR #12 (allow-ownership-link -> bugfix/feature) has been updated
+            Updating description of PR #12 (allow-ownership-link -> bugfix/feature)... OK
             """
         )
 
@@ -240,7 +240,7 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             ['github', 'update-pr-descriptions', '--related'],
             """
             Checking for open GitHub PRs... OK
-            Description of PR #18 (chore/redundant_checks -> restrict_access) has been updated
+            Updating description of PR #18 (chore/redundant_checks -> restrict_access)... OK
             """
         )
         set_git_config_key("machete.github.prDescriptionIntroStyle", "full")
@@ -248,9 +248,9 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             ['github', 'update-pr-descriptions', '--related'],
             """
             Checking for open GitHub PRs... OK
-            Description of PR #6 (bugfix/feature -> enhance/feature) has been updated
-            Description of PR #12 (allow-ownership-link -> bugfix/feature) has been updated
-            Description of PR #17 (restrict_access -> allow-ownership-link) has been updated
+            Updating description of PR #6 (bugfix/feature -> enhance/feature)... OK
+            Updating description of PR #12 (allow-ownership-link -> bugfix/feature)... OK
+            Updating description of PR #17 (restrict_access -> allow-ownership-link)... OK
             """
         )
 
@@ -258,8 +258,8 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             ['github', 'update-pr-descriptions', '--all'],
             """
             Checking for open GitHub PRs... OK
-            Description of PR #22 (testing/add_user -> bugfix/add_user) has been updated
-            Description of PR #24 (chore/comments -> testing/add_user) has been updated
+            Updating description of PR #22 (testing/add_user -> bugfix/add_user)... OK
+            Updating description of PR #24 (chore/comments -> testing/add_user)... OK
             """
         )
 

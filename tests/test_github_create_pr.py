@@ -241,8 +241,8 @@ class TestGitHubCreatePR(BaseTest):
             Adding foo, bar as reviewers to PR #6... OK
             Updating descriptions of other PRs...
             Checking for open GitHub PRs... OK
-            Description of PR #3 (ignore-trailing -> hotfix/add-trigger) has been updated
-            Description of PR #5 (chore/fields -> ignore-trailing) has been updated
+            Updating description of PR #3 (ignore-trailing -> hotfix/add-trigger)... OK
+            Updating description of PR #5 (chore/fields -> ignore-trailing)... OK
             """
         )
         pr5 = github_api_state.get_pull_by_number(5)

@@ -456,9 +456,9 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                     f'Branch <b>{current_branch}</b> is marked as `push=no`; aborting the restack.\n'
                     f'Did you want to just use `git machete {spec.git_machete_command} {subcommand}`?\n')
 
+            print_fmt(f'Temporarily marking {pr.display_text()} as draft... ', newline=False)
             converted_to_draft = self.code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=True)
-            if converted_to_draft:
-                print_fmt(f'{pr.display_text()} has been temporarily marked as draft')
+            print_fmt(green_ok() if converted_to_draft else green_ok() + ' (already a draft)')
 
             # Note that retarget should happen BEFORE push, see issue #1222
             self.retarget_pull_request(opt_branch=head, opt_ignore_if_missing=False,
@@ -494,8 +494,9 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             self._ensure_blank_separator()
 
             if converted_to_draft:
+                print_fmt(f'Marking {pr.display_text()} as ready for review again... ', newline=False)
                 self.code_hosting_client.set_draft_status_of_pull_request(pr.number, target_draft_status=False)
-                print_fmt(f'{pr.display_text()} has been marked as ready for review again')
+                print_fmt(green_ok())
 
         else:
             if s == SyncToRemoteStatus.BEHIND_REMOTE:
@@ -554,9 +555,10 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         pr_with_original_base = pr.copy()
         if pr.base != new_base:
-            self.code_hosting_client.set_base_of_pull_request(pr.number, base=new_base)
             print_fmt(
-                f'{spec.base_branch_name.capitalize()} branch of {pr.display_text()} has been switched to <b>{new_base}</b>')
+                f'Switching {spec.base_branch_name} branch of {pr.display_text()} to <b>{new_base}</b>... ', newline=False)
+            self.code_hosting_client.set_base_of_pull_request(pr.number, base=new_base)
+            print_fmt(green_ok())
             pr.base = new_base
         else:
             print_fmt(
@@ -564,8 +566,9 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         new_description = self._get_updated_pull_request_description(pr)
         if pr.description != new_description:
+            print_fmt(f'Updating description of {pr.display_text()}... ', newline=False)
             self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
-            print_fmt(f'Description of {pr.display_text()} has been updated')
+            print_fmt(green_ok())
 
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         anno = self._state.get_annotation(head)
@@ -582,9 +585,10 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             for pr in applicable_prs:
                 new_description = self._get_updated_pull_request_description(pr)
                 if (pr.description or '').rstrip() != new_description.rstrip():
+                    print_fmt(f'Updating description of {pr.display_text()} (<b>{pr.head} <rarrow/> {pr.base}</b>)... ', newline=False)
                     self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
                     pr.description = new_description
-                    print_fmt(f'Description of {pr.display_text()} (<b>{pr.head} <rarrow/> {pr.base}</b>) has been updated')
+                    print_fmt(green_ok())
 
     def __derive_code_hosting_domain(self) -> str:
         spec = self.code_hosting_spec
@@ -823,9 +827,10 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         for pr in applicable_prs:
             new_description = self._get_updated_pull_request_description(pr)
             if pr.description != new_description:
+                print_fmt(f'Updating description of {pr.display_text()} (<b>{pr.head} <rarrow/> {pr.base}</b>)... ', newline=False)
                 self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
                 pr.description = new_description
-                print_fmt(f'Description of {pr.display_text()} (<b>{pr.head} <rarrow/> {pr.base}</b>) has been updated')
+                print_fmt(green_ok())
 
     def checkout_pull_requests(
         self,
