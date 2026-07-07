@@ -8,7 +8,7 @@ from typing import List
 def resolve_includes(rst_content: str, docs_source_dir: str) -> str:
     matches = re.findall(r'(.*)\.\. include:: (.*)\n', rst_content)
     # example match:
-    #     .. include:: status_extraSpaceBeforeBranchName.rst
+    #     .. include:: status.extraSpaceBeforeBranchName.rst
     for include_indent, included_file in matches:
         with open(f'{docs_source_dir}/{included_file}', 'r') as handle:
             include_text = handle.read()

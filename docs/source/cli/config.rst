@@ -9,28 +9,28 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 **Git config keys**
 
 ``machete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}``
-  .. include:: git-config-keys/github_access.rst
+  .. include:: git-config-keys/github.access.rst
 
 ``machete.github.annotateWithUrls``
-  .. include:: git-config-keys/github_annotateWithUrls.rst
+  .. include:: git-config-keys/github.annotateWithUrls.rst
 
 ``machete.github.forceDescriptionFromCommitMessage``
-  .. include:: git-config-keys/github_forceDescriptionFromCommitMessage.rst
+  .. include:: git-config-keys/github.forceDescriptionFromCommitMessage.rst
 
 ``machete.github.prDescriptionIntroStyle``
-  .. include:: git-config-keys/github_prDescriptionIntroStyle.rst
+  .. include:: git-config-keys/github.prDescriptionIntroStyle.rst
 
 ``machete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}``
-  .. include:: git-config-keys/gitlab_access.rst
+  .. include:: git-config-keys/gitlab.access.rst
 
 ``machete.gitlab.annotateWithUrls``
-  .. include:: git-config-keys/gitlab_annotateWithUrls.rst
+  .. include:: git-config-keys/gitlab.annotateWithUrls.rst
 
 ``machete.gitlab.forceDescriptionFromCommitMessage``
-  .. include:: git-config-keys/gitlab_forceDescriptionFromCommitMessage.rst
+  .. include:: git-config-keys/gitlab.forceDescriptionFromCommitMessage.rst
 
 ``machete.gitlab.mrDescriptionIntroStyle``
-  .. include:: git-config-keys/gitlab_mrDescriptionIntroStyle.rst
+  .. include:: git-config-keys/gitlab.mrDescriptionIntroStyle.rst
 
 ``machete.overrideForkPoint.<branch>.to``
     Executing ``git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]`` sets up a fork point override for ``<branch>``.
@@ -44,18 +44,18 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
     .. include:: git-config-keys/squashMergeDetection.rst
 
 ``machete.status.extraSpaceBeforeBranchName``
-    .. include:: git-config-keys/status_extraSpaceBeforeBranchName.rst
+    .. include:: git-config-keys/status.extraSpaceBeforeBranchName.rst
 
-    .. include:: git-config-keys/status_extraSpaceBeforeBranchName_example.rst
+    .. include:: git-config-keys/status.extraSpaceBeforeBranchName.example.rst
 
 ``machete.traverse.fetch.<remote>``
-    .. include:: git-config-keys/traverse_fetch_remote.rst
+    .. include:: git-config-keys/traverse.fetch.remote.rst
 
 ``machete.traverse.push``
-    .. include:: git-config-keys/traverse_push.rst
+    .. include:: git-config-keys/traverse.push.rst
 
 ``machete.traverse.whenBranchNotCheckedOutInAnyWorktree``
-    .. include:: git-config-keys/traverse_whenBranchNotCheckedOutInAnyWorktree.rst
+    .. include:: git-config-keys/traverse.whenBranchNotCheckedOutInAnyWorktree.rst
 
 ``machete.worktree.useTopLevelMacheteFile``
     The default value of this key is ``true``, which means that the path to branch layout file will be ``.git/machete``

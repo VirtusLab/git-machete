@@ -159,13 +159,13 @@ This behavior can be customized using ``machete.traverse.whenBranchNotCheckedOut
     .. include:: git-config-keys/squashMergeDetection.rst
 
 ``machete.traverse.fetch.<remote>``
-    .. include:: git-config-keys/traverse_fetch_remote.rst
+    .. include:: git-config-keys/traverse.fetch.remote.rst
 
 ``machete.traverse.push``
-    .. include:: git-config-keys/traverse_push.rst
+    .. include:: git-config-keys/traverse.push.rst
 
 ``machete.traverse.whenBranchNotCheckedOutInAnyWorktree``
-    .. include:: git-config-keys/traverse_whenBranchNotCheckedOutInAnyWorktree.rst
+    .. include:: git-config-keys/traverse.whenBranchNotCheckedOutInAnyWorktree.rst
 
 **Environment variables**
 

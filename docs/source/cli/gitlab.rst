@@ -157,16 +157,16 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 **Git config keys**
 
 ``machete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}`` (all subcommands)
-  .. include:: git-config-keys/gitlab_access.rst
+  .. include:: git-config-keys/gitlab.access.rst
 
 ``machete.gitlab.annotateWithUrls`` (all subcommands)
-  .. include:: git-config-keys/gitlab_annotateWithUrls.rst
+  .. include:: git-config-keys/gitlab.annotateWithUrls.rst
 
 ``machete.gitlab.forceDescriptionFromCommitMessage`` (``create-mr`` only)
-  .. include:: git-config-keys/gitlab_forceDescriptionFromCommitMessage.rst
+  .. include:: git-config-keys/gitlab.forceDescriptionFromCommitMessage.rst
 
 ``machete.gitlab.mrDescriptionIntroStyle`` (``create-mr``, ``restack-mr`` and ``retarget-mr``)
-  .. include:: git-config-keys/gitlab_mrDescriptionIntroStyle.rst
+  .. include:: git-config-keys/gitlab.mrDescriptionIntroStyle.rst
 
 **Environment variables (all subcommands)**
 
