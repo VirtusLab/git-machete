@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.44.2
+
 ## New in git-machete 3.44.1
 
 - fixed: `git machete help config` (and `help status`) no longer renders stray underlines past the `machete.status.extraSpaceBeforeBranchName` section
