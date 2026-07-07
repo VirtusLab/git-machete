@@ -30,7 +30,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .TH "GIT-MACHETE" "1" "" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.44.2
+git-machete \- git-machete 3.45.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -405,6 +405,25 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .UNINDENT
 .UNINDENT
 .TP
+.B \fBmachete.github.retrieveOnlyMyPullRequests\fP
+When set to \fBtrue\fP, commands that need to list open pull requests in the repository
+(such as \fBgithub anno\-prs\fP, \fBgithub checkout\-prs\fP and \fBtraverse\fP with GitHub integration)
+will only download open PRs authored by the current user (as determined from the GitHub API token),
+instead of all open PRs in the repository.
+.sp
+This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
+at the cost of not being able to discover PRs opened by other users when traversing PR chains
+(for example, when checking out an entire stack that includes PRs from multiple authors).
+.sp
+A valid GitHub API token is required when this key is set.
+.sp
+The \fB\-\-all\fP flag to \fBgithub checkout\-prs\fP and \fBgithub update\-pr\-descriptions\fP
+still downloads all open PRs in the repository, regardless of this setting.
+.sp
+The \fB\-\-by=<login>\fP flag to \fBgithub checkout\-prs\fP and \fBgithub update\-pr\-descriptions\fP
+downloads open PRs authored by the given user directly (rather than filtering the current user\(aqs PRs),
+so it keeps working for any author even when this key is set.
+.TP
 .B \fBmachete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}\fP
 .INDENT 7.0
 .TP
@@ -488,6 +507,25 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 \fBnone\fP                \-\-\- prepend no intro to the MR description at all
 .UNINDENT
 .UNINDENT
+.TP
+.B \fBmachete.gitlab.retrieveOnlyMyMergeRequests\fP
+When set to \fBtrue\fP, commands that need to list open merge requests in the project
+(such as \fBgitlab anno\-mrs\fP, \fBgitlab checkout\-mrs\fP and \fBtraverse\fP with GitLab integration)
+will only download open MRs authored by the current user (as determined from the GitLab API token),
+instead of all open MRs in the project.
+.sp
+This can speed up operations considerably in projects with hundreds or thousands of open MRs,
+at the cost of not being able to discover MRs opened by other users when traversing MR chains
+(for example, when checking out an entire stack that includes MRs from multiple authors).
+.sp
+A valid GitLab API token is required when this key is set.
+.sp
+The \fB\-\-all\fP flag to \fBgitlab checkout\-mrs\fP and \fBgitlab update\-mr\-descriptions\fP
+still downloads all open MRs in the project, regardless of this setting.
+.sp
+The \fB\-\-by=<username>\fP flag to \fBgitlab checkout\-mrs\fP and \fBgitlab update\-mr\-descriptions\fP
+downloads open MRs authored by the given user directly (rather than filtering the current user\(aqs MRs),
+so it keeps working for any author even when this key is set.
 .TP
 .B \fBmachete.overrideForkPoint.<branch>.to\fP
 Executing \fBgit machete fork\-point \-\-override\-to[\-parent|\-inferred|=<revision>] [<branch>]\fP sets up a fork point override for \fB<branch>\fP\&.
@@ -1294,6 +1332,25 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 \fBnone\fP                \-\-\- prepend no intro to the PR description at all
 .UNINDENT
 .UNINDENT
+.TP
+.B \fBmachete.github.retrieveOnlyMyPullRequests\fP (\fBanno\-prs\fP, \fBcheckout\-prs\fP and \fBupdate\-pr\-descriptions\fP)
+When set to \fBtrue\fP, commands that need to list open pull requests in the repository
+(such as \fBgithub anno\-prs\fP, \fBgithub checkout\-prs\fP and \fBtraverse\fP with GitHub integration)
+will only download open PRs authored by the current user (as determined from the GitHub API token),
+instead of all open PRs in the repository.
+.sp
+This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
+at the cost of not being able to discover PRs opened by other users when traversing PR chains
+(for example, when checking out an entire stack that includes PRs from multiple authors).
+.sp
+A valid GitHub API token is required when this key is set.
+.sp
+The \fB\-\-all\fP flag to \fBgithub checkout\-prs\fP and \fBgithub update\-pr\-descriptions\fP
+still downloads all open PRs in the repository, regardless of this setting.
+.sp
+The \fB\-\-by=<login>\fP flag to \fBgithub checkout\-prs\fP and \fBgithub update\-pr\-descriptions\fP
+downloads open PRs authored by the given user directly (rather than filtering the current user\(aqs PRs),
+so it keeps working for any author even when this key is set.
 .UNINDENT
 .sp
 \fBEnvironment variables (all subcommands)\fP
@@ -1594,6 +1651,25 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 \fBnone\fP                \-\-\- prepend no intro to the MR description at all
 .UNINDENT
 .UNINDENT
+.TP
+.B \fBmachete.gitlab.retrieveOnlyMyMergeRequests\fP (\fBanno\-mrs\fP, \fBcheckout\-mrs\fP and \fBupdate\-mr\-descriptions\fP)
+When set to \fBtrue\fP, commands that need to list open merge requests in the project
+(such as \fBgitlab anno\-mrs\fP, \fBgitlab checkout\-mrs\fP and \fBtraverse\fP with GitLab integration)
+will only download open MRs authored by the current user (as determined from the GitLab API token),
+instead of all open MRs in the project.
+.sp
+This can speed up operations considerably in projects with hundreds or thousands of open MRs,
+at the cost of not being able to discover MRs opened by other users when traversing MR chains
+(for example, when checking out an entire stack that includes MRs from multiple authors).
+.sp
+A valid GitLab API token is required when this key is set.
+.sp
+The \fB\-\-all\fP flag to \fBgitlab checkout\-mrs\fP and \fBgitlab update\-mr\-descriptions\fP
+still downloads all open MRs in the project, regardless of this setting.
+.sp
+The \fB\-\-by=<username>\fP flag to \fBgitlab checkout\-mrs\fP and \fBgitlab update\-mr\-descriptions\fP
+downloads open MRs authored by the given user directly (rather than filtering the current user\(aqs MRs),
+so it keeps working for any author even when this key is set.
 .UNINDENT
 .sp
 \fBEnvironment variables (all subcommands)\fP

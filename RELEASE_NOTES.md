@@ -1,6 +1,10 @@
 # Release notes
 
-## New in git-machete 3.44.2
+## New in git-machete 3.45.0
+
+- added: `machete.github.retrieveOnlyMyPullRequests` and `machete.gitlab.retrieveOnlyMyMergeRequests` git config keys
+  that make PR/MR-listing commands download only the current user's open PRs/MRs instead of all of them,
+  which can speed up operations considerably in repositories/projects with many open PRs/MRs
 
 - fixed: `git machete discover` no longer produces a different branch tree depending on which worktree it is run from;
   the fresh-branch recency ranking now aggregates HEAD reflogs across all worktrees rather than only the current one (reported by @jasonoura, contributed by @earfman)

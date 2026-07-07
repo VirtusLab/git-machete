@@ -422,6 +422,112 @@ class TestGitHubCheckoutPRs(BaseTest):
             """
         )
 
+    @staticmethod
+    def github_api_state_for_test_checkout_prs_retrieve_only_mine() -> MockGitHubAPIState:
+        return MockGitHubAPIState.with_prs(
+            mock_pr_json(head='feature/mine', base='develop', number=1, user='github_user'),
+            mock_pr_json(head='feature/theirs', base='develop', number=2, user='some_other_user'),
+        )
+
+    def __setup_repo_for_checkout_prs_retrieve_only_mine(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'urllib.request.urlopen',
+                          mock_urlopen(self.github_api_state_for_test_checkout_prs_retrieve_only_mine()))
+        create_repo_with_remote()
+        new_branch("develop")
+        commit("develop commit")
+        push()
+        new_branch("feature/mine")
+        commit("mine commit")
+        push()
+        check_out("develop")
+        new_branch("feature/theirs")
+        commit("theirs commit")
+        push()
+        check_out("develop")
+        rewrite_branch_layout_file("develop")
+        set_git_config_key('machete.github.retrieveOnlyMyPullRequests', 'true')
+
+    def test_github_checkout_prs_retrieve_only_mine_all(self, mocker: MockerFixture) -> None:
+        # `--all` overrides `retrieveOnlyMyPullRequests`: every open PR is downloaded and checked out,
+        # including feature/theirs (PR #2) which belongs to another user.
+        self.__setup_repo_for_checkout_prs_retrieve_only_mine(mocker)
+
+        assert_success(
+            ['github', 'checkout-prs', '--all'],
+            """
+            Checking for open GitHub PRs... OK
+            PR #1 checked out at local branch feature/mine
+            PR #2 checked out at local branch feature/theirs
+            """
+        )
+        assert_success(
+            ["status"],
+            """
+            develop *
+            |
+            o-feature/mine  PR #1
+            |
+            o-feature/theirs  PR #2 (some_other_user) rebase=no push=no
+            """
+        )
+
+    def test_github_checkout_prs_retrieve_only_mine_by_other_user(self, mocker: MockerFixture) -> None:
+        # `--by=<other-user>` asks the API for that user's PRs directly, so feature/theirs (PR #2) is still
+        # reachable even though `retrieveOnlyMyPullRequests` is set and PR #2 is not authored by the current user.
+        self.__setup_repo_for_checkout_prs_retrieve_only_mine(mocker)
+
+        # The first fetch is some_other_user's PRs (the `--by` selection);
+        # the second is the chain reconstruction walking upstream over the current user's PRs.
+        assert_success(
+            ['github', 'checkout-prs', '--by', 'some_other_user'],
+            """
+            Checking for open GitHub PRs by some_other_user... OK
+            Checking for open GitHub PRs by github_user... OK
+            PR #2 checked out at local branch feature/theirs
+            """
+        )
+        assert_success(
+            ["status"],
+            """
+            develop
+            |
+            o-feature/theirs *  PR #2 (some_other_user) rebase=no push=no
+            """
+        )
+
+    def test_github_checkout_prs_retrieve_only_mine_regular(self, mocker: MockerFixture) -> None:
+        self.__setup_repo_for_checkout_prs_retrieve_only_mine(mocker)
+
+        # `--mine` downloads only the current user's PRs, so only feature/mine (PR #1) is checked out.
+        assert_success(
+            ['github', 'checkout-prs', '--mine'],
+            """
+            Checking for open GitHub PRs by github_user... OK
+            PR #1 checked out at local branch feature/mine
+            """
+        )
+        # Checking out another user's PR by explicit number still works (it falls back to a by-number fetch)
+        # even though that PR is absent from the current user's PR list.
+        assert_success(
+            ['github', 'checkout-prs', '2'],
+            """
+            Checking for open GitHub PRs by github_user... OK
+            PR #2 checked out at local branch feature/theirs
+            """
+        )
+        assert_success(
+            ["status"],
+            """
+            develop
+            |
+            o-feature/mine  PR #1
+            |
+            o-feature/theirs *  PR #2 (some_other_user) rebase=no push=no
+            """
+        )
+
     def test_github_checkout_prs_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         create_repo_with_remote()
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)

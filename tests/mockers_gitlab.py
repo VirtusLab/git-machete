@@ -168,6 +168,9 @@ def __mock_urlopen_impl(gitlab_api_state: MockGitLabAPIState, request: Request) 
                 return MockAPIResponse(HTTPStatus.OK, mrs)
             else:
                 mrs = [mr for mr in gitlab_api_state.get_open_mrs() if hosted_by_requested_project(mr)]
+                author_username: Optional[str] = query_params.get('author_username')
+                if author_username:
+                    mrs = [mr for mr in mrs if mr['author']['username'] == author_username]
                 page_str = query_params.get('page')
                 page = int(page_str) if page_str else 1
                 per_page_str = query_params.get('per_page')

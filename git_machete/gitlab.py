@@ -292,13 +292,19 @@ class GitLabApi(CodeHostingApi):
         self.__fire_gitlab_api_project_request(method='PUT', path_suffix=f'/merge_requests/{number}', request_body=request_body)
         return True
 
-    def get_open_pull_requests_by_head(self, head: LocalBranchShortName) -> List[PullRequest]:
-        mrs = self.__fire_gitlab_api_project_request(method='GET', path_suffix=f'/merge_requests?state=opened&source_branch={head}')
-        return [self.__get_merge_request_from_json(mr) for mr in mrs]
-
-    def get_open_pull_requests(self) -> List[PullRequest]:
+    def get_all_open_pull_requests(self) -> List[PullRequest]:
         mrs = self.__fire_gitlab_api_project_request(method='GET',
                                                      path_suffix=f'/merge_requests?state=opened&per_page={self.MAX_PULLS_PER_PAGE_COUNT}')
+        return [self.__get_merge_request_from_json(mr) for mr in mrs]
+
+    def get_open_pull_requests_by_author(self, author: str) -> List[PullRequest]:
+        path_suffix = (f'/merge_requests?state=opened&per_page={self.MAX_PULLS_PER_PAGE_COUNT}'
+                       f'&author_username={urllib.parse.quote(author, safe="")}')
+        mrs = self.__fire_gitlab_api_project_request(method='GET', path_suffix=path_suffix)
+        return [self.__get_merge_request_from_json(mr) for mr in mrs]
+
+    def get_open_pull_requests_by_head(self, head: LocalBranchShortName) -> List[PullRequest]:
+        mrs = self.__fire_gitlab_api_project_request(method='GET', path_suffix=f'/merge_requests?state=opened&source_branch={head}')
         return [self.__get_merge_request_from_json(mr) for mr in mrs]
 
     def get_current_user_login(self) -> Optional[str]:
@@ -368,5 +374,6 @@ GITLAB_API_SPEC = CodeHostingSpec(
         annotate_with_urls='machete.gitlab.annotateWithUrls',
         force_description_from_commit_message='machete.gitlab.forceDescriptionFromCommitMessage',
         pr_description_intro_style='machete.gitlab.mrDescriptionIntroStyle',
+        retrieve_only_my_pull_requests='machete.gitlab.retrieveOnlyMyMergeRequests',
     )
 )

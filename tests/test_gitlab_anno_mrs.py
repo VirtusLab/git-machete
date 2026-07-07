@@ -263,3 +263,59 @@ class TestGitLabAnnoMRs(BaseTest):
             machete.gitlab.domain, machete.gitlab.namespace, machete.gitlab.project, machete.gitlab.remote
             """  # noqa: E501
         )
+
+    @staticmethod
+    def gitlab_api_state_for_test_anno_mrs_retrieve_only_mine() -> MockGitLabAPIState:
+        return MockGitLabAPIState.with_mrs(
+            mock_mr_json(number=7, user='some_other_user', head='allow-ownership-link', base='develop'),
+            mock_mr_json(number=31, user='gitlab_user', head='call-ws', base='develop'),
+            mock_mr_json(number=37, user='gitlab_user', head='develop', base='master')
+        )
+
+    def test_gitlab_anno_mrs_retrieve_only_mine(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.gitlab_api_state_for_test_anno_mrs_retrieve_only_mine()))
+
+        create_repo_with_remote()
+        new_branch("master")
+        commit("master commit")
+        push()
+        new_branch("develop")
+        commit("develop commit")
+        push()
+        new_branch("allow-ownership-link")
+        commit("Allow ownership links")
+        push()
+        check_out("develop")
+        new_branch("call-ws")
+        commit("Call web service")
+        push()
+        check_out("master")
+        set_git_config_key('machete.gitlab.remote', 'origin')
+        set_git_config_key('machete.gitlab.namespace', 'tester')
+        set_git_config_key('machete.gitlab.project', 'repo_sandbox')
+        set_git_config_key('machete.gitlab.retrieveOnlyMyMergeRequests', 'true')
+        body: str = \
+            """
+            master
+                develop
+                    allow-ownership-link
+                    call-ws
+            """
+        rewrite_branch_layout_file(body)
+
+        # With `retrieveOnlyMyMergeRequests` set, only MRs authored by the current user (gitlab_user) are downloaded and annotated;
+        # allow-ownership-link (MR !7 by some_other_user) is deliberately left unannotated.
+        launch_command('gitlab', 'anno-mrs')
+        assert_success(
+            ["status"],
+            """
+            master *
+            |
+            o-develop  MR !37
+              |
+              o-allow-ownership-link
+              |
+              o-call-ws  MR !31
+            """
+        )

@@ -204,7 +204,9 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                 return MockAPIResponse(HTTPStatus.OK, pull)
         elif parsed_url.path in ("/api/graphql", "/graphql"):  # /api/graphql for Enterprise domains
             query_or_mutation = json_data['query']
-            if 'query {' in query_or_mutation:
+            if 'search(' in query_or_mutation:
+                return search_pull_requests_by_author()
+            elif 'query {' in query_or_mutation:
                 match = re.search(r'pullRequest\(number: ([0-9]+)\)', query_or_mutation)
                 assert match is not None
                 pr_number = int(match.group(1))
@@ -254,6 +256,33 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                 pull[key]['ref'] = value
             else:
                 pull[key] = value
+
+    def search_pull_requests_by_author() -> "MockAPIResponse":
+        query = json_data['query']
+        author_match = re.search(r'author:(\S+) repo:', query)
+        assert author_match is not None
+        author = author_match.group(1)
+        matching = [pull for pull in github_api_state.get_open_pulls() if pull['user']['login'] == author]
+        # Deliberately paginate one PR at a time (ignoring the requested `first:`) so that even a couple of PRs
+        # exercise the cursor-following loop in `GitHubApi.get_open_pull_requests_by_author`.
+        after_match = re.search(r'after: "([0-9]+)"', query)
+        start = int(after_match.group(1)) if after_match else 0
+        end = start + 1
+        edges = [{'node': {
+            'number': int(pull['number']),
+            'title': pull['title'],
+            'body': pull['body'],
+            'state': str(pull['state']).upper(),
+            'url': pull['html_url'],
+            'author': {'login': pull['user']['login']},
+            'baseRefName': pull['base']['ref'],
+            'headRefName': pull['head']['ref'],
+            'headRepository': ({'databaseId': pull['head']['repo']['id']} if pull['head']['repo'] is not None else None),
+        }} for pull in matching[start:end]]
+        return MockAPIResponse(HTTPStatus.OK, {'data': {'search': {
+            'edges': edges,
+            'pageInfo': {'endCursor': str(end), 'hasNextPage': end < len(matching)}
+        }}})
 
     def redirect_307(location: str) -> HTTPError:
         return HTTPError(parsed_url.hostname, 307, 'Temporary redirect', {'Location': location}, None)  # type: ignore[arg-type]

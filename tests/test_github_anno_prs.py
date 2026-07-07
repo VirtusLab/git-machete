@@ -5,7 +5,8 @@ from tests.cli_runner import assert_failure, assert_success, launch_command, rew
 from tests.git_repository import (add_remote, amend_commit, check_out, commit, create_repo, create_repo_with_remote, delete_branch,
                                   new_branch, push, remove_remote, reset_to, set_git_config_key, wait_to_bump_commit_timestamp)
 from tests.mockers_code_hosting import mock_from_url
-from tests.mockers_github import MockGitHubAPIState, mock_github_token_for_domain_fake, mock_pr_json, mock_urlopen
+from tests.mockers_github import (MockGitHubAPIState, mock_github_token_for_domain_fake, mock_github_token_for_domain_none, mock_pr_json,
+                                  mock_urlopen)
 
 
 class TestGitHubAnnoPRs(BaseTest):
@@ -265,5 +266,84 @@ class TestGitHubAnnoPRs(BaseTest):
             Multiple non-origin remotes correspond to GitHub in this repository: origin-1, origin-2 -> aborting.
             You can select the repository by providing some or all of git config keys:
             machete.github.domain, machete.github.organization, machete.github.repository, machete.github.remote
+            """
+        )
+
+    @staticmethod
+    def github_api_state_for_test_anno_prs_retrieve_only_mine() -> MockGitHubAPIState:
+        return MockGitHubAPIState.with_prs(
+            mock_pr_json(number=7, user='some_other_user', head='allow-ownership-link', base='develop'),
+            mock_pr_json(number=31, user='github_user', head='call-ws', base='develop'),
+            mock_pr_json(number=37, user='github_user', head='develop', base='master')
+        )
+
+    def __setup_repo_for_retrieve_only_mine(self) -> None:
+        create_repo_with_remote()
+        new_branch("master")
+        commit("master commit")
+        push()
+        new_branch("develop")
+        commit("develop commit")
+        push()
+        new_branch("allow-ownership-link")
+        commit("Allow ownership links")
+        push()
+        check_out("develop")
+        new_branch("call-ws")
+        commit("Call web service")
+        push()
+        check_out("master")
+        set_git_config_key('machete.github.remote', 'origin')
+        set_git_config_key('machete.github.organization', 'tester')
+        set_git_config_key('machete.github.repository', 'repo_sandbox')
+        body: str = \
+            """
+            master
+                develop
+                    allow-ownership-link
+                    call-ws
+            """
+        rewrite_branch_layout_file(body)
+
+    def test_github_anno_prs_retrieve_only_mine(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_anno_prs_retrieve_only_mine()))
+
+        self.__setup_repo_for_retrieve_only_mine()
+        set_git_config_key('machete.github.retrieveOnlyMyPullRequests', 'true')
+
+        # With `retrieveOnlyMyPullRequests` set, only PRs authored by the current user (github_user) are downloaded and annotated;
+        # allow-ownership-link (PR #7 by some_other_user) is deliberately left unannotated.
+        launch_command('github', 'anno-prs')
+        assert_success(
+            ["status"],
+            """
+            master *
+            |
+            o-develop  PR #37
+              |
+              o-allow-ownership-link
+              |
+              o-call-ws  PR #31
+            """
+        )
+
+    def test_github_anno_prs_retrieve_only_mine_no_current_user(self, mocker: MockerFixture) -> None:
+        # No token -> the current user cannot be determined, so the fetch fails before any HTTP request is made
+        # (hence `urllib.request.urlopen` is deliberately left unpatched).
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+
+        self.__setup_repo_for_retrieve_only_mine()
+        set_git_config_key('machete.github.retrieveOnlyMyPullRequests', 'true')
+
+        assert_failure(
+            ["github", "anno-prs"],
+            """
+            machete.github.retrieveOnlyMyPullRequests git config key is set, but the current GitHub user could not be determined.
+            Provide a GitHub API token via one of the:
+                1. GITHUB_TOKEN environment variable
+                2. Content of the ~/.github-token file
+                3. Current auth token from the gh GitHub CLI
+                4. Current auth token from the hub GitHub CLI
             """
         )

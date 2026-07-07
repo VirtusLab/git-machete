@@ -160,6 +160,7 @@ class CodeHostingGitConfigKeys(NamedTuple):
     annotate_with_urls: str
     force_description_from_commit_message: str
     pr_description_intro_style: str
+    retrieve_only_my_pull_requests: str
 
     def for_locating_repo_message(self) -> str:
         return f"`{self.domain}`, `{self.organization}`, `{self.repository}`, `{self.remote}`"
@@ -244,11 +245,15 @@ class CodeHostingApi(metaclass=ABCMeta):  # pragma: no cover
         Returns false if PR already had the desired draft status, and hence draft status has NOT been toggled."""
 
     @abstractmethod
-    def get_open_pull_requests_by_head(self, head: LocalBranchShortName) -> List[PullRequest]:
+    def get_all_open_pull_requests(self) -> List[PullRequest]:
         pass
 
     @abstractmethod
-    def get_open_pull_requests(self) -> List[PullRequest]:
+    def get_open_pull_requests_by_author(self, author: str) -> List[PullRequest]:
+        pass
+
+    @abstractmethod
+    def get_open_pull_requests_by_head(self, head: LocalBranchShortName) -> List[PullRequest]:
         pass
 
     @abstractmethod

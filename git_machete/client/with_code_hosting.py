@@ -28,6 +28,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         self.__code_hosting_spec: CodeHostingSpec = spec
         self.__code_hosting_client: Optional[CodeHostingApi] = None
         self.__all_open_prs: Optional[List[PullRequest]] = None
+        self.__open_prs_by_author: Dict[str, List[PullRequest]] = {}
 
     @property
     def code_hosting_spec(self) -> CodeHostingSpec:
@@ -43,14 +44,45 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
     def code_hosting_client(self, value: CodeHostingApi) -> None:
         self.__code_hosting_client = value
 
+    def _get_relevant_open_prs(self) -> List[PullRequest]:
+        # Honor the `retrieveOnlyMy{PullRequests,MergeRequests}` git config key and narrow the download to the current user's PRs.
+        # Callers that need every open PR regardless of this key (e.g. the `--all` flag) call `_get_all_open_prs` directly instead;
+        # once that has happened, reuse the already-downloaded full list here too (e.g. for reconstructing PR chains)
+        # rather than issuing a second, narrower query for the current user's PRs.
+        if self.__all_open_prs is not None:
+            return self.__all_open_prs
+        keys = self.code_hosting_spec.git_config_keys
+        if self._config.code_hosting_retrieve_only_my_pull_requests(keys):
+            return self._get_open_prs_of_current_user()
+        return self._get_all_open_prs()
+
     def _get_all_open_prs(self) -> List[PullRequest]:
         if self.__all_open_prs is None:
             spec = self.code_hosting_spec
             print_fmt(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ',
                       newline=False)
-            self.__all_open_prs = self.code_hosting_client.get_open_pull_requests()
+            self.__all_open_prs = self.code_hosting_client.get_all_open_pull_requests()
             print_fmt(green_ok())
         return self.__all_open_prs
+
+    def _get_open_prs_of_current_user(self) -> List[PullRequest]:
+        spec = self.code_hosting_spec
+        keys = spec.git_config_keys
+        author = self.code_hosting_client.get_current_user_login()
+        if author is None:
+            raise MacheteException(
+                f'`{keys.retrieve_only_my_pull_requests}` git config key is set, '
+                f'but the current {spec.display_name} user could not be determined.\n'
+                f'Provide a {spec.display_name} API token via one of the:{spec.token_providers_message}')
+        return self._get_open_prs_by_author(author)
+
+    def _get_open_prs_by_author(self, author: str) -> List[PullRequest]:
+        if author not in self.__open_prs_by_author:
+            spec = self.code_hosting_spec
+            print_fmt(f'Checking for open {spec.display_name} {spec.pr_short_name}s by {author}... ', newline=False)
+            self.__open_prs_by_author[author] = self.code_hosting_client.get_open_pull_requests_by_author(author)
+            print_fmt(green_ok())
+        return self.__open_prs_by_author[author]
 
     def _pull_request_annotation(self, pr: PullRequest, current_user: Optional[str], *, include_url: bool = False) -> str:
         anno = pr.display_text(fmt=False)
@@ -228,7 +260,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         self._init_code_hosting_client()
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         debug(f'Current {self.code_hosting_spec.display_name} user is <b>{current_user or "<none>"}</b>')
-        all_open_prs = self._get_all_open_prs()
+        all_open_prs = self._get_relevant_open_prs()
         self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user, include_urls=include_urls, verbose=True)
 
     def create_pull_request(
@@ -962,7 +994,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         def reverse_pr_dfs(pr: PullRequest, depth: int) -> Iterator[Tuple[PullRequest, int]]:
             visited_head_branches.add(pr.head)
-            down_prs = filter(lambda x: x.base == pr.head, self._get_all_open_prs())
+            down_prs = filter(lambda x: x.base == pr.head, self._get_relevant_open_prs())
             for down_pr in sorted(down_prs, key=lambda x: x.number):
                 if down_pr.head not in visited_head_branches:
                     yield (down_pr, depth + 1)
@@ -985,7 +1017,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 raise MacheteException(f"There is a cycle between {spec.display_name} {spec.pr_short_name}s: " +
                                        " -> ".join(visited_head_branches + [pr_base]))
             visited_head_branches += [pr_base]
-            pr = find_or_none(lambda x: x.head == pr_base, self._get_all_open_prs())
+            pr = find_or_none(lambda x: x.head == pr_base, self._get_relevant_open_prs())
             path = (path + [pr]) if pr else path
             pr_base = pr.base if pr else None
         return path
@@ -1000,12 +1032,12 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
     ) -> List[PullRequest]:
         result: List[PullRequest] = []
         spec = self.code_hosting_spec
-        all_open_prs = self._get_all_open_prs()
         repo_pretty = (
             f"{spec.repository_name} <b>{self.code_hosting_client.organization}</b>/<b>{self.code_hosting_client.repository}</b>")
         if pr_numbers:
+            relevant_open_prs = self._get_relevant_open_prs()
             for pr_number in pr_numbers:
-                pr: Optional[PullRequest] = find_or_none(lambda x: x.number == pr_number, all_open_prs)
+                pr: Optional[PullRequest] = find_or_none(lambda x: x.number == pr_number, relevant_open_prs)
                 if pr:
                     result.append(pr)
                 else:
@@ -1018,12 +1050,21 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                             f"{spec.pr_short_name} {spec.pr_ordinal_char}<b>{pr_number}</b> is not found in {repo_pretty}")
             return result
         if all:
+            # The `--all` flag deliberately overrides `retrieveOnlyMy{PullRequests,MergeRequests}` and downloads every open PR.
+            all_open_prs = self._get_all_open_prs()
             if not all_open_prs:
                 warn(f"currently there are no {spec.pr_full_name}s opened in {repo_pretty}")
                 return []
             return all_open_prs
         elif by:
-            result = [pr for pr in all_open_prs if pr.user == by]
+            keys = spec.git_config_keys
+            if self._config.code_hosting_retrieve_only_my_pull_requests(keys):
+                # With this key set we avoid downloading every open PR just to filter locally;
+                # ask the API for this author's PRs directly. `by` may be a user other than the current one
+                # (e.g. `--by=<someone-else>`), which is intentionally supported here.
+                result = self._get_open_prs_by_author(by)
+            else:
+                result = [pr for pr in self._get_all_open_prs() if pr.user == by]
             if not result:
                 warn(f"user <b>{by}</b> has no open {spec.pr_full_name} in {repo_pretty}")
                 return []
