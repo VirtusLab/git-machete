@@ -402,7 +402,7 @@ long_docs: Dict[str, str] = {
               * whether `traverse` suggests to slide out the branch.
 
            `machete.status.extraSpaceBeforeBranchName`
-              To make it easier to select branch name from the `status` output on certain terminals (like `Alacritty),
+              To make it easier to select branch name from the `status` output on certain terminals (like Alacritty),
               you can add an extra space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
               For example, by default the status is displayed as:
@@ -1552,7 +1552,7 @@ long_docs: Dict[str, str] = {
           |
           m-<branch4>     # gray (merged to parent)
         </dim>
-        To make it easier to select branch name from the `status` output on certain terminals (like `Alacritty),
+        To make it easier to select branch name from the `status` output on certain terminals (like Alacritty),
         you can add an extra space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
 
         For example, by default the status is displayed as:
@@ -1612,7 +1612,7 @@ long_docs: Dict[str, str] = {
               * whether `traverse` suggests to slide out the branch.
 
            `machete.status.extraSpaceBeforeBranchName`
-              To make it easier to select branch name from the `status` output on certain terminals (like `Alacritty),
+              To make it easier to select branch name from the `status` output on certain terminals (like Alacritty),
               you can add an extra space between └─ and branch name by setting `git config machete.status.extraSpaceBeforeBranchName true`.
    """,
     "traverse": """

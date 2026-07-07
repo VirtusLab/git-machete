@@ -38,14 +38,22 @@ def rst2txt(rst: str) -> str:
             lne = indent + lne[1:]
         elif lne.startswith('* ') or lne.startswith('  '):
             lne = indent + lne
-        lne = re.sub('---', '—', lne)
-        lne = re.sub(':ref:`([^<`]+)(<[^>]+>)?`', r'`\1`', lne)
-        lne = re.sub('`(.*) <.*>`_', r'\1', lne)
-        lne = re.sub('``', '`', lne)
-        lne = re.sub(r'\*\*(.*)\*\*', r'<b>\1</b>', lne)
-        lne = re.sub(r' \*([^ ])', r' \1', lne)
-        lne = re.sub(r'([^ ])\*([ .])', r'\1\2', lne)
-        lne = re.sub(r':([a-z]+):`([^`]+)`', r'<\1>\2</\1>', lne)
+        # RST triple hyphen (em dash in prose)  ->  Unicode em dash.
+        lne = re.sub('---',                               '—',                  lne)              # noqa: E241
+        # Sphinx :ref:`name` or :ref:`name<target>`  ->  inline code `name`.
+        lne = re.sub(':ref:`([^<`]+)(<[^>]+>)?`',        r'`\1`',               lne)              # noqa: E241
+        # RST hyperlink `text <url>`_  ->  plain text (skip ``literal`` spans via lookbehind/lookahead).
+        lne = re.sub('(?<!`)`(?!`)(.*?) <[^>]+>`_',      r'\1',                 lne)              # noqa: E241
+        # RST double-backtick literal ``code``  ->  single-backtick inline code `code`.
+        lne = re.sub('``',                                '`',                  lne)              # noqa: E241
+        # RST **bold**  ->  <b>bold</b>.
+        lne = re.sub(r'\*\*(.*)\*\*',                   r'<b>\1</b>',           lne)              # noqa: E241
+        # RST italic marker (space before *)  ->  plain text without the asterisk.
+        lne = re.sub(r' \*([^ ])',                      r' \1',                 lne)              # noqa: E241
+        # RST italic marker (* before space or dot)  ->  plain text without the asterisk.
+        lne = re.sub(r'([^ ])\*([ .])',                 r'\1\2',                lne)              # noqa: E241
+        # Sphinx :role:`text`  ->  <role>text</role>.
+        lne = re.sub(r':([a-z]+):`([^`]+)`',            r'<\1>\2</\1>',         lne)              # noqa: E241
         return lne
 
     def is_section_header(lne: str) -> bool:
