@@ -505,3 +505,46 @@ class TestGitLabRetargetMR(BaseTest):
             "Branch master does not have a parent branch (it is a root) even though there is an open MR !15 to root.\n"
             "Consider modifying the branch layout file (git machete edit) so that master is a child of root."
         )
+
+    def test_gitlab_retarget_mr_infers_target_project_from_parent_tracking(self, mocker: MockerFixture) -> None:
+        # In a fork workflow the MR is hosted by the target (upstream) project, not the source (fork) project.
+        # Even with no base* config keys, retarget-mr infers the target project from the parent branch's tracking remote
+        # (just like create-mr does), so it queries the project that actually hosts the MR.
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        projects = {
+            2: {'id': 2, 'namespace': {'full_path': 'example-org/example-repo'}, 'name': 'example-repo',
+                'http_url_to_repo': 'https://gitlab.com/example-org/example-repo.git'},
+            3: {'id': 3, 'namespace': {'full_path': 'example-org/example-repo-1'}, 'name': 'example-repo-1',
+                'http_url_to_repo': 'https://gitlab.com/example-org/example-repo-1.git'},
+        }
+        gitlab_api_state = MockGitLabAPIState(
+            projects,
+            mock_mr_json(number=1, head='feature', base='master', repo_id=2, base_repo_id=3, user='gitlab_user'))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
+
+        # `origin` (-> example-org/example-repo) is the source/fork remote holding the branches, while
+        # `upstream` (-> example-org/example-repo-1) is the base remote that hosts the MR. The parent branch (develop)
+        # tracks `upstream`, so the target project is inferred from it - no machete.gitlab.base* key is set.
+        create_repo_with_remote()
+        upstream_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        add_remote("upstream", upstream_path)
+
+        new_branch("master")
+        commit()
+        push()
+        new_branch("develop")
+        commit()
+        push(remote="upstream")
+        new_branch("feature")
+        commit()
+        push()
+        rewrite_branch_layout_file("master\n\tdevelop\n\t\tfeature")
+
+        assert_success(
+            ['gitlab', 'retarget-mr'],
+            "Switching target branch of MR !1 to develop... OK\n"
+        )
+        mr = gitlab_api_state.get_mr_by_number(1)
+        assert mr is not None
+        assert mr['target_branch'] == 'develop'
