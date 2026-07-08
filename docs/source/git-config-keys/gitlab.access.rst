@@ -6,7 +6,8 @@
     The name of the git remote (as in ``git remote``) that git-machete pushes the source branch to.
     Unless both ``machete.gitlab.namespace`` and ``machete.gitlab.project`` are set, this remote's URL is also inspected
     to derive the GitLab namespace and project that the merge request resides in.
-    The merge request is operated on through the GitLab API, which addresses that namespace/project rather than a git remote.
+    Unless the ``machete.gitlab.base*`` keys below point elsewhere, the merge request is operated on through the GitLab API,
+    which addresses that namespace/project rather than a git remote.
     By default (when this key is unset), if exactly one remote's URL corresponds to GitLab, that remote is selected automatically;
     set this key to disambiguate when more than one remote points to GitLab.
     For example, ``git config machete.gitlab.remote origin``
@@ -22,6 +23,8 @@
 ``machete.gitlab.baseRemote``
     Like ``machete.gitlab.remote``, but used to locate the target project that the merge request targets,
     which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+    Since the merge request lives in the target project, this is the project that all merge request operations
+    (creating, but also listing, checking out, annotating and retargeting) address through the GitLab API.
     Defaults to ``machete.gitlab.remote`` when unset.
     For example, ``git config machete.gitlab.baseRemote upstream``
 

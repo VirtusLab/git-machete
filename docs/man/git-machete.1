@@ -332,7 +332,8 @@ For example, \fBgit config machete.github.domain git.example.org\fP
 The name of the git remote (as in \fBgit remote\fP) that git\-machete pushes the head branch to.
 Unless both \fBmachete.github.organization\fP and \fBmachete.github.repository\fP are set, this remote\(aqs URL is also inspected
 to derive the GitHub organization and repository that the pull request resides in.
-The pull request is operated on through the GitHub API, which addresses that organization/repository rather than a git remote.
+Unless the \fBmachete.github.base*\fP keys below point elsewhere, the pull request is operated on through the GitHub API,
+which addresses that organization/repository rather than a git remote.
 By default (when this key is unset), if exactly one remote\(aqs URL corresponds to GitHub, that remote is selected automatically;
 set this key to disambiguate when more than one remote points to GitHub.
 For example, \fBgit config machete.github.remote origin\fP
@@ -348,6 +349,8 @@ For example, \fBgit config machete.github.repository git\-machete\fP
 .B \fBmachete.github.baseRemote\fP
 Like \fBmachete.github.remote\fP, but used to locate the base repository that the pull request targets,
 which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+Since the pull request lives in the base repository, this is the repository that all pull request operations
+(creating, but also listing, checking out, annotating and retargeting) address through the GitHub API.
 Defaults to \fBmachete.github.remote\fP when unset.
 For example, \fBgit config machete.github.baseRemote upstream\fP
 .TP
@@ -411,7 +414,8 @@ For example, \fBgit config machete.gitlab.domain git.example.org\fP
 The name of the git remote (as in \fBgit remote\fP) that git\-machete pushes the source branch to.
 Unless both \fBmachete.gitlab.namespace\fP and \fBmachete.gitlab.project\fP are set, this remote\(aqs URL is also inspected
 to derive the GitLab namespace and project that the merge request resides in.
-The merge request is operated on through the GitLab API, which addresses that namespace/project rather than a git remote.
+Unless the \fBmachete.gitlab.base*\fP keys below point elsewhere, the merge request is operated on through the GitLab API,
+which addresses that namespace/project rather than a git remote.
 By default (when this key is unset), if exactly one remote\(aqs URL corresponds to GitLab, that remote is selected automatically;
 set this key to disambiguate when more than one remote points to GitLab.
 For example, \fBgit config machete.gitlab.remote origin\fP
@@ -427,6 +431,8 @@ For example, \fBgit config machete.gitlab.project hello\-world\fP
 .B \fBmachete.gitlab.baseRemote\fP
 Like \fBmachete.gitlab.remote\fP, but used to locate the target project that the merge request targets,
 which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+Since the merge request lives in the target project, this is the project that all merge request operations
+(creating, but also listing, checking out, annotating and retargeting) address through the GitLab API.
 Defaults to \fBmachete.gitlab.remote\fP when unset.
 For example, \fBgit config machete.gitlab.baseRemote upstream\fP
 .TP
@@ -1212,7 +1218,8 @@ For example, \fBgit config machete.github.domain git.example.org\fP
 The name of the git remote (as in \fBgit remote\fP) that git\-machete pushes the head branch to.
 Unless both \fBmachete.github.organization\fP and \fBmachete.github.repository\fP are set, this remote\(aqs URL is also inspected
 to derive the GitHub organization and repository that the pull request resides in.
-The pull request is operated on through the GitHub API, which addresses that organization/repository rather than a git remote.
+Unless the \fBmachete.github.base*\fP keys below point elsewhere, the pull request is operated on through the GitHub API,
+which addresses that organization/repository rather than a git remote.
 By default (when this key is unset), if exactly one remote\(aqs URL corresponds to GitHub, that remote is selected automatically;
 set this key to disambiguate when more than one remote points to GitHub.
 For example, \fBgit config machete.github.remote origin\fP
@@ -1228,6 +1235,8 @@ For example, \fBgit config machete.github.repository git\-machete\fP
 .B \fBmachete.github.baseRemote\fP
 Like \fBmachete.github.remote\fP, but used to locate the base repository that the pull request targets,
 which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+Since the pull request lives in the base repository, this is the repository that all pull request operations
+(creating, but also listing, checking out, annotating and retargeting) address through the GitHub API.
 Defaults to \fBmachete.github.remote\fP when unset.
 For example, \fBgit config machete.github.baseRemote upstream\fP
 .TP
@@ -1507,7 +1516,8 @@ For example, \fBgit config machete.gitlab.domain git.example.org\fP
 The name of the git remote (as in \fBgit remote\fP) that git\-machete pushes the source branch to.
 Unless both \fBmachete.gitlab.namespace\fP and \fBmachete.gitlab.project\fP are set, this remote\(aqs URL is also inspected
 to derive the GitLab namespace and project that the merge request resides in.
-The merge request is operated on through the GitLab API, which addresses that namespace/project rather than a git remote.
+Unless the \fBmachete.gitlab.base*\fP keys below point elsewhere, the merge request is operated on through the GitLab API,
+which addresses that namespace/project rather than a git remote.
 By default (when this key is unset), if exactly one remote\(aqs URL corresponds to GitLab, that remote is selected automatically;
 set this key to disambiguate when more than one remote points to GitLab.
 For example, \fBgit config machete.gitlab.remote origin\fP
@@ -1523,6 +1533,8 @@ For example, \fBgit config machete.gitlab.project hello\-world\fP
 .B \fBmachete.gitlab.baseRemote\fP
 Like \fBmachete.gitlab.remote\fP, but used to locate the target project that the merge request targets,
 which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+Since the merge request lives in the target project, this is the project that all merge request operations
+(creating, but also listing, checking out, annotating and retargeting) address through the GitLab API.
 Defaults to \fBmachete.gitlab.remote\fP when unset.
 For example, \fBgit config machete.gitlab.baseRemote upstream\fP
 .TP

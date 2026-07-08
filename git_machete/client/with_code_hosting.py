@@ -700,30 +700,36 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         if self.__code_hosting_client is not None:
             raise UnexpectedMacheteException("Code hosting client has already been initialized.")
         domain = self.__derive_code_hosting_domain()
-        # The returned org/repo/remote identifies the *head* repository (the one that holds the branches), which callers use
-        # to fetch/push. The code hosting client, however, must talk to the repository that *hosts* the PRs, i.e. the base
-        # repository - in a fork workflow the base (upstream) repository differs from the head (fork) one. When a base branch
-        # is given, the base repository is inferred from that branch's tracking remote (exactly like `create_pull_request`),
-        # so retarget/restack query the right repository even with no base* config keys. When no base branch is given, the base
-        # repository resolves to the head one, so this is a no-op for the common (non-fork) case.
+        # PR-reading/-modifying commands must talk to the repository that *hosts* the PRs, i.e. the base repository.
+        # In a fork workflow the base (upstream) repository differs from the head (fork) repository that holds the branches,
+        # so the code hosting client is created against the base repository, while the returned head remote is still what
+        # callers use to fetch/push branches.
+        # The base repository is located in two ways: explicit machete.<spec>.base* config keys take precedence (honored for
+        # every PR-reading/-modifying command); otherwise, when a base branch is given (retarget/restack), the base repository
+        # is inferred from that branch's tracking remote, exactly like create_pull_request does. Inference is best-effort: if it
+        # cannot be resolved unambiguously (e.g. the base branch has no tracking data among several candidate remotes), we fall
+        # back to the head repository, preserving the pre-inference behavior. When neither applies, the base repository resolves
+        # to the head one, so this is a no-op for the common (non-fork) case.
         head_org_repo_remote = self.__derive_org_repo_and_remote(
             domain=domain, branch_used_for_tracking_data=branch_used_for_tracking_data)
+        keys = self.code_hosting_spec.git_config_keys
+        base_config_present = (
+            self._config.code_hosting_base_remote(keys) is not None or
+            self._config.code_hosting_base_organization(keys) is not None or
+            self._config.code_hosting_base_repository(keys) is not None)
         base_org_repo_remote = head_org_repo_remote
-        if base_branch_used_for_tracking_data is not None:
-            keys = self.code_hosting_spec.git_config_keys
-            base_config_present = (
-                self._config.code_hosting_base_remote(keys) is not None or
-                self._config.code_hosting_base_organization(keys) is not None or
-                self._config.code_hosting_base_repository(keys) is not None)
+        if base_config_present:
+            base_org_repo_remote = self.__derive_org_repo_and_remote(
+                domain=domain,
+                branch_used_for_tracking_data=base_branch_used_for_tracking_data or branch_used_for_tracking_data,
+                is_base=True)
+        elif base_branch_used_for_tracking_data is not None:
             try:
                 base_org_repo_remote = self.__derive_org_repo_and_remote(
                     domain=domain, branch_used_for_tracking_data=base_branch_used_for_tracking_data, is_base=True)
             except MacheteException:
-                # The base repository could not be resolved unambiguously (for example the base branch has no tracking data
-                # among several candidate remotes). With no explicit base* config to honor, fall back to the head repository,
-                # preserving the pre-inference behavior; with base* keys set, the misconfiguration should surface.
-                if base_config_present:
-                    raise
+                # Ambiguous inference with no explicit base* config to honor -> fall back to the head repository.
+                pass
         self.code_hosting_client = self.code_hosting_spec.create_client(
             domain=domain, organization=base_org_repo_remote.organization, repository=base_org_repo_remote.repository)
         return domain, head_org_repo_remote

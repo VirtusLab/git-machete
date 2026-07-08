@@ -253,7 +253,8 @@ long_docs: Dict[str, str] = {
                 The name of the git remote (as in `git remote`) that git-machete pushes the head branch to.
                 Unless both `machete.github.organization` and `machete.github.repository` are set, this remote's URL is also inspected
                 to derive the GitHub organization and repository that the pull request resides in.
-                The pull request is operated on through the GitHub API, which addresses that organization/repository rather than a git remote.
+                Unless the `machete.github.base*` keys below point elsewhere, the pull request is operated on through the GitHub API,
+                which addresses that organization/repository rather than a git remote.
                 By default (when this key is unset), if exactly one remote's URL corresponds to GitHub, that remote is selected automatically;
                 set this key to disambiguate when more than one remote points to GitHub.
                 For example, `git config machete.github.remote origin`
@@ -269,6 +270,8 @@ long_docs: Dict[str, str] = {
              `machete.github.baseRemote`
                 Like `machete.github.remote`, but used to locate the base repository that the pull request targets,
                 which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+                Since the pull request lives in the base repository, this is the repository that all pull request operations
+                (creating, but also listing, checking out, annotating and retargeting) address through the GitHub API.
                 Defaults to `machete.github.remote` when unset.
                 For example, `git config machete.github.baseRemote upstream`
 
@@ -319,7 +322,8 @@ long_docs: Dict[str, str] = {
                 The name of the git remote (as in `git remote`) that git-machete pushes the source branch to.
                 Unless both `machete.gitlab.namespace` and `machete.gitlab.project` are set, this remote's URL is also inspected
                 to derive the GitLab namespace and project that the merge request resides in.
-                The merge request is operated on through the GitLab API, which addresses that namespace/project rather than a git remote.
+                Unless the `machete.gitlab.base*` keys below point elsewhere, the merge request is operated on through the GitLab API,
+                which addresses that namespace/project rather than a git remote.
                 By default (when this key is unset), if exactly one remote's URL corresponds to GitLab, that remote is selected automatically;
                 set this key to disambiguate when more than one remote points to GitLab.
                 For example, `git config machete.gitlab.remote origin`
@@ -335,6 +339,8 @@ long_docs: Dict[str, str] = {
              `machete.gitlab.baseRemote`
                 Like `machete.gitlab.remote`, but used to locate the target project that the merge request targets,
                 which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+                Since the merge request lives in the target project, this is the project that all merge request operations
+                (creating, but also listing, checking out, annotating and retargeting) address through the GitLab API.
                 Defaults to `machete.gitlab.remote` when unset.
                 For example, `git config machete.gitlab.baseRemote upstream`
 
@@ -840,7 +846,8 @@ long_docs: Dict[str, str] = {
                 The name of the git remote (as in `git remote`) that git-machete pushes the head branch to.
                 Unless both `machete.github.organization` and `machete.github.repository` are set, this remote's URL is also inspected
                 to derive the GitHub organization and repository that the pull request resides in.
-                The pull request is operated on through the GitHub API, which addresses that organization/repository rather than a git remote.
+                Unless the `machete.github.base*` keys below point elsewhere, the pull request is operated on through the GitHub API,
+                which addresses that organization/repository rather than a git remote.
                 By default (when this key is unset), if exactly one remote's URL corresponds to GitHub, that remote is selected automatically;
                 set this key to disambiguate when more than one remote points to GitHub.
                 For example, `git config machete.github.remote origin`
@@ -856,6 +863,8 @@ long_docs: Dict[str, str] = {
              `machete.github.baseRemote`
                 Like `machete.github.remote`, but used to locate the base repository that the pull request targets,
                 which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+                Since the pull request lives in the base repository, this is the repository that all pull request operations
+                (creating, but also listing, checking out, annotating and retargeting) address through the GitHub API.
                 Defaults to `machete.github.remote` when unset.
                 For example, `git config machete.github.baseRemote upstream`
 
@@ -1060,7 +1069,8 @@ long_docs: Dict[str, str] = {
                 The name of the git remote (as in `git remote`) that git-machete pushes the source branch to.
                 Unless both `machete.gitlab.namespace` and `machete.gitlab.project` are set, this remote's URL is also inspected
                 to derive the GitLab namespace and project that the merge request resides in.
-                The merge request is operated on through the GitLab API, which addresses that namespace/project rather than a git remote.
+                Unless the `machete.gitlab.base*` keys below point elsewhere, the merge request is operated on through the GitLab API,
+                which addresses that namespace/project rather than a git remote.
                 By default (when this key is unset), if exactly one remote's URL corresponds to GitLab, that remote is selected automatically;
                 set this key to disambiguate when more than one remote points to GitLab.
                 For example, `git config machete.gitlab.remote origin`
@@ -1076,6 +1086,8 @@ long_docs: Dict[str, str] = {
              `machete.gitlab.baseRemote`
                 Like `machete.gitlab.remote`, but used to locate the target project that the merge request targets,
                 which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+                Since the merge request lives in the target project, this is the project that all merge request operations
+                (creating, but also listing, checking out, annotating and retargeting) address through the GitLab API.
                 Defaults to `machete.gitlab.remote` when unset.
                 For example, `git config machete.gitlab.baseRemote upstream`
 

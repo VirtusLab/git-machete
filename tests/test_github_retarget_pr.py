@@ -549,3 +549,53 @@ class TestGitHubRetargetPR(BaseTest):
         assert_failure(
             ['github', 'retarget-pr'],
             "machete.github.baseRemote git config key points to nonexistent remote, but such remote does not exist")
+
+    def test_github_retarget_pr_targets_base_repo(self, mocker: MockerFixture) -> None:
+        # In a fork workflow the PR is hosted by the base (upstream) repository, not the head (fork) repository.
+        # retarget-pr must therefore honor `machete.github.baseRemote` and query the base repository for the PR.
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        repositories = {
+            1: {'owner': {'login': 'example-org'}, 'name': 'example-repo',
+                'clone_url': 'https://github.com/example-org/example-repo.git'},
+            2: {'owner': {'login': 'example-org'}, 'name': 'example-repo-1',
+                'clone_url': 'https://github.com/example-org/example-repo-1.git'},
+        }
+        github_api_state = MockGitHubAPIState(
+            repositories,
+            mock_pr_json(number=1, head='feature', base='master', repo_id=1, base_repo_id=2, user='github_user'))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+
+        # `origin` (-> example-org/example-repo) is the head/fork remote holding the branches,
+        # while `upstream` (-> example-org/example-repo-1) is the base remote that hosts the PR.
+        create_repo_with_remote()
+        upstream_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        add_remote("upstream", upstream_path)
+
+        new_branch("master")
+        commit()
+        push()
+        new_branch("develop")
+        commit()
+        push()
+        new_branch("feature")
+        commit()
+        push()
+        rewrite_branch_layout_file("master\n\tdevelop\n\t\tfeature")
+
+        # Without any base config the client targets the head repository (origin), which does not host the PR.
+        assert_failure(
+            ['github', 'retarget-pr'],
+            "No PRs in example-org/example-repo have feature as its head branch"
+        )
+
+        # `machete.github.baseRemote` points retarget-pr at the base repository that actually hosts the PR;
+        # the PR's stale base (master) is then retargeted to feature's actual parent (develop).
+        set_git_config_key("machete.github.baseRemote", "upstream")
+        assert_success(
+            ['github', 'retarget-pr'],
+            "Switching base branch of PR #1 to develop... OK\n"
+        )
+        pr1 = github_api_state.get_pull_by_number(1)
+        assert pr1 is not None
+        assert pr1['base']['ref'] == 'develop'

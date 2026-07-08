@@ -4,6 +4,7 @@ from tests.base_test import BaseTest
 from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
 from tests.git_repository import (add_remote, amend_commit, check_out, commit, create_repo, create_repo_with_remote, delete_branch,
                                   new_branch, push, remove_remote, reset_to, set_git_config_key, wait_to_bump_commit_timestamp)
+from tests.mockers_code_hosting import mock_from_url
 from tests.mockers_gitlab import MockGitLabAPIState, mock_gitlab_token_for_domain_fake, mock_mr_json, mock_urlopen
 
 
@@ -192,6 +193,62 @@ class TestGitLabAnnoMRs(BaseTest):
 
         remove_remote()
         assert_failure(["gitlab", "anno-mrs"], "No remotes defined for this repository (see git remote)")
+
+    def test_gitlab_anno_mrs_targets_base_project(self, mocker: MockerFixture) -> None:
+        # In a fork workflow the MRs are hosted by the target (upstream) project, not the source (fork) project.
+        # Reading commands must therefore honor `machete.gitlab.baseRemote` and query the target project for MRs.
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        # Project id 2 (-> example-org/example-repo) is the source/fork project holding the branches,
+        # while project id 3 (-> example-org/example-repo-1) is the target project that hosts the MRs.
+        gitlab_api_state = MockGitLabAPIState.with_mrs(
+            mock_mr_json(number=1, head='feature', base='develop', repo_id=2, base_repo_id=3, user='gitlab_user'),
+            mock_mr_json(number=2, head='develop', base='master', repo_id=2, base_repo_id=3, user='gitlab_user'))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(gitlab_api_state))
+
+        # `origin` (-> example-org/example-repo) is the source/fork remote holding the branches,
+        # while `upstream` (-> example-org/example-repo-1) is the base remote that hosts the MRs.
+        create_repo_with_remote()
+        upstream_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        add_remote("upstream", upstream_path)
+
+        new_branch("master")
+        commit()
+        push()
+        new_branch("develop")
+        commit()
+        push()
+        new_branch("feature")
+        commit()
+        push()
+        rewrite_branch_layout_file("master\n\tdevelop\n\t\tfeature")
+
+        # Without any base config the client targets the source project (origin), which does not host these MRs.
+        launch_command("gitlab", "anno-mrs")
+        assert_success(
+            ["status"],
+            """
+            master
+            |
+            o-develop
+              |
+              o-feature *
+            """
+        )
+
+        # `machete.gitlab.baseRemote` points reading commands at the target project that actually hosts the MRs.
+        set_git_config_key("machete.gitlab.baseRemote", "upstream")
+        launch_command("gitlab", "anno-mrs")
+        assert_success(
+            ["status"],
+            """
+            master
+            |
+            o-develop  MR !2
+              |
+              o-feature *  MR !1
+            """
+        )
 
     def test_gitlab_anno_mrs_multiple_non_origin_gitlab_remotes(self) -> None:
         create_repo()

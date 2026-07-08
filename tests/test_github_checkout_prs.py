@@ -602,3 +602,62 @@ class TestGitHubCheckoutPRs(BaseTest):
             'Checking for open GitHub PRs... OK\n'
             'PR #2 checked out at local branch fix-10341\n'
         )
+
+    def test_github_checkout_prs_targets_base_repo(self, mocker: MockerFixture) -> None:
+        # In a fork workflow the PRs are hosted by the base (upstream) repository, not the head (fork) repository.
+        # checkout-prs must therefore honor `machete.github.baseRemote` and query the base repository for PRs.
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        repositories = {
+            1: {'owner': {'login': 'example-org'}, 'name': 'example-repo',
+                'clone_url': 'https://github.com/example-org/example-repo.git'},
+            2: {'owner': {'login': 'example-org'}, 'name': 'example-repo-1',
+                'clone_url': 'https://github.com/example-org/example-repo-1.git'},
+        }
+        github_api_state = MockGitHubAPIState(
+            repositories,
+            mock_pr_json(number=1, head='feature', base='develop', repo_id=1, base_repo_id=2, user='github_user'),
+            mock_pr_json(number=2, head='develop', base='master', repo_id=1, base_repo_id=2, user='github_user'))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+
+        # `origin` (-> example-org/example-repo) is the head/fork remote holding the branches,
+        # while `upstream` (-> example-org/example-repo-1) is the base remote that hosts the PRs.
+        create_repo_with_remote()
+        upstream_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        add_remote("upstream", upstream_path)
+
+        new_branch("master")
+        commit()
+        push()
+        new_branch("develop")
+        commit()
+        push()
+        new_branch("feature")
+        commit()
+        push()
+
+        # Without any base config the client targets the head repository (origin), which does not host these PRs.
+        assert_success(
+            ['github', 'checkout-prs', '--all'],
+            'Checking for open GitHub PRs... OK\n'
+            'Warn: currently there are no pull requests opened in repository example-org/example-repo\n'
+        )
+
+        # `machete.github.baseRemote` points checkout-prs at the base repository that actually hosts the PRs.
+        set_git_config_key("machete.github.baseRemote", "upstream")
+        assert_success(
+            ['github', 'checkout-prs', '--all'],
+            'Checking for open GitHub PRs... OK\n'
+            'PR #2 checked out at local branch develop\n'
+            'PR #1 checked out at local branch feature\n'
+        )
+        assert_success(
+            ["status"],
+            """
+            master
+            |
+            o-develop  PR #2
+              |
+              o-feature *  PR #1
+            """
+        )

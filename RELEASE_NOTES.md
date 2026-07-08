@@ -5,6 +5,8 @@
 - fixed: `git machete discover` no longer produces a different branch tree depending on which worktree it is run from;
   the fresh-branch recency ranking now aggregates HEAD reflogs across all worktrees rather than only the current one (reported by @jasonoura, contributed by @earfman)
 - fixed: when run from a branch being slid out, `git machete slide-out` no longer checks out that branch's new parent if a child branch is going to be checked out right afterwards anyway for the rebase/merge
+- fixed: pull/merge request-reading commands (`anno-prs`, `checkout-prs`, `retarget-pr`, `restack-pr`, `update-pr-descriptions` and their GitLab counterparts)
+  now address the base/target repository - the one that actually hosts the PR/MR - when the `machete.{github,gitlab}.base*` git config keys are set, rather than the head/source repository
 
 ## New in git-machete 3.44.1
 
