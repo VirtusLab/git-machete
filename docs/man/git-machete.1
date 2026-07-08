@@ -349,8 +349,10 @@ For example, \fBgit config machete.github.repository git\-machete\fP
 .B \fBmachete.github.baseRemote\fP
 Like \fBmachete.github.remote\fP, but used to locate the base repository that the pull request targets,
 which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
-Since the pull request lives in the base repository, this is the repository that all pull request operations
-(creating, but also listing, checking out, annotating and retargeting) address through the GitHub API.
+Setting this key is what makes the PR\-reading/\-modifying commands (\fBanno\-prs\fP, \fBcheckout\-prs\fP, \fBretarget\-pr\fP,
+\fBrestack\-pr\fP, \fBupdate\-pr\-descriptions\fP) address that base repository rather than the head one.
+\fBcreate\-pr\fP does not need it: it infers the base repository from the base branch\(aqs tracking remote,
+so it already targets the correct base (even one in a separate fork/upstream repository) even when this key is unset.
 Defaults to \fBmachete.github.remote\fP when unset.
 For example, \fBgit config machete.github.baseRemote upstream\fP
 .TP
@@ -431,8 +433,10 @@ For example, \fBgit config machete.gitlab.project hello\-world\fP
 .B \fBmachete.gitlab.baseRemote\fP
 Like \fBmachete.gitlab.remote\fP, but used to locate the target project that the merge request targets,
 which may differ from the source project (for example, the target in an upstream project and the source in a fork).
-Since the merge request lives in the target project, this is the project that all merge request operations
-(creating, but also listing, checking out, annotating and retargeting) address through the GitLab API.
+Setting this key is what makes the MR\-reading/\-modifying commands (\fBanno\-mrs\fP, \fBcheckout\-mrs\fP, \fBretarget\-mr\fP,
+\fBrestack\-mr\fP, \fBupdate\-mr\-descriptions\fP) address that target project rather than the source one.
+\fBcreate\-mr\fP does not need it: it infers the target project from the target branch\(aqs tracking remote,
+so it already targets the correct project (even one in a separate fork/upstream project) even when this key is unset.
 Defaults to \fBmachete.gitlab.remote\fP when unset.
 For example, \fBgit config machete.gitlab.baseRemote upstream\fP
 .TP
@@ -1235,8 +1239,10 @@ For example, \fBgit config machete.github.repository git\-machete\fP
 .B \fBmachete.github.baseRemote\fP
 Like \fBmachete.github.remote\fP, but used to locate the base repository that the pull request targets,
 which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
-Since the pull request lives in the base repository, this is the repository that all pull request operations
-(creating, but also listing, checking out, annotating and retargeting) address through the GitHub API.
+Setting this key is what makes the PR\-reading/\-modifying commands (\fBanno\-prs\fP, \fBcheckout\-prs\fP, \fBretarget\-pr\fP,
+\fBrestack\-pr\fP, \fBupdate\-pr\-descriptions\fP) address that base repository rather than the head one.
+\fBcreate\-pr\fP does not need it: it infers the base repository from the base branch\(aqs tracking remote,
+so it already targets the correct base (even one in a separate fork/upstream repository) even when this key is unset.
 Defaults to \fBmachete.github.remote\fP when unset.
 For example, \fBgit config machete.github.baseRemote upstream\fP
 .TP
@@ -1533,8 +1539,10 @@ For example, \fBgit config machete.gitlab.project hello\-world\fP
 .B \fBmachete.gitlab.baseRemote\fP
 Like \fBmachete.gitlab.remote\fP, but used to locate the target project that the merge request targets,
 which may differ from the source project (for example, the target in an upstream project and the source in a fork).
-Since the merge request lives in the target project, this is the project that all merge request operations
-(creating, but also listing, checking out, annotating and retargeting) address through the GitLab API.
+Setting this key is what makes the MR\-reading/\-modifying commands (\fBanno\-mrs\fP, \fBcheckout\-mrs\fP, \fBretarget\-mr\fP,
+\fBrestack\-mr\fP, \fBupdate\-mr\-descriptions\fP) address that target project rather than the source one.
+\fBcreate\-mr\fP does not need it: it infers the target project from the target branch\(aqs tracking remote,
+so it already targets the correct project (even one in a separate fork/upstream project) even when this key is unset.
 Defaults to \fBmachete.gitlab.remote\fP when unset.
 For example, \fBgit config machete.gitlab.baseRemote upstream\fP
 .TP

@@ -23,8 +23,10 @@
 ``machete.gitlab.baseRemote``
     Like ``machete.gitlab.remote``, but used to locate the target project that the merge request targets,
     which may differ from the source project (for example, the target in an upstream project and the source in a fork).
-    Since the merge request lives in the target project, this is the project that all merge request operations
-    (creating, but also listing, checking out, annotating and retargeting) address through the GitLab API.
+    Setting this key is what makes the MR-reading/-modifying commands (``anno-mrs``, ``checkout-mrs``, ``retarget-mr``,
+    ``restack-mr``, ``update-mr-descriptions``) address that target project rather than the source one.
+    ``create-mr`` does not need it: it infers the target project from the target branch's tracking remote,
+    so it already targets the correct project (even one in a separate fork/upstream project) even when this key is unset.
     Defaults to ``machete.gitlab.remote`` when unset.
     For example, ``git config machete.gitlab.baseRemote upstream``
 

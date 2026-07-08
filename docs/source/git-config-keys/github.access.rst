@@ -23,8 +23,10 @@
 ``machete.github.baseRemote``
     Like ``machete.github.remote``, but used to locate the base repository that the pull request targets,
     which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
-    Since the pull request lives in the base repository, this is the repository that all pull request operations
-    (creating, but also listing, checking out, annotating and retargeting) address through the GitHub API.
+    Setting this key is what makes the PR-reading/-modifying commands (``anno-prs``, ``checkout-prs``, ``retarget-pr``,
+    ``restack-pr``, ``update-pr-descriptions``) address that base repository rather than the head one.
+    ``create-pr`` does not need it: it infers the base repository from the base branch's tracking remote,
+    so it already targets the correct base (even one in a separate fork/upstream repository) even when this key is unset.
     Defaults to ``machete.github.remote`` when unset.
     For example, ``git config machete.github.baseRemote upstream``
 
