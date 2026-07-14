@@ -1,9 +1,12 @@
 from git_machete.annotation import Annotation
 from git_machete.client.base import MacheteClient
+from git_machete.config import SquashMergeDetection
 from git_machete.git import LocalBranchShortName
 from tests.base_test import BaseTest
-from tests.cli_runner import read_branch_layout_file, rewrite_branch_layout_file
-from tests.git_repository import check_out, commit, create_repo_with_remote, new_branch, push
+from tests.cli_runner import launch_command, read_branch_layout_file, rewrite_branch_layout_file
+from tests.git_repository import (check_out, commit, create_repo, create_repo_with_remote, get_current_commit_hash, new_branch, push,
+                                  reset_to)
+from tests.mockers import fixed_author_and_committer_date_in_past
 
 
 class TestClient(BaseTest):
@@ -170,3 +173,51 @@ class TestClient(BaseTest):
 
         assert '#' not in read_branch_layout_file()
         assert read_branch_layout_file() == "master\n"
+
+    def test_is_connected_with_green_edge_when_child_has_overridden_fork_point(self) -> None:
+        create_repo()
+        new_branch("master")
+        commit("master commit 1")
+        fork_point_hash = get_current_commit_hash()
+        commit("master commit 2")
+        new_branch("develop")
+        commit("develop commit")
+        check_out("master")
+
+        rewrite_branch_layout_file(
+            """
+            master
+                develop
+            """
+        )
+        launch_command("fork-point", "develop", "--override-to", fork_point_hash)
+
+        machete_client = MacheteClient()
+        assert machete_client.is_connected_with_green_edge(
+            parent=LocalBranchShortName.of("master"),
+            child=LocalBranchShortName.of("develop"),
+            opt_squash_merge_detection=SquashMergeDetection.NONE)
+
+    def test_is_connected_with_green_edge_not_inferred_by_parent_without_remote(self) -> None:
+        with fixed_author_and_committer_date_in_past():
+            create_repo()
+            new_branch("master")
+            commit("master commit 1")
+            commit("master commit 2")
+            new_branch("develop")
+            commit("develop commit")
+            check_out("master")
+            reset_to("HEAD~")
+
+        rewrite_branch_layout_file(
+            """
+            master
+                develop
+            """
+        )
+
+        machete_client = MacheteClient()
+        assert not machete_client.is_connected_with_green_edge(
+            parent=LocalBranchShortName.of("master"),
+            child=LocalBranchShortName.of("develop"),
+            opt_squash_merge_detection=SquashMergeDetection.NONE)
