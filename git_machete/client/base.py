@@ -350,6 +350,47 @@ class MacheteClient:
         except MacheteException:
             return None
 
+    def _is_fork_point_inferred_by_parent_remote_counterpart(
+            self,
+            *,
+            parent_branch: LocalBranchShortName,
+            inferring_branches: List[BranchPair]) -> bool:
+        # Suppresses the spurious yellow edge that appears when the parent branch is merely behind its remote counterpart
+        # and the child branch was forked from the remote tip.
+        # We only fire here for parents that have a remote counterpart at all (otherwise the "behind remote" situation cannot arise),
+        # and only if `parent_branch` appears among the inferring branches -
+        # either directly as `parent_remote`, or as the `local_branch` side of a `BranchPair(parent_branch, parent_branch)` entry
+        # produced when the inferred commit survives on `parent_branch`'s own filtered reflog after the push.
+        parent_remote = self._git.get_combined_counterpart_for_fetching_of_branch(parent_branch)
+        if parent_remote is None:
+            return False
+        return any(p.local_branch == parent_branch for p in inferring_branches)
+
+    def is_connected_with_green_edge(
+            self,
+            *,
+            parent: LocalBranchShortName,
+            child: LocalBranchShortName,
+            opt_squash_merge_detection: SquashMergeDetection) -> bool:
+        if self.is_merged_to(
+                branch=child,
+                parent=parent,
+                opt_squash_merge_detection=opt_squash_merge_detection):
+            return False
+        if not self._git.is_ancestor_or_equal(parent.full_name(), child.full_name()):
+            return False
+        if self._get_overridden_fork_point(child):
+            return True
+        try:
+            fork_point, inferring_branches = self.fork_point_and_inferring_branch_pairs(child, use_overrides=True)
+        except MacheteException:
+            return False
+        if self._git.get_commit_hash_by_revision(parent) == fork_point:
+            return True
+        return self._is_fork_point_inferred_by_parent_remote_counterpart(
+            parent_branch=parent,
+            inferring_branches=inferring_branches)
+
     def check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
             self, *, fork_point: AnyRevision, branch: AnyBranchName) -> None:
         if not self._git.is_ancestor_or_equal(

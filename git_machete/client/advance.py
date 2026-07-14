@@ -16,14 +16,13 @@ class AdvanceMacheteClient(MacheteClient):
             raise MacheteException(
                 f"<b>{branch}</b> does not have any downstream (child) branches to advance towards")
 
-        def connected_with_green_edge(child: LocalBranchShortName) -> bool:
-            return bool(
-                not self._is_merged_to_parent(child, opt_squash_merge_detection=SquashMergeDetection.NONE) and
-                self._git.is_ancestor_or_equal(branch.full_name(), child.full_name()) and
-                (self._get_overridden_fork_point(child) or
-                 self._git.get_commit_hash_by_revision(branch) == self.fork_point(child, use_overrides=False)))
-
-        candidate_children = list(filter(connected_with_green_edge, children))
+        candidate_children = [
+            child for child in children
+            if self.is_connected_with_green_edge(
+                parent=branch,
+                child=child,
+                opt_squash_merge_detection=SquashMergeDetection.NONE)
+        ]
         if not candidate_children:
             raise MacheteException(
                 f"No downstream (child) branch of <b>{branch}</b> is connected to "

@@ -10,7 +10,7 @@ from tests.cli_runner import (assert_failure, assert_success, launch_command, la
                               rewrite_branch_layout_file)
 from tests.git_repository import (check_out, commit, create_repo, create_repo_with_remote, fetch, get_commit_hash, get_current_commit_hash,
                                   new_branch, push, reset_to, wait_to_bump_commit_timestamp)
-from tests.mockers import mock_input_returning, mock_input_returning_y
+from tests.mockers import fixed_author_and_committer_date_in_past, mock_input_returning, mock_input_returning_y
 
 
 class TestAdvance(BaseTest):
@@ -47,6 +47,64 @@ class TestAdvance(BaseTest):
         rewrite_branch_layout_file("master\n  develop")
 
         assert_failure(["advance"], "No downstream (child) branch of master is connected to master with a green edge")
+
+    def test_advance_when_parent_behind_remote_and_child_forked_from_remote(self) -> None:
+        # Reproduces a common false-positive yellow edge fixed in status 3.41.0: the parent branch is just
+        # behind its remote counterpart, but the child branch was forked from the remote tip.
+        # Advance must treat such a child as connected with a green edge, same as status does.
+        with fixed_author_and_committer_date_in_past():
+            create_repo_with_remote()
+            new_branch("master")
+            commit("master commit 1")
+            push()
+            commit("master commit 2")
+            push()
+            new_branch("develop")
+            commit("develop commit")
+            check_out("master")
+            reset_to("HEAD~")  # master is now behind origin/master
+
+        rewrite_branch_layout_file(
+            """
+            master
+                develop
+            """
+        )
+
+        check_out("master")
+        launch_command("advance", "-y")
+
+        assert get_commit_hash("master") == get_commit_hash("develop")
+        assert "develop" not in launch_command("status")
+
+    def test_advance_when_parent_behind_remote_and_multiple_green_edge_children(self) -> None:
+        with fixed_author_and_committer_date_in_past():
+            create_repo_with_remote()
+            new_branch("master")
+            commit("master commit 1")
+            push()
+            commit("master commit 2")
+            push()
+            new_branch("develop-from-remote")
+            commit("develop-from-remote commit")
+            check_out("master")
+            reset_to("HEAD~")  # master is now behind origin/master
+            new_branch("develop-from-local")
+            commit("develop-from-local commit")
+            check_out("master")
+
+        rewrite_branch_layout_file(
+            """
+            master
+                develop-from-remote
+                develop-from-local
+            """
+        )
+
+        assert_failure(
+            ["advance", "-y"],
+            "More than one downstream (child) branch of master "
+            "is connected to master with a green edge and -y/--yes option is specified")
 
     def test_advance_with_immediate_cancel(self, mocker: MockerFixture) -> None:
         create_repo()
