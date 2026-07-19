@@ -2,7 +2,7 @@
 
 import pkgutil
 import sys
-from typing import Iterable, List, Optional, Sequence
+from typing import Iterable, List, Optional, Sequence, Set
 
 import git_machete.options
 from git_machete.cli_parser import ParsedCmd, parse_cmdline
@@ -341,7 +341,7 @@ def launch_internal(orig_args: List[str]) -> None:
             if subcommand == f"anno-{pr_or_mr}s":
                 github_or_gitlab_client.sync_annotations_to_prs(include_urls=cli_opts.opt_with_urls)
             elif subcommand == f"checkout-{pr_or_mr}s":
-                selectors_present = {
+                selectors_present: Set[str] = {
                     key for key in ("all", "by", "mine")
                     if key in parsed.opts
                 }
