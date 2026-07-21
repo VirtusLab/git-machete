@@ -2142,6 +2142,41 @@ class TestTraverse(BaseTest):
             """)
         )
 
+    def test_traverse_no_parent_sync_when_parent_behind_remote_and_child_forked_from_remote(self) -> None:
+        # Reproduces the parent-behind-remote green-edge case fixed in status 3.41.0: traverse must not
+        # offer to rebase a child that status already renders with a green edge onto its parent.
+        with fixed_author_and_committer_date_in_past():
+            create_repo_with_remote()
+            new_branch("master")
+            commit("master commit 1")
+            push()
+            commit("master commit 2")
+            push()
+            new_branch("develop")
+            commit("develop commit")
+            check_out("master")
+            reset_to("HEAD~")  # master is now behind origin/master
+            check_out("develop")
+
+        rewrite_branch_layout_file(
+            """
+            master
+                develop
+            """
+        )
+
+        assert_success(
+            ["traverse", "-y", "--no-push-untracked"],
+            """
+
+              master (behind origin)
+              |
+              o-develop * (untracked)
+
+            Reached branch develop which has no successor; nothing left to update
+            """,
+        )
+
     # The expected error message includes `--empty=drop` which is only passed on git >= 2.26.0.
     @pytest.mark.skipif(get_git_version() < REBASE_EMPTY_DROP, reason="--empty=drop is only passed to git rebase since git 2.26.0")
     def test_traverse_rebase_conflict(self) -> None:

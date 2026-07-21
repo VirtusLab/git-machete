@@ -4,7 +4,7 @@ from enum import auto
 from typing import Callable, List, Optional, Type, Union
 
 from git_machete.annotation import Annotation, Qualifiers
-from git_machete.client.base import PickRoot
+from git_machete.client.base import PickRoot, SyncToParentStatus
 from git_machete.client.with_code_hosting import MacheteClientWithCodeHosting
 from git_machete.code_hosting import CodeHostingSpec, PullRequest
 from git_machete.config import SquashMergeDetection, TraverseWhenBranchNotCheckedOutInAnyWorktree
@@ -277,14 +277,20 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     skipping_parent_sync = bool(parent)
                 elif use_merge:
                     needs_parent_sync = bool(
-                        parent and not self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()))
+                        parent and
+                        self.sync_to_parent_status(
+                            branch=branch,
+                            parent=parent,
+                            opt_squash_merge_detection=opt_squash_merge_detection) == SyncToParentStatus.OUT_OF_SYNC)
                 else:  # using rebase
                     needs_parent_sync = bool(
                         parent and
-                        not (self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()) and
-                             (self._git.get_commit_hash_by_revision(parent) ==
-                              self.fork_point(branch, use_overrides=True)))
-                    )
+                        self.sync_to_parent_status(
+                            branch=branch,
+                            parent=parent,
+                            opt_squash_merge_detection=opt_squash_merge_detection) in (
+                            SyncToParentStatus.OUT_OF_SYNC,
+                            SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF))
                     if needs_parent_sync and branch_anno is not None:
                         needs_parent_sync = branch_anno.qualifiers.rebase
 

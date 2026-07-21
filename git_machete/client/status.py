@@ -3,11 +3,10 @@
 import io
 import os
 import sys
-from enum import Enum, auto
 from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from git_machete.annotation import Annotation
-from git_machete.client.base import MacheteClient
+from git_machete.client.base import MacheteClient, SyncToParentStatus
 from git_machete.client.state import ManagedBranchName
 from git_machete.config import SquashMergeDetection
 from git_machete.git import BranchPair, FullCommitHash, GitLogEntry, LocalBranchShortName, SyncToRemoteStatus
@@ -18,13 +17,6 @@ from git_machete.utils.debug_log import debug
 from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.markup import escape_markup, print_fmt, warn
 from git_machete.utils.paths import Path, strip_longest_common_path_prefix
-
-
-class SyncToParentStatus(Enum):
-    IN_SYNC = auto()
-    IN_SYNC_BUT_FORK_POINT_OFF = auto()
-    OUT_OF_SYNC = auto()
-    MERGED_TO_PARENT = auto()
 
 
 class StatusFlags(NamedTuple):
@@ -271,20 +263,10 @@ class StatusMacheteClient(MacheteClient):
             parent_branch = self._state.get_parent(branch)
             if parent_branch is None:
                 continue
-            if self.is_merged_to(
-                    branch=branch,
-                    parent=parent_branch,
-                    opt_squash_merge_detection=flags.opt_squash_merge_detection):
-                sync_to_parent_status[branch] = SyncToParentStatus.MERGED_TO_PARENT
-            elif not self._git.is_ancestor_or_equal(parent_branch.full_name(), branch.full_name()):
-                sync_to_parent_status[branch] = SyncToParentStatus.OUT_OF_SYNC
-            elif self.is_connected_with_green_edge(
-                    parent=parent_branch,
-                    child=branch,
-                    opt_squash_merge_detection=flags.opt_squash_merge_detection):
-                sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC
-            else:
-                sync_to_parent_status[branch] = SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF
+            sync_to_parent_status[branch] = self.sync_to_parent_status(
+                branch=branch,
+                parent=parent_branch,
+                opt_squash_merge_detection=flags.opt_squash_merge_detection)
 
         currently_bisected_branch = self._git.get_currently_bisected_branch_or_none()
         currently_rebased_branch = self._git.get_currently_rebased_branch_or_none()

@@ -27,6 +27,13 @@ class PickRoot(Enum):
     LAST = auto()
 
 
+class SyncToParentStatus(Enum):
+    IN_SYNC = auto()
+    IN_SYNC_BUT_FORK_POINT_OFF = auto()
+    OUT_OF_SYNC = auto()
+    MERGED_TO_PARENT = auto()
+
+
 class MacheteClient:
 
     # === Initialization ===
@@ -390,6 +397,26 @@ class MacheteClient:
         return self._is_fork_point_inferred_by_parent_remote_counterpart(
             parent_branch=parent,
             inferring_branches=inferring_branches)
+
+    def sync_to_parent_status(
+            self,
+            *,
+            branch: LocalBranchShortName,
+            parent: LocalBranchShortName,
+            opt_squash_merge_detection: SquashMergeDetection) -> SyncToParentStatus:
+        if self.is_merged_to(
+                branch=branch,
+                parent=parent,
+                opt_squash_merge_detection=opt_squash_merge_detection):
+            return SyncToParentStatus.MERGED_TO_PARENT
+        if not self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()):
+            return SyncToParentStatus.OUT_OF_SYNC
+        if self.is_connected_with_green_edge(
+                parent=parent,
+                child=branch,
+                opt_squash_merge_detection=opt_squash_merge_detection):
+            return SyncToParentStatus.IN_SYNC
+        return SyncToParentStatus.IN_SYNC_BUT_FORK_POINT_OFF
 
     def check_that_fork_point_is_ancestor_or_equal_to_tip_of_branch(
             self, *, fork_point: AnyRevision, branch: AnyBranchName) -> None:
