@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.44.2
 
+- fixed: `git machete discover` (and `status`) no longer produce a different branch tree depending on which worktree they are run from; the fresh-branch recency ranking now aggregates HEAD reflogs across all worktrees rather than only the current one (#1754)
+
 ## New in git-machete 3.44.1
 
 - fixed: `git machete help config` (and `help status`) no longer renders stray underlines past the `machete.status.extraSpaceBeforeBranchName` section
