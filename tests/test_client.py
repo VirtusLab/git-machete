@@ -1,10 +1,13 @@
+from pytest_mock import MockerFixture
+
 from git_machete.annotation import Annotation
 from git_machete.client.base import MacheteClient
 from git_machete.config import SquashMergeDetection
 from git_machete.git import LocalBranchShortName
+from git_machete.utils.exceptions import MacheteException
 from tests.base_test import BaseTest
 from tests.cli_runner import launch_command, read_branch_layout_file, rewrite_branch_layout_file
-from tests.git_repository import (check_out, commit, create_repo, create_repo_with_remote, get_current_commit_hash, new_branch, push,
+from tests.git_repository import (check_out, commit, create_repo, create_repo_with_remote, get_current_commit_hash, merge, new_branch, push,
                                   reset_to)
 from tests.mockers import fixed_author_and_committer_date_in_past
 
@@ -217,6 +220,53 @@ class TestClient(BaseTest):
         )
 
         machete_client = MacheteClient()
+        assert not machete_client.is_connected_with_green_edge(
+            parent=LocalBranchShortName.of("master"),
+            child=LocalBranchShortName.of("develop"),
+            opt_squash_merge_detection=SquashMergeDetection.NONE)
+
+    def test_is_connected_with_green_edge_false_when_child_merged_to_parent(self) -> None:
+        create_repo()
+        new_branch("master")
+        commit("master commit")
+        new_branch("feature")
+        commit("feature commit")
+        check_out("master")
+        merge("feature")
+
+        rewrite_branch_layout_file(
+            """
+            master
+                feature
+            """
+        )
+
+        machete_client = MacheteClient()
+        assert not machete_client.is_connected_with_green_edge(
+            parent=LocalBranchShortName.of("master"),
+            child=LocalBranchShortName.of("feature"),
+            opt_squash_merge_detection=SquashMergeDetection.NONE)
+
+    def test_is_connected_with_green_edge_false_when_fork_point_cannot_be_determined(self, mocker: MockerFixture) -> None:
+        create_repo()
+        new_branch("master")
+        commit("master commit")
+        new_branch("develop")
+        commit("develop commit")
+        check_out("master")
+
+        rewrite_branch_layout_file(
+            """
+            master
+                develop
+            """
+        )
+
+        machete_client = MacheteClient()
+        mocker.patch.object(
+            machete_client,
+            "fork_point_and_inferring_branch_pairs",
+            side_effect=MacheteException("Fork point not found for branch <b>develop</b>"))
         assert not machete_client.is_connected_with_green_edge(
             parent=LocalBranchShortName.of("master"),
             child=LocalBranchShortName.of("develop"),
