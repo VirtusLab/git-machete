@@ -1460,22 +1460,56 @@ class Git:
             raise UnexpectedMacheteException(f"Cannot parse timespec: `{date}`")
 
     def get_latest_checkout_timestamps(self) -> Dict[str, int]:  # TODO (#110): default dict with 0
-        # Entries are in the format '<branch_name>@{<unix_timestamp> <time-zone>}'
-        result = {}
-        # %gd - reflog selector (HEAD@{<unix-timestamp> <time-zone>} for `--date=raw`;
-        #   `--date=unix` is not available on some older versions of git)
-        # %gs - reflog subject
-        output = self._popen_git("reflog", "show", "--format=%gd:%gs", "--date=raw").stdout
-        for entry in get_non_empty_lines(output):
-            pattern = "^HEAD@\\{([0-9]+) .+\\}:checkout: moving from (.+) to (.+)$"  # noqa: FS003
-            match = re.search(pattern, entry)
-            if match:
-                from_branch = match.group(2)
-                to_branch = match.group(3)
-                # Only the latest occurrence for any given branch is interesting
-                # (i.e. the first one to occur in reflog)
-                if from_branch not in result:
-                    result[from_branch] = int(match.group(1))
-                if to_branch not in result:
-                    result[to_branch] = int(match.group(1))
+        # HEAD's reflog is *per-worktree*: the main worktree records checkouts in `<git-dir>/logs/HEAD`,
+        # while each linked worktree keeps its own `<git-dir>/worktrees/<id>/logs/HEAD`. A plain
+        # `git reflog show` therefore only sees checkouts made in the *current* worktree.
+        # `discover` uses these timestamps to pick the ~N most-recently-checked-out branches, so reading a
+        # single worktree's reflog makes that selection depend on where the command runs - producing a
+        # different discovered tree in each worktree over a shared branch layout file (issue #1754).
+        # Aggregate every worktree's HEAD reflog and keep the most recent checkout timestamp per branch.
+        result: Dict[str, int] = {}
+
+        # All per-worktree HEAD reflogs live under the *common* git dir (`get_main_worktree_git_dir`
+        # collapses a linked worktree's `.git/worktrees/<id>` back to the shared `.git`).
+        reflog_paths = [self.get_main_worktree_git_subpath("logs", "HEAD")]
+        worktrees_dir = self.get_main_worktree_git_subpath("worktrees")
+        if os.path.isdir(worktrees_dir):
+            for worktree_id in sorted(os.listdir(worktrees_dir)):
+                reflog_paths.append(self.get_main_worktree_git_subpath("worktrees", worktree_id, "logs", "HEAD"))
+
+        # Raw reflog line: "<old-sha> <new-sha> <name> <email> <unix-ts> <tz>\t<subject>".
+        # We read the files directly (rather than N `git reflog show` subprocesses, one per worktree) since
+        # `git reflog show` can only report the current worktree's HEAD; the on-disk format is stable.
+        pattern = re.compile("^checkout: moving from (.+) to (.+)$")
+        for reflog_path in reflog_paths:
+            try:
+                # Decode as UTF-8 independently of the locale (matching the old `git reflog show`
+                # subprocess path, whose bytes were `.decode("utf-8")`d), and use surrogateescape so a
+                # committer name with invalid UTF-8 bytes can never raise mid-read - the ASCII timestamp
+                # and `checkout:` subject we actually parse are unaffected.
+                with open(reflog_path, encoding="utf-8", errors="surrogateescape") as reflog_file:
+                    lines = reflog_file.readlines()
+            except OSError:
+                # A worktree may have no HEAD reflog yet (e.g. just created); skip it.
+                continue
+            for line in lines:
+                meta, tab, subject = line.partition("\t")
+                if not tab:
+                    continue
+                match = pattern.match(subject.strip())
+                if not match:
+                    continue
+                meta_fields = meta.split()
+                # `<unix-ts> <tz>` are the last two whitespace-separated fields before the tab,
+                # so `[-2]` is the timestamp regardless of spaces in the committer name.
+                try:
+                    timestamp = int(meta_fields[-2])
+                except (IndexError, ValueError):
+                    continue
+                for branch in (match.group(1), match.group(2)):
+                    # Keep the most recent checkout per branch across *all* worktrees. Comparing timestamps
+                    # (rather than "first entry wins") is order-independent, so it's correct even though the
+                    # reflog files are appended oldest-first - the opposite order to `git reflog show`.
+                    if timestamp > result.get(branch, 0):
+                        result[branch] = timestamp
         return result
