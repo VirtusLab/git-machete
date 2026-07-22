@@ -2,7 +2,7 @@
 
 ## New in git-machete 3.44.2
 
-- fixed: `git machete discover` no longer produces a different branch tree depending on which worktree it is run from; the fresh-branch recency ranking now aggregates HEAD reflogs across all worktrees rather than only the current one (contributed by @earfman)
+- fixed: `git machete discover` no longer produces a different branch tree depending on which worktree it is run from; the fresh-branch recency ranking now aggregates HEAD reflogs across all worktrees rather than only the current one (reported by @jasonoura, contributed by @earfman)
 
 ## New in git-machete 3.44.1
 
