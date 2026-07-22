@@ -3,12 +3,15 @@ import re
 import textwrap
 from typing import Set
 
+import pytest
 from pytest_mock import MockerFixture
 
+from git_machete.git_version_thresholds import WORKTREE_COMMAND
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
 from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
-from tests.git_repository import add_worktree, check_out, commit, create_repo, create_repo_with_remote, merge, new_branch, push
+from tests.git_repository import (add_worktree, check_out, commit, create_repo, create_repo_with_remote, get_git_version, merge, new_branch,
+                                  push)
 from tests.mockers import mock_input_returning, overridden_environment
 from tests.shell import read_file
 
@@ -215,6 +218,7 @@ class TestDiscover(BaseTest):
 
         assert read_file(".git/machete~") == "master\n  feature1"
 
+    @pytest.mark.skipif(get_git_version() < WORKTREE_COMMAND, reason="git worktree command was introduced in git 2.5")
     def test_discover_is_worktree_independent(self) -> None:
         """Regression test for issue #1754: `discover` must produce the same tree regardless of which
         worktree it is run from.
