@@ -1,6 +1,7 @@
 import os.path
 import re
 import textwrap
+from typing import Set
 
 from pytest_mock import MockerFixture
 
@@ -240,7 +241,7 @@ class TestDiscover(BaseTest):
         main_repo = os.getcwd()
         machete_file = os.path.join(main_repo, ".git", "machete")
 
-        def discover_here() -> set:
+        def discover_here() -> Set[str]:
             launch_command("discover", "-y", "--checked-out-since=1 day ago")
             return {line.strip() for line in read_file(machete_file).splitlines() if line.strip()}
 
