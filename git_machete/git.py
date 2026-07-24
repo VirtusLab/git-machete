@@ -475,6 +475,14 @@ class Git:
 
         return worktrees
 
+    def get_worktree_root_dirs(self) -> List[AbsPath]:
+        """
+        Paths of all live worktrees (main and linked), in `git worktree list` order.
+        Just the keys of :meth:`load_branch_by_worktree_root_dir`, for callers that
+        don't care which branch (if any) is checked out where.
+        """
+        return list(self.load_branch_by_worktree_root_dir())
+
     def worktree_add(self, path: Path, branch: 'LocalBranchShortName') -> None:
         self._run_git("worktree", "add", path, branch, flush_caches=False)
 
@@ -1486,15 +1494,18 @@ class Git:
                     if timestamp > result.get(branch, 0):
                         result[branch] = timestamp
 
+        # `allow_non_zero` because `git reflog show` exits with 128 ("your current branch ... does not have
+        # any commits yet") against an unborn HEAD - e.g. in a worktree freshly added with
+        # `git worktree add --orphan`, or a just-`git init`-ed repo. Such a worktree has no checkout
+        # history to contribute anyway, so treat it as an empty reflog rather than failing the whole `discover`.
         if self.get_git_version() < WORKTREE_COMMAND:
             # No linked worktrees (and no `git -C`) on this old-git path: read the sole worktree's reflog directly.
             collect(self._popen_git("reflog", "show", "--format=%gd:%gs", "--date=raw", allow_non_zero=True).stdout)
         else:
             # `git -C <dir>` runs reflog as if invoked from that worktree, so `HEAD` resolves to *that*
             # worktree's per-worktree HEAD reflog - the only way a single `git reflog` can see another
-            # worktree's checkouts. `load_branch_by_worktree_root_dir` already lists every live worktree
-            # (main + linked, stale ones pruned).
-            for worktree_root_dir in self.load_branch_by_worktree_root_dir():
+            # worktree's checkouts.
+            for worktree_root_dir in self.get_worktree_root_dirs():
                 collect(self._popen_git(
                     "-C", worktree_root_dir, "reflog", "show", "--format=%gd:%gs", "--date=raw",
                     allow_non_zero=True).stdout)
