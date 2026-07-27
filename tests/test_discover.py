@@ -1,13 +1,17 @@
 import os.path
 import re
 import textwrap
+from typing import Set
 
+import pytest
 from pytest_mock import MockerFixture
 
+from git_machete.git_version_thresholds import WORKTREE_COMMAND
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
 from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
-from tests.git_repository import check_out, commit, create_repo, create_repo_with_remote, merge, new_branch, push
+from tests.git_repository import (add_worktree, check_out, commit, create_repo, create_repo_with_remote, get_git_version, merge, new_branch,
+                                  push)
 from tests.mockers import mock_input_returning, overridden_environment
 from tests.shell import read_file
 
@@ -213,3 +217,46 @@ class TestDiscover(BaseTest):
             )
 
         assert read_file(".git/machete~") == "master\n  feature1"
+
+    @pytest.mark.skipif(get_git_version() < WORKTREE_COMMAND, reason="git worktree command was introduced in git 2.5")
+    def test_discover_is_worktree_independent(self) -> None:
+        """Regression test for issue #1754: `discover` must produce the same tree regardless of which
+        worktree it is run from.
+
+        `discover` prunes branches by recency using HEAD's reflog, but HEAD's reflog is *per-worktree*.
+        Before the fix, a branch checked out only in *another* worktree had a local timestamp of 0, so it
+        was pruned as "stale" - and since all worktrees share one `.git/machete` file by default, each
+        worktree's `discover` overwrote it with a different tree. `--checked-out-since` makes the pruning
+        deterministic (timestamp 0 is always older than any real threshold), so no reliance on the
+        freshness cap or on sub-second timestamp ordering is needed.
+        """
+        create_repo()
+        new_branch("master")
+        commit()
+        check_out("master")
+        new_branch("feat_main")
+        commit()
+        check_out("master")
+        new_branch("feat_wt")
+        commit()
+        # feat_main is (recently) checked out in the main worktree...
+        check_out("feat_main")
+
+        main_repo = os.getcwd()
+        machete_file = os.path.join(main_repo, ".git", "machete")
+
+        def discover_here() -> Set[str]:
+            launch_command("discover", "-y", "--checked-out-since=1 day ago")
+            return {line.strip() for line in read_file(machete_file).splitlines() if line.strip()}
+
+        # ...and feat_wt lives in a linked worktree, checked out only there.
+        worktree = add_worktree("feat_wt")
+
+        from_main = discover_here()
+        os.chdir(worktree)
+        from_worktree = discover_here()
+
+        # The two worktrees must agree, and each cross-worktree branch must survive pruning.
+        assert from_main == from_worktree, (from_main, from_worktree)
+        assert "feat_wt" in from_main    # checked out only in the linked worktree
+        assert "feat_main" in from_main  # checked out only in the main worktree

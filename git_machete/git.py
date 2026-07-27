@@ -475,6 +475,14 @@ class Git:
 
         return worktrees
 
+    def get_worktree_root_dirs(self) -> List[AbsPath]:
+        """
+        Paths of all live worktrees (main and linked), in `git worktree list` order.
+        Just the keys of :meth:`load_branch_by_worktree_root_dir`, for callers that
+        don't care which branch (if any) is checked out where.
+        """
+        return list(self.load_branch_by_worktree_root_dir())
+
     def worktree_add(self, path: Path, branch: 'LocalBranchShortName') -> None:
         self._run_git("worktree", "add", path, branch, flush_caches=False)
 
@@ -1459,23 +1467,46 @@ class Git:
         except (UnderlyingGitException, ValueError):
             raise UnexpectedMacheteException(f"Cannot parse timespec: `{date}`")
 
-    def get_latest_checkout_timestamps(self) -> Dict[str, int]:  # TODO (#110): default dict with 0
-        # Entries are in the format '<branch_name>@{<unix_timestamp> <time-zone>}'
-        result = {}
+    def get_latest_checkout_timestamps(self) -> Dict[str, int]:
+        # HEAD's reflog is *per-worktree*: the main worktree records checkouts in `<git-dir>/logs/HEAD`,
+        # while each linked worktree keeps its own `<git-dir>/worktrees/<id>/logs/HEAD`. A plain
+        # `git reflog show` therefore only sees checkouts made in the *current* worktree, so `discover`
+        # (which uses these timestamps to pick the ~N most-recently-checked-out branches) would produce a
+        # different tree depending on where it runs, over a shared branch layout file (issue #1754).
+        # Run `git reflog show` once per worktree directory and aggregate, keeping the most recent
+        # checkout timestamp per branch.
+        result: Dict[str, int] = {}
         # %gd - reflog selector (HEAD@{<unix-timestamp> <time-zone>} for `--date=raw`;
         #   `--date=unix` is not available on some older versions of git)
         # %gs - reflog subject
-        output = self._popen_git("reflog", "show", "--format=%gd:%gs", "--date=raw").stdout
-        for entry in get_non_empty_lines(output):
-            pattern = "^HEAD@\\{([0-9]+) .+\\}:checkout: moving from (.+) to (.+)$"  # noqa: FS003
-            match = re.search(pattern, entry)
-            if match:
-                from_branch = match.group(2)
-                to_branch = match.group(3)
-                # Only the latest occurrence for any given branch is interesting
-                # (i.e. the first one to occur in reflog)
-                if from_branch not in result:
-                    result[from_branch] = int(match.group(1))
-                if to_branch not in result:
-                    result[to_branch] = int(match.group(1))
+        pattern = re.compile(r"^HEAD@\{([0-9]+) .+\}:checkout: moving from (.+) to (.+)$")  # noqa: FS003
+
+        def collect(reflog_output: str) -> None:
+            for entry in get_non_empty_lines(reflog_output):
+                match = pattern.match(entry)
+                if not match:
+                    continue
+                timestamp = int(match.group(1))
+                for branch in (match.group(2), match.group(3)):
+                    # Keep the most recent checkout per branch across *all* worktrees. Comparing timestamps
+                    # (rather than "first entry wins") is order-independent, so aggregating several worktrees'
+                    # reflogs stays correct regardless of the order they're visited.
+                    if timestamp > result.get(branch, 0):
+                        result[branch] = timestamp
+
+        # `allow_non_zero` because `git reflog show` exits with 128 ("your current branch ... does not have
+        # any commits yet") against an unborn HEAD - e.g. in a worktree freshly added with
+        # `git worktree add --orphan`, or a just-`git init`-ed repo. Such a worktree has no checkout
+        # history to contribute anyway, so treat it as an empty reflog rather than failing the whole `discover`.
+        if self.get_git_version() < WORKTREE_COMMAND:
+            # No linked worktrees (and no `git -C`) on this old-git path: read the sole worktree's reflog directly.
+            collect(self._popen_git("reflog", "show", "--format=%gd:%gs", "--date=raw", allow_non_zero=True).stdout)
+        else:
+            # `git -C <dir>` runs reflog as if invoked from that worktree, so `HEAD` resolves to *that*
+            # worktree's per-worktree HEAD reflog - the only way a single `git reflog` can see another
+            # worktree's checkouts.
+            for worktree_root_dir in self.get_worktree_root_dirs():
+                collect(self._popen_git(
+                    "-C", worktree_root_dir, "reflog", "show", "--format=%gd:%gs", "--date=raw",
+                    allow_non_zero=True).stdout)
         return result
