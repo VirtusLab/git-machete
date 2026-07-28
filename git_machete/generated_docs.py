@@ -253,7 +253,8 @@ long_docs: Dict[str, str] = {
                 The name of the git remote (as in `git remote`) that git-machete pushes the head branch to.
                 Unless both `machete.github.organization` and `machete.github.repository` are set, this remote's URL is also inspected
                 to derive the GitHub organization and repository that the pull request resides in.
-                The pull request is operated on through the GitHub API, which addresses that organization/repository rather than a git remote.
+                Unless the `machete.github.base*` keys below point elsewhere, the pull request is operated on through the GitHub API,
+                which addresses that organization/repository rather than a git remote.
                 By default (when this key is unset), if exactly one remote's URL corresponds to GitHub, that remote is selected automatically;
                 set this key to disambiguate when more than one remote points to GitHub.
                 For example, `git config machete.github.remote origin`
@@ -269,6 +270,10 @@ long_docs: Dict[str, str] = {
              `machete.github.baseRemote`
                 Like `machete.github.remote`, but used to locate the base repository that the pull request targets,
                 which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+                Setting this key is what makes the PR-reading/-modifying commands (`anno-prs`, `checkout-prs`, `retarget-pr`,
+                `restack-pr`, `update-pr-descriptions`) address that base repository rather than the head one.
+                `create-pr` does not need it: it infers the base repository from the base branch's tracking remote,
+                so it already targets the correct base (even one in a separate fork/upstream repository) even when this key is unset.
                 Defaults to `machete.github.remote` when unset.
                 For example, `git config machete.github.baseRemote upstream`
 
@@ -319,7 +324,8 @@ long_docs: Dict[str, str] = {
                 The name of the git remote (as in `git remote`) that git-machete pushes the source branch to.
                 Unless both `machete.gitlab.namespace` and `machete.gitlab.project` are set, this remote's URL is also inspected
                 to derive the GitLab namespace and project that the merge request resides in.
-                The merge request is operated on through the GitLab API, which addresses that namespace/project rather than a git remote.
+                Unless the `machete.gitlab.base*` keys below point elsewhere, the merge request is operated on through the GitLab API,
+                which addresses that namespace/project rather than a git remote.
                 By default (when this key is unset), if exactly one remote's URL corresponds to GitLab, that remote is selected automatically;
                 set this key to disambiguate when more than one remote points to GitLab.
                 For example, `git config machete.gitlab.remote origin`
@@ -335,6 +341,10 @@ long_docs: Dict[str, str] = {
              `machete.gitlab.baseRemote`
                 Like `machete.gitlab.remote`, but used to locate the target project that the merge request targets,
                 which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+                Setting this key is what makes the MR-reading/-modifying commands (`anno-mrs`, `checkout-mrs`, `retarget-mr`,
+                `restack-mr`, `update-mr-descriptions`) address that target project rather than the source one.
+                `create-mr` does not need it: it infers the target project from the target branch's tracking remote,
+                so it already targets the correct project (even one in a separate fork/upstream project) even when this key is unset.
                 Defaults to `machete.gitlab.remote` when unset.
                 For example, `git config machete.gitlab.baseRemote upstream`
 
@@ -840,7 +850,8 @@ long_docs: Dict[str, str] = {
                 The name of the git remote (as in `git remote`) that git-machete pushes the head branch to.
                 Unless both `machete.github.organization` and `machete.github.repository` are set, this remote's URL is also inspected
                 to derive the GitHub organization and repository that the pull request resides in.
-                The pull request is operated on through the GitHub API, which addresses that organization/repository rather than a git remote.
+                Unless the `machete.github.base*` keys below point elsewhere, the pull request is operated on through the GitHub API,
+                which addresses that organization/repository rather than a git remote.
                 By default (when this key is unset), if exactly one remote's URL corresponds to GitHub, that remote is selected automatically;
                 set this key to disambiguate when more than one remote points to GitHub.
                 For example, `git config machete.github.remote origin`
@@ -856,6 +867,10 @@ long_docs: Dict[str, str] = {
              `machete.github.baseRemote`
                 Like `machete.github.remote`, but used to locate the base repository that the pull request targets,
                 which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+                Setting this key is what makes the PR-reading/-modifying commands (`anno-prs`, `checkout-prs`, `retarget-pr`,
+                `restack-pr`, `update-pr-descriptions`) address that base repository rather than the head one.
+                `create-pr` does not need it: it infers the base repository from the base branch's tracking remote,
+                so it already targets the correct base (even one in a separate fork/upstream repository) even when this key is unset.
                 Defaults to `machete.github.remote` when unset.
                 For example, `git config machete.github.baseRemote upstream`
 
@@ -1060,7 +1075,8 @@ long_docs: Dict[str, str] = {
                 The name of the git remote (as in `git remote`) that git-machete pushes the source branch to.
                 Unless both `machete.gitlab.namespace` and `machete.gitlab.project` are set, this remote's URL is also inspected
                 to derive the GitLab namespace and project that the merge request resides in.
-                The merge request is operated on through the GitLab API, which addresses that namespace/project rather than a git remote.
+                Unless the `machete.gitlab.base*` keys below point elsewhere, the merge request is operated on through the GitLab API,
+                which addresses that namespace/project rather than a git remote.
                 By default (when this key is unset), if exactly one remote's URL corresponds to GitLab, that remote is selected automatically;
                 set this key to disambiguate when more than one remote points to GitLab.
                 For example, `git config machete.gitlab.remote origin`
@@ -1076,6 +1092,10 @@ long_docs: Dict[str, str] = {
              `machete.gitlab.baseRemote`
                 Like `machete.gitlab.remote`, but used to locate the target project that the merge request targets,
                 which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+                Setting this key is what makes the MR-reading/-modifying commands (`anno-mrs`, `checkout-mrs`, `retarget-mr`,
+                `restack-mr`, `update-mr-descriptions`) address that target project rather than the source one.
+                `create-mr` does not need it: it infers the target project from the target branch's tracking remote,
+                so it already targets the correct project (even one in a separate fork/upstream project) even when this key is unset.
                 Defaults to `machete.gitlab.remote` when unset.
                 For example, `git config machete.gitlab.baseRemote upstream`
 

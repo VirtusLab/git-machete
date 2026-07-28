@@ -14,6 +14,7 @@ from tests.mockers_code_hosting import MockAPIResponse, MockHTTPError
 
 def mock_pr_json(head: str, base: str, number: int,
                  repo_id: int = 1,
+                 base_repo_id: Optional[int] = None,
                  user: str = 'some_other_user',
                  html_url: str = 'www.github.com',
                  body: Optional[str] = '# Summary',
@@ -23,7 +24,9 @@ def mock_pr_json(head: str, base: str, number: int,
     return {
         'head': {'ref': head, 'repo': {'id': repo_id}},
         'user': {'login': user},
-        'base': {'ref': base},
+        # `base.repo.id` records which repository hosts the PR; `None` (the default) means "served for any repository",
+        # so the vast majority of tests that don't care about fork/base targeting keep working unchanged.
+        'base': {'ref': base, 'repo': {'id': base_repo_id}},
         'number': str(number),
         'html_url': html_url,
         'title': 'PR title',
@@ -113,6 +116,12 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
         new_query_string: str = urlencode({**query_params, **new_params})
         return parsed_url._replace(query=new_query_string).geturl()
 
+    def find_repo_id_by_org_and_repo(org: str, repo: str) -> Optional[int]:
+        for repo_id, repo_data in github_api_state.repositories.items():
+            if repo_data['owner']['login'] == org and repo_data['name'] == repo:
+                return repo_id
+        return None
+
     def handle_get() -> "MockAPIResponse":
         if url_path_matches('/repositories/[0-9]+'):
             repo_no = int(url_segments[-1])
@@ -120,14 +129,22 @@ def __mock_urlopen_impl(github_api_state: MockGitHubAPIState, request: Request) 
                 return MockAPIResponse(HTTPStatus.OK, github_api_state.repositories[repo_no])
             raise error_404()
         elif url_path_matches('/repos/*/*/pulls'):
+            # The `/repos/{org}/{repo}/pulls` endpoint lists PRs hosted by the base repository `{org}/{repo}`,
+            # so filter out PRs whose base repository (if declared) differs from the one being queried.
+            requested_base_repo_id: Optional[int] = find_repo_id_by_org_and_repo(url_segments[-3], url_segments[-2])
+
+            def hosted_by_requested_repo(pull: Dict[str, Any]) -> bool:
+                base_repo_id = pull['base'].get('repo', {}).get('id')
+                return base_repo_id is None or base_repo_id == requested_base_repo_id
+
             full_head_name: Optional[str] = query_params.get('head')
             if full_head_name:
                 head: str = full_head_name.split(':')[1]
-                prs = github_api_state.get_open_pulls_by_head(head)
+                prs = [pull for pull in github_api_state.get_open_pulls_by_head(head) if hosted_by_requested_repo(pull)]
                 # If no matching PRs are found, the real GitHub returns 200 OK with an empty JSON array - not 404.
                 return MockAPIResponse(HTTPStatus.OK, prs)
             else:
-                pulls = github_api_state.get_open_pulls()
+                pulls = [pull for pull in github_api_state.get_open_pulls() if hosted_by_requested_repo(pull)]
                 page_str = query_params.get('page')
                 page = int(page_str) if page_str else 1
                 per_page = int(query_params['per_page'])

@@ -4,7 +4,8 @@ from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
 from tests.cli_runner import assert_failure, assert_success, rewrite_branch_layout_file
-from tests.git_repository import amend_commit, commit, create_repo_with_remote, new_branch, push, reset_to, set_git_config_key
+from tests.git_repository import (add_remote, amend_commit, commit, create_repo, create_repo_with_remote, new_branch, push, reset_to,
+                                  set_git_config_key)
 from tests.mockers import fixed_author_and_committer_date_in_past
 from tests.mockers_code_hosting import mock_from_url
 from tests.mockers_github import MockGitHubAPIState, mock_github_token_for_domain_fake, mock_pr_json, mock_urlopen
@@ -331,3 +332,46 @@ class TestGitHubRestackPR(BaseTest):
         assert pr is not None
         assert pr['draft'] is False
         assert pr['base']['ref'] == 'master'
+
+    def test_github_restack_pr_infers_base_repo_from_parent_tracking(self, mocker: MockerFixture) -> None:
+        # In a fork workflow the PR is hosted by the base (upstream) repository, not the head (fork) repository.
+        # Even with no base* config keys, restack-pr infers the base repository from the parent branch's tracking remote
+        # (just like create-pr does), so it queries the repository that actually hosts the PR.
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        repositories = {
+            1: {'owner': {'login': 'example-org'}, 'name': 'example-repo',
+                'clone_url': 'https://github.com/example-org/example-repo.git'},
+            2: {'owner': {'login': 'example-org'}, 'name': 'example-repo-1',
+                'clone_url': 'https://github.com/example-org/example-repo-1.git'},
+        }
+        github_api_state = MockGitHubAPIState(
+            repositories,
+            mock_pr_json(number=1, head='feature', base='master', repo_id=1, base_repo_id=2, user='github_user'))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+
+        # `origin` (-> example-org/example-repo) is the head/fork remote holding the branches, while
+        # `upstream` (-> example-org/example-repo-1) is the base remote that hosts the PR. The parent branch (develop)
+        # tracks `upstream`, so the base repository is inferred from it - no machete.github.base* key is set.
+        create_repo_with_remote()
+        upstream_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        add_remote("upstream", upstream_path)
+
+        new_branch("master")
+        commit()
+        push()
+        new_branch("develop")
+        commit()
+        push(remote="upstream")
+        new_branch("feature")
+        commit()
+        push()
+        rewrite_branch_layout_file("master\n\tdevelop\n\t\tfeature")
+
+        assert_success(
+            ['github', 'restack-pr'],
+            "Switching base branch of PR #1 to develop... OK\n"
+        )
+        pr = github_api_state.get_pull_by_number(1)
+        assert pr is not None
+        assert pr['base']['ref'] == 'develop'
