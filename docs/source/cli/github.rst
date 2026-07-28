@@ -177,6 +177,9 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
 ``machete.github.prDescriptionIntroStyle`` (``create-pr``, ``restack-pr`` and ``retarget-pr``)
   .. include:: git-config-keys/github.prDescriptionIntroStyle.rst
 
+``machete.github.retrieveOnlyMyPullRequests`` (``anno-prs``, ``checkout-prs`` and ``update-pr-descriptions``)
+  .. include:: git-config-keys/github.retrieveOnlyMyPullRequests.rst
+
 **Environment variables (all subcommands)**
 
 ``GITHUB_TOKEN``

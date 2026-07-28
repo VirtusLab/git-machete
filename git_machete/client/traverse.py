@@ -248,7 +248,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
 
                 needs_retarget_pr = False
                 if opt_sync_github_prs or opt_sync_gitlab_mrs:
-                    prs = list(filter(lambda pr: pr.head == branch, self._get_all_open_prs()))
+                    prs = list(filter(lambda pr: pr.head == branch, self._get_relevant_open_prs()))
                     if len(prs) > 1:
                         spec = self.code_hosting_spec
                         raise MacheteException(
@@ -260,7 +260,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 needs_create_pr = False
                 if opt_sync_github_prs or opt_sync_gitlab_mrs:
                     if parent:
-                        prs = [_pr for _pr in self._get_all_open_prs() if _pr.head == branch]
+                        prs = [_pr for _pr in self._get_relevant_open_prs() if _pr.head == branch]
                         if not prs:
                             needs_create_pr = True
 

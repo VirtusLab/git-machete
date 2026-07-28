@@ -20,6 +20,9 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 ``machete.github.prDescriptionIntroStyle``
   .. include:: git-config-keys/github.prDescriptionIntroStyle.rst
 
+``machete.github.retrieveOnlyMyPullRequests``
+  .. include:: git-config-keys/github.retrieveOnlyMyPullRequests.rst
+
 ``machete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}``
   .. include:: git-config-keys/gitlab.access.rst
 
@@ -31,6 +34,9 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 ``machete.gitlab.mrDescriptionIntroStyle``
   .. include:: git-config-keys/gitlab.mrDescriptionIntroStyle.rst
+
+``machete.gitlab.retrieveOnlyMyMergeRequests``
+  .. include:: git-config-keys/gitlab.retrieveOnlyMyMergeRequests.rst
 
 ``machete.overrideForkPoint.<branch>.to``
     Executing ``git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]`` sets up a fork point override for ``<branch>``.

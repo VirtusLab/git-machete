@@ -253,7 +253,8 @@ long_docs: Dict[str, str] = {
                 The name of the git remote (as in `git remote`) that git-machete pushes the head branch to.
                 Unless both `machete.github.organization` and `machete.github.repository` are set, this remote's URL is also inspected
                 to derive the GitHub organization and repository that the pull request resides in.
-                The pull request is operated on through the GitHub API, which addresses that organization/repository rather than a git remote.
+                Unless the `machete.github.base*` keys below point elsewhere, the pull request is operated on through the GitHub API,
+                which addresses that organization/repository rather than a git remote.
                 By default (when this key is unset), if exactly one remote's URL corresponds to GitHub, that remote is selected automatically;
                 set this key to disambiguate when more than one remote points to GitHub.
                 For example, `git config machete.github.remote origin`
@@ -269,6 +270,10 @@ long_docs: Dict[str, str] = {
              `machete.github.baseRemote`
                 Like `machete.github.remote`, but used to locate the base repository that the pull request targets,
                 which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+                Setting this key is what makes the PR-reading/-modifying commands (`anno-prs`, `checkout-prs`, `retarget-pr`,
+                `restack-pr`, `update-pr-descriptions`) address that base repository rather than the head one.
+                `create-pr` does not need it: it infers the base repository from the base branch's tracking remote,
+                so it already targets the correct base (even one in a separate fork/upstream repository) even when this key is unset.
                 Defaults to `machete.github.remote` when unset.
                 For example, `git config machete.github.baseRemote upstream`
 
@@ -310,6 +315,25 @@ long_docs: Dict[str, str] = {
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only PR numbers & titles)
               * `none`                — prepend no intro to the PR description at all
 
+           `machete.github.retrieveOnlyMyPullRequests`
+             When set to `true`, commands that need to list open pull requests in the repository
+             (such as `github anno-prs`, `github checkout-prs` and `traverse` with GitHub integration)
+             will only download open PRs authored by the current user (as determined from the GitHub API token),
+             instead of all open PRs in the repository.
+
+             This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
+             at the cost of not being able to discover PRs opened by other users when traversing PR chains
+             (for example, when checking out an entire stack that includes PRs from multiple authors).
+
+             A valid GitHub API token is required when this key is set.
+
+             The `--all` flag to `github checkout-prs` and `github update-pr-descriptions`
+             still downloads all open PRs in the repository, regardless of this setting.
+
+             The `--by=<login>` flag to `github checkout-prs` and `github update-pr-descriptions`
+             downloads open PRs authored by the given user directly (rather than filtering the current user's PRs),
+             so it keeps working for any author even when this key is set.
+
            `machete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}`
              `machete.gitlab.domain`
                 The domain of the GitLab API server, for use with a GitLab self-managed instance; otherwise inferred from the remote URL.
@@ -319,7 +343,8 @@ long_docs: Dict[str, str] = {
                 The name of the git remote (as in `git remote`) that git-machete pushes the source branch to.
                 Unless both `machete.gitlab.namespace` and `machete.gitlab.project` are set, this remote's URL is also inspected
                 to derive the GitLab namespace and project that the merge request resides in.
-                The merge request is operated on through the GitLab API, which addresses that namespace/project rather than a git remote.
+                Unless the `machete.gitlab.base*` keys below point elsewhere, the merge request is operated on through the GitLab API,
+                which addresses that namespace/project rather than a git remote.
                 By default (when this key is unset), if exactly one remote's URL corresponds to GitLab, that remote is selected automatically;
                 set this key to disambiguate when more than one remote points to GitLab.
                 For example, `git config machete.gitlab.remote origin`
@@ -335,6 +360,10 @@ long_docs: Dict[str, str] = {
              `machete.gitlab.baseRemote`
                 Like `machete.gitlab.remote`, but used to locate the target project that the merge request targets,
                 which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+                Setting this key is what makes the MR-reading/-modifying commands (`anno-mrs`, `checkout-mrs`, `retarget-mr`,
+                `restack-mr`, `update-mr-descriptions`) address that target project rather than the source one.
+                `create-mr` does not need it: it infers the target project from the target branch's tracking remote,
+                so it already targets the correct project (even one in a separate fork/upstream project) even when this key is unset.
                 Defaults to `machete.gitlab.remote` when unset.
                 For example, `git config machete.gitlab.baseRemote upstream`
 
@@ -375,6 +404,25 @@ long_docs: Dict[str, str] = {
               * `up-only`             — default, include only a chain of upstream MRs
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only MR numbers & titles)
               * `none`                — prepend no intro to the MR description at all
+
+           `machete.gitlab.retrieveOnlyMyMergeRequests`
+             When set to `true`, commands that need to list open merge requests in the project
+             (such as `gitlab anno-mrs`, `gitlab checkout-mrs` and `traverse` with GitLab integration)
+             will only download open MRs authored by the current user (as determined from the GitLab API token),
+             instead of all open MRs in the project.
+
+             This can speed up operations considerably in projects with hundreds or thousands of open MRs,
+             at the cost of not being able to discover MRs opened by other users when traversing MR chains
+             (for example, when checking out an entire stack that includes MRs from multiple authors).
+
+             A valid GitLab API token is required when this key is set.
+
+             The `--all` flag to `gitlab checkout-mrs` and `gitlab update-mr-descriptions`
+             still downloads all open MRs in the project, regardless of this setting.
+
+             The `--by=<username>` flag to `gitlab checkout-mrs` and `gitlab update-mr-descriptions`
+             downloads open MRs authored by the given user directly (rather than filtering the current user's MRs),
+             so it keeps working for any author even when this key is set.
 
            `machete.overrideForkPoint.<branch>.to`
               Executing `git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]` sets up a fork point override for `<branch>`.
@@ -840,7 +888,8 @@ long_docs: Dict[str, str] = {
                 The name of the git remote (as in `git remote`) that git-machete pushes the head branch to.
                 Unless both `machete.github.organization` and `machete.github.repository` are set, this remote's URL is also inspected
                 to derive the GitHub organization and repository that the pull request resides in.
-                The pull request is operated on through the GitHub API, which addresses that organization/repository rather than a git remote.
+                Unless the `machete.github.base*` keys below point elsewhere, the pull request is operated on through the GitHub API,
+                which addresses that organization/repository rather than a git remote.
                 By default (when this key is unset), if exactly one remote's URL corresponds to GitHub, that remote is selected automatically;
                 set this key to disambiguate when more than one remote points to GitHub.
                 For example, `git config machete.github.remote origin`
@@ -856,6 +905,10 @@ long_docs: Dict[str, str] = {
              `machete.github.baseRemote`
                 Like `machete.github.remote`, but used to locate the base repository that the pull request targets,
                 which may differ from the head repository (for example, the base in an upstream repository and the head in a fork).
+                Setting this key is what makes the PR-reading/-modifying commands (`anno-prs`, `checkout-prs`, `retarget-pr`,
+                `restack-pr`, `update-pr-descriptions`) address that base repository rather than the head one.
+                `create-pr` does not need it: it infers the base repository from the base branch's tracking remote,
+                so it already targets the correct base (even one in a separate fork/upstream repository) even when this key is unset.
                 Defaults to `machete.github.remote` when unset.
                 For example, `git config machete.github.baseRemote upstream`
 
@@ -896,6 +949,25 @@ long_docs: Dict[str, str] = {
               * `up-only`             — default, include only a chain of upstream PRs
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only PR numbers & titles)
               * `none`                — prepend no intro to the PR description at all
+
+           `machete.github.retrieveOnlyMyPullRequests` (`anno-prs`, `checkout-prs` and `update-pr-descriptions`)
+             When set to `true`, commands that need to list open pull requests in the repository
+             (such as `github anno-prs`, `github checkout-prs` and `traverse` with GitHub integration)
+             will only download open PRs authored by the current user (as determined from the GitHub API token),
+             instead of all open PRs in the repository.
+
+             This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
+             at the cost of not being able to discover PRs opened by other users when traversing PR chains
+             (for example, when checking out an entire stack that includes PRs from multiple authors).
+
+             A valid GitHub API token is required when this key is set.
+
+             The `--all` flag to `github checkout-prs` and `github update-pr-descriptions`
+             still downloads all open PRs in the repository, regardless of this setting.
+
+             The `--by=<login>` flag to `github checkout-prs` and `github update-pr-descriptions`
+             downloads open PRs authored by the given user directly (rather than filtering the current user's PRs),
+             so it keeps working for any author even when this key is set.
 
         <b>Environment variables (all subcommands)</b>
 
@@ -1060,7 +1132,8 @@ long_docs: Dict[str, str] = {
                 The name of the git remote (as in `git remote`) that git-machete pushes the source branch to.
                 Unless both `machete.gitlab.namespace` and `machete.gitlab.project` are set, this remote's URL is also inspected
                 to derive the GitLab namespace and project that the merge request resides in.
-                The merge request is operated on through the GitLab API, which addresses that namespace/project rather than a git remote.
+                Unless the `machete.gitlab.base*` keys below point elsewhere, the merge request is operated on through the GitLab API,
+                which addresses that namespace/project rather than a git remote.
                 By default (when this key is unset), if exactly one remote's URL corresponds to GitLab, that remote is selected automatically;
                 set this key to disambiguate when more than one remote points to GitLab.
                 For example, `git config machete.gitlab.remote origin`
@@ -1076,6 +1149,10 @@ long_docs: Dict[str, str] = {
              `machete.gitlab.baseRemote`
                 Like `machete.gitlab.remote`, but used to locate the target project that the merge request targets,
                 which may differ from the source project (for example, the target in an upstream project and the source in a fork).
+                Setting this key is what makes the MR-reading/-modifying commands (`anno-mrs`, `checkout-mrs`, `retarget-mr`,
+                `restack-mr`, `update-mr-descriptions`) address that target project rather than the source one.
+                `create-mr` does not need it: it infers the target project from the target branch's tracking remote,
+                so it already targets the correct project (even one in a separate fork/upstream project) even when this key is unset.
                 Defaults to `machete.gitlab.remote` when unset.
                 For example, `git config machete.gitlab.baseRemote upstream`
 
@@ -1116,6 +1193,25 @@ long_docs: Dict[str, str] = {
               * `up-only`             — default, include only a chain of upstream MRs
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only MR numbers & titles)
               * `none`                — prepend no intro to the MR description at all
+
+           `machete.gitlab.retrieveOnlyMyMergeRequests` (`anno-mrs`, `checkout-mrs` and `update-mr-descriptions`)
+             When set to `true`, commands that need to list open merge requests in the project
+             (such as `gitlab anno-mrs`, `gitlab checkout-mrs` and `traverse` with GitLab integration)
+             will only download open MRs authored by the current user (as determined from the GitLab API token),
+             instead of all open MRs in the project.
+
+             This can speed up operations considerably in projects with hundreds or thousands of open MRs,
+             at the cost of not being able to discover MRs opened by other users when traversing MR chains
+             (for example, when checking out an entire stack that includes MRs from multiple authors).
+
+             A valid GitLab API token is required when this key is set.
+
+             The `--all` flag to `gitlab checkout-mrs` and `gitlab update-mr-descriptions`
+             still downloads all open MRs in the project, regardless of this setting.
+
+             The `--by=<username>` flag to `gitlab checkout-mrs` and `gitlab update-mr-descriptions`
+             downloads open MRs authored by the given user directly (rather than filtering the current user's MRs),
+             so it keeps working for any author even when this key is set.
 
         <b>Environment variables (all subcommands)</b>
 

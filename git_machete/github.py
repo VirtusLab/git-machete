@@ -309,6 +309,69 @@ class GitHubApi(CodeHostingApi):
         else:
             return str(response)
 
+    def __get_pull_request_from_graphql_search_node(self, pr_node: Dict[str, Any]) -> PullRequest:
+        head_repository = pr_node.get('headRepository') or {}
+        return PullRequest(
+            number=int(pr_node['number']),
+            display_prefix='PR #',
+            user=pr_node['author']['login'],
+            base=pr_node['baseRefName'],
+            head=pr_node['headRefName'],
+            head_repo_id=int(head_repository.get('databaseId') or 0),
+            html_url=pr_node['url'],
+            state=str(pr_node['state']).lower(),
+            title=pr_node['title'],
+            description=pr_node.get('body'))
+
+    # GraphQL (rather than REST) is used here on purpose - there is no REST endpoint that can filter PRs by author server-side
+    # while still returning the PR-specific fields we need:
+    #   - `/repos/{owner}/{repo}/pulls` returns head/base branches (and head repo id), but supports no author/user filter at all
+    #     (only state/head/base/sort/direction), so it would force downloading every open PR and filtering client-side -
+    #     exactly the pagination cost this whole feature exists to avoid.
+    #   - `/search/issues?q=is:pr+author:...` does filter by author, but returns only the fields common to issues and PRs;
+    #     it omits head/base branch names and head repo id, which we can't do without (and there is no `/search/pulls`).
+    # The GraphQL `search(type: ISSUE)` connection is the only option that filters by author *and* exposes
+    # headRefName/baseRefName/headRepository.databaseId in a single query. See https://github.com/VirtusLab/git-machete/issues/1040.
+    def __get_open_pull_requests_by_author_via_graphql(self, author: str) -> List[PullRequest]:
+        search_query = f'is:pr is:open author:{author} repo:{self.organization}/{self.repository}'
+        result: List[PullRequest] = []
+        cursor: Optional[str] = None
+        while True:
+            after_clause = f', after: "{cursor}"' if cursor else ''
+            query = f"""{{
+                search(query: "{search_query}", type: ISSUE, first: {self.MAX_PULLS_PER_PAGE_COUNT}{after_clause}) {{
+                    edges {{
+                        node {{
+                            ... on PullRequest {{
+                                number
+                                title
+                                body
+                                state
+                                url
+                                author {{ login }}
+                                baseRefName
+                                headRefName
+                                headRepository {{ databaseId }}
+                            }}
+                        }}
+                    }}
+                    pageInfo {{
+                        endCursor
+                        hasNextPage
+                    }}
+                }}
+            }}"""
+            response = self.__fire_github_graphql_api_request(query)
+            search_result = response['data']['search']
+            for edge in search_result['edges']:
+                result.append(self.__get_pull_request_from_graphql_search_node(edge['node']))
+            page_info = search_result['pageInfo']
+            if page_info['hasNextPage']:
+                cursor = page_info['endCursor']
+            else:
+                break
+        return result
+
     def create_pull_request(self, head: str, head_org_repo: OrganizationAndRepository, *,
                             base: str, title: str, description: str, draft: bool) -> PullRequest:
         request_body: Dict[str, Any] = {
@@ -394,12 +457,15 @@ class GitHubApi(CodeHostingApi):
         debug(f"mutation response is {response}")
         return True
 
-    def get_open_pull_requests_by_head(self, head: LocalBranchShortName) -> List[PullRequest]:
-        prs = self.__fire_github_api_repo_request(method='GET', path_suffix=f'/pulls?head={self.organization}:{head}')
+    def get_all_open_pull_requests(self) -> List[PullRequest]:
+        prs = self.__fire_github_api_repo_request(method='GET', path_suffix=f'/pulls?per_page={self.MAX_PULLS_PER_PAGE_COUNT}')
         return [self.__get_pull_request_from_json(pr) for pr in prs]
 
-    def get_open_pull_requests(self) -> List[PullRequest]:
-        prs = self.__fire_github_api_repo_request(method='GET', path_suffix=f'/pulls?per_page={self.MAX_PULLS_PER_PAGE_COUNT}')
+    def get_open_pull_requests_by_author(self, author: str) -> List[PullRequest]:
+        return self.__get_open_pull_requests_by_author_via_graphql(author)
+
+    def get_open_pull_requests_by_head(self, head: LocalBranchShortName) -> List[PullRequest]:
+        prs = self.__fire_github_api_repo_request(method='GET', path_suffix=f'/pulls?head={self.organization}:{head}')
         return [self.__get_pull_request_from_json(pr) for pr in prs]
 
     def get_current_user_login(self) -> Optional[str]:
@@ -473,5 +539,6 @@ GITHUB_API_SPEC = CodeHostingSpec(
         annotate_with_urls='machete.github.annotateWithUrls',
         force_description_from_commit_message='machete.github.forceDescriptionFromCommitMessage',
         pr_description_intro_style='machete.github.prDescriptionIntroStyle',
+        retrieve_only_my_pull_requests='machete.github.retrieveOnlyMyPullRequests',
     )
 )

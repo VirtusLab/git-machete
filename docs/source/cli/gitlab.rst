@@ -168,6 +168,9 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 ``machete.gitlab.mrDescriptionIntroStyle`` (``create-mr``, ``restack-mr`` and ``retarget-mr``)
   .. include:: git-config-keys/gitlab.mrDescriptionIntroStyle.rst
 
+``machete.gitlab.retrieveOnlyMyMergeRequests`` (``anno-mrs``, ``checkout-mrs`` and ``update-mr-descriptions``)
+  .. include:: git-config-keys/gitlab.retrieveOnlyMyMergeRequests.rst
+
 **Environment variables (all subcommands)**
 
 ``GITLAB_TOKEN``

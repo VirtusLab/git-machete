@@ -84,6 +84,96 @@ class TestGitHubUpdatePRDescriptions(BaseTest):
             """
         )
 
+    def test_github_update_pr_descriptions_related_retrieve_only_mine(self, mocker: MockerFixture) -> None:
+        """
+        With `machete.github.retrieveOnlyMyPullRequests` set, the stack traversal underlying `--related`
+        downloads only the current user's PRs (repeatedly, exercising the per-author PR cache) rather than every open PR.
+        """
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        prs = [
+            mock_pr_json(head='branch1', base='root', number=1, user='github_user', body='# Summary\n'),
+            mock_pr_json(head='branch2', base='branch1', number=2, user='github_user', body='# Summary\n'),
+            mock_pr_json(head='branch3', base='branch2', number=3, user='github_user', body='# Summary\n')
+        ]
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs(*prs)))
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        push()
+        new_branch("branch1")
+        commit("branch1 commit")
+        push()
+        new_branch("branch2")
+        commit("branch2 commit")
+        push()
+        new_branch("branch3")
+        commit("branch3 commit")
+        push()
+
+        rewrite_branch_layout_file("""
+            root
+              branch1
+                branch2
+                  branch3
+            """)
+        check_out('branch2')
+        set_git_config_key('machete.github.retrieveOnlyMyPullRequests', 'true')
+
+        assert_success(
+            ['github', 'update-pr-descriptions', '--related'],
+            """
+            Checking for open GitHub PRs by github_user... OK
+            Updating description of PR #2 (branch2 -> branch1)... OK
+            Updating description of PR #3 (branch3 -> branch2)... OK
+            """
+        )
+
+    def test_github_update_pr_descriptions_retrieve_only_mine_by_other_user(self, mocker: MockerFixture) -> None:
+        """
+        `--by=<other-user>` combined with `machete.github.retrieveOnlyMyPullRequests` asks the API for that user's PRs directly
+        (rather than filtering the current user's PRs), so PRs authored by someone else are still reachable when the key is set.
+        """
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        prs = [
+            mock_pr_json(head='branch1', base='root', number=1, user='github_user', body='# Summary\n'),
+            mock_pr_json(head='branch2', base='branch1', number=2, user='some_other_user', body='# Summary\n'),
+        ]
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs(*prs)))
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        push()
+        new_branch("branch1")
+        commit("branch1 commit")
+        push()
+        new_branch("branch2")
+        commit("branch2 commit")
+        push()
+
+        rewrite_branch_layout_file("""
+            root
+              branch1
+                branch2
+            """)
+        set_git_config_key('machete.github.retrieveOnlyMyPullRequests', 'true')
+
+        # The first fetch is some_other_user's PRs (the `--by` selection);
+        # the second is the up-only intro generation walking the stack over the current user's PRs.
+        assert_success(
+            ['github', 'update-pr-descriptions', '--by', 'some_other_user'],
+            """
+            Checking for open GitHub PRs by some_other_user... OK
+            Checking for open GitHub PRs by github_user... OK
+            Updating description of PR #2 (branch2 -> branch1)... OK
+            """
+        )
+
     def test_github_update_pr_descriptions_no_flag_defaults_to_related(self, mocker: MockerFixture) -> None:
         """
         With no `--all`/`--by`/`--mine`/`--related` flag, `update-pr-descriptions` defaults to `--related`:

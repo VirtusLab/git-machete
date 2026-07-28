@@ -21,6 +21,7 @@ mock_user_ids = {
 
 def mock_mr_json(head: str, base: str, number: int,
                  repo_id: int = 1,
+                 base_repo_id: Optional[int] = None,
                  user: str = 'some_other_user',
                  html_url: str = 'www.gitlab.com',
                  body: Optional[str] = '# Summary',
@@ -30,6 +31,9 @@ def mock_mr_json(head: str, base: str, number: int,
     return {
         'source_branch': head,
         'source_project_id': repo_id,
+        # `project_id` records the target project that hosts the MR; `None` (the default) means "served for any project",
+        # so the vast majority of tests that don't care about fork/target targeting keep working unchanged.
+        'project_id': base_repo_id,
         'target_branch': base,
         'author': {'username': user},
         'iid': str(number),
@@ -127,6 +131,15 @@ def __mock_urlopen_impl(gitlab_api_state: MockGitLabAPIState, request: Request) 
         new_query_string: str = urlencode({**query_params, **new_params})
         return parsed_url._replace(query=new_query_string).geturl()
 
+    def find_project_id(id_or_path: str) -> Optional[int]:
+        if id_or_path.isdigit():
+            return int(id_or_path)
+        full_path = urllib.parse.unquote(id_or_path)
+        for project_id, project in gitlab_api_state.projects.items():
+            if project['namespace']['full_path'] == full_path:
+                return project_id
+        return None
+
     def handle_get() -> "MockAPIResponse":
         if url_path_matches('/projects/[0-9]+'):
             repo_no = int(url_segments[-1])
@@ -140,13 +153,24 @@ def __mock_urlopen_impl(gitlab_api_state: MockGitLabAPIState, request: Request) 
                     return MockAPIResponse(HTTPStatus.OK, project)
             raise error_404()
         elif url_path_matches('/projects/*/merge_requests'):
+            # The `/projects/{id}/merge_requests` endpoint lists MRs hosted by the target project `{id}`,
+            # so filter out MRs whose target project (if declared) differs from the one being queried.
+            requested_target_project_id: Optional[int] = find_project_id(url_segments[-2])
+
+            def hosted_by_requested_project(mr: Dict[str, Any]) -> bool:
+                target_project_id = mr.get('project_id')
+                return target_project_id is None or target_project_id == requested_target_project_id
+
             head: Optional[str] = query_params.get('source_branch')
             if head:
-                mrs = gitlab_api_state.get_open_mrs_by_head(head)
+                mrs = [mr for mr in gitlab_api_state.get_open_mrs_by_head(head) if hosted_by_requested_project(mr)]
                 # If no matching MRs are found, the real GitLab returns 200 OK with an empty JSON array - not 404.
                 return MockAPIResponse(HTTPStatus.OK, mrs)
             else:
-                mrs = gitlab_api_state.get_open_mrs()
+                mrs = [mr for mr in gitlab_api_state.get_open_mrs() if hosted_by_requested_project(mr)]
+                author_username: Optional[str] = query_params.get('author_username')
+                if author_username:
+                    mrs = [mr for mr in mrs if mr['author']['username'] == author_username]
                 page_str = query_params.get('page')
                 page = int(page_str) if page_str else 1
                 per_page_str = query_params.get('per_page')
