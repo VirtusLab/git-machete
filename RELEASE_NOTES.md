@@ -2,7 +2,9 @@
 
 ## New in git-machete 3.44.2
 
-- fixed: `git machete discover` no longer produces a different branch tree depending on which worktree it is run from; the fresh-branch recency ranking now aggregates HEAD reflogs across all worktrees rather than only the current one (reported by @jasonoura, contributed by @earfman)
+- fixed: `git machete discover` no longer produces a different branch tree depending on which worktree it is run from;
+  the fresh-branch recency ranking now aggregates HEAD reflogs across all worktrees rather than only the current one (reported by @jasonoura, contributed by @earfman)
+- fixed: when run from a branch being slid out, `git machete slide-out` no longer checks out that branch's new parent if a child branch is going to be checked out right afterwards anyway for the rebase/merge
 
 ## New in git-machete 3.44.1
 

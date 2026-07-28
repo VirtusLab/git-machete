@@ -19,6 +19,12 @@ class HookInvocation(NamedTuple):
     new_children: List[ManagedBranchName]
 
 
+class SyncOperation(NamedTuple):
+    child: ManagedBranchName
+    new_parent: ManagedBranchName
+    use_merge: bool
+
+
 class SlideOutMacheteClient(MacheteClient):
     def slide_out(self,
                   *,
@@ -88,14 +94,32 @@ class SlideOutMacheteClient(MacheteClient):
                 fork_point=opt_down_fork_point,
                 branch=children_to_sync[0])
 
+        # The rebases/merges to run once the layout is updated: each pivot's surviving children get synced onto that
+        # pivot's new parent, unless `--no-rebase` was passed. Pivots whose children became new roots (no surviving
+        # ancestor) have nothing to sync onto, and a child whose annotation opts out of both rebase and merge is skipped
+        # entirely (not even checked out).
+        sync_operations: List[SyncOperation] = []
+        if not opt_no_rebase:
+            for reattachment in reattachment_by_pivot.values():
+                if reattachment.new_parent is None:
+                    continue
+                for child in reattachment.children:
+                    anno = self._state.get_annotation(child)
+                    use_merge = bool(opt_merge or (anno and anno.qualifiers.update_with_merge))
+                    use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
+                    if use_merge or use_rebase:
+                        sync_operations.append(SyncOperation(child, reattachment.new_parent, use_merge))
+
         # Where to land if the current branch is one of the branches about to disappear from the layout:
         # its nearest surviving ancestor, or - failing that (it was effectively a root) - its first surviving child.
+        # Not needed at all once there's anything to sync: every sync checks out its child branch anyway, so a landing
+        # checkout would be immediately superseded by the first of them, leaving HEAD in the exact same place.
         current_branch = self._git.get_current_branch_or_none()
         landing_branch: Optional[LocalBranchShortName] = None
-        if current_branch is not None and current_branch in slide_out_set:
-            reattachment = reattachment_by_pivot.get(current_branch)
-            if reattachment is not None:
-                landing_branch = reattachment.new_parent or reattachment.children[0]
+        if current_branch is not None and current_branch in slide_out_set and not sync_operations:
+            current_branch_reattachment = reattachment_by_pivot.get(current_branch)
+            if current_branch_reattachment is not None:
+                landing_branch = current_branch_reattachment.new_parent or current_branch_reattachment.children[0]
             else:
                 landing_branch = nearest_surviving_ancestor(current_branch)
 
@@ -115,24 +139,11 @@ class SlideOutMacheteClient(MacheteClient):
         # `git checkout` is already held by another linked worktree. Without this check we'd write the layout
         # file, fire the post-hook, and only THEN bail out at the first `git checkout` - leaving the layout
         # mutated but the rebase never performed (https://github.com/VirtusLab/git-machete/issues/1711).
-        # Two sources of forthcoming checkouts:
-        #   1. If the user is standing on a slid-out branch, we'll land them on `landing_branch`.
-        #   2. If `--no-rebase` wasn't passed, we'll check out each surviving child to rebase/merge it onto its pivot's
-        #      new parent, except children whose annotation opts them out of both (mirror the same gate as the rebase loop
-        #      below so the preflight stays in lock-step with what actually gets checked out).
-        branches_that_will_be_checked_out: List[LocalBranchShortName] = []
+        # Two (mutually exclusive) sources of forthcoming checkouts: each child about to be synced, and - if there's
+        # nothing to sync but the user is standing on a slid-out branch - the branch we'll land them on.
+        branches_that_will_be_checked_out: List[LocalBranchShortName] = [operation.child for operation in sync_operations]
         if landing_branch is not None:
             branches_that_will_be_checked_out.append(landing_branch)
-        if not opt_no_rebase:
-            for reattachment in reattachment_by_pivot.values():
-                if reattachment.new_parent is None:
-                    continue
-                for child in reattachment.children:
-                    anno = self._state.get_annotation(child)
-                    use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
-                    use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
-                    if use_merge or use_rebase:
-                        branches_that_will_be_checked_out.append(child)
         for branch in branches_that_will_be_checked_out:
             self._git.expect_branch_not_held_by_other_worktree(branch)
 
@@ -156,42 +167,31 @@ class SlideOutMacheteClient(MacheteClient):
                 slid_out_branch=hook_invocation.slid_out_branch,
                 new_children=hook_invocation.new_children)
 
-        # Check out the landing branch if we were on a slid-out branch (and there's somewhere to land);
-        # otherwise stay on the current (slid-out) branch.
+        # Check out the landing branch if there is one; otherwise HEAD is either moved by the sync loop below
+        # or stays on the current (slid-out) branch, there having been nowhere to land.
         if landing_branch is not None:
             print_fmt(f"Checking out <b>{landing_branch}</b>... ", newline=False)
             self._git.checkout_in_current_worktree(landing_branch)
             print_fmt(green_ok())
 
-        # Sync each pivot's surviving children onto that pivot's new parent (unless `--no-rebase`).
-        # Pivots whose children became new roots (no surviving ancestor) have nothing to sync onto.
-        if not opt_no_rebase:
-            for reattachment in reattachment_by_pivot.values():
-                new_parent = reattachment.new_parent
-                if new_parent is None:
-                    continue
-                for child in reattachment.children:
-                    anno = self._state.get_annotation(child)
-                    use_merge = opt_merge or (anno and anno.qualifiers.update_with_merge)
-                    use_rebase = not use_merge and (not anno or anno.qualifiers.rebase)
-                    if use_merge or use_rebase:
-                        print_fmt(f"Checking out <b>{child}</b>... ", newline=False)
-                        self._git.checkout_in_current_worktree(child)
-                        print_fmt(green_ok())
-                    if use_merge:
-                        print_fmt(f"Merging <b>{new_parent}</b> into <b>{child}</b>...")
-                        self._git.merge(
-                            branch=new_parent,
-                            into=child,
-                            opt_no_edit_merge=opt_no_edit_merge)
-                    elif use_rebase:
-                        print_fmt(f"Rebasing <b>{child}</b> onto <b>{new_parent}</b>...")
-                        child_fork_point = opt_down_fork_point or self.fork_point(child, use_overrides=True)
-                        self.rebase(
-                            onto=new_parent.full_name(),
-                            from_exclusive=child_fork_point,
-                            branch=child,
-                            opt_no_interactive_rebase=opt_no_interactive_rebase)
+        for child, new_parent, use_merge in sync_operations:
+            print_fmt(f"Checking out <b>{child}</b>... ", newline=False)
+            self._git.checkout_in_current_worktree(child)
+            print_fmt(green_ok())
+            if use_merge:
+                print_fmt(f"Merging <b>{new_parent}</b> into <b>{child}</b>...")
+                self._git.merge(
+                    branch=new_parent,
+                    into=child,
+                    opt_no_edit_merge=opt_no_edit_merge)
+            else:
+                print_fmt(f"Rebasing <b>{child}</b> onto <b>{new_parent}</b>...")
+                child_fork_point = opt_down_fork_point or self.fork_point(child, use_overrides=True)
+                self.rebase(
+                    onto=new_parent.full_name(),
+                    from_exclusive=child_fork_point,
+                    branch=child,
+                    opt_no_interactive_rebase=opt_no_interactive_rebase)
 
         if opt_delete:
             self._delete_branches(branches_to_delete=branches_to_slide_out,

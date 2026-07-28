@@ -77,7 +77,6 @@ class TestSlideOut(BaseTest):
             ["slide-out", "-n"],
             "Sliding out child_c\n"
             "Reattaching child_d under child_b\n"
-            "Checking out child_b... OK\n"
             "Checking out child_d... OK\n"
             "Rebasing child_d onto child_b...\n"
         )
@@ -130,7 +129,6 @@ class TestSlideOut(BaseTest):
             ["slide-out", "-n", "--delete", "--merge"],
             "Sliding out slide_root\n"
             "Reattaching child_a, child_b under develop\n"
-            "Checking out develop... OK\n"
             "Checking out child_a... OK\n"
             "Merging develop into child_a...\n"
             "Checking out child_b... OK\n"
@@ -443,6 +441,33 @@ class TestSlideOut(BaseTest):
         )
         assert_success(['status', '-l'], expected_status_output)
 
+    def test_slide_out_current_branch_with_rebase_no_qualifier(self) -> None:
+        """Test that the new parent is checked out when standing on the slid-out branch and no child gets synced."""
+        create_repo()
+        new_branch('branch-0')
+        commit()
+        new_branch('branch-1')
+        commit()
+        new_branch('branch-2')
+        commit()
+        check_out('branch-1')
+
+        body: str = \
+            """
+            branch-0
+                branch-1
+                    branch-2  rebase=no
+            """
+        rewrite_branch_layout_file(body)
+
+        assert_success(
+            ['slide-out'],
+            "Sliding out branch-1\n"
+            "Reattaching branch-2 under branch-0\n"
+            "Checking out branch-0... OK\n"
+        )
+        assert get_current_branch() == 'branch-0'
+
     def test_slide_out_with_slide_out_no_qualifier(self) -> None:
         create_repo()
         new_branch('branch-0')
@@ -538,6 +563,45 @@ class TestSlideOut(BaseTest):
             "    branch-3",
             "    branch-2b",
         ]
+
+    def test_slide_out_multiple_pivots_with_current_branch_child_opting_out_of_rebase(self) -> None:
+        # The current branch `a` is slid out and its only child opts out of rebase, so nothing is synced on `a`'s side -
+        # but the other pivot `b` still gets its child rebased, and that child's checkout is what HEAD lands on.
+        # No separate checkout of `a`'s new parent happens, as it would be superseded by that very checkout.
+        create_repo()
+        new_branch('master')
+        commit()
+        new_branch('a')
+        commit()
+        new_branch('x')
+        commit()
+        check_out('master')
+        new_branch('b')
+        commit()
+        new_branch('y')
+        commit()
+
+        body: str = \
+            """
+            master
+                a
+                    x  rebase=no
+                b
+                    y
+            """
+        rewrite_branch_layout_file(body)
+
+        check_out('a')
+        assert_success(
+            ['slide-out', '-n', 'a', 'b'],
+            "Sliding out a\n"
+            "Sliding out b\n"
+            "Reattaching x under master\n"
+            "Reattaching y under master\n"
+            "Checking out y... OK\n"
+            "Rebasing y onto master...\n"
+        )
+        assert get_current_branch() == 'y'
 
     def test_slide_out_non_chain_branches(self) -> None:
         # Sliding out a set of branches that do NOT form a chain used to fail with a cryptic
