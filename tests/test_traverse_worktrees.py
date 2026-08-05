@@ -87,7 +87,7 @@ class TestTraverseWorktrees(BaseTest):
 
               develop [<main worktree>]
               |
-              x-feature-1 * [<this worktree>] (ahead of origin)
+              x-feature-1 * [{feature_1_label}] (ahead of origin)
                 |
                 x-feature-2 [{feature_2_label}]
 
@@ -102,7 +102,7 @@ class TestTraverseWorktrees(BaseTest):
               |
               o-feature-1 [{feature_1_label}]
                 |
-                x-feature-2 * [<this worktree>]
+                x-feature-2 * [{feature_2_label}]
 
             Rebasing feature-2 onto feature-1...
 
@@ -113,7 +113,7 @@ class TestTraverseWorktrees(BaseTest):
               |
               o-feature-1 [{feature_1_label}]
                 |
-                o-feature-2 * [<this worktree>]
+                o-feature-2 * [{feature_2_label}]
 
             Reached branch feature-2 which has no successor; nothing left to update
             Warn: branch feature-2 is checked out in worktree at {normalized_feature_2_worktree}
@@ -135,7 +135,11 @@ class TestTraverseWorktrees(BaseTest):
         assert "feature-1 additional commit" in feature_2_log
 
     def test_traverse_cd_from_linked_to_main_worktree(self) -> None:
-        """Test traverse cd from linked worktree to main worktree for non-checked-out branch."""
+        """Test traverse cd from linked worktree to main worktree for non-checked-out branch.
+
+        Also pins down that no status printed by traverse ever says `<this worktree>`: traverse `chdir`s
+        into the main worktree here, while the user's shell stays in the linked worktree it was launched
+        from, so `<this worktree>` would name a directory the user isn't standing in."""
         (local_path, _) = create_repo_with_remote()
         new_branch("root")
         commit()
@@ -192,7 +196,7 @@ class TestTraverseWorktrees(BaseTest):
               |
               o-branch-1 [{branch_1_label}]
               |
-              o-branch-2 * [<this worktree>] (untracked)
+              o-branch-2 * [<main worktree>] (untracked)
 
             Pushing untracked branch branch-2 to origin...
 
@@ -200,7 +204,7 @@ class TestTraverseWorktrees(BaseTest):
               |
               o-branch-1 [{branch_1_label}]
               |
-              o-branch-2 * [<this worktree>]
+              o-branch-2 * [<main worktree>]
 
             Reached branch branch-2 which has no successor; nothing left to update
             Warn: branch branch-2 is checked out in worktree at {normalized_local_path}
@@ -215,7 +219,7 @@ class TestTraverseWorktrees(BaseTest):
         now in the main worktree, not `root`). This exercises the live re-query of
         `git worktree list --porcelain` inside `_find_worktree_for_branch`/`_compute_worktree_label_by_branch`
         - any stale snapshot would still report `root` as the branch held by the main worktree
-        and the `[<this worktree>]` label would land on the wrong row."""
+        and the `[<main worktree>]` label would land on the wrong row."""
         (local_path, _) = create_repo_with_remote()
         new_branch("root")
         commit()
@@ -246,7 +250,7 @@ class TestTraverseWorktrees(BaseTest):
         # 2. Visit branch-1 (in linked worktree, no action needed - don't cd).
         # 3. Visit branch-2 (not checked out anywhere) - checkout branch-2 in main worktree.
         # The post-checkout status block (printed after the rebase/push step) must show
-        # `branch-2 * [<this worktree>]` because the main worktree now holds branch-2.
+        # `branch-2 * [<main worktree>]` because the main worktree now holds branch-2.
         #
         # Note: branch-2 was created on top of branch-1, so it appears yellow (?) - the fork
         # point inference sees that branch-2 doesn't contain branch-1.
@@ -259,7 +263,7 @@ class TestTraverseWorktrees(BaseTest):
               |
               o-branch-1 [{branch_1_label}]
               |
-              ?-branch-2 * [<this worktree>] (untracked)
+              ?-branch-2 * [<main worktree>] (untracked)
 
             Warn: yellow edge indicates that fork point for branch-2 is probably incorrectly inferred,
             or that some extra branch should be between root and branch-2.
@@ -274,7 +278,7 @@ class TestTraverseWorktrees(BaseTest):
               |
               o-branch-1 [{branch_1_label}]
               |
-              o-branch-2 * [<this worktree>]
+              o-branch-2 * [<main worktree>]
 
             Reached branch branch-2 which has no successor; nothing left to update
             """
@@ -376,6 +380,8 @@ class TestTraverseWorktrees(BaseTest):
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("q"))
 
         normalized_branch_1_worktree = AbsPath(branch_1_worktree)
+        # Single linked worktree: strip_longest_common_path_prefix falls back to the basename.
+        branch_1_label = os.path.basename(normalized_branch_1_worktree)
 
         # This corner case tests that when user quits mid-traverse,
         # the final warning is shown if ended in a different worktree
@@ -386,7 +392,7 @@ class TestTraverseWorktrees(BaseTest):
 
               root [<main worktree>]
               |
-              x-branch-1 * [<this worktree>]
+              x-branch-1 * [{branch_1_label}]
 
             Rebase branch-1 onto root? (y, N, q, yq)
             Warn: branch branch-1 is checked out in worktree at {normalized_branch_1_worktree}
@@ -454,7 +460,7 @@ class TestTraverseWorktrees(BaseTest):
 
               root [{root_label}] (untracked)
               |
-              x-branch-1 * [<this worktree>]
+              x-branch-1 * [<main worktree>]
               |
               x-branch-2 [{branch_2_label}]
 
@@ -466,7 +472,7 @@ class TestTraverseWorktrees(BaseTest):
               |
               x-branch-1 [<main worktree>]
               |
-              x-branch-2 * [<this worktree>]
+              x-branch-2 * [{branch_2_label}]
 
             Rebase branch-2 onto root? (y, N, q, yq)
 
@@ -474,7 +480,7 @@ class TestTraverseWorktrees(BaseTest):
               |
               x-branch-1 [<main worktree>]
               |
-              x-branch-2 * [<this worktree>]
+              x-branch-2 * [{branch_2_label}]
 
             Reached branch branch-2 which has no successor; nothing left to update
             Warn: branch branch-2 is checked out in worktree at {normalized_branch_2_worktree}
@@ -506,7 +512,7 @@ class TestTraverseWorktrees(BaseTest):
 
               root (untracked)
               |
-              x-branch-1 * [<this worktree>]
+              x-branch-1 * [{root_label}]
               |
               x-branch-2 [{branch_2_label}]
 
@@ -518,7 +524,7 @@ class TestTraverseWorktrees(BaseTest):
               |
               x-branch-1 [{root_label}]
               |
-              x-branch-2 * [<this worktree>]
+              x-branch-2 * [{branch_2_label}]
 
             Rebase branch-2 onto root? (y, N, q, yq)
 
@@ -526,7 +532,7 @@ class TestTraverseWorktrees(BaseTest):
               |
               x-branch-1 [{root_label}]
               |
-              x-branch-2 * [<this worktree>]
+              x-branch-2 * [{branch_2_label}]
 
             Reached branch branch-2 which has no successor; nothing left to update
             Warn: branch branch-2 is checked out in worktree at {normalized_branch_2_worktree}
@@ -576,9 +582,9 @@ class TestTraverseWorktrees(BaseTest):
         # branch-to-worktree mapping and `root` ends up labeled with `root_worktree`'s basename.
         root_label = os.path.basename(normalized_root_worktree)
 
-        # The temp worktree gets a random `git-machete-worktree-XXXX` basename, but it's also the
-        # *current* worktree (traverse cd's into it), so its label collapses to the literal
-        # `<this worktree>` -- which keeps this whole assertion deterministic.
+        # The temp worktree gets a random `git-machete-worktree-XXXX` basename, but it's always the
+        # *current* worktree (traverse cd's into it), so it's labeled `<temporary worktree>` for what it is
+        # rather than by path -- which keeps this whole assertion deterministic.
         self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n", "n", "n"))
         assert_success(
             ["traverse"],
@@ -589,7 +595,7 @@ class TestTraverseWorktrees(BaseTest):
 
               root [{root_label}] (untracked)
               |
-              x-branch-1 * [<this worktree>]
+              x-branch-1 * [<temporary worktree>]
               |
               x-branch-2
 
@@ -602,7 +608,7 @@ class TestTraverseWorktrees(BaseTest):
               |
               x-branch-1
               |
-              x-branch-2 * [<this worktree>]
+              x-branch-2 * [<temporary worktree>]
 
             Rebase branch-2 onto root? (y, N, q, yq)
 
@@ -610,7 +616,7 @@ class TestTraverseWorktrees(BaseTest):
               |
               x-branch-1
               |
-              x-branch-2 * [<this worktree>]
+              x-branch-2 * [<temporary worktree>]
 
             Reached branch branch-2 which has no successor; nothing left to update
             Removing the temporary worktree; changing directory back to {normalized_root_worktree}
@@ -651,6 +657,8 @@ class TestTraverseWorktrees(BaseTest):
 
         normalized_local_path = AbsPath(local_path)
 
+        # The temporary worktree is the repo's only linked worktree here, and it's enough to make the
+        # worktree labels fire at all - so `root` gets tagged as living in the main worktree.
         assert_success(
             ["traverse", "-y"],
             f"""
@@ -658,7 +666,7 @@ class TestTraverseWorktrees(BaseTest):
 
               root [<main worktree>]
               |
-              x-feature * [<this worktree>]
+              x-feature * [<temporary worktree>]
 
             Rebasing feature onto root...
 
@@ -667,7 +675,7 @@ class TestTraverseWorktrees(BaseTest):
 
               root [<main worktree>]
               |
-              o-feature * [<this worktree>]
+              o-feature * [<temporary worktree>]
 
             Reached branch feature which has no successor; nothing left to update
             Removing the temporary worktree; changing directory back to {normalized_local_path}
@@ -728,7 +736,7 @@ class TestTraverseWorktrees(BaseTest):
 
               root [<main worktree>]
               |
-              x-feature * [<this worktree>]
+              x-feature * [<temporary worktree>]
 
             Rebasing feature onto root...
 
@@ -737,7 +745,7 @@ class TestTraverseWorktrees(BaseTest):
 
               root [<main worktree>]
               |
-              o-feature * [<this worktree>]
+              o-feature * [<temporary worktree>]
 
             Reached branch feature which has no successor; nothing left to update
             Removing the temporary worktree; changing directory back to {normalized_local_path}
@@ -774,6 +782,8 @@ class TestTraverseWorktrees(BaseTest):
         check_out("base")
         feature_worktree = add_worktree("feature")
         normalized_feature_worktree = AbsPath(feature_worktree)
+        # Single linked worktree: strip_longest_common_path_prefix falls back to the basename.
+        feature_label = os.path.basename(normalized_feature_worktree)
 
         # Make a conflicting change on base
         check_out("base")
@@ -791,7 +801,7 @@ class TestTraverseWorktrees(BaseTest):
 
               base [<main worktree>]
               |
-              x-feature * [<this worktree>]
+              x-feature * [{feature_label}]
 
             Rebasing feature onto base...
             Warn: branch feature is checked out in worktree at {normalized_feature_worktree}
@@ -844,6 +854,8 @@ class TestTraverseWorktrees(BaseTest):
         os.chdir(initial_dir)
 
         normalized_a_worktree = AbsPath(a_worktree)
+        # Single linked worktree: strip_longest_common_path_prefix falls back to the basename.
+        a_label = os.path.basename(normalized_a_worktree)
 
         assert_success(
             ["traverse", "-y"],
@@ -852,7 +864,7 @@ class TestTraverseWorktrees(BaseTest):
 
               main [<main worktree>]
               |
-              m-a * [<this worktree>] (untracked)
+              m-a * [{a_label}] (untracked)
 
             Branch a is merged into main. Sliding a out of the tree of branch dependencies...
 

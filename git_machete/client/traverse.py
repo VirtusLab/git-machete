@@ -54,6 +54,20 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
         self.__temporary_worktree_path: Optional[AbsPath] = None
         self.__dir_before_temporary_worktree: Optional[AbsPath] = None
 
+    def _current_worktree_label(self) -> Optional[str]:
+        """`traverse` `chdir`s between worktrees as it walks the branch tree, so the process' current
+        directory drifts away from the one the user's shell is standing in. `<this worktree>` would then
+        point at whichever worktree `traverse` most recently hopped into - which reads as if the user
+        were there - so every status printed during a traversal names the current worktree explicitly
+        (`<main worktree>` or its stripped-prefix label) instead.
+
+        The exception is the temporary worktree (see `machete.traverse.whenBranchNotCheckedOutInAnyWorktree`),
+        which is by construction always the *current* one: `_switch_branch` creates it, `chdir`s into it and
+        clears this field before `chdir`ing back out. Its randomly-generated `git-machete-worktree-*` basename
+        would be pure noise, so it's named for what it is instead.
+        """
+        return "<temporary worktree>" if self.__temporary_worktree_path is not None else None
+
     def _find_worktree_for_branch(self, branch: LocalBranchShortName) -> Optional[AbsPath]:
         # Fresh porcelain query on each call - `git worktree list --porcelain` is cheap (a single
         # subprocess with tiny output) and traverse only hits this method on each `_switch_branch`,

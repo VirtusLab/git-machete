@@ -410,6 +410,12 @@ class StatusMacheteClient(MacheteClient):
                 print("", file=sys.stderr)
                 warn(warning_msg)
 
+    def _current_worktree_label(self) -> Optional[str]:
+        """The literal label for the worktree that the *process* is standing in, or `None` to have that
+        worktree named just like any other one. `<this worktree>` is only honest for commands that keep
+        running in the directory they were launched from - `traverse`, which `chdir`s mid-run, overrides this."""
+        return "<this worktree>"
+
     def _compute_worktree_label_by_branch(self) -> Dict[LocalBranchShortName, str]:
         """For each managed branch checked out in a worktree, derive a short label naming that worktree
         (rendered in `status` after the annotation).
@@ -418,18 +424,18 @@ class StatusMacheteClient(MacheteClient):
         fires, so users see one consistent piece of info per branch rather than guessing why some
         branches carry a label and others don't. Concretely:
 
-        * branch in the current worktree (whether main or linked) -> the literal `<this worktree>` -
-          self-explanatory so users encountering the label for the first time can interpret it without
-          having to read any PSA in the status output,
+        * branch in the current worktree (whether main or linked) -> the literal returned by
+          `_current_worktree_label` (`<this worktree>` by default) - self-explanatory so users encountering
+          the label for the first time can interpret it without having to read any PSA in the status output,
         * branch in the main worktree, but the user is standing in a linked worktree -> `<main worktree>`,
         * branch in any other linked worktree -> that worktree's stripped-prefix label
           (`strip_longest_common_path_prefix` collapses sibling linked worktrees to plain basenames,
           so typical layouts like `~/worktrees/wt1`, `~/worktrees/wt2`, ... render as `wt1`, `wt2`, ...).
 
-        The main worktree gets a literal `<main worktree>` label rather than participating in the prefix
-        computation, because mixing it in could artificially lengthen every linked-worktree label
-        (e.g. when the main worktree lives in the user's home dir but linked worktrees sit under `/tmp` -
-        the only shared component would be `/`, leaving every label as a full absolute path).
+        Worktrees carrying a literal label stay out of the prefix computation, because mixing them in could
+        artificially lengthen every remaining label (e.g. when the main worktree lives in the user's home dir
+        but linked worktrees sit under `/tmp` - the only shared component would be `/`, leaving every label
+        as a full absolute path).
 
         The whole feature is gated on at least one linked worktree existing: in a plain single-worktree
         repo we don't want a `[<this worktree>]` tag stuck on the current branch of every status output,
@@ -441,6 +447,7 @@ class StatusMacheteClient(MacheteClient):
 
         main_path = self._git.get_main_worktree_root_dir()
         current_path = self._git.get_current_worktree_root_dir()
+        current_label = self._current_worktree_label()
 
         # `.keys()` covers detached-HEAD linked worktrees too - this is what makes the gate fire
         # in repos whose only linked worktree happens to be detached.
@@ -448,8 +455,9 @@ class StatusMacheteClient(MacheteClient):
         if not linked_paths:
             return {}
 
-        stripped = strip_longest_common_path_prefix([str(p) for p in linked_paths])
-        label_by_linked_path = dict(zip(linked_paths, stripped))
+        paths_to_derive_label_for = [p for p in linked_paths if p != current_path or current_label is None]
+        stripped = strip_longest_common_path_prefix([str(p) for p in paths_to_derive_label_for])
+        label_by_linked_path = dict(zip(paths_to_derive_label_for, stripped))
 
         # For the same-branch-in-multiple-worktrees foot-gun, multiple iterations write to
         # `labels[branch]` - the last write wins. Since porcelain emits main first and linked
@@ -460,8 +468,8 @@ class StatusMacheteClient(MacheteClient):
         for path, branch in branch_by_worktree_path.items():
             if branch is None:
                 continue
-            if path == current_path:
-                labels[branch] = "<this worktree>"
+            if path == current_path and current_label is not None:
+                labels[branch] = current_label
             elif path == main_path:
                 labels[branch] = "<main worktree>"
             else:
