@@ -487,3 +487,65 @@ class TestGitHubRetargetPR(BaseTest):
             "Branch master does not have a parent branch (it is a root) even though there is an open PR #15 to root.\n"
             "Consider modifying the branch layout file (git machete edit) so that master is a child of root."
         )
+
+    def test_github_retarget_pr_infers_base_repo_from_parent_tracking(self, mocker: MockerFixture) -> None:
+        # In a fork workflow the PR is hosted by the base (upstream) repository, not the head (fork) repository.
+        # Even with no base* config keys, retarget-pr infers the base repository from the parent branch's tracking remote
+        # (just like create-pr does), so it queries the repository that actually hosts the PR.
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        repositories = {
+            1: {'owner': {'login': 'example-org'}, 'name': 'example-repo',
+                'clone_url': 'https://github.com/example-org/example-repo.git'},
+            2: {'owner': {'login': 'example-org'}, 'name': 'example-repo-1',
+                'clone_url': 'https://github.com/example-org/example-repo-1.git'},
+        }
+        github_api_state = MockGitHubAPIState(
+            repositories,
+            mock_pr_json(number=1, head='feature', base='master', repo_id=1, base_repo_id=2, user='github_user'))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(github_api_state))
+
+        # `origin` (-> example-org/example-repo) is the head/fork remote holding the branches, while
+        # `upstream` (-> example-org/example-repo-1) is the base remote that hosts the PR. The parent branch (develop)
+        # tracks `upstream`, so the base repository is inferred from it - no machete.github.base* key is set.
+        create_repo_with_remote()
+        upstream_path = create_repo("remote-1", bare=True, switch_dir_to_new_repo=False)
+        add_remote("upstream", upstream_path)
+
+        new_branch("master")
+        commit()
+        push()
+        new_branch("develop")
+        commit()
+        push(remote="upstream")
+        new_branch("feature")
+        commit()
+        push()
+        rewrite_branch_layout_file("master\n\tdevelop\n\t\tfeature")
+
+        assert_success(
+            ['github', 'retarget-pr'],
+            "Switching base branch of PR #1 to develop... OK\n"
+        )
+        pr1 = github_api_state.get_pull_by_number(1)
+        assert pr1 is not None
+        assert pr1['base']['ref'] == 'develop'
+
+    def test_github_retarget_pr_surfaces_base_config_error(self, mocker: MockerFixture) -> None:
+        # When a base* config key is set but cannot be resolved (here it points at a nonexistent remote), retarget-pr must
+        # surface the misconfiguration rather than silently falling back to the head repository.
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+
+        create_repo_with_remote()
+        new_branch("master")
+        commit()
+        push()
+        new_branch("feature")
+        commit()
+        push()
+        rewrite_branch_layout_file("master\n\tfeature")
+
+        set_git_config_key("machete.github.baseRemote", "nonexistent")
+        assert_failure(
+            ['github', 'retarget-pr'],
+            "machete.github.baseRemote git config key points to nonexistent remote, but such remote does not exist")
