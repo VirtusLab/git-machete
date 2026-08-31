@@ -1,5 +1,10 @@
 # Release notes
 
+## New in git-machete 3.45.0
+
+- added: `git machete traverse --push-option=<option>` (`-o <option>`) passes the given push option to every `git push` run during the traversal,
+  e.g. `--push-option=ci.skip`; can be provided multiple times, and requires git >= 2.10.0 plus a remote that has `receive.advertisePushOptions` enabled
+
 ## New in git-machete 3.44.2
 
 - fixed: `git machete discover` no longer produces a different branch tree depending on which worktree it is run from;

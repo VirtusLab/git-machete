@@ -78,13 +78,13 @@ _git_machete() {
   local slide_out_opts="-d --down-fork-point= --delete -M --merge -n --no-edit-merge --no-interactive-rebase --no-rebase --removed-from-remote"
   local squash_opts="-f --fork-point="
   local status_opts="--color= -L --list-commits-with-hashes -l --list-commits --no-detect-squash-merges --squash-merge-detection="
-  local traverse_opts="-F --fetch -H --sync-github-prs -L --sync-gitlab-mrs -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --no-push-untracked --push --push-untracked --return-to= --squash-merge-detection= --start-from= --stop-after= -w --whole -W -y --yes"
+  local traverse_opts="-F --fetch -H --sync-github-prs -L --sync-gitlab-mrs -l --list-commits -M --merge -n --no-detect-squash-merges --no-edit-merge --no-interactive-rebase --no-push --no-push-untracked -o --push-option= --push --push-untracked --return-to= --squash-merge-detection= --start-from= --stop-after= -w --whole -W -y --yes"
   local update_opts="-f --fork-point= -M --merge -n --no-edit-merge --no-interactive-rebase"
 
   cur=${COMP_WORDS[$COMP_CWORD]}
   case $cur in
     --branch=*|--onto=*) __gitcomp_nl "$(git machete list managed 2>/dev/null)" "" "${cur##--*=}" ;;
-    --by=*|--checked-out-since=*) COMPREPLY=('');;
+    --by=*|--checked-out-since=*|--push-option=*) COMPREPLY=('');;
     --color=*) __gitcomp "$opt_color_args" "" "${cur##--color=}" ;;
     --down-fork-point=*|--fork-point=*|--override-to=*) __gitcomp "$(__git_refs)" "" "${cur##--*=}" ;;
     --return-to=*) __gitcomp "$opt_return_to_args" "" "${cur##--return-to=}" ;;

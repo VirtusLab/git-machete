@@ -158,6 +158,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             opt_merge: bool,
             opt_no_edit_merge: bool,
             opt_no_interactive_rebase: bool,
+            opt_push_options: List[str],
             opt_push_tracked: Optional[bool],
             opt_push_untracked: Optional[bool],
             opt_return_to: TraverseReturnTo,
@@ -490,6 +491,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                         self.__handle_ahead_state(
                             current_branch=current_branch,
                             remote=remote,
+                            opt_push_options=opt_push_options,
                             opt_push_tracked=opt_push_tracked,
                             opt_yes=opt_yes)
                     elif s == SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE:
@@ -499,11 +501,13 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                         self.__handle_diverged_and_newer_state(
                             current_branch=current_branch,
                             remote=remote,
+                            opt_push_options=opt_push_options,
                             opt_push_tracked=opt_push_tracked,
                             opt_yes=opt_yes)
                     elif s == SyncToRemoteStatus.UNTRACKED:
                         self.__handle_untracked_state(
                             branch=current_branch,
+                            opt_push_options=opt_push_options,
                             opt_push_untracked=opt_push_untracked,
                             opt_push_tracked=opt_push_tracked,
                             opt_yes=opt_yes)
@@ -600,6 +604,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             *,
             new_remote: str,
             branch: LocalBranchShortName,
+            opt_push_options: List[str],
             opt_push_untracked: bool,
             opt_push_tracked: bool,
             opt_yes: bool
@@ -618,12 +623,13 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                 opt_yes=opt_yes,
                 override_answer=None if opt_push_untracked else "N")
             if ans in ('y', 'yes', 'yq'):
-                self._git.push(new_remote, branch)
+                self._git.push(new_remote, branch, push_options=opt_push_options)
                 if ans == 'yq':
                     raise InteractionStopped
             elif can_pick_other_remote and ans in ('o', 'other'):
                 self.__pick_remote(
                     branch=branch,
+                    opt_push_options=opt_push_options,
                     opt_push_untracked=opt_push_untracked,
                     opt_push_tracked=opt_push_tracked,
                     opt_yes=opt_yes)
@@ -689,10 +695,10 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
         yes_action: Callable[[], None] = {
             SyncToRemoteStatus.IN_SYNC_WITH_REMOTE: lambda: self._git.set_upstream_to(remote_branch),
             SyncToRemoteStatus.BEHIND_REMOTE: lambda: self._git.pull_ff_only(new_remote, remote_branch),
-            SyncToRemoteStatus.AHEAD_OF_REMOTE: lambda: self._git.push(new_remote, branch),
+            SyncToRemoteStatus.AHEAD_OF_REMOTE: lambda: self._git.push(new_remote, branch, push_options=opt_push_options),
             SyncToRemoteStatus.DIVERGED_FROM_AND_OLDER_THAN_REMOTE: lambda: self._git.reset_keep(remote_branch),
             SyncToRemoteStatus.DIVERGED_FROM_AND_NEWER_THAN_REMOTE: lambda: self._git.push(
-                new_remote, branch, force_with_lease=True)
+                new_remote, branch, force_with_lease=True, push_options=opt_push_options)
         }[SyncToRemoteStatus(relation)]
 
         print_fmt(message)
@@ -708,6 +714,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             self,
             *,
             branch: LocalBranchShortName,
+            opt_push_options: List[str],
             opt_push_tracked: bool,
             opt_push_untracked: bool,
             opt_yes: bool
@@ -718,6 +725,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             self.__handle_untracked_branch(
                 new_remote=remotes[0],
                 branch=branch,
+                opt_push_options=opt_push_options,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
@@ -725,6 +733,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             self.__handle_untracked_branch(
                 new_remote="origin",
                 branch=branch,
+                opt_push_options=opt_push_options,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
@@ -733,6 +742,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             print_fmt(f"Branch <b>{branch}</b> is untracked and there's no <b>origin</b> remote.")
             self.__pick_remote(
                 branch=branch,
+                opt_push_options=opt_push_options,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
@@ -741,6 +751,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             self,
             *,
             branch: LocalBranchShortName,
+            opt_push_options: List[str],
             opt_push_untracked: bool,
             opt_push_tracked: bool,
             opt_yes: bool
@@ -760,6 +771,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             self.__handle_untracked_branch(
                 new_remote=rems[index],
                 branch=branch,
+                opt_push_options=opt_push_options,
                 opt_push_untracked=opt_push_untracked,
                 opt_push_tracked=opt_push_tracked,
                 opt_yes=opt_yes)
@@ -771,6 +783,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             *,
             current_branch: LocalBranchShortName,
             remote: str,
+            opt_push_options: List[str],
             opt_push_tracked: bool,
             opt_yes: bool
     ) -> None:
@@ -782,7 +795,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             opt_yes=opt_yes
         )
         if ans in ('y', 'yes', 'yq'):
-            self._git.push(remote, current_branch)
+            self._git.push(remote, current_branch, push_options=opt_push_options)
             if ans == 'yq':
                 raise InteractionStopped
         elif ans in ('q', 'quit'):
@@ -810,6 +823,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             *,
             current_branch: LocalBranchShortName,
             remote: str,
+            opt_push_options: List[str],
             opt_push_tracked: bool,
             opt_yes: bool
     ) -> None:
@@ -823,7 +837,7 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
             f"Pushing <b>{current_branch}</b> with force-with-lease to <b>{remote}</b>...",
             override_answer=None if opt_push_tracked else "N", opt_yes=opt_yes)
         if ans in ('y', 'yes', 'yq'):
-            self._git.push(remote, current_branch, force_with_lease=True)
+            self._git.push(remote, current_branch, force_with_lease=True, push_options=opt_push_options)
             if ans == 'yq':
                 raise InteractionStopped
         elif ans in ('q', 'quit'):

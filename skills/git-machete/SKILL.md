@@ -157,7 +157,10 @@ If `update` complains the current branch isn't in the layout, run `git machete a
 ```bash
 git machete traverse -y --no-push                # rebase only, don't push
 git machete traverse -y                          # rebase + push (default)
+git machete traverse -y --push-option=ci.skip    # rebase + push, forwarding a push option to every push
 ```
+
+`-o`/`--push-option` maps onto `git push --push-option` and can be passed more than once; it's how a bulk restack avoids firing one CI pipeline per branch (`ci.skip` is GitLab's spelling). Needs git >= 2.10 and a remote with `receive.advertisePushOptions` enabled; otherwise `git push` fails outright rather than silently dropping the option.
 
 **Do not** pass `-M`/`--merge` (to `update`, `traverse`, or `slide-out`). For stacked branches, merge-based sync entangles history quickly and recovery is non-trivial (see the [README FAQ](https://github.com/VirtusLab/git-machete#can-i-use-git-merge-for-syncing-stacked-branches) for rationale). Rebase is the only mode an agent should use. If the user explicitly asks for merge mode, repeat the warning and ask them to confirm.
 

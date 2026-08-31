@@ -5,7 +5,7 @@ import string
 import sys
 from enum import Enum, auto
 from pathlib import Path as PyPath
-from typing import Any, Dict, Iterator, List, Match, NamedTuple, Optional, Set, Tuple
+from typing import Any, Dict, Iterator, List, Match, NamedTuple, Optional, Sequence, Set, Tuple
 
 from git_machete.constants import MAX_COMMITS_FOR_SQUASH_MERGE_DETECTION
 from git_machete.git_version_thresholds import (PATCH_ID_UNSTABLE_OUTPUT_ORDER, PUSH_FORCE_IF_INCLUDES, PUSH_FORCE_WITH_LEASE,
@@ -621,7 +621,8 @@ class Git:
             raise UnderlyingGitException(
                 f"Cannot perform `git reset --keep {to_revision}`. This is most likely caused by local uncommitted changes.")
 
-    def push(self, remote: str, branch: LocalBranchShortName, *, force_with_lease: bool = False) -> None:  # noqa: KW
+    def push(self, remote: str, branch: LocalBranchShortName, *,  # noqa: KW
+             force_with_lease: bool = False, push_options: Sequence[str] = ()) -> None:
         if not force_with_lease:
             opt_force = []
         elif self.get_git_version() >= PUSH_FORCE_IF_INCLUDES:
@@ -630,8 +631,10 @@ class Git:
             opt_force = ["--force-with-lease"]
         else:
             opt_force = ["--force"]
+        # `git push` takes one `--push-option` per value, so each element gets its own flag.
+        opt_push_option = [arg for push_option in push_options for arg in ("--push-option", push_option)]
         args = [remote, branch]
-        self._run_git("push", "--set-upstream", *(opt_force + args), flush_caches=True)
+        self._run_git("push", "--set-upstream", *(opt_force + opt_push_option + args), flush_caches=True)
 
     def pull_ff_only(self, remote: str, remote_branch: RemoteBranchShortName) -> None:  # noqa: KW
         self.fetch_remote(remote)

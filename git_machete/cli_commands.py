@@ -23,10 +23,14 @@ class OptSpec(NamedTuple):
     `takes_value` is True iff the option requires an argument (e.g. `--onto foo` or `-o foo`).
     The display name used in error messages is built from whichever of `short`/`long` is set
     (preferring `-short/--long` if both are present).
+
+    `multiple` marks a value-taking option as repeatable: every occurrence is gathered (in command-line order)
+    into `ParsedCmd.repeated_opts` rather than the last one clobbering the earlier ones in `ParsedCmd.opts`.
     """
     long: Optional[str] = None
     short: Optional[str] = None
     takes_value: bool = False
+    multiple: bool = False
 
     @property
     def canonical_name(self) -> str:
@@ -138,6 +142,9 @@ class ParsedCmd(NamedTuple):
     `opts` keys are `OptSpec.storage_key` (the long name, or short if long-less).
     Boolean flags map to `""`; valued options map to their string value.
 
+    `repeated_opts` holds the options declared with `multiple=True`, each mapped to the list of all its values
+    in command-line order. Such options never appear in `opts`.
+
     `positionals` keys are `PositionalSpec.name` (the human-readable name used in error messages);
     the value is a string, list of strings, or list of converted values depending on `multiple`/`type_conv`.
 
@@ -145,6 +152,7 @@ class ParsedCmd(NamedTuple):
     """
     command: Optional[str]  # canonical command name (alias resolved). None for "no command"
     opts: Dict[str, str]
+    repeated_opts: Dict[str, List[str]]
     positionals: Dict[str, Any]
     pass_through: List[str]
 
@@ -482,6 +490,7 @@ COMMANDS: Tuple[CommandSpec, ...] = (
             OptSpec(long="no-interactive-rebase"),
             OptSpec(long="no-push"),
             OptSpec(long="no-push-untracked"),
+            OptSpec(short="o", long="push-option", takes_value=True, multiple=True),
             OptSpec(long="push"),
             OptSpec(long="push-untracked"),
             OptSpec(long="return-to", takes_value=True),

@@ -170,6 +170,10 @@ def _populate_cli_options(
         # plus per-subcommand presence-only markers (`sync-github-prs` consumers of GitLab specs etc.)
         # are picked up directly from `parsed.opts` by the dispatcher below or by `set_utils_global_variables`.
 
+    # Repeatable options accumulate rather than override, so they live in their own dict
+    # (see `OptSpec.multiple`) and are read outside the last-one-wins loop above.
+    cli_opts.opt_push_options = parsed.repeated_opts.get("push-option", [])
+
     if cli_opts.opt_n or cli_opts.opt_yes:
         # Some branches may carry a merge strategy even when --merge isn't set,
         # so default-no-edit lines up with --yes/-n in those cases too.
@@ -496,6 +500,7 @@ def launch_internal(orig_args: List[str]) -> None:
                 opt_merge=cli_opts.opt_merge,
                 opt_no_edit_merge=cli_opts.opt_no_edit_merge,
                 opt_no_interactive_rebase=cli_opts.opt_no_interactive_rebase,
+                opt_push_options=cli_opts.opt_push_options,
                 opt_push_tracked=cli_opts.opt_push_tracked,
                 opt_push_untracked=cli_opts.opt_push_untracked,
                 opt_return_to=opt_return_to,

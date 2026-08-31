@@ -34,6 +34,7 @@ class CommandLineOptions:
         self.opt_override_to: Optional[str] = None
         self.opt_override_to_inferred: bool = False
         self.opt_override_to_parent: bool = False
+        self.opt_push_options: List[str] = list()
         # Tri-state: `None` means "user did not pass any `--push*`/`--no-push*` flag",
         # leaving the effective value to be resolved against `machete.traverse.push` (or the built-in default of `True`)
         # at the use site inside the client.

@@ -159,6 +159,7 @@ _git-machete() {
             '(-n -M --merge --no-interactive-rebase)'--no-interactive-rebase'[If updating by rebase, do NOT pass --interactive flag to underlying git rebase]' \
             '(--push --no-push)'--no-push'[Do not push any (neither tracked nor untracked) branches to remote]' \
             '(--push-untracked --no-push-untracked)'--no-push-untracked'[Do not push untracked branches to remote]' \
+            '*'{-o,--push-option=}'[Pass the given push option to every git push run during the traversal; can be provided multiple times]' \
             '(--no-push --push)'--push'[Push all (both tracked and untracked) branches to remote (default behavior)]' \
             '(--no-push-untracked --push-untracked)'--push-untracked'[Push untracked branches to remote (default behavior)]' \
             '(--return-to)'--return-to='[The branch to return after traversal is successfully completed; argument can be "here", "nearest-remaining", or "stay"]: :__git_machete_opt_return_to_args' \

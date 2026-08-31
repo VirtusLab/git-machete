@@ -30,7 +30,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .TH "GIT-MACHETE" "1" "" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.44.2
+git-machete \- git-machete 3.45.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -2257,6 +2257,7 @@ you can add an extra space between └─ and branch name by setting \fBgit conf
 .EX
 git machete t[raverse] [\-F|\-\-fetch] [\-l|\-\-list\-commits] [\-M|\-\-merge]
                        [\-n|\-\-no\-edit\-merge|\-\-no\-interactive\-rebase] [\-\-[no\-]push] [\-\-[no\-]push\-untracked]
+                       [\-o|\-\-push\-option=OPTION]
                        [\-\-return\-to=WHERE] [\-\-squash\-merge\-detection=MODE] [\-\-start\-from=WHERE] [\-\-stop\-after=BRANCH]
                        [\-H|\-\-sync\-github\-prs|\-L|\-\-sync\-gitlab\-mrs]
                        [\-w|\-\-whole] [\-W] [\-y|\-\-yes]
@@ -2408,6 +2409,12 @@ Do not push any (neither tracked nor untracked) branches to remote, re\-enable v
 .TP
 .B  \-\-no\-push\-untracked
 Do not push untracked branches to remote, re\-enable via \fB\-\-push\-untracked\fP\&.
+.TP
+.BI \-o\fP,\fB  \-\-push\-option\fB= OPTION
+Pass \fB\-\-push\-option=OPTION\fP to every \fBgit push\fP run during the traversal, as in
+\fBgit machete traverse \-\-push\-option=ci.skip\fP\&.
+Can be provided multiple times; the options are passed to the remote in the order they were given.
+Requires git >= 2.10.0, and a remote that has \fBreceive.advertisePushOptions\fP enabled; otherwise \fBgit push\fP will fail.
 .TP
 .B  \-\-push
 Push all (both tracked and untracked) branches to remote \-\-\- default behavior. Default behavior can be changed

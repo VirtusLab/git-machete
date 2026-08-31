@@ -36,6 +36,9 @@ WORKTREE_COMMAND: GitVersion = (2, 5, 0)
 # See the `GIT_EXEC` definition in git_machete/git.py and GitHub issue #1286.
 LOG_SHOW_SIGNATURE_CONFIG: GitVersion = (2, 10, 0)  # noqa: F841
 
+# Earliest version to accept `git push --push-option` (the flag behind `git machete traverse --push-option`).
+PUSH_OPTIONS: GitVersion = (2, 10, 0)
+
 # This version fixed a bug that made fetching the reflog of more than one branch at a time unreliable.
 # At/above it we batch-load all reflogs in one go; below it we fetch each branch's reflog separately.
 RELIABLE_MULTI_BRANCH_REFLOG: GitVersion = (2, 14, 2)

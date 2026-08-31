@@ -39,10 +39,10 @@ def parse_cmdline(argv: List[str]) -> ParsedCmd:
     if cmd_pos is None:
         # Either there are no positionals at all (`git machete --help`) or the only "positional" we'd see is an unknown flag (e.g. `-q`).
         # Validate against common options only and return.
-        opts, _, unknowns = _scan(direct, COMMON_OPTIONS)
+        opts, repeated_opts, _, unknowns = _scan(direct, COMMON_OPTIONS)
         if unknowns:
             _fail_unrecognized(unknowns, command=None)
-        return ParsedCmd(command=None, opts=opts, positionals={}, pass_through=pass_through)
+        return ParsedCmd(command=None, opts=opts, repeated_opts=repeated_opts, positionals={}, pass_through=pass_through)
 
     cmd_name_typed = direct[cmd_pos]
     cmd = COMMAND_BY_NAME_OR_ALIAS.get(cmd_name_typed)
@@ -56,29 +56,33 @@ def parse_cmdline(argv: List[str]) -> ParsedCmd:
     all_command_options = _collect_all_options(cmd)
     merged_options = COMMON_OPTIONS + all_command_options
     other_args = direct[:cmd_pos] + direct[cmd_pos + 1:]
-    opts, positionals, unknowns = _scan(other_args, merged_options)
+    opts, repeated_opts, positionals, unknowns = _scan(other_args, merged_options)
     if unknowns:
         _fail_unrecognized(unknowns, command=cmd.name)
 
     # `--help` and `--version` short-circuit positional/mutex validation so that
     # e.g. `git machete completion --help` prints the completion help page instead of complaining about the missing `shell` positional.
     if "help" in opts or "version" in opts:
-        return ParsedCmd(command=cmd.name, opts=opts, positionals={}, pass_through=pass_through)
+        return ParsedCmd(command=cmd.name, opts=opts, repeated_opts=repeated_opts, positionals={}, pass_through=pass_through)
 
     effective_positionals = _effective_positionals(cmd)
     parsed_positionals = _validate_positionals(positionals, cmd, effective_positionals)
 
+    # Command-line order is preserved (rather than collapsing into a set) so that the "first offending option" picked by
+    # the mutex / subcommand-restriction validators below stays deterministic.
+    used_option_keys = list(opts) + [key for key in repeated_opts if key not in opts]
     selected_subcommand = _selected_subcommand(cmd, parsed_positionals)
     if cmd.subcommands and selected_subcommand is not None:
-        _validate_subcommand_restrictions(opts, parsed_positionals, cmd, selected_subcommand)
+        _validate_subcommand_restrictions(used_option_keys, parsed_positionals, cmd, selected_subcommand)
 
     effective_mutex = cmd.mutex_groups + (
         selected_subcommand.mutex_groups if selected_subcommand is not None else ())
-    _validate_mutex_groups(opts, effective_mutex, merged_options)
+    _validate_mutex_groups(used_option_keys, effective_mutex, merged_options)
 
     return ParsedCmd(
         command=cmd.name,
         opts=opts,
+        repeated_opts=repeated_opts,
         positionals=parsed_positionals,
         pass_through=pass_through,
     )
@@ -163,7 +167,7 @@ def _find_command_position(direct: List[str]) -> Optional[int]:
 def _scan(
         argv: List[str],
         options: Iterable[OptSpec],
-) -> Tuple[Dict[str, str], List[str], List[str]]:
+) -> Tuple[Dict[str, str], Dict[str, List[str]], List[str], List[str]]:
     """The actual option scanner.
 
     Uses `getopt.gnu_getopt` for the happy path
@@ -171,7 +175,8 @@ def _scan(
     On `GetoptError` we fall back to a single-pass manual sweep that collects EVERY unknown flag (and its trailing value, if any)
     so the user sees them all at once - rather than getting picked off one by one as they fix typos.
 
-    Returns `(opts, positionals, unknown_flag_tokens)`.
+    Returns `(opts, repeated_opts, positionals, unknown_flag_tokens)`.
+    Options declared with `multiple=True` land in `repeated_opts` (all their values, in command-line order) instead of `opts`.
     `unknown_flag_tokens` is the raw arg list as the user typed it (e.g. `["--srart-from", "foo"]`)
     so the error formatter can re-emit it verbatim.
     """
@@ -207,18 +212,22 @@ def _scan(
         # Recover all unknowns ourselves, so the error message lists every bad token at once.
         unknown_tokens = _collect_unknown_tokens(argv, long_specs, short_specs)
         if unknown_tokens:
-            return {}, [], unknown_tokens
+            return {}, {}, [], unknown_tokens
         # getopt raised for some other reason
         # (typically "option X requires argument" when the user passes a value-taking flag with no value after it).
         # Surface getopt's own message as a regular argument error rather than letting an uncaught `GetoptError` propagate.
         _argument_error(str(e))
 
     opts: Dict[str, str] = {}
+    repeated_opts: Dict[str, List[str]] = {}
     for raw_flag, raw_value in pairs:
         spec = (long_specs[raw_flag[2:]] if raw_flag.startswith("--")
                 else short_specs[raw_flag[1:]])
-        opts[spec.storage_key] = raw_value if spec.takes_value else ""
-    return opts, positionals, []
+        if spec.multiple:
+            repeated_opts.setdefault(spec.storage_key, []).append(raw_value)
+        else:
+            opts[spec.storage_key] = raw_value if spec.takes_value else ""
+    return opts, repeated_opts, positionals, []
 
 
 def _collect_unknown_tokens(
@@ -416,13 +425,13 @@ def _fail_missing_required(pspec: PositionalSpec) -> NoReturn:
 
 
 def _validate_mutex_groups(
-        opts: Dict[str, str],
+        used_option_keys: List[str],
         groups: Tuple[MutexGroup, ...],
         all_options: Tuple[OptSpec, ...],
 ) -> None:
     option_by_key = {o.storage_key: o for o in all_options}
     for group in groups:
-        seen: List[str] = [key for key in group.options if key in opts]
+        seen: List[str] = [key for key in group.options if key in used_option_keys]
         if len(seen) < 2:
             continue
         if group.message is not None:
@@ -435,7 +444,7 @@ def _validate_mutex_groups(
 
 
 def _validate_subcommand_restrictions(
-        opts: Dict[str, str],
+        used_option_keys: List[str],
         parsed_positionals: Dict[str, Any],
         cmd: CommandSpec,
         selected: SubcommandSpec,
@@ -448,7 +457,7 @@ def _validate_subcommand_restrictions(
     # ---- options ----------------------------------------------------------
     selected_keys = {o.storage_key for o in selected.options}
     common_keys = {o.storage_key for o in cmd.options} | {o.storage_key for o in COMMON_OPTIONS}
-    for key in opts:
+    for key in used_option_keys:
         if key in selected_keys or key in common_keys:
             continue
         offering = [s.name for s in cmd.subcommands

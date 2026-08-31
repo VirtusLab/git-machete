@@ -1619,6 +1619,7 @@ long_docs: Dict[str, str] = {
         <b>Usage</b><b>
            git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
                                   [-n|--no-edit-merge|--no-interactive-rebase] [--[no-]push] [--[no-]push-untracked]
+                                  [-o|--push-option=OPTION]
                                   [--return-to=WHERE] [--squash-merge-detection=MODE] [--start-from=WHERE] [--stop-after=BRANCH]
                                   [-H|--sync-github-prs|-L|--sync-gitlab-mrs]
                                   [-w|--whole] [-W] [-y|--yes]</b>
@@ -1738,6 +1739,12 @@ long_docs: Dict[str, str] = {
 
            <b>--no-push-untracked</b>
               Do not push untracked branches to remote, re-enable via `--push-untracked`.
+
+           <b>-o</b>, <b>--push-option=OPTION</b>
+              Pass `--push-option=OPTION` to every `git push` run during the traversal, as in
+              `git machete traverse --push-option=ci.skip`.
+              Can be provided multiple times; the options are passed to the remote in the order they were given.
+              Requires git >= 2.10.0, and a remote that has `receive.advertisePushOptions` enabled; otherwise `git push` will fail.
 
            <b>--push</b>
               Push all (both tracked and untracked) branches to remote — default behavior. Default behavior can be changed

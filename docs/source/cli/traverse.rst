@@ -8,6 +8,7 @@ traverse
 
     git machete t[raverse] [-F|--fetch] [-l|--list-commits] [-M|--merge]
                            [-n|--no-edit-merge|--no-interactive-rebase] [--[no-]push] [--[no-]push-untracked]
+                           [-o|--push-option=OPTION]
                            [--return-to=WHERE] [--squash-merge-detection=MODE] [--start-from=WHERE] [--stop-after=BRANCH]
                            [-H|--sync-github-prs|-L|--sync-gitlab-mrs]
                            [-w|--whole] [-W] [-y|--yes]
@@ -118,6 +119,11 @@ This behavior can be customized using ``machete.traverse.whenBranchNotCheckedOut
 --no-push                      Do not push any (neither tracked nor untracked) branches to remote, re-enable via ``--push``.
 
 --no-push-untracked            Do not push untracked branches to remote, re-enable via ``--push-untracked``.
+
+-o, --push-option=OPTION       Pass ``--push-option=OPTION`` to every ``git push`` run during the traversal, as in
+                               ``git machete traverse --push-option=ci.skip``.
+                               Can be provided multiple times; the options are passed to the remote in the order they were given.
+                               Requires git >= 2.10.0, and a remote that has ``receive.advertisePushOptions`` enabled; otherwise ``git push`` will fail.
 
 --push                         Push all (both tracked and untracked) branches to remote --- default behavior. Default behavior can be changed
                                by setting git configuration key ``git config machete.traverse.push false``.
