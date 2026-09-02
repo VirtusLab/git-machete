@@ -123,6 +123,12 @@ long_docs: Dict[str, str] = {
            <b>-y</b>, <b>--yes</b>
               Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream.
               Fails if the current branch has more than one <green>green-edge</green> downstream branch.
+
+        <b>Environment variables</b>
+
+           `GIT_MACHETE_PUSH_OPTS`
+              Extra options to pass to the underlying `git push` invocations, space-separated.
+              Example: `GIT_MACHETE_PUSH_OPTS="--push-option=ci.skip" git machete traverse`.
    """,
     "anno": """
         <b>Usage</b><b>
@@ -457,6 +463,12 @@ long_docs: Dict[str, str] = {
 
            `GIT_MACHETE_EDITOR`
               Name of the editor used by `git machete e[dit]`, example: `vim` or `nano`.
+
+           `GIT_MACHETE_PUSH_OPTS`
+              Extra options to pass to the underlying `git push` invocations, space-separated.
+              Example: `GIT_MACHETE_PUSH_OPTS="--push-option=ci.skip" git machete traverse`.
+
+              Used by commands such as `advance`, `github`, `gitlab` and `traverse`.
 
            `GIT_MACHETE_REBASE_OPTS`
               Extra options to pass to the underlying `git rebase` invocations, space-separated.
@@ -901,6 +913,12 @@ long_docs: Dict[str, str] = {
 
            `GITHUB_TOKEN`
               GitHub API token.
+
+        <b>Environment variables (`create-pr` and `restack-pr` only)</b>
+
+           `GIT_MACHETE_PUSH_OPTS`
+              Extra options to pass to the underlying `git push` invocations, space-separated.
+              Example: `GIT_MACHETE_PUSH_OPTS="--push-option=ci.skip" git machete traverse`.
    """,
     "gitlab": """
         <b>Usage</b><b>
@@ -1121,6 +1139,12 @@ long_docs: Dict[str, str] = {
 
            `GITLAB_TOKEN`
               GitLab API token.
+
+        <b>Environment variables (`create-mr` and `restack-mr` only)</b>
+
+           `GIT_MACHETE_PUSH_OPTS`
+              Extra options to pass to the underlying `git push` invocations, space-separated.
+              Example: `GIT_MACHETE_PUSH_OPTS="--push-option=ci.skip" git machete traverse`.
    """,
     "go": """
         <b>Usage</b><b>
@@ -1827,6 +1851,10 @@ long_docs: Dict[str, str] = {
                 This ensures that no existing (non-temporary) worktree has its checked-out branch changed by `traverse`.
 
         <b>Environment variables</b>
+
+           `GIT_MACHETE_PUSH_OPTS`
+              Extra options to pass to the underlying `git push` invocations, space-separated.
+              Example: `GIT_MACHETE_PUSH_OPTS="--push-option=ci.skip" git machete traverse`.
 
            `GIT_MACHETE_REBASE_OPTS`
               Extra options to pass to the underlying `git rebase` invocations, space-separated.

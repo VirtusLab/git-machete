@@ -630,8 +630,9 @@ class Git:
             opt_force = ["--force-with-lease"]
         else:
             opt_force = ["--force"]
+        extra_push_opts = os.environ.get('GIT_MACHETE_PUSH_OPTS', '').split()
         args = [remote, branch]
-        self._run_git("push", "--set-upstream", *(opt_force + args), flush_caches=True)
+        self._run_git("push", "--set-upstream", *(extra_push_opts + opt_force + args), flush_caches=True)
 
     def pull_ff_only(self, remote: str, remote_branch: RemoteBranchShortName) -> None:  # noqa: KW
         self.fetch_remote(remote)

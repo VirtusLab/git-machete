@@ -1,5 +1,11 @@
 # Release notes
 
+## New in git-machete 3.45.0
+
+- added: `GIT_MACHETE_PUSH_OPTS` environment variable forwards arbitrary extra options to every `git push` invocation
+  made by `advance`, `github create-pr`/`restack-pr`, `gitlab create-mr`/`restack-mr` and `traverse`
+  (e.g. `GIT_MACHETE_PUSH_OPTS="--push-option=ci.skip" git machete traverse`), analogous to the existing `GIT_MACHETE_REBASE_OPTS`
+
 ## New in git-machete 3.44.2
 
 - fixed: `git machete discover` no longer produces a different branch tree depending on which worktree it is run from;

@@ -30,7 +30,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .TH "GIT-MACHETE" "1" "" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.44.2
+git-machete \- git-machete 3.45.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -252,6 +252,14 @@ See help for traverse for more details on the qualifiers.
 .B  \-y\fP,\fB  \-\-yes
 Don\(aqt ask for confirmation whether to fast\-forward the current branch or whether to slide\-out the downstream.
 Fails if the current branch has more than one green\-edge downstream branch.
+.UNINDENT
+.sp
+\fBEnvironment variables\fP
+.INDENT 0.0
+.TP
+.B \fBGIT_MACHETE_PUSH_OPTS\fP
+Extra options to pass to the underlying \fBgit push\fP invocations, space\-separated.
+Example: \fBGIT_MACHETE_PUSH_OPTS=\(dq\-\-push\-option=ci.skip\(dq git machete traverse\fP\&.
 .UNINDENT
 .SH ANNO
 .sp
@@ -581,6 +589,12 @@ set \fBgit config machete.worktree.useTopLevelMacheteFile false\fP\&.
 .TP
 .B \fBGIT_MACHETE_EDITOR\fP
 Name of the editor used by \fBgit machete e[dit]\fP, example: \fBvim\fP or \fBnano\fP\&.
+.TP
+.B \fBGIT_MACHETE_PUSH_OPTS\fP
+Extra options to pass to the underlying \fBgit push\fP invocations, space\-separated.
+Example: \fBGIT_MACHETE_PUSH_OPTS=\(dq\-\-push\-option=ci.skip\(dq git machete traverse\fP\&.
+.sp
+Used by commands such as \fBadvance\fP, \fBgithub\fP, \fBgitlab\fP and \fBtraverse\fP\&.
 .TP
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
 Extra options to pass to the underlying \fBgit rebase\fP invocations, space\-separated.
@@ -1287,6 +1301,14 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .B \fBGITHUB_TOKEN\fP
 GitHub API token.
 .UNINDENT
+.sp
+\fBEnvironment variables (\(ga\(gacreate\-pr\(ga\(ga and \(ga\(garestack\-pr\(ga\(ga only)\fP
+.INDENT 0.0
+.TP
+.B \fBGIT_MACHETE_PUSH_OPTS\fP
+Extra options to pass to the underlying \fBgit push\fP invocations, space\-separated.
+Example: \fBGIT_MACHETE_PUSH_OPTS=\(dq\-\-push\-option=ci.skip\(dq git machete traverse\fP\&.
+.UNINDENT
 .SH GITLAB
 .sp
 \fBUsage\fP
@@ -1581,6 +1603,14 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .TP
 .B \fBGITLAB_TOKEN\fP
 GitLab API token.
+.UNINDENT
+.sp
+\fBEnvironment variables (\(ga\(gacreate\-mr\(ga\(ga and \(ga\(garestack\-mr\(ga\(ga only)\fP
+.INDENT 0.0
+.TP
+.B \fBGIT_MACHETE_PUSH_OPTS\fP
+Extra options to pass to the underlying \fBgit push\fP invocations, space\-separated.
+Example: \fBGIT_MACHETE_PUSH_OPTS=\(dq\-\-push\-option=ci.skip\(dq git machete traverse\fP\&.
 .UNINDENT
 .SH GO
 .sp
@@ -2508,6 +2538,10 @@ This ensures that no existing (non\-temporary) worktree has its checked\-out bra
 .sp
 \fBEnvironment variables\fP
 .INDENT 0.0
+.TP
+.B \fBGIT_MACHETE_PUSH_OPTS\fP
+Extra options to pass to the underlying \fBgit push\fP invocations, space\-separated.
+Example: \fBGIT_MACHETE_PUSH_OPTS=\(dq\-\-push\-option=ci.skip\(dq git machete traverse\fP\&.
 .TP
 .B \fBGIT_MACHETE_REBASE_OPTS\fP
 Extra options to pass to the underlying \fBgit rebase\fP invocations, space\-separated.
