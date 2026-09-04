@@ -169,5 +169,8 @@ This behavior can be customized using ``machete.traverse.whenBranchNotCheckedOut
 
 **Environment variables**
 
+``GIT_MACHETE_PUSH_OPTS``
+    .. include:: env-vars/git_machete_push_opts.rst
+
 ``GIT_MACHETE_REBASE_OPTS``
     .. include:: env-vars/git_machete_rebase_opts.rst

@@ -8,7 +8,7 @@ from typing import ClassVar, Optional, Tuple
 import pytest
 from pytest_mock import MockerFixture
 
-from git_machete.git_version_thresholds import CWD_REMOVAL_HANDLED_BY_GIT, REBASE_EMPTY_DROP
+from git_machete.git_version_thresholds import CWD_REMOVAL_HANDLED_BY_GIT, PUSH_OPTIONS, REBASE_EMPTY_DROP
 from git_machete.utils.exceptions import UnderlyingGitException
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
@@ -17,7 +17,7 @@ from tests.git_repository import (add_file_and_commit, add_remote, amend_commit,
                                   delete_branch, get_current_branch, get_git_version, merge, new_branch, push, remove_remote, reset_to,
                                   set_git_config_key, set_remote_url, wait_to_bump_commit_timestamp)
 from tests.mockers import fixed_author_and_committer_date_in_past, mock_input_returning, mock_input_returning_y, overridden_environment
-from tests.shell import write_to_file
+from tests.shell import execute, read_file, set_file_executable, write_to_file
 
 
 class TestTraverse(BaseTest):
@@ -593,6 +593,48 @@ class TestTraverse(BaseTest):
               | Ignore trailing data (amended)
               o-ignore-trailing *
             """,
+        )
+
+    @pytest.mark.skipif(get_git_version() < PUSH_OPTIONS, reason="`git push --push-option` was introduced in git 2.10.0")
+    def test_traverse_push_opts_env_var(self) -> None:
+        (_, remote_path) = create_repo_with_remote()
+        new_branch("master")
+        commit()
+        push()
+        new_branch("develop")
+        commit()
+        rewrite_branch_layout_file("master\n\tdevelop")
+
+        execute(f'git -C "{remote_path}" config receive.advertisePushOptions true')
+        received_options_path = os.path.join(remote_path, "received-push-options")
+        hook_path = os.path.join(remote_path, "hooks", "pre-receive")
+        # `git push --push-option` values reach the remote's hooks as GIT_PUSH_OPTION_0, GIT_PUSH_OPTION_1, ... and GIT_PUSH_OPTION_COUNT.
+        write_to_file(hook_path,
+                      "#!/bin/sh\n"
+                      f'env | grep ^GIT_PUSH_OPTION_ | sort >> "{received_options_path}"\n'
+                      f'echo --- >> "{received_options_path}"\n')
+        set_file_executable(hook_path)
+
+        with overridden_environment(GIT_MACHETE_PUSH_OPTS="--push-option=ci.skip --push-option=ci.variable=SKIP=1,2"):
+            launch_command("traverse", "-y")
+
+        commit()
+        with overridden_environment(GIT_MACHETE_PUSH_OPTS="--push-option=ci.skip"):
+            launch_command("traverse", "-y")
+
+        commit()
+        launch_command("traverse", "-y")
+
+        assert read_file(received_options_path) == (
+            "GIT_PUSH_OPTION_0=ci.skip\n"
+            "GIT_PUSH_OPTION_1=ci.variable=SKIP=1,2\n"
+            "GIT_PUSH_OPTION_COUNT=2\n"
+            "---\n"
+            "GIT_PUSH_OPTION_0=ci.skip\n"
+            "GIT_PUSH_OPTION_COUNT=1\n"
+            "---\n"
+            "GIT_PUSH_OPTION_COUNT=0\n"
+            "---\n"
         )
 
     def test_traverse_no_push_no_checkout(self, mocker: MockerFixture) -> None:

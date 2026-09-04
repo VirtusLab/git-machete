@@ -172,3 +172,8 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 
 ``GITLAB_TOKEN``
     GitLab API token.
+
+**Environment variables (``create-mr`` and ``restack-mr`` only)**
+
+``GIT_MACHETE_PUSH_OPTS``
+    .. include:: env-vars/git_machete_push_opts.rst

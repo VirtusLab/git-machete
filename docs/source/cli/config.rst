@@ -69,6 +69,10 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 ``GIT_MACHETE_EDITOR``
     Name of the editor used by ``git machete e[dit]``, example: ``vim`` or ``nano``.
 
+``GIT_MACHETE_PUSH_OPTS``
+    .. include:: env-vars/git_machete_push_opts.rst
+    Used by commands such as ``advance``, ``github``, ``gitlab`` and ``traverse``.
+
 ``GIT_MACHETE_REBASE_OPTS``
     .. include:: env-vars/git_machete_rebase_opts.rst
     Used by commands such as ``reapply``, ``slide-out``, ``traverse`` and ``update``.

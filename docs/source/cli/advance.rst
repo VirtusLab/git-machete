@@ -58,3 +58,8 @@ See help for :ref:`traverse` for more details on the qualifiers.
 
 -y, --yes         Don't ask for confirmation whether to fast-forward the current branch or whether to slide-out the downstream.
                   Fails if the current branch has more than one :green:`green-edge` downstream branch.
+
+**Environment variables**
+
+``GIT_MACHETE_PUSH_OPTS``
+    .. include:: env-vars/git_machete_push_opts.rst
