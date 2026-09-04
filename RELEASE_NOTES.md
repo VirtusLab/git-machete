@@ -7,6 +7,7 @@
 - fixed: when run from a branch being slid out, `git machete slide-out` no longer checks out that branch's new parent if a child branch is going to be checked out right afterwards anyway for the rebase/merge
 - fixed: the statuses printed by `git machete traverse` no longer use the `[<this worktree>]` label, which pointed at whichever worktree `traverse` had most recently changed directory into rather than the one the user's shell is in;
   each worktree is now named explicitly, with `traverse`'s own temporary worktree (see `machete.traverse.whenBranchNotCheckedOutInAnyWorktree`) labeled `[<temporary worktree>]`
+- fixed: `git machete status`/`go` with `--squash-merge-detection=exact` no longer crash with `UnicodeDecodeError` when a captured diff contains non-UTF-8 bytes (reported by @mcitoler)
 
 ## New in git-machete 3.44.1
 

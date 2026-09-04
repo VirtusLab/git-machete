@@ -505,6 +505,38 @@ class TestStatus(BaseTest):
         set_git_config_key('machete.squashMergeDetection', 'exact')
         assert_success(['status'], expected_status_output_exact)
 
+    def test_status_exact_squash_merge_detection_with_non_utf8_diff(self) -> None:
+        """Regression for #1767: exact mode runs `git log --patch` / `git diff` and must not crash on non-UTF-8 bytes."""
+        create_repo()
+        new_branch("main")
+        commit("initial commit")
+        new_branch("feature")
+        # Non-UTF-8 on the child: exercised by `git diff` inside `is_equivalent_patch_reachable`.
+        execute("printf 'feature with invalid utf8: \\xff\\xfe end\\n' > feature-binaryish.txt")
+        execute("git add feature-binaryish.txt")
+        execute('git commit -m "add feature file with invalid UTF-8 bytes"')
+        check_out("main")
+        # Non-UTF-8 on the parent: exercised by `git log --patch` inside `__get_patch_ids_for_commits_between`.
+        execute("printf 'main with invalid utf8: \\xff\\xfe end\\n' > main-binaryish.txt")
+        execute("git add main-binaryish.txt")
+        execute('git commit -m "add main file with invalid UTF-8 bytes"')
+
+        body: str = \
+            """
+            main
+                feature
+            """
+        rewrite_branch_layout_file(body)
+
+        expected_status_output = (
+            """
+            main *
+            |
+            x-feature
+            """
+        )
+        assert_success(['status', '--squash-merge-detection=exact'], expected_status_output)
+
     def test_status_invalid_squash_merge_detection(self) -> None:
         create_repo()
         assert_failure(["status", "--squash-merge-detection=invalid"],

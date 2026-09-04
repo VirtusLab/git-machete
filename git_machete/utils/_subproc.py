@@ -32,6 +32,8 @@ def _popen_cmd(cmd: str, *args: str,
     process = subprocess.Popen([cmd] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=stdin, cwd=cwd, env=env)
     stdout_bytes, stderr_bytes = process.communicate(input_bytes)
     exit_code: int = process.returncode  # must be retrieved after process.communicate()
-    stdout: str = stdout_bytes.decode('utf-8')
-    stderr: str = stderr_bytes.decode('utf-8')
+    # Git output (especially `diff` / `log --patch`) can contain arbitrary bytes from file contents;
+    # never crash on non-UTF-8 (see issue #1767).
+    stdout: str = stdout_bytes.decode('utf-8', errors='replace')
+    stderr: str = stderr_bytes.decode('utf-8', errors='replace')
     return PopenResult(exit_code, stdout, stderr)
