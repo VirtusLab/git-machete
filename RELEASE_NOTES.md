@@ -5,9 +5,7 @@
 - added: `GIT_MACHETE_PUSH_OPTS` environment variable forwards arbitrary extra options to every `git push` invocation
   made by `advance`, `github create-pr`/`restack-pr`, `gitlab create-mr`/`restack-mr` and `traverse`
   (e.g. `GIT_MACHETE_PUSH_OPTS="--push-option=ci.skip" git machete traverse`), analogous to the existing `GIT_MACHETE_REBASE_OPTS`
-
-## New in git-machete 3.44.2
-
+  (contributed by @HWiese1980)
 - fixed: `git machete discover` no longer produces a different branch tree depending on which worktree it is run from;
   the fresh-branch recency ranking now aggregates HEAD reflogs across all worktrees rather than only the current one (reported by @jasonoura, contributed by @earfman)
 - fixed: when run from a branch being slid out, `git machete slide-out` no longer checks out that branch's new parent if a child branch is going to be checked out right afterwards anyway for the rebase/merge

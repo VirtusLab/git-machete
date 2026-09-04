@@ -608,6 +608,7 @@ class TestTraverse(BaseTest):
         execute(f'git -C "{remote_path}" config receive.advertisePushOptions true')
         received_options_path = os.path.join(remote_path, "received-push-options")
         hook_path = os.path.join(remote_path, "hooks", "pre-receive")
+        # `git push --push-option` values reach the remote's hooks as GIT_PUSH_OPTION_0, GIT_PUSH_OPTION_1, ... and GIT_PUSH_OPTION_COUNT.
         write_to_file(hook_path,
                       "#!/bin/sh\n"
                       f'env | grep ^GIT_PUSH_OPTION_ | sort >> "{received_options_path}"\n'
