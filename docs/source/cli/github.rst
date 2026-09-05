@@ -182,7 +182,7 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
 ``GITHUB_TOKEN``
     GitHub API token.
 
-**Environment variables (``create-pr`` and ``restack-pr`` only)**
+**Environment variables (create-pr and restack-pr only)**
 
 ``GIT_MACHETE_PUSH_OPTS``
     .. include:: env-vars/git_machete_push_opts.rst

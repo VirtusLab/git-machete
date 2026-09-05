@@ -914,7 +914,7 @@ long_docs: Dict[str, str] = {
            `GITHUB_TOKEN`
               GitHub API token.
 
-        <b>Environment variables (`create-pr` and `restack-pr` only)</b>
+        <b>Environment variables (create-pr and restack-pr only)</b>
 
            `GIT_MACHETE_PUSH_OPTS`
               Extra options to pass to the underlying `git push` invocations, space-separated.
@@ -1140,7 +1140,7 @@ long_docs: Dict[str, str] = {
            `GITLAB_TOKEN`
               GitLab API token.
 
-        <b>Environment variables (`create-mr` and `restack-mr` only)</b>
+        <b>Environment variables (create-mr and restack-mr only)</b>
 
            `GIT_MACHETE_PUSH_OPTS`
               Extra options to pass to the underlying `git push` invocations, space-separated.

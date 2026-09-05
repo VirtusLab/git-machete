@@ -2,14 +2,13 @@
 
 ## New in git-machete 3.45.0
 
-- added: `GIT_MACHETE_PUSH_OPTS` environment variable forwards arbitrary extra options to every `git push` invocation
-  made by `advance`, `github create-pr`/`restack-pr`, `gitlab create-mr`/`restack-mr` and `traverse`
-  (e.g. `GIT_MACHETE_PUSH_OPTS="--push-option=ci.skip" git machete traverse`), analogous to the existing `GIT_MACHETE_REBASE_OPTS`
-  (contributed by @HWiese1980)
+- added: `GIT_MACHETE_PUSH_OPTS` environment variable forwards arbitrary extra options to every `git push` invocation (contributed by @HWiese1980)
 - fixed: `git machete discover` no longer produces a different branch tree depending on which worktree it is run from;
   the fresh-branch recency ranking now aggregates HEAD reflogs across all worktrees rather than only the current one (reported by @jasonoura, contributed by @earfman)
-- fixed: when run from a branch being slid out, `git machete slide-out` no longer checks out that branch's new parent if a child branch is going to be checked out right afterwards anyway for the rebase/merge
-- fixed: the statuses printed by `git machete traverse` no longer use the `[<this worktree>]` label, which pointed at whichever worktree `traverse` had most recently changed directory into rather than the one the user's shell is in;
+- fixed: when run from a branch being slid out, `git machete slide-out` no longer checks out that branch's new parent
+  if a child branch is going to be checked out right afterwards anyway for the rebase/merge
+- fixed: the statuses printed by `git machete traverse` no longer use the `[<this worktree>]` label,
+  which pointed at whichever worktree `traverse` had most recently changed directory into rather than the one the user's shell is in;
   each worktree is now named explicitly, with `traverse`'s own temporary worktree (see `machete.traverse.whenBranchNotCheckedOutInAnyWorktree`) labeled `[<temporary worktree>]`
 - fixed: `git machete status`/`go` with `--squash-merge-detection=exact` no longer crash with `UnicodeDecodeError` when a captured diff contains non-UTF-8 bytes (reported by @mcitoler)
 
