@@ -1215,6 +1215,12 @@ Update PR descriptions for all PRs both upstream and downstream of the PR for th
 \fBGit config keys\fP
 .INDENT 0.0
 .TP
+.B \fBadvice.macheteCreateFromFork\fP (\fBcreate\-pr\fP only)
+Controls the warning shown when creating a pull/merge request whose base and head branches live in different repositories.
+Set to \fBfalse\fP to suppress the warning about creating stacked pull/merge requests from forks; enabled by default.
+This setting affects only the warning, not repository selection or request creation.
+For example, run \fBgit config advice.macheteCreateFromFork false\fP in a repository, or add \fB\-\-global\fP to apply it everywhere.
+.TP
 .B \fBmachete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}\fP (all subcommands)
 .INDENT 7.0
 .TP
@@ -1517,6 +1523,12 @@ Update MR descriptions for all MRs both upstream and downstream of the MR for th
 .sp
 \fBGit config keys\fP
 .INDENT 0.0
+.TP
+.B \fBadvice.macheteCreateFromFork\fP (\fBcreate\-mr\fP only)
+Controls the warning shown when creating a pull/merge request whose base and head branches live in different repositories.
+Set to \fBfalse\fP to suppress the warning about creating stacked pull/merge requests from forks; enabled by default.
+This setting affects only the warning, not repository selection or request creation.
+For example, run \fBgit config advice.macheteCreateFromFork false\fP in a repository, or add \fB\-\-global\fP to apply it everywhere.
 .TP
 .B \fBmachete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}\fP (all subcommands)
 .INDENT 7.0
