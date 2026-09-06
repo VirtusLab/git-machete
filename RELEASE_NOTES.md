@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.45.1
 
+- fixed: `git machete discover` preserves full annotations on rediscovered branches, rather than only their traversal qualifiers
+
 ## New in git-machete 3.45.0
 
 - added: `GIT_MACHETE_PUSH_OPTS` environment variable forwards arbitrary extra options to every `git push` invocation (contributed by @HWiese1980)

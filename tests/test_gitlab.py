@@ -86,7 +86,7 @@ class TestGitLab(BaseTest):
 
         launch_command('gitlab', 'checkout-mrs', '--all')
         launch_command('discover', '--checked-out-since=1 day ago')
-        expected_status_output = 'develop *\n' + '\n'.join([f'|\no-feature_{i:02d}  rebase=no push=no'
+        expected_status_output = 'develop *  *\n' + '\n'.join([f'|\no-feature_{i:02d}  MR !{i} (some_other_user) rebase=no push=no'
                                                             for i in range(self.MR_COUNT_FOR_TEST_GITLAB_API_PAGINATION)]) + '\n'
         assert_success(['status'], expected_status_output)
 
