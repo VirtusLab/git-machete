@@ -693,6 +693,10 @@ long_docs: Dict[str, str] = {
 
         Create, check out and manage GitHub PRs while keeping them reflected in branch layout file.
 
+        If GitHub redirects a REST API mutation after a repository rename, git-machete resolves its new location.
+        Subsequent REST API requests to that repository reuse the resolved location during the same command.
+        The configured Git remote URL is not modified; update it as suggested by the warning to avoid redirects in future commands.
+
         <b>Note:</b>
 
               See <b>Git config keys</b> below in case the target repository cannot be detected automatically (for example, in case of GitHub Enterprise).

@@ -157,6 +157,7 @@ class GitHubApi(CodeHostingApi):
     def __init__(self, *, domain: str, organization: str, repository: str) -> None:
         super().__init__(domain, organization, repository)
         self.__token: Optional[GitHubToken] = GitHubToken.for_domain(domain)
+        self.__repository_api_path = f'/repos/{organization}/{repository}'
 
     def __get_pull_request_from_json(self, pr_json: Dict[str, Any]) -> "PullRequest":
         return PullRequest(
@@ -265,6 +266,8 @@ class GitHubApi(CodeHostingApi):
                         'Update your remote repository manually via: `git remote set-url <remote_name> <new_repository_url>`.')
                 new_path = re.sub("https://[^/]+", "", location)
                 result = self.__fire_github_api_request(method=method, path=new_path, request_body=request_body)
+                if path.startswith(self.__repository_api_path + "/"):
+                    self.__repository_api_path = f'/repos/{new_org}/{new_repo}'
                 # Break off the dangling `... ` in-progress line before warning
                 # (the 307 is only reachable for mutations, each preceded by such a line).
                 print()
@@ -287,7 +290,7 @@ class GitHubApi(CodeHostingApi):
             path_suffix: str,
             request_body: Optional[Dict[str, Any]] = None
     ) -> Any:
-        path = f'/repos/{self.organization}/{self.repository}{path_suffix}'
+        path = f'{self.__repository_api_path}{path_suffix}'
         return self.__fire_github_api_request(method=method, path=path, request_body=request_body)
 
     def __fire_github_graphql_api_request(self, query: str) -> Any:

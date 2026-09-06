@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.45.1
 
+- fixed: GitHub API calls reuse the resolved repository path after a rename redirect, avoiding repeated redirects during one command
+
 ## New in git-machete 3.45.0
 
 - added: `GIT_MACHETE_PUSH_OPTS` environment variable forwards arbitrary extra options to every `git push` invocation (contributed by @HWiese1980)
