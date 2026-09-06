@@ -44,10 +44,6 @@ class DiscoverMacheteClient(StatusMacheteClient):
                 initial_roots.append(LocalBranchShortName.of("main"))
             if "develop" in self._git.get_local_branches():
                 initial_roots.append(LocalBranchShortName.of("develop"))
-        for managed in self._state.managed_branches:
-            anno = self._state.get_annotation(managed)
-            if anno is not None:
-                self._state.set_annotation(managed, anno._replace(text_without_qualifiers=''))
         self._state.reset_tree(initial_roots)
 
         root_of = dict((branch, branch) for branch in all_local_branches)

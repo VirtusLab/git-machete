@@ -18,7 +18,8 @@ from tests.shell import read_file
 
 class TestDiscover(BaseTest):
 
-    def test_discover(self) -> None:
+    @pytest.mark.parametrize('annotation', ['annotation', 'review #123: café'])
+    def test_discover(self, annotation: str) -> None:
         create_repo_with_remote()
         assert_failure(['discover'], "No local branches found")
 
@@ -37,25 +38,33 @@ class TestDiscover(BaseTest):
         commit()
 
         body: str = \
-            """
-            master
+            f"""
+            master root {annotation}
             feature1
-            feature2 annotation
-            feature3 annotation rebase=no push=no
+            feature2 {annotation}
+            feature3 {annotation} rebase=no push=no
             """
         rewrite_branch_layout_file(body)
+        original_layout = read_file(".git/machete")
         launch_command('discover', '-y')
-        assert os.path.exists(".git/machete~")
+        assert read_file(".git/machete~") == original_layout
+        assert read_file(".git/machete") == (
+            f"master root {annotation}\n"
+            "  feature1\n"
+            f"    feature2 {annotation}\n"
+            f"  feature3 {annotation} rebase=no push=no\n"
+            "    feature4\n"
+        )
 
         expected_status_output = (
-            """
-            master
+            f"""
+            master  root {annotation}
             |
             o-feature1 (untracked)
             | |
-            | o-feature2 (untracked)
+            | o-feature2  {annotation} (untracked)
             |
-            o-feature3  rebase=no push=no
+            o-feature3  {annotation} rebase=no push=no
               |
               o-feature4 * (untracked)
             """
@@ -63,16 +72,16 @@ class TestDiscover(BaseTest):
         assert_success(['status'], expected_status_output)
 
         expected_discover_output = (
-            """
+            f"""
             Discovered tree of branch dependencies:
 
               feature1 (untracked)
               |
-              o-feature2 (untracked)
+              o-feature2  {annotation} (untracked)
 
-              master
+              master  root {annotation}
               |
-              o-feature3  rebase=no push=no
+              o-feature3  {annotation} rebase=no push=no
                 |
                 o-feature4 * (untracked)
 
