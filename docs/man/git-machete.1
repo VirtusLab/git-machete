@@ -1008,6 +1008,10 @@ where \fB<subcommand>\fP is one of: \fBanno\-prs\fP, \fBcheckout\-prs\fP, \fBcre
 .sp
 Create, check out and manage GitHub PRs while keeping them reflected in branch layout file.
 .sp
+If GitHub redirects a REST API mutation after a repository rename, git\-machete resolves its new location.
+Subsequent REST API requests to that repository reuse the resolved location during the same command.
+The configured Git remote URL is not modified; update it as suggested by the warning to avoid redirects in future commands.
+.sp
 \fBNote:\fP
 .INDENT 0.0
 .INDENT 3.5

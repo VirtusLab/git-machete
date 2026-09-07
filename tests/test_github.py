@@ -1,12 +1,15 @@
 import itertools
+import json
 import os
 import textwrap
 from contextlib import contextmanager
 from typing import Iterator
 
+import pytest
 from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
+from git_machete.git import LocalBranchShortName
 from git_machete.github import GitHubApi, GitHubToken
 from tests.base_test import BaseTest
 from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
@@ -31,6 +34,37 @@ class TestGitHub(BaseTest):
     def test_github_api_constructor(self) -> None:
         # This is solely to make mypy check if the class correctly implements abstract methods from CodeHostingApi.
         GitHubApi(domain="github.com", organization="my-org", repository="my-repo")
+
+    @pytest.mark.parametrize('organization,repository', [('example-org', 'example-repo'), ('renamed-org', 'renamed-repo')])
+    def test_github_reuses_renamed_repository(self, mocker: MockerFixture, organization: str, repository: str) -> None:
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        state = MockGitHubAPIState.with_prs(mock_pr_json(head='feature', base='master', number=15))
+        state.repositories[2].update(owner={'login': organization}, name=repository)
+        requests = mocker.Mock(side_effect=mock_urlopen(state))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', requests)
+        api = GitHubApi(domain='github.com', organization='example-org', repository='old-example-repo')
+
+        api.set_base_of_pull_request(15, LocalBranchShortName.of('develop'))
+        api.set_description_of_pull_request(15, 'Updated description')
+        prefix = f'https://api.github.com/repos/{organization}/{repository}'
+        assert [(call[0][0].method, call[0][0].full_url) for call in requests.call_args_list] == [
+            ('PATCH', 'https://api.github.com/repos/example-org/old-example-repo/pulls/15'),
+            ('GET', 'https://api.github.com/repositories/2'),
+            ('PATCH', 'https://api.github.com/repositories/2/pulls/15'),
+            ('PATCH', f'{prefix}/pulls/15'),
+        ]
+        api.add_assignees_to_pull_request(15, ['tester'])
+        assert requests.call_args[0][0].full_url == f'{prefix}/issues/15/assignees'
+        assert json.loads(requests.call_args[0][0].data) == {'assignees': ['tester']}
+        pulls = api.get_open_pull_requests()
+        assert requests.call_args[0][0].full_url == f'{prefix}/pulls?per_page=100'
+        assert len(pulls) == 1
+        assert pulls[0].base == 'develop'
+        assert pulls[0].description == 'Updated description'
+
+        other_api = GitHubApi(domain='github.com', organization='tester', repository='repo_sandbox')
+        other_api.set_description_of_pull_request(15, 'Other repository')
+        assert requests.call_args[0][0].full_url == 'https://api.github.com/repos/tester/repo_sandbox/pulls/15'
 
     def test_github_remote_patterns(self) -> None:
         organization = 'virtuslab'
