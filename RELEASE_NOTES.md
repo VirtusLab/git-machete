@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.45.1
 
+- added: `advice.macheteCreateFromFork` git config key suppresses the fork warning in `github create-pr` and `gitlab create-mr` when set to `false`
+
 ## New in git-machete 3.45.0
 
 - added: `GIT_MACHETE_PUSH_OPTS` environment variable forwards arbitrary extra options to every `git push` invocation (contributed by @HWiese1980)
