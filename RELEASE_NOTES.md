@@ -2,7 +2,7 @@
 
 ## New in git-machete 3.45.1
 
-- fixed: `git machete discover` preserves full annotations on rediscovered branches, rather than only their traversal qualifiers
+- fixed: `git machete discover` preserves full annotations on rediscovered branches, rather than only their traversal qualifiers (contributed by @be-student)
 
 ## New in git-machete 3.45.0
 
