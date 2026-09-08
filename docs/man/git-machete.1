@@ -785,7 +785,8 @@ and asks whether to overwrite the existing branch layout file with the new disco
 If confirmed with a \fBy[es]\fP or \fBe[dit]\fP reply, backs up the current branch layout file (if it exists) as \fB$GIT_DIR/machete~\fP
 and saves the new tree under the usual \fB$GIT_DIR/machete\fP path.
 If the reply was \fBe[dit]\fP, additionally an editor is opened (as in: \fBgit machete\fP edit) after saving the new branch layout file.
-\fBdiscover\fP retains the existing branch qualifiers used by \fBgit machete traverse\fP (see help for traverse).
+\fBdiscover\fP retains existing annotations for branches included in the discovered tree,
+including the branch qualifiers used by \fBgit machete traverse\fP (see help for traverse).
 .sp
 \fBOptions\fP
 .INDENT 0.0
