@@ -54,5 +54,5 @@ def find_executable(executable: str) -> Optional[AbsPath]:
 
 
 def slurp_file(path: Path) -> str:
-    with open(path, 'r') as file:
+    with open(path, 'r', encoding='utf-8') as file:
         return file.read()

@@ -58,7 +58,7 @@ class MacheteClient:
             # We're opening in "append" and not "write" mode to avoid a race condition:
             # if other process writes to the file between we check the result of `os.path.exists` and call `open`,
             # then open(..., "w") would result in us clearing up the file contents, while open(..., "a") has no effect.
-            with open(self._branch_layout_file_path, "a"):
+            with open(self._branch_layout_file_path, "a", encoding='utf-8'):
                 pass
         elif os.path.isdir(self._branch_layout_file_path):
             # Extremely unlikely case, basically checking if anybody tampered with the repository.

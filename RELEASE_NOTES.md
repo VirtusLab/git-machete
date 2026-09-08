@@ -3,6 +3,7 @@
 ## New in git-machete 3.45.1
 
 - fixed: `git machete discover` preserves full annotations on rediscovered branches, rather than only their traversal qualifiers (contributed by @be-student)
+- fixed: branch layout files are now always read and written as UTF-8 rather than the process locale encoding, so annotations with non-ASCII characters no longer break on Windows
 
 ## New in git-machete 3.45.0
 
