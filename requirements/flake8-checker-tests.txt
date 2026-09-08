@@ -1,0 +1,3 @@
+-r flake8-check.txt
+
+pytest==8.3.5
