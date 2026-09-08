@@ -24,10 +24,10 @@ class Utf8OpenVisitor(Visitor):
         return (
             isinstance(node.func, ast.Name) and node.func.id == "open"
         ) or (
-            isinstance(node.func, ast.Attribute)
-            and isinstance(node.func.value, ast.Name)
-            and node.func.value.id == "io"
-            and node.func.attr == "open"
+            isinstance(node.func, ast.Attribute) and
+            isinstance(node.func.value, ast.Name) and
+            node.func.value.id == "io" and
+            node.func.attr == "open"
         )
 
     @staticmethod
