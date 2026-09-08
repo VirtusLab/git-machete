@@ -85,8 +85,14 @@ class TestGitHub(BaseTest):
 
         launch_command('github', 'checkout-prs', '--all')
         launch_command('discover', '--checked-out-since=1 day ago')
-        expected_status_output = 'develop *  *\n' + '\n'.join([f'|\no-feature_{i:02d}  PR #{i} (some_other_user) rebase=no push=no'
-                                                            for i in range(self.PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION)]) + '\n'
+        expected_status_output = (
+            'develop *  *\n'
+            + '\n'.join([
+                f'|\no-feature_{i:02d}  PR #{i} (some_other_user) rebase=no push=no'
+                for i in range(self.PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION)
+            ])
+            + '\n'
+        )
         assert_success(['status'], expected_status_output)
 
     def test_github_enterprise_domain_unauthorized_without_token(self, mocker: MockerFixture) -> None:
