@@ -526,7 +526,8 @@ long_docs: Dict[str, str] = {
         If confirmed with a `y[es]` or `e[dit]` reply, backs up the current branch layout file (if it exists) as `$GIT_DIR/machete~`
         and saves the new tree under the usual `$GIT_DIR/machete` path.
         If the reply was `e[dit]`, additionally an editor is opened (as in: `git machete` `edit`) after saving the new branch layout file.
-        `discover` retains the existing branch qualifiers used by `git machete traverse` (see help for `traverse`).
+        `discover` retains existing annotations for branches included in the discovered tree,
+        including the branch qualifiers used by `git machete traverse` (see help for `traverse`).
 
         <b>Options</b>
 
