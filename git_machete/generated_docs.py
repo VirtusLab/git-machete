@@ -1686,7 +1686,7 @@ long_docs: Dict[str, str] = {
 
            * if `-H`/`--sync-github-prs` or `-L`/`--sync-gitlab-mrs` option is present:
 
-             - asks the user whether to <b>create</b> a PR/MR for the given branch if it doesn't exist yet,
+             - asks the user whether to <b>create</b> a PR/MR for the given branch if it doesn't exist yet (unless the branch is annotated with `push=no`),
 
              - asks the user whether to <b>retarget</b> the PR/MR if it exists for the given branch,
               and its base/target branch in GitHub/GitLab is different than the upstream in machete file
@@ -1705,6 +1705,7 @@ long_docs: Dict[str, str] = {
 
         The rebase, push and slide-out behaviors of `traverse` can also be customized for each branch separately using branch qualifiers.
         There are `push=no`, `rebase=no` and `slide-out=no` qualifiers that can be used to opt out of default behavior (rebasing, pushing and sliding the branch out).
+        `push=no` also skips creating a PR/MR under `--sync-github-prs`/`--sync-gitlab-mrs`.
         The qualifier can appear anywhere in the annotation, but needs to be separated by a whitespace from any other character, as in: `some_annotation_text rebase=no push=no slide-out=no`.
         Qualifiers can only be overwritten by manually editing `.git/machete` file or modifying it with `git machete e[dit]`, or by updating annotations with `git machete anno`.
         Example machete file with branch qualifiers:
