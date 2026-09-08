@@ -303,7 +303,7 @@ only_special_branches: &only_special_branches
   filters:
     branches:
       only:
-        - "/.*(aur|ci[/-]|cross-platform|dependabot.pip|deploy|dry.run|homebrew|hotfix|macos|nix|publish|release|windows).*/"
+        - "/.*(aur|ci[/-]|cross-platform|dependabot.pip|deploy|dry.run|homebrew|hotfix|macos|nix|publish|release|utf.?8|windows).*/"
         - "develop"
         - "master"
 
