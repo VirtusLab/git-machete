@@ -148,3 +148,6 @@ class MacheteConfig:
         return PRDescriptionIntroStyle.from_string(
             value=value,
             from_where=f"`{keys.pr_description_intro_style}` git config key")
+
+    def code_hosting_retrieve_by_author(self, keys: CodeHostingGitConfigKeys) -> bool:
+        return self._git.get_boolean_config_attr(key=keys.retrieve_by_author, default_value=False)
