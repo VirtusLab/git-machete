@@ -549,6 +549,41 @@ class TestGitHubCheckoutPRs(BaseTest):
             """
         )
 
+    def test_github_checkout_prs_retrieve_by_author_by_number_missing(self, mocker: MockerFixture) -> None:
+        self.__setup_repo_for_checkout_prs_retrieve_by_author(mocker)
+        assert_failure(
+            ['github', 'checkout-prs', '100'],
+            'PR #100 is not found in repository example-org/example-repo'
+        )
+
+    def test_github_checkout_prs_retrieve_by_author_by_number_closed(self, mocker: MockerFixture) -> None:
+        # A closed PR is returned by number but absent from the author's open-PR list;
+        # we still keep that by-number result rather than querying the current user.
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs(
+            mock_pr_json(head='feature/closed', base='develop', number=4, user='some_other_user', state='closed'),
+        )))
+        create_repo_with_remote()
+        new_branch("develop")
+        commit("develop commit")
+        push()
+        new_branch("feature/closed")
+        commit("closed commit")
+        push()
+        check_out("develop")
+        rewrite_branch_layout_file("develop")
+        set_git_config_key('machete.github.retrieveByAuthor', 'true')
+
+        assert_success(
+            ['github', 'checkout-prs', '4'],
+            """
+            Checking for open GitHub PRs by some_other_user... OK
+            Warn: PR #4 is already closed.
+            PR #4 checked out at local branch feature/closed
+            """
+        )
+
     def test_github_checkout_prs_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         create_repo_with_remote()
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
