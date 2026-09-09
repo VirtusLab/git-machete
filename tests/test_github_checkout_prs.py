@@ -422,6 +422,168 @@ class TestGitHubCheckoutPRs(BaseTest):
             """
         )
 
+    @staticmethod
+    def github_api_state_for_test_checkout_prs_retrieve_by_author() -> MockGitHubAPIState:
+        return MockGitHubAPIState.with_prs(
+            mock_pr_json(head='feature/mine', base='develop', number=1, user='github_user'),
+            mock_pr_json(head='feature/theirs', base='develop', number=2, user='some_other_user'),
+            mock_pr_json(head='feature/theirs-child', base='feature/theirs', number=3, user='some_other_user'),
+        )
+
+    def __setup_repo_for_checkout_prs_retrieve_by_author(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'urllib.request.urlopen',
+                          mock_urlopen(self.github_api_state_for_test_checkout_prs_retrieve_by_author()))
+        create_repo_with_remote()
+        new_branch("develop")
+        commit("develop commit")
+        push()
+        new_branch("feature/mine")
+        commit("mine commit")
+        push()
+        check_out("develop")
+        new_branch("feature/theirs")
+        commit("theirs commit")
+        push()
+        new_branch("feature/theirs-child")
+        commit("theirs child commit")
+        push()
+        check_out("develop")
+        rewrite_branch_layout_file("develop")
+        set_git_config_key('machete.github.retrieveByAuthor', 'true')
+
+    def test_github_checkout_prs_retrieve_by_author_all(self, mocker: MockerFixture) -> None:
+        # `--all` overrides `retrieveByAuthor`: every open PR is downloaded and checked out,
+        # including feature/theirs (PR #2) which belongs to another user.
+        self.__setup_repo_for_checkout_prs_retrieve_by_author(mocker)
+
+        assert_success(
+            ['github', 'checkout-prs', '--all'],
+            """
+            Checking for open GitHub PRs... OK
+            PR #1 checked out at local branch feature/mine
+            PR #2 checked out at local branch feature/theirs
+            PR #3 checked out at local branch feature/theirs-child
+            """
+        )
+        assert_success(
+            ["status"],
+            """
+            develop *
+            |
+            o-feature/mine  PR #1
+            |
+            o-feature/theirs  PR #2 (some_other_user) rebase=no push=no
+              |
+              o-feature/theirs-child  PR #3 (some_other_user) rebase=no push=no
+            """
+        )
+
+    def test_github_checkout_prs_retrieve_by_author_by_other_user(self, mocker: MockerFixture) -> None:
+        # `--by=<other-user>` asks the API for that user's PRs directly, so feature/theirs (PR #2) is still
+        # reachable even though `retrieveByAuthor` is set and PR #2 is not authored by the current user.
+        # Chain reconstruction walks that same author's PRs (not the current user's), so the stacked child is reattached.
+        self.__setup_repo_for_checkout_prs_retrieve_by_author(mocker)
+
+        assert_success(
+            ['github', 'checkout-prs', '--by', 'some_other_user'],
+            """
+            Checking for open GitHub PRs by some_other_user... OK
+            PR #2 checked out at local branch feature/theirs
+            PR #3 checked out at local branch feature/theirs-child
+            """
+        )
+        assert_success(
+            ["status"],
+            """
+            develop *
+            |
+            o-feature/theirs  PR #2 (some_other_user) rebase=no push=no
+              |
+              o-feature/theirs-child  PR #3 (some_other_user) rebase=no push=no
+            """
+        )
+
+    def test_github_checkout_prs_retrieve_by_author_mine(self, mocker: MockerFixture) -> None:
+        self.__setup_repo_for_checkout_prs_retrieve_by_author(mocker)
+
+        # `--mine` downloads only the current user's PRs, so only feature/mine (PR #1) is checked out.
+        assert_success(
+            ['github', 'checkout-prs', '--mine'],
+            """
+            Checking for open GitHub PRs by github_user... OK
+            PR #1 checked out at local branch feature/mine
+            """
+        )
+        assert_success(
+            ["status"],
+            """
+            develop
+            |
+            o-feature/mine *  PR #1
+            """
+        )
+
+    def test_github_checkout_prs_retrieve_by_author_by_number(self, mocker: MockerFixture) -> None:
+        # A PR number uses the author of that PR (not the current user) for the by-author download
+        # and for walking the stack, so checking out the child reattaches the parent.
+        self.__setup_repo_for_checkout_prs_retrieve_by_author(mocker)
+
+        assert_success(
+            ['github', 'checkout-prs', '3'],
+            """
+            Checking for open GitHub PRs by some_other_user... OK
+            PR #2 checked out at local branch feature/theirs
+            PR #3 checked out at local branch feature/theirs-child
+            """
+        )
+        assert_success(
+            ["status"],
+            """
+            develop
+            |
+            o-feature/theirs  PR #2 (some_other_user) rebase=no push=no
+              |
+              o-feature/theirs-child *  PR #3 (some_other_user) rebase=no push=no
+            """
+        )
+
+    def test_github_checkout_prs_retrieve_by_author_by_number_missing(self, mocker: MockerFixture) -> None:
+        self.__setup_repo_for_checkout_prs_retrieve_by_author(mocker)
+        assert_failure(
+            ['github', 'checkout-prs', '100'],
+            'PR #100 is not found in repository example-org/example-repo'
+        )
+
+    def test_github_checkout_prs_retrieve_by_author_by_number_closed(self, mocker: MockerFixture) -> None:
+        # A closed PR is returned by number but absent from the author's open-PR list;
+        # we still keep that by-number result rather than querying the current user.
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs(
+            mock_pr_json(head='feature/closed', base='develop', number=4, user='some_other_user', state='closed'),
+        )))
+        create_repo_with_remote()
+        new_branch("develop")
+        commit("develop commit")
+        push()
+        new_branch("feature/closed")
+        commit("closed commit")
+        push()
+        check_out("develop")
+        rewrite_branch_layout_file("develop")
+        set_git_config_key('machete.github.retrieveByAuthor', 'true')
+
+        assert_success(
+            ['github', 'checkout-prs', '4'],
+            """
+            Checking for open GitHub PRs by some_other_user... OK
+            Warn: PR #4 is already closed.
+            PR #4 checked out at local branch feature/closed
+            """
+        )
+
     def test_github_checkout_prs_misc_failures_and_warns(self, mocker: MockerFixture) -> None:
         create_repo_with_remote()
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)

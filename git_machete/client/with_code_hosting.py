@@ -28,6 +28,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         self.__code_hosting_spec: CodeHostingSpec = spec
         self.__code_hosting_client: Optional[CodeHostingApi] = None
         self.__all_open_prs: Optional[List[PullRequest]] = None
+        self.__open_prs_by_author: Dict[str, List[PullRequest]] = {}
 
     @property
     def code_hosting_spec(self) -> CodeHostingSpec:
@@ -43,14 +44,48 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
     def code_hosting_client(self, value: CodeHostingApi) -> None:
         self.__code_hosting_client = value
 
+    def _get_relevant_open_prs(self, author: Optional[str] = None) -> List[PullRequest]:
+        # Honor `machete.{github,gitlab}.retrieveByAuthor`: download PRs by a single author rather than every open PR.
+        # `author` is the `--by`/`--mine` selection when one was given; otherwise the current user.
+        # Callers that need every open PR regardless of this key (e.g. the `--all` flag) call `_get_all_open_prs` directly instead;
+        # once that has happened, reuse the already-downloaded full list here too (e.g. for reconstructing PR chains)
+        # rather than issuing a second, narrower query.
+        if self.__all_open_prs is not None:
+            return self.__all_open_prs
+        keys = self.code_hosting_spec.git_config_keys
+        if self._config.code_hosting_retrieve_by_author(keys):
+            if author is not None:
+                return self._get_open_prs_by_author(author)
+            return self._get_open_prs_of_current_user()
+        return self._get_all_open_prs()
+
     def _get_all_open_prs(self) -> List[PullRequest]:
         if self.__all_open_prs is None:
             spec = self.code_hosting_spec
             print_fmt(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ',
                       newline=False)
-            self.__all_open_prs = self.code_hosting_client.get_open_pull_requests()
+            self.__all_open_prs = self.code_hosting_client.get_all_open_pull_requests()
             print_fmt(green_ok())
         return self.__all_open_prs
+
+    def _get_open_prs_of_current_user(self) -> List[PullRequest]:
+        spec = self.code_hosting_spec
+        keys = spec.git_config_keys
+        author = self.code_hosting_client.get_current_user_login()
+        if author is None:
+            raise MacheteException(
+                f'`{keys.retrieve_by_author}` git config key is set, '
+                f'but the current {spec.display_name} user could not be determined.\n'
+                f'Provide a {spec.display_name} API token via one of the:{spec.token_providers_message}')
+        return self._get_open_prs_by_author(author)
+
+    def _get_open_prs_by_author(self, author: str) -> List[PullRequest]:
+        if author not in self.__open_prs_by_author:
+            spec = self.code_hosting_spec
+            print_fmt(f'Checking for open {spec.display_name} {spec.pr_short_name}s by {author}... ', newline=False)
+            self.__open_prs_by_author[author] = self.code_hosting_client.get_open_pull_requests_by_author(author)
+            print_fmt(green_ok())
+        return self.__open_prs_by_author[author]
 
     def _pull_request_annotation(self, pr: PullRequest, current_user: Optional[str], *, include_url: bool = False) -> str:
         anno = pr.display_text(fmt=False)
@@ -228,8 +263,8 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         self._init_code_hosting_client()
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         debug(f'Current {self.code_hosting_spec.display_name} user is <b>{current_user or "<none>"}</b>')
-        all_open_prs = self._get_all_open_prs()
-        self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user, include_urls=include_urls, verbose=True)
+        relevant_open_prs = self._get_relevant_open_prs()
+        self.__sync_annotations_to_branch_layout_file(relevant_open_prs, current_user, include_urls=include_urls, verbose=True)
 
     def create_pull_request(
             self,
@@ -512,14 +547,14 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             self.retarget_pull_request(opt_branch=head, opt_ignore_if_missing=False,
                                        opt_update_related_descriptions=opt_update_related_descriptions)
 
-    def _get_updated_pull_request_description(self, pr: PullRequest) -> str:
+    def _get_updated_pull_request_description(self, pr: PullRequest, *, author: Optional[str] = None) -> str:
         def skip_leading_empty(strs: List[str]) -> List[str]:
             return list(itertools.dropwhile(lambda line: line.strip() == '', strs))
 
         original_trailing_newlines = ''.join(itertools.takewhile(lambda c: c == '\n', reversed(pr.description or '')))
         lines = pr.description.strip().splitlines() if pr.description else []
         style = self._config.code_hosting_pr_description_intro_style(self.code_hosting_spec.git_config_keys)
-        text_to_prepend = self.__generate_pr_description_intro(pr, style)
+        text_to_prepend = self.__generate_pr_description_intro(pr, style, author=author)
         lines_to_prepend = text_to_prepend.splitlines() if text_to_prepend else []
         if self.START_GIT_MACHETE_GENERATED_COMMENT in lines and self.END_GIT_MACHETE_GENERATED_COMMENT in lines:
             start_index = lines.index(self.START_GIT_MACHETE_GENERATED_COMMENT)
@@ -730,7 +765,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         debug(f'found {pr}')
         return pr
 
-    def __generate_pr_description_intro(self, pr: PullRequest, style: PRDescriptionIntroStyle) -> str:
+    def __generate_pr_description_intro(self, pr: PullRequest, style: PRDescriptionIntroStyle, *, author: Optional[str] = None) -> str:
         if style == PRDescriptionIntroStyle.NONE:
             return ''
 
@@ -749,9 +784,9 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         pr_short_name = spec.pr_short_name
         br_before_branches = ' <br>' if spec.pr_intro_br_before_branches else ''
 
-        pr_up_path = list(reversed(self.__get_upwards_path_including_pr(pr)))
+        pr_up_path = list(reversed(self.__get_upwards_path_including_pr(pr, author=author)))
         if style in (PRDescriptionIntroStyle.FULL, PRDescriptionIntroStyle.FULL_NO_BRANCHES):
-            pr_down_tree = self.__get_downwards_tree_excluding_pr(pr)
+            pr_down_tree = self.__get_downwards_tree_excluding_pr(pr, author=author)
         else:
             pr_down_tree = []
         if len(pr_up_path) == 1 and pr_down_tree == []:
@@ -820,12 +855,13 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             related_to = self.__get_sole_pull_request_for_head(head, ignore_if_missing=False)
         else:
             related_to = None
+        author = current_user if mine else by
         applicable_prs: List[PullRequest] = self._get_applicable_pull_requests(
-            all=all, by=current_user if mine else by, related_to=related_to)
+            all=all, by=author, related_to=related_to)
         debug("applicable PRs: " + ", ".join(pr.display_text() for pr in applicable_prs))
 
         for pr in applicable_prs:
-            new_description = self._get_updated_pull_request_description(pr)
+            new_description = self._get_updated_pull_request_description(pr, author=author)
             if pr.description != new_description:
                 print_fmt(f'Updating description of {pr.display_text()} (<b>{pr.head} <rarrow/> {pr.base}</b>)... ', newline=False)
                 self.code_hosting_client.set_description_of_pull_request(pr.number, description=new_description)
@@ -858,6 +894,8 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         applicable_prs: List[PullRequest] = self._get_applicable_pull_requests(
             pr_numbers=pr_numbers, all=all, by=by)
+        if by is None and pr_numbers and applicable_prs:
+            by = applicable_prs[0].user
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         self._git.fetch_remote(org_repo_remote.remote)
@@ -894,7 +932,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 warn(f'{pr.display_text()} is already closed.')
             debug(f'found {pr}')
 
-            pr_path: List[PullRequest] = self.__get_upwards_path_including_pr(pr)
+            pr_path: List[PullRequest] = self.__get_upwards_path_including_pr(pr, author=by)
             prs_to_annotate.update(pr_path)
             reversed_pr_path: List[PullRequest] = pr_path[::-1]  # need to add from root downwards
             if reversed_pr_path[0].base not in self.managed_branches:
@@ -923,14 +961,14 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         if len(applicable_prs) == 1:
             self._git.checkout_in_current_worktree(LocalBranchShortName.of(applicable_prs[0].head))
 
-    def __get_downwards_tree_excluding_pr(self, original_pr: PullRequest) -> List[Tuple[PullRequest, int]]:
+    def __get_downwards_tree_excluding_pr(self, original_pr: PullRequest, *, author: Optional[str] = None) -> List[Tuple[PullRequest, int]]:
         """Returns pairs of (PR, depth below the given PR)"""
 
         visited_head_branches: Set[str] = set([])
 
         def reverse_pr_dfs(pr: PullRequest, depth: int) -> Iterator[Tuple[PullRequest, int]]:
             visited_head_branches.add(pr.head)
-            down_prs = filter(lambda x: x.base == pr.head, self._get_all_open_prs())
+            down_prs = filter(lambda x: x.base == pr.head, self._get_relevant_open_prs(author=author))
             for down_pr in sorted(down_prs, key=lambda x: x.number):
                 if down_pr.head not in visited_head_branches:
                     yield (down_pr, depth + 1)
@@ -938,7 +976,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         return list(reverse_pr_dfs(original_pr, 0))
 
-    def __get_upwards_path_including_pr(self, original_pr: PullRequest) -> List[PullRequest]:
+    def __get_upwards_path_including_pr(self, original_pr: PullRequest, *, author: Optional[str] = None) -> List[PullRequest]:
         visited_head_branches: List[str] = [original_pr.head]
         path: List[PullRequest] = [original_pr]
         pr_base: Optional[str] = original_pr.base
@@ -953,7 +991,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
                 raise MacheteException(f"There is a cycle between {spec.display_name} {spec.pr_short_name}s: " +
                                        " -> ".join(visited_head_branches + [pr_base]))
             visited_head_branches += [pr_base]
-            pr = find_or_none(lambda x: x.head == pr_base, self._get_all_open_prs())
+            pr = find_or_none(lambda x: x.head == pr_base, self._get_relevant_open_prs(author=author))
             path = (path + [pr]) if pr else path
             pr_base = pr.base if pr else None
         return path
@@ -968,30 +1006,51 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
     ) -> List[PullRequest]:
         result: List[PullRequest] = []
         spec = self.code_hosting_spec
-        all_open_prs = self._get_all_open_prs()
         repo_pretty = (
             f"{spec.repository_name} <b>{self.code_hosting_client.organization}</b>/<b>{self.code_hosting_client.repository}</b>")
         if pr_numbers:
-            for pr_number in pr_numbers:
-                pr: Optional[PullRequest] = find_or_none(lambda x: x.number == pr_number, all_open_prs)
+            keys = spec.git_config_keys
+            first_pr: Optional[PullRequest] = None
+            if self._config.code_hosting_retrieve_by_author(keys):
+                # Infer the author from the first given PR so chain reconstruction walks that user's PRs
+                # (same as `--by`), rather than the current user's.
+                first_pr = self.code_hosting_client.get_pull_request_by_number_or_none(pr_numbers[0])
+                if first_pr is None:
+                    raise MacheteException(
+                        f"{spec.pr_short_name} {spec.pr_ordinal_char}<b>{pr_numbers[0]}</b> is not found in {repo_pretty}")
+                relevant_open_prs = self._get_open_prs_by_author(first_pr.user)
+            else:
+                relevant_open_prs = self._get_relevant_open_prs()
+            for i, pr_number in enumerate(pr_numbers):
+                pr: Optional[PullRequest] = find_or_none(lambda x: x.number == pr_number, relevant_open_prs)
                 if pr:
                     result.append(pr)
+                elif i == 0 and first_pr is not None:
+                    result.append(first_pr)
                 else:
                     pr = self.code_hosting_client.get_pull_request_by_number_or_none(pr_number)
                     if pr:
                         result.append(pr)
                     else:
-
                         raise MacheteException(
                             f"{spec.pr_short_name} {spec.pr_ordinal_char}<b>{pr_number}</b> is not found in {repo_pretty}")
             return result
         if all:
+            # The `--all` flag deliberately overrides `retrieveByAuthor` and downloads every open PR.
+            all_open_prs = self._get_all_open_prs()
             if not all_open_prs:
                 warn(f"currently there are no {spec.pr_full_name}s opened in {repo_pretty}")
                 return []
             return all_open_prs
         elif by:
-            result = [pr for pr in all_open_prs if pr.user == by]
+            keys = spec.git_config_keys
+            if self._config.code_hosting_retrieve_by_author(keys):
+                # With this key set we avoid downloading every open PR just to filter locally;
+                # ask the API for this author's PRs directly. `by` may be a user other than the current one
+                # (e.g. `--by=<someone-else>`), which is intentionally supported here.
+                result = self._get_open_prs_by_author(by)
+            else:
+                result = [pr for pr in self._get_all_open_prs() if pr.user == by]
             if not result:
                 warn(f"user <b>{by}</b> has no open {spec.pr_full_name} in {repo_pretty}")
                 return []
@@ -999,8 +1058,8 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         elif related_to:
             # Always update the entire stack (both parents and children) when --related is used,
             # regardless of prDescriptionIntroStyle setting.
-            result = list(reversed(self.__get_upwards_path_including_pr(related_to)))
-            result += [downstream_pr for downstream_pr, _ in self.__get_downwards_tree_excluding_pr(related_to)]
+            result = list(reversed(self.__get_upwards_path_including_pr(related_to, author=by)))
+            result += [downstream_pr for downstream_pr, _ in self.__get_downwards_tree_excluding_pr(related_to, author=by)]
             return result
 
         raise UnexpectedMacheteException("All params passed to __get_applicable_pull_requests are empty.")

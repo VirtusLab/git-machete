@@ -1,5 +1,11 @@
 # Release notes
 
+## New in git-machete 3.46.0
+
+- added: `machete.github.retrieveByAuthor` and `machete.gitlab.retrieveByAuthor` git config keys
+  that make PR/MR-listing commands download open PRs/MRs by author (the current user by default, or `--by=<user>` when given) instead of all of them,
+  which can speed up operations considerably in repositories/projects with many open PRs/MRs
+
 ## New in git-machete 3.45.1
 
 - fixed: `git machete traverse --sync-github-prs`/`--sync-gitlab-mrs` no longer offers to create a PR/MR for a branch annotated with `push=no`

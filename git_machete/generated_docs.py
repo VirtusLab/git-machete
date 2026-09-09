@@ -316,6 +316,25 @@ long_docs: Dict[str, str] = {
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only PR numbers & titles)
               * `none`                — prepend no intro to the PR description at all
 
+           `machete.github.retrieveByAuthor`
+             When set to `true`, commands that need to list open pull requests in the repository
+             (such as `github anno-prs`, `github checkout-prs` and `traverse` with GitHub integration)
+             download open PRs by author rather than every open PR in the repository.
+
+             By default (and with `--mine`), that author is the current user as determined from the GitHub API token.
+             The `--by=<login>` flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
+             uses that same author's PRs, not the current user's.
+             When checking out specific PR numbers, the author of the first given PR is used instead.
+
+             This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
+             at the cost of not being able to discover PRs opened by other users when traversing PR chains
+             (for example, when checking out an entire stack that includes PRs from multiple authors).
+
+             A valid GitHub API token is required when this key is set.
+
+             The `--all` flag to `github checkout-prs` and `github update-pr-descriptions`
+             still downloads all open PRs in the repository, regardless of this setting.
+
            `machete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}`
              `machete.gitlab.domain`
                 The domain of the GitLab API server, for use with a GitLab self-managed instance; otherwise inferred from the remote URL.
@@ -381,6 +400,25 @@ long_docs: Dict[str, str] = {
               * `up-only`             — default, include only a chain of upstream MRs
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only MR numbers & titles)
               * `none`                — prepend no intro to the MR description at all
+
+           `machete.gitlab.retrieveByAuthor`
+             When set to `true`, commands that need to list open merge requests in the project
+             (such as `gitlab anno-mrs`, `gitlab checkout-mrs` and `traverse` with GitLab integration)
+             download open MRs by author rather than every open MR in the project.
+
+             By default (and with `--mine`), that author is the current user as determined from the GitLab API token.
+             The `--by=<username>` flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
+             uses that same author's MRs, not the current user's.
+             When checking out specific MR numbers, the author of the first given MR is used instead.
+
+             This can speed up operations considerably in projects with hundreds or thousands of open MRs,
+             at the cost of not being able to discover MRs opened by other users when traversing MR chains
+             (for example, when checking out an entire stack that includes MRs from multiple authors).
+
+             A valid GitLab API token is required when this key is set.
+
+             The `--all` flag to `gitlab checkout-mrs` and `gitlab update-mr-descriptions`
+             still downloads all open MRs in the project, regardless of this setting.
 
            `machete.overrideForkPoint.<branch>.to`
               Executing `git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]` sets up a fork point override for `<branch>`.
@@ -910,6 +948,25 @@ long_docs: Dict[str, str] = {
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only PR numbers & titles)
               * `none`                — prepend no intro to the PR description at all
 
+           `machete.github.retrieveByAuthor` (`anno-prs`, `checkout-prs` and `update-pr-descriptions`)
+             When set to `true`, commands that need to list open pull requests in the repository
+             (such as `github anno-prs`, `github checkout-prs` and `traverse` with GitHub integration)
+             download open PRs by author rather than every open PR in the repository.
+
+             By default (and with `--mine`), that author is the current user as determined from the GitHub API token.
+             The `--by=<login>` flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
+             uses that same author's PRs, not the current user's.
+             When checking out specific PR numbers, the author of the first given PR is used instead.
+
+             This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
+             at the cost of not being able to discover PRs opened by other users when traversing PR chains
+             (for example, when checking out an entire stack that includes PRs from multiple authors).
+
+             A valid GitHub API token is required when this key is set.
+
+             The `--all` flag to `github checkout-prs` and `github update-pr-descriptions`
+             still downloads all open PRs in the repository, regardless of this setting.
+
         <b>Environment variables (all subcommands)</b>
 
            `GITHUB_TOKEN`
@@ -1135,6 +1192,25 @@ long_docs: Dict[str, str] = {
               * `up-only`             — default, include only a chain of upstream MRs
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only MR numbers & titles)
               * `none`                — prepend no intro to the MR description at all
+
+           `machete.gitlab.retrieveByAuthor` (`anno-mrs`, `checkout-mrs` and `update-mr-descriptions`)
+             When set to `true`, commands that need to list open merge requests in the project
+             (such as `gitlab anno-mrs`, `gitlab checkout-mrs` and `traverse` with GitLab integration)
+             download open MRs by author rather than every open MR in the project.
+
+             By default (and with `--mine`), that author is the current user as determined from the GitLab API token.
+             The `--by=<username>` flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
+             uses that same author's MRs, not the current user's.
+             When checking out specific MR numbers, the author of the first given MR is used instead.
+
+             This can speed up operations considerably in projects with hundreds or thousands of open MRs,
+             at the cost of not being able to discover MRs opened by other users when traversing MR chains
+             (for example, when checking out an entire stack that includes MRs from multiple authors).
+
+             A valid GitLab API token is required when this key is set.
+
+             The `--all` flag to `gitlab checkout-mrs` and `gitlab update-mr-descriptions`
+             still downloads all open MRs in the project, regardless of this setting.
 
         <b>Environment variables (all subcommands)</b>
 

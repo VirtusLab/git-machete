@@ -597,3 +597,122 @@ class TestGitLabCheckoutMRs(BaseTest):
             'Checking for open GitLab MRs... OK\n'
             'MR !2 checked out at local branch fix-10341\n'
         )
+
+    @staticmethod
+    def gitlab_api_state_for_test_checkout_mrs_retrieve_by_author() -> MockGitLabAPIState:
+        return MockGitLabAPIState.with_mrs(
+            mock_mr_json(head='feature/mine', base='develop', number=1, user='gitlab_user'),
+            mock_mr_json(head='feature/theirs', base='develop', number=2, user='some_other_user'),
+            mock_mr_json(head='feature/theirs-child', base='feature/theirs', number=3, user='some_other_user'),
+        )
+
+    def __setup_repo_for_checkout_mrs_retrieve_by_author(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        self.patch_symbol(mocker, 'urllib.request.urlopen',
+                          mock_urlopen(self.gitlab_api_state_for_test_checkout_mrs_retrieve_by_author()))
+        create_repo_with_remote()
+        new_branch("develop")
+        commit("develop commit")
+        push()
+        new_branch("feature/mine")
+        commit("mine commit")
+        push()
+        check_out("develop")
+        new_branch("feature/theirs")
+        commit("theirs commit")
+        push()
+        new_branch("feature/theirs-child")
+        commit("theirs child commit")
+        push()
+        check_out("develop")
+        rewrite_branch_layout_file("develop")
+        set_git_config_key('machete.gitlab.retrieveByAuthor', 'true')
+
+    def test_gitlab_checkout_mrs_retrieve_by_author_all(self, mocker: MockerFixture) -> None:
+        self.__setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
+
+        assert_success(
+            ['gitlab', 'checkout-mrs', '--all'],
+            """
+            Checking for open GitLab MRs... OK
+            MR !1 checked out at local branch feature/mine
+            MR !2 checked out at local branch feature/theirs
+            MR !3 checked out at local branch feature/theirs-child
+            """
+        )
+        assert_success(
+            ["status"],
+            """
+            develop *
+            |
+            o-feature/mine  MR !1
+            |
+            o-feature/theirs  MR !2 (some_other_user) rebase=no push=no
+              |
+              o-feature/theirs-child  MR !3 (some_other_user) rebase=no push=no
+            """
+        )
+
+    def test_gitlab_checkout_mrs_retrieve_by_author_by_other_user(self, mocker: MockerFixture) -> None:
+        self.__setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
+
+        assert_success(
+            ['gitlab', 'checkout-mrs', '--by', 'some_other_user'],
+            """
+            Checking for open GitLab MRs by some_other_user... OK
+            MR !2 checked out at local branch feature/theirs
+            MR !3 checked out at local branch feature/theirs-child
+            """
+        )
+        assert_success(
+            ["status"],
+            """
+            develop *
+            |
+            o-feature/theirs  MR !2 (some_other_user) rebase=no push=no
+              |
+              o-feature/theirs-child  MR !3 (some_other_user) rebase=no push=no
+            """
+        )
+
+    def test_gitlab_checkout_mrs_retrieve_by_author_mine(self, mocker: MockerFixture) -> None:
+        self.__setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
+
+        assert_success(
+            ['gitlab', 'checkout-mrs', '--mine'],
+            """
+            Checking for open GitLab MRs by gitlab_user... OK
+            MR !1 checked out at local branch feature/mine
+            """
+        )
+        assert_success(
+            ["status"],
+            """
+            develop
+            |
+            o-feature/mine *  MR !1
+            """
+        )
+
+    def test_gitlab_checkout_mrs_retrieve_by_author_by_number(self, mocker: MockerFixture) -> None:
+        self.__setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
+
+        assert_success(
+            ['gitlab', 'checkout-mrs', '3'],
+            """
+            Checking for open GitLab MRs by some_other_user... OK
+            MR !2 checked out at local branch feature/theirs
+            MR !3 checked out at local branch feature/theirs-child
+            """
+        )
+        assert_success(
+            ["status"],
+            """
+            develop
+            |
+            o-feature/theirs  MR !2 (some_other_user) rebase=no push=no
+              |
+              o-feature/theirs-child *  MR !3 (some_other_user) rebase=no push=no
+            """
+        )
