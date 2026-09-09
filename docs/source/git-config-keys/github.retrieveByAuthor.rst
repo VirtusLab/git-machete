@@ -5,6 +5,7 @@ download open PRs by author rather than every open PR in the repository.
 By default (and with ``--mine``), that author is the current user as determined from the GitHub API token.
 The ``--by=<login>`` flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
 uses that same author's PRs, not the current user's.
+When checking out specific PR numbers, the author of the first given PR is used instead.
 
 This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
 at the cost of not being able to discover PRs opened by other users when traversing PR chains

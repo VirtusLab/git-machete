@@ -516,13 +516,26 @@ class TestGitHubCheckoutPRs(BaseTest):
             PR #1 checked out at local branch feature/mine
             """
         )
-        # Checking out another user's PR by explicit number still works (it falls back to a by-number fetch)
-        # even though that PR is absent from the current user's PR list.
         assert_success(
-            ['github', 'checkout-prs', '2'],
+            ["status"],
             """
-            Checking for open GitHub PRs by github_user... OK
+            develop
+            |
+            o-feature/mine *  PR #1
+            """
+        )
+
+    def test_github_checkout_prs_retrieve_by_author_by_number(self, mocker: MockerFixture) -> None:
+        # A PR number uses the author of that PR (not the current user) for the by-author download
+        # and for walking the stack, so checking out the child reattaches the parent.
+        self.__setup_repo_for_checkout_prs_retrieve_by_author(mocker)
+
+        assert_success(
+            ['github', 'checkout-prs', '3'],
+            """
+            Checking for open GitHub PRs by some_other_user... OK
             PR #2 checked out at local branch feature/theirs
+            PR #3 checked out at local branch feature/theirs-child
             """
         )
         assert_success(
@@ -530,9 +543,9 @@ class TestGitHubCheckoutPRs(BaseTest):
             """
             develop
             |
-            o-feature/mine  PR #1
-            |
-            o-feature/theirs *  PR #2 (some_other_user) rebase=no push=no
+            o-feature/theirs  PR #2 (some_other_user) rebase=no push=no
+              |
+              o-feature/theirs-child *  PR #3 (some_other_user) rebase=no push=no
             """
         )
 

@@ -324,6 +324,7 @@ long_docs: Dict[str, str] = {
              By default (and with `--mine`), that author is the current user as determined from the GitHub API token.
              The `--by=<login>` flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
              uses that same author's PRs, not the current user's.
+             When checking out specific PR numbers, the author of the first given PR is used instead.
 
              This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
              at the cost of not being able to discover PRs opened by other users when traversing PR chains
@@ -408,6 +409,7 @@ long_docs: Dict[str, str] = {
              By default (and with `--mine`), that author is the current user as determined from the GitLab API token.
              The `--by=<username>` flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
              uses that same author's MRs, not the current user's.
+             When checking out specific MR numbers, the author of the first given MR is used instead.
 
              This can speed up operations considerably in projects with hundreds or thousands of open MRs,
              at the cost of not being able to discover MRs opened by other users when traversing MR chains
@@ -954,6 +956,7 @@ long_docs: Dict[str, str] = {
              By default (and with `--mine`), that author is the current user as determined from the GitHub API token.
              The `--by=<login>` flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
              uses that same author's PRs, not the current user's.
+             When checking out specific PR numbers, the author of the first given PR is used instead.
 
              This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
              at the cost of not being able to discover PRs opened by other users when traversing PR chains
@@ -1198,6 +1201,7 @@ long_docs: Dict[str, str] = {
              By default (and with `--mine`), that author is the current user as determined from the GitLab API token.
              The `--by=<username>` flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
              uses that same author's MRs, not the current user's.
+             When checking out specific MR numbers, the author of the first given MR is used instead.
 
              This can speed up operations considerably in projects with hundreds or thousands of open MRs,
              at the cost of not being able to discover MRs opened by other users when traversing MR chains

@@ -416,6 +416,7 @@ download open PRs by author rather than every open PR in the repository.
 By default (and with \fB\-\-mine\fP), that author is the current user as determined from the GitHub API token.
 The \fB\-\-by=<login>\fP flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
 uses that same author\(aqs PRs, not the current user\(aqs.
+When checking out specific PR numbers, the author of the first given PR is used instead.
 .sp
 This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
 at the cost of not being able to discover PRs opened by other users when traversing PR chains
@@ -513,6 +514,7 @@ download open MRs by author rather than every open MR in the project.
 By default (and with \fB\-\-mine\fP), that author is the current user as determined from the GitLab API token.
 The \fB\-\-by=<username>\fP flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
 uses that same author\(aqs MRs, not the current user\(aqs.
+When checking out specific MR numbers, the author of the first given MR is used instead.
 .sp
 This can speed up operations considerably in projects with hundreds or thousands of open MRs,
 at the cost of not being able to discover MRs opened by other users when traversing MR chains
@@ -1339,6 +1341,7 @@ download open PRs by author rather than every open PR in the repository.
 By default (and with \fB\-\-mine\fP), that author is the current user as determined from the GitHub API token.
 The \fB\-\-by=<login>\fP flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
 uses that same author\(aqs PRs, not the current user\(aqs.
+When checking out specific PR numbers, the author of the first given PR is used instead.
 .sp
 This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
 at the cost of not being able to discover PRs opened by other users when traversing PR chains
@@ -1660,6 +1663,7 @@ download open MRs by author rather than every open MR in the project.
 By default (and with \fB\-\-mine\fP), that author is the current user as determined from the GitLab API token.
 The \fB\-\-by=<username>\fP flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
 uses that same author\(aqs MRs, not the current user\(aqs.
+When checking out specific MR numbers, the author of the first given MR is used instead.
 .sp
 This can speed up operations considerably in projects with hundreds or thousands of open MRs,
 at the cost of not being able to discover MRs opened by other users when traversing MR chains

@@ -5,6 +5,7 @@ download open MRs by author rather than every open MR in the project.
 By default (and with ``--mine``), that author is the current user as determined from the GitLab API token.
 The ``--by=<username>`` flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
 uses that same author's MRs, not the current user's.
+When checking out specific MR numbers, the author of the first given MR is used instead.
 
 This can speed up operations considerably in projects with hundreds or thousands of open MRs,
 at the cost of not being able to discover MRs opened by other users when traversing MR chains

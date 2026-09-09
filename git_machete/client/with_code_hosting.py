@@ -263,8 +263,8 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         self._init_code_hosting_client()
         current_user: Optional[str] = self.code_hosting_client.get_current_user_login()
         debug(f'Current {self.code_hosting_spec.display_name} user is <b>{current_user or "<none>"}</b>')
-        all_open_prs = self._get_relevant_open_prs()
-        self.__sync_annotations_to_branch_layout_file(all_open_prs, current_user, include_urls=include_urls, verbose=True)
+        relevant_open_prs = self._get_relevant_open_prs()
+        self.__sync_annotations_to_branch_layout_file(relevant_open_prs, current_user, include_urls=include_urls, verbose=True)
 
     def create_pull_request(
             self,
@@ -894,6 +894,8 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         applicable_prs: List[PullRequest] = self._get_applicable_pull_requests(
             pr_numbers=pr_numbers, all=all, by=by)
+        if by is None and pr_numbers and applicable_prs:
+            by = applicable_prs[0].user
 
         debug(f'organization is {org_repo_remote.organization}, repository is {org_repo_remote.repository}')
         self._git.fetch_remote(org_repo_remote.remote)
@@ -1007,17 +1009,29 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
         repo_pretty = (
             f"{spec.repository_name} <b>{self.code_hosting_client.organization}</b>/<b>{self.code_hosting_client.repository}</b>")
         if pr_numbers:
-            relevant_open_prs = self._get_relevant_open_prs()
-            for pr_number in pr_numbers:
+            keys = spec.git_config_keys
+            first_pr: Optional[PullRequest] = None
+            if self._config.code_hosting_retrieve_by_author(keys):
+                # Infer the author from the first given PR so chain reconstruction walks that user's PRs
+                # (same as `--by`), rather than the current user's.
+                first_pr = self.code_hosting_client.get_pull_request_by_number_or_none(pr_numbers[0])
+                if first_pr is None:
+                    raise MacheteException(
+                        f"{spec.pr_short_name} {spec.pr_ordinal_char}<b>{pr_numbers[0]}</b> is not found in {repo_pretty}")
+                relevant_open_prs = self._get_open_prs_by_author(first_pr.user)
+            else:
+                relevant_open_prs = self._get_relevant_open_prs()
+            for i, pr_number in enumerate(pr_numbers):
                 pr: Optional[PullRequest] = find_or_none(lambda x: x.number == pr_number, relevant_open_prs)
                 if pr:
                     result.append(pr)
+                elif i == 0 and first_pr is not None:
+                    result.append(first_pr)
                 else:
                     pr = self.code_hosting_client.get_pull_request_by_number_or_none(pr_number)
                     if pr:
                         result.append(pr)
                     else:
-
                         raise MacheteException(
                             f"{spec.pr_short_name} {spec.pr_ordinal_char}<b>{pr_number}</b> is not found in {repo_pretty}")
             return result

@@ -687,10 +687,23 @@ class TestGitLabCheckoutMRs(BaseTest):
             """
         )
         assert_success(
-            ['gitlab', 'checkout-mrs', '2'],
+            ["status"],
             """
-            Checking for open GitLab MRs by gitlab_user... OK
+            develop
+            |
+            o-feature/mine *  MR !1
+            """
+        )
+
+    def test_gitlab_checkout_mrs_retrieve_by_author_by_number(self, mocker: MockerFixture) -> None:
+        self.__setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
+
+        assert_success(
+            ['gitlab', 'checkout-mrs', '3'],
+            """
+            Checking for open GitLab MRs by some_other_user... OK
             MR !2 checked out at local branch feature/theirs
+            MR !3 checked out at local branch feature/theirs-child
             """
         )
         assert_success(
@@ -698,8 +711,8 @@ class TestGitLabCheckoutMRs(BaseTest):
             """
             develop
             |
-            o-feature/mine  MR !1
-            |
-            o-feature/theirs *  MR !2 (some_other_user) rebase=no push=no
+            o-feature/theirs  MR !2 (some_other_user) rebase=no push=no
+              |
+              o-feature/theirs-child *  MR !3 (some_other_user) rebase=no push=no
             """
         )
