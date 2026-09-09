@@ -1,5 +1,11 @@
 # Release notes
 
+## New in git-machete 3.46.0
+
+- added: `machete.github.retrieveByAuthor` and `machete.gitlab.retrieveByAuthor` git config keys
+  that make PR/MR-listing commands download open PRs/MRs by author (the current user by default, or `--by=<user>` when given) instead of all of them,
+  which can speed up operations considerably in repositories/projects with many open PRs/MRs
+
 ## New in git-machete 3.45.1
 
 - added: `advice.macheteCreateFromFork` git config key suppresses the fork warning in `github create-pr` and `gitlab create-mr` when set to `false` (contributed by @be-student)
