@@ -258,7 +258,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
         base_org_repo = base_org_repo_remote.extract_org_and_repo()
         head_org_repo = head_org_repo_remote.extract_org_and_repo()
-        if base_org_repo != head_org_repo:
+        if base_org_repo != head_org_repo and self._config.advice_machete_create_from_fork():
             warn(f"{spec.base_branch_name} branch <b>{base}</b> lives in <b>{base_org_repo}</b> {spec.repository_name},\n"
                  f"while {spec.head_branch_name} branch <b>{head}</b> lives in <b>{head_org_repo}</b> {spec.repository_name}.\n"
                  f"git-machete will now attempt to create {spec.pr_short_name_article} {spec.pr_short_name} in <b>{base_org_repo}</b>.\n"

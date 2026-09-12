@@ -43,6 +43,7 @@ class PRDescriptionIntroStyle(ParsableEnum):
 
 class MacheteConfig:
 
+    _ADVICE_MACHETE_CREATE_FROM_FORK = 'advice.macheteCreateFromFork'
     _ADVICE_MACHETE_EDITOR_SELECTION = 'advice.macheteEditorSelection'
     _SQUASH_MERGE_DETECTION = 'machete.squashMergeDetection'
     _STATUS_EXTRA_SPACE_BEFORE_BRANCH_NAME = 'machete.status.extraSpaceBeforeBranchName'
@@ -60,6 +61,9 @@ class MacheteConfig:
 
     def advice_machete_editor_selection(self) -> bool:
         return self._git.get_config_attr_or_none(self._ADVICE_MACHETE_EDITOR_SELECTION) != 'false'
+
+    def advice_machete_create_from_fork(self) -> bool:
+        return self._git.get_config_attr_or_none(self._ADVICE_MACHETE_CREATE_FROM_FORK) != 'false'
 
     def core_editor(self) -> Optional[str]:
         return self._git.get_config_attr_or_none("core.editor")
