@@ -84,11 +84,11 @@ def assert_argument_error(cmd_and_args: Iterable[str], expected_output: str) -> 
 
 
 def read_branch_layout_file() -> str:
-    with open(".git/machete") as def_file:
+    with open(".git/machete", encoding='utf-8') as def_file:
         return def_file.read()
 
 
 def rewrite_branch_layout_file(new_body: str) -> None:
     new_body = textwrap.dedent(new_body)
-    with open(".git/machete", 'w') as def_file:
+    with open(".git/machete", 'w', encoding='utf-8', newline='\n') as def_file:
         def_file.writelines(new_body)

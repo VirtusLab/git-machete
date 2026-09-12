@@ -785,7 +785,8 @@ and asks whether to overwrite the existing branch layout file with the new disco
 If confirmed with a \fBy[es]\fP or \fBe[dit]\fP reply, backs up the current branch layout file (if it exists) as \fB$GIT_DIR/machete~\fP
 and saves the new tree under the usual \fB$GIT_DIR/machete\fP path.
 If the reply was \fBe[dit]\fP, additionally an editor is opened (as in: \fBgit machete\fP edit) after saving the new branch layout file.
-\fBdiscover\fP retains the existing branch qualifiers used by \fBgit machete traverse\fP (see help for traverse).
+\fBdiscover\fP retains existing annotations for branches included in the discovered tree,
+including the branch qualifiers used by \fBgit machete traverse\fP (see help for traverse).
 .sp
 \fBOptions\fP
 .INDENT 0.0
@@ -2360,7 +2361,7 @@ asks the user whether to \fBpull\fP the branch
 if \fB\-H\fP/\fB\-\-sync\-github\-prs\fP or \fB\-L\fP/\fB\-\-sync\-gitlab\-mrs\fP option is present:
 .INDENT 2.0
 .IP \(bu 2
-asks the user whether to \fBcreate\fP a PR/MR for the given branch if it doesn\(aqt exist yet,
+asks the user whether to \fBcreate\fP a PR/MR for the given branch if it doesn\(aqt exist yet (unless the branch is annotated with \fBpush=no\fP),
 .IP \(bu 2
 asks the user whether to \fBretarget\fP the PR/MR if it exists for the given branch,
 and its base/target branch in GitHub/GitLab is different than the upstream in machete file
@@ -2385,6 +2386,7 @@ Unlike with \fBgit rebase\fP or \fBgit cherry\-pick\fP, there is no special \fB\
 .sp
 The rebase, push and slide\-out behaviors of \fBtraverse\fP can also be customized for each branch separately using \fIbranch qualifiers\fP\&.
 There are \fBpush=no\fP, \fBrebase=no\fP and \fBslide\-out=no\fP qualifiers that can be used to opt out of default behavior (rebasing, pushing and sliding the branch out).
+\fBpush=no\fP also skips creating a PR/MR under \fB\-\-sync\-github\-prs\fP/\fB\-\-sync\-gitlab\-mrs\fP\&.
 The qualifier can appear anywhere in the annotation, but needs to be separated by a whitespace from any other character, as in: \fBsome_annotation_text rebase=no push=no slide\-out=no\fP\&.
 Qualifiers can only be overwritten by manually editing \fB\&.git/machete\fP file or modifying it with \fBgit machete e[dit]\fP, or by updating annotations with \fBgit machete anno\fP\&.
 Example machete file with branch qualifiers:

@@ -276,7 +276,8 @@ class TraverseMacheteClient(MacheteClientWithCodeHosting):
                     if parent:
                         prs = [_pr for _pr in self._get_all_open_prs() if _pr.head == branch]
                         if not prs:
-                            needs_create_pr = True
+                            if branch_anno is None or branch_anno.qualifiers.push:
+                                needs_create_pr = True
 
                 use_merge = opt_merge or (branch_anno is not None and branch_anno.qualifiers.update_with_merge)
 

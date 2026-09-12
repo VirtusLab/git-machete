@@ -71,7 +71,7 @@ jobs:
           command: ci/checks/run-all-checks.sh
       - run:
           name: Check code style
-          command: tox -e isort-check,flake8-check,typos-check,vulture-check,cyclic-import-check
+          command: tox -e isort-check,flake8-check,flake8-checker-tests,typos-check,vulture-check,cyclic-import-check
       - run:
           name: Verify docs
           command: tox -e py-docs-check,sphinx-man-check,sphinx-html
@@ -303,7 +303,7 @@ only_special_branches: &only_special_branches
   filters:
     branches:
       only:
-        - "/.*(aur|ci[/-]|cross-platform|dependabot.pip|deploy|dry.run|homebrew|hotfix|macos|nix|publish|release|windows).*/"
+        - "/.*(aur|ci[/-]|cross-platform|dependabot.pip|deploy|dry.run|homebrew|hotfix|macos|nix|publish|release|utf.?8|windows).*/"
         - "develop"
         - "master"
 

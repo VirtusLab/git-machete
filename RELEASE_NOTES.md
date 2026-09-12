@@ -3,6 +3,9 @@
 ## New in git-machete 3.45.1
 
 - added: `advice.macheteCreateFromFork` git config key suppresses the fork warning in `github create-pr` and `gitlab create-mr` when set to `false`
+- fixed: `git machete traverse --sync-github-prs`/`--sync-gitlab-mrs` no longer offers to create a PR/MR for a branch annotated with `push=no`
+- fixed: `git machete discover` preserves full annotations on rediscovered branches, rather than only their traversal qualifiers (contributed by @be-student)
+- fixed: branch layout files are now always read and written as UTF-8 rather than the process locale encoding, so annotations with non-ASCII characters no longer break on Windows
 
 ## New in git-machete 3.45.0
 
