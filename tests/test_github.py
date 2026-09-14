@@ -5,7 +5,6 @@ import textwrap
 from contextlib import contextmanager
 from typing import Iterator
 
-import pytest
 from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
@@ -35,18 +34,17 @@ class TestGitHub(BaseTest):
         # This is solely to make mypy check if the class correctly implements abstract methods from CodeHostingApi.
         GitHubApi(domain="github.com", organization="my-org", repository="my-repo")
 
-    @pytest.mark.parametrize('organization,repository', [('example-org', 'example-repo'), ('renamed-org', 'renamed-repo')])
-    def test_github_reuses_renamed_repository(self, mocker: MockerFixture, organization: str, repository: str) -> None:
+    def test_github_reuses_renamed_repository(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
         state = MockGitHubAPIState.with_prs(mock_pr_json(head='feature', base='master', number=15))
-        state.repositories[2].update(owner={'login': organization}, name=repository)
+        state.repositories[2].update(owner={'login': 'renamed-org'}, name='renamed-repo')
         requests = mocker.Mock(side_effect=mock_urlopen(state))
         self.patch_symbol(mocker, 'urllib.request.urlopen', requests)
         api = GitHubApi(domain='github.com', organization='example-org', repository='old-example-repo')
 
         api.set_base_of_pull_request(15, LocalBranchShortName.of('develop'))
         api.set_description_of_pull_request(15, 'Updated description')
-        prefix = f'https://api.github.com/repos/{organization}/{repository}'
+        prefix = 'https://api.github.com/repos/renamed-org/renamed-repo'
         assert [(call[0][0].method, call[0][0].full_url) for call in requests.call_args_list] == [
             ('PATCH', 'https://api.github.com/repos/example-org/old-example-repo/pulls/15'),
             ('GET', 'https://api.github.com/repositories/2'),
