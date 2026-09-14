@@ -1,4 +1,5 @@
 import sys
+from typing import Optional
 
 import pytest
 from pytest_mock import MockerFixture
@@ -32,9 +33,11 @@ class TestEdit(BaseTest):
         with overridden_environment(GIT_MACHETE_EDITOR="lolxd-this-doesnt-exist"):
             assert_failure(["edit"], "'$GIT_MACHETE_EDITOR' (lolxd-this-doesnt-exist) is not available")
 
-    def test_edit_git_editor(self) -> None:
+    @pytest.mark.parametrize('advice', [None, 'true', 'yes', 'on', '1', 'FALSE', 'no', 'off', '0', '', 'invalid'])
+    def test_edit_git_editor(self, advice: Optional[str]) -> None:
         create_repo()
-        set_git_config_key("advice.macheteEditorSelection", "true")
+        if advice is not None:
+            set_git_config_key("advice.macheteEditorSelection", advice)
 
         with overridden_environment(GIT_EDITOR=dummy_editor):
             assert_success(

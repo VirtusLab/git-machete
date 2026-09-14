@@ -1,6 +1,8 @@
 import os
 import textwrap
+from typing import Optional
 
+import pytest
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
@@ -16,6 +18,46 @@ from tests.shell import execute, write_to_file
 
 
 class TestGitHubCreatePR(BaseTest):
+
+    @pytest.mark.parametrize('advice,show_advice', [
+        (None, True), ('true', True), ('false', False),
+        ('yes', False), ('on', False), ('1', False), ('FALSE', False),
+        ('no', False), ('off', False), ('0', False), ('', False), ('invalid', False),
+    ])
+    def test_create_from_fork(self, mocker: MockerFixture, advice: Optional[str], show_advice: bool) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
+        create_repo_with_remote()
+        fork_path = create_repo('remote-1', bare=True, switch_dir_to_new_repo=False)
+        add_remote('fork', fork_path)
+        new_branch('master')
+        commit()
+        push(remote='fork', set_upstream=False)
+        push(remote='origin')
+        new_branch('feature')
+        commit()
+        push(remote='origin')
+        rewrite_branch_layout_file('master\n\tfeature')
+        set_git_config_key('machete.github.baseRemote', 'fork')
+        if advice is not None:
+            set_git_config_key('advice.macheteCreateFromFork', advice)
+        warning = """
+        Warn: base branch master lives in example-org/example-repo-1 repository,
+        while head branch feature lives in example-org/example-repo repository.
+        git-machete will now attempt to create a PR in example-org/example-repo-1.
+
+        Note that due to the limitations of GitHub's PR model, it is not possible to cleanly create stacked PRs from forks.
+        For example, in a hypothetical chain some-other-branch -> feature -> master, a PR from some-other-branch to feature
+        could not be created in example-org/example-repo-1, since its head branch feature lives in example-org/example-repo.
+        Generally, PRs need to be created in whatever repository the base branch lives.
+        """ if show_advice else ''
+        expected = warning + """
+        Checking if head branch feature exists in origin remote... YES
+        Checking if base branch master exists in fork remote... YES
+        Creating a PR from feature to master... OK, see www.github.com
+        """
+        assert_success(['github', 'create-pr'], expected)
 
     @staticmethod
     def github_api_state_for_test_create_pr() -> MockGitHubAPIState:

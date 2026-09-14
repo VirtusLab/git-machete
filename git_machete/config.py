@@ -60,10 +60,11 @@ class MacheteConfig:
         self._git: Git = git if git is not None else Git()
 
     def advice_machete_editor_selection(self) -> bool:
+        # Preserve the original opt-out semantics: only literal 'false' disables editor advice.
         return self._git.get_config_attr_or_none(self._ADVICE_MACHETE_EDITOR_SELECTION) != 'false'
 
     def advice_machete_create_from_fork(self) -> bool:
-        return self._git.get_config_attr_or_none(self._ADVICE_MACHETE_CREATE_FROM_FORK) != 'false'
+        return self._git.get_boolean_config_attr(key=self._ADVICE_MACHETE_CREATE_FROM_FORK, default_value=True)
 
     def core_editor(self) -> Optional[str]:
         return self._git.get_config_attr_or_none("core.editor")
