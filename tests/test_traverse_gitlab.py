@@ -217,3 +217,67 @@ class TestTraverseGitLab(BaseTest):
             Retarget MR !2 to allow-ownership-link? (y, N, q, yq)
             Switching target branch of MR !2 to allow-ownership-link... OK
             """)
+
+    def test_traverse_sync_create_gitlab_mrs_skips_push_no(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
+
+        create_repo_with_remote()
+        new_branch("develop")
+        commit()
+        push()
+        new_branch("someone-elses-branch")
+        commit()
+        push()
+        check_out("develop")
+        new_branch("annotated-ok")
+        commit()
+        push()
+        check_out("develop")
+        new_branch("my-branch")
+        commit()
+        push()
+
+        body: str = \
+            """
+            develop
+                someone-elses-branch  rebase=no push=no
+                annotated-ok  WIP
+                my-branch
+            """
+        rewrite_branch_layout_file(body)
+        check_out("develop")
+
+        self.patch_symbol(mocker, 'builtins.input', mock_input_returning("n", "q"))
+        assert_success(
+            ["traverse", "--sync-gitlab-mrs"],
+            """
+            Checking for open GitLab MRs... OK
+            Checking out annotated-ok... OK
+
+              develop
+              |
+              o-someone-elses-branch  rebase=no push=no
+              |
+              o-annotated-ok *  WIP
+              |
+              o-my-branch
+
+            Branch annotated-ok does not have an MR in GitLab.
+            Create an MR from annotated-ok to develop? (y, d[raft], N, q, yq)
+
+            Checking out my-branch... OK
+
+              develop
+              |
+              o-someone-elses-branch  rebase=no push=no
+              |
+              o-annotated-ok  WIP
+              |
+              o-my-branch *
+
+            Branch my-branch does not have an MR in GitLab.
+            Create an MR from my-branch to develop? (y, d[raft], N, q, yq)
+            """
+        )
