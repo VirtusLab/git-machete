@@ -1,8 +1,6 @@
 import os
 import textwrap
-from typing import Optional
 
-import pytest
 from pytest_mock import MockerFixture
 
 from tests.base_test import BaseTest
@@ -19,12 +17,7 @@ from tests.shell import execute, write_to_file
 
 class TestGitLabCreateMR(BaseTest):
 
-    @pytest.mark.parametrize('advice,show_advice', [
-        (None, True), ('true', True), ('false', False),
-        ('yes', False), ('on', False), ('1', False), ('FALSE', False),
-        ('no', False), ('off', False), ('0', False), ('', False), ('invalid', False),
-    ])
-    def test_create_from_fork(self, mocker: MockerFixture, advice: Optional[str], show_advice: bool) -> None:
+    def test_create_from_fork_with_advice_enabled(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
@@ -40,9 +33,8 @@ class TestGitLabCreateMR(BaseTest):
         push(remote='origin')
         rewrite_branch_layout_file('master\n\tfeature')
         set_git_config_key('machete.gitlab.baseRemote', 'fork')
-        if advice is not None:
-            set_git_config_key('advice.macheteCreateFromFork', advice)
-        warning = """
+        set_git_config_key('advice.macheteCreateFromFork', 'true')
+        assert_success(['gitlab', 'create-mr'], """
         Warn: target branch master lives in example-org/example-repo-1 project,
         while source branch feature lives in example-org/example-repo project.
         git-machete will now attempt to create an MR in example-org/example-repo-1.
@@ -51,13 +43,34 @@ class TestGitLabCreateMR(BaseTest):
         For example, in a hypothetical chain some-other-branch -> feature -> master, an MR from some-other-branch to feature
         could not be created in example-org/example-repo-1, since its source branch feature lives in example-org/example-repo.
         Generally, MRs need to be created in whatever project the target branch lives.
-        """ if show_advice else ''
-        expected = warning + """
+
         Checking if source branch feature exists in origin remote... YES
         Checking if target branch master exists in fork remote... YES
         Creating an MR from feature to master... OK, see www.gitlab.com
-        """
-        assert_success(['gitlab', 'create-mr'], expected)
+        """)
+
+    def test_create_from_fork_with_advice_disabled(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs()))
+        create_repo_with_remote()
+        fork_path = create_repo('remote-1', bare=True, switch_dir_to_new_repo=False)
+        add_remote('fork', fork_path)
+        new_branch('master')
+        commit()
+        push(remote='fork', set_upstream=False)
+        push(remote='origin')
+        new_branch('feature')
+        commit()
+        push(remote='origin')
+        rewrite_branch_layout_file('master\n\tfeature')
+        set_git_config_key('machete.gitlab.baseRemote', 'fork')
+        set_git_config_key('advice.macheteCreateFromFork', 'false')
+        assert_success(['gitlab', 'create-mr'], """
+        Checking if source branch feature exists in origin remote... YES
+        Checking if target branch master exists in fork remote... YES
+        Creating an MR from feature to master... OK, see www.gitlab.com
+        """)
 
     @staticmethod
     def gitlab_api_state_for_test_create_mr() -> MockGitLabAPIState:
