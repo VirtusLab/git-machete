@@ -215,7 +215,7 @@ class TestGitHubAnnoPRs(BaseTest):
             mock_pr_json(number=37, user='github_user', head='develop', base='master')
         )
 
-    def __setup_repo_for_retrieve_by_author(self) -> None:
+    def setup_repo_for_retrieve_by_author(self) -> None:
         create_repo_with_remote()
         new_branch("master")
         commit("master commit")
@@ -247,7 +247,7 @@ class TestGitHubAnnoPRs(BaseTest):
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(self.github_api_state_for_test_anno_prs_retrieve_by_author()))
 
-        self.__setup_repo_for_retrieve_by_author()
+        self.setup_repo_for_retrieve_by_author()
         set_git_config_key('machete.github.retrieveByAuthor', 'true')
 
         # With `retrieveByAuthor` set, only PRs authored by the current user (github_user) are downloaded and annotated;
@@ -271,7 +271,7 @@ class TestGitHubAnnoPRs(BaseTest):
         # (hence `urllib.request.urlopen` is deliberately left unpatched).
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
 
-        self.__setup_repo_for_retrieve_by_author()
+        self.setup_repo_for_retrieve_by_author()
         set_git_config_key('machete.github.retrieveByAuthor', 'true')
 
         assert_failure(

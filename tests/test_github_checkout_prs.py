@@ -430,7 +430,7 @@ class TestGitHubCheckoutPRs(BaseTest):
             mock_pr_json(head='feature/theirs-child', base='feature/theirs', number=3, user='some_other_user'),
         )
 
-    def __setup_repo_for_checkout_prs_retrieve_by_author(self, mocker: MockerFixture) -> None:
+    def setup_repo_for_checkout_prs_retrieve_by_author(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
@@ -456,7 +456,7 @@ class TestGitHubCheckoutPRs(BaseTest):
     def test_github_checkout_prs_retrieve_by_author_all(self, mocker: MockerFixture) -> None:
         # `--all` overrides `retrieveByAuthor`: every open PR is downloaded and checked out,
         # including feature/theirs (PR #2) which belongs to another user.
-        self.__setup_repo_for_checkout_prs_retrieve_by_author(mocker)
+        self.setup_repo_for_checkout_prs_retrieve_by_author(mocker)
 
         assert_success(
             ['github', 'checkout-prs', '--all'],
@@ -484,7 +484,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         # `--by=<other-user>` asks the API for that user's PRs directly, so feature/theirs (PR #2) is still
         # reachable even though `retrieveByAuthor` is set and PR #2 is not authored by the current user.
         # Chain reconstruction walks that same author's PRs (not the current user's), so the stacked child is reattached.
-        self.__setup_repo_for_checkout_prs_retrieve_by_author(mocker)
+        self.setup_repo_for_checkout_prs_retrieve_by_author(mocker)
 
         assert_success(
             ['github', 'checkout-prs', '--by', 'some_other_user'],
@@ -506,7 +506,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
 
     def test_github_checkout_prs_retrieve_by_author_mine(self, mocker: MockerFixture) -> None:
-        self.__setup_repo_for_checkout_prs_retrieve_by_author(mocker)
+        self.setup_repo_for_checkout_prs_retrieve_by_author(mocker)
 
         # `--mine` downloads only the current user's PRs, so only feature/mine (PR #1) is checked out.
         assert_success(
@@ -528,7 +528,7 @@ class TestGitHubCheckoutPRs(BaseTest):
     def test_github_checkout_prs_retrieve_by_author_by_number(self, mocker: MockerFixture) -> None:
         # A PR number uses the author of that PR (not the current user) for the by-author download
         # and for walking the stack, so checking out the child reattaches the parent.
-        self.__setup_repo_for_checkout_prs_retrieve_by_author(mocker)
+        self.setup_repo_for_checkout_prs_retrieve_by_author(mocker)
 
         assert_success(
             ['github', 'checkout-prs', '3'],
@@ -550,7 +550,7 @@ class TestGitHubCheckoutPRs(BaseTest):
         )
 
     def test_github_checkout_prs_retrieve_by_author_by_number_missing(self, mocker: MockerFixture) -> None:
-        self.__setup_repo_for_checkout_prs_retrieve_by_author(mocker)
+        self.setup_repo_for_checkout_prs_retrieve_by_author(mocker)
         assert_failure(
             ['github', 'checkout-prs', '100'],
             'PR #100 is not found in repository example-org/example-repo'

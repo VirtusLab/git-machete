@@ -606,7 +606,7 @@ class TestGitLabCheckoutMRs(BaseTest):
             mock_mr_json(head='feature/theirs-child', base='feature/theirs', number=3, user='some_other_user'),
         )
 
-    def __setup_repo_for_checkout_mrs_retrieve_by_author(self, mocker: MockerFixture) -> None:
+    def setup_repo_for_checkout_mrs_retrieve_by_author(self, mocker: MockerFixture) -> None:
         self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
         self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
         self.patch_symbol(mocker, 'urllib.request.urlopen',
@@ -630,7 +630,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         set_git_config_key('machete.gitlab.retrieveByAuthor', 'true')
 
     def test_gitlab_checkout_mrs_retrieve_by_author_all(self, mocker: MockerFixture) -> None:
-        self.__setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
+        self.setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
 
         assert_success(
             ['gitlab', 'checkout-mrs', '--all'],
@@ -655,7 +655,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         )
 
     def test_gitlab_checkout_mrs_retrieve_by_author_by_other_user(self, mocker: MockerFixture) -> None:
-        self.__setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
+        self.setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
 
         assert_success(
             ['gitlab', 'checkout-mrs', '--by', 'some_other_user'],
@@ -677,7 +677,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         )
 
     def test_gitlab_checkout_mrs_retrieve_by_author_mine(self, mocker: MockerFixture) -> None:
-        self.__setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
+        self.setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
 
         assert_success(
             ['gitlab', 'checkout-mrs', '--mine'],
@@ -696,7 +696,7 @@ class TestGitLabCheckoutMRs(BaseTest):
         )
 
     def test_gitlab_checkout_mrs_retrieve_by_author_by_number(self, mocker: MockerFixture) -> None:
-        self.__setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
+        self.setup_repo_for_checkout_mrs_retrieve_by_author(mocker)
 
         assert_success(
             ['gitlab', 'checkout-mrs', '3'],
