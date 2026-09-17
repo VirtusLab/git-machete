@@ -165,6 +165,9 @@ Create, check out and manage GitHub PRs while keeping them reflected in branch l
 
 **Git config keys**
 
+``advice.macheteCreateFromFork`` (``create-pr`` only)
+  .. include:: git-config-keys/advice.macheteCreateFromFork.rst
+
 ``machete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}`` (all subcommands)
   .. include:: git-config-keys/github.access.rst
 

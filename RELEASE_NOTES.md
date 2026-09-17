@@ -2,6 +2,7 @@
 
 ## New in git-machete 3.45.1
 
+- added: `advice.macheteCreateFromFork` git config key suppresses the fork warning in `github create-pr` and `gitlab create-mr` when set to `false` (contributed by @be-student)
 - fixed: GitHub API calls reuse the resolved repository path after a rename redirect,
   avoiding repeated redirects during one command (contributed by @be-student)
 - fixed: `git machete traverse --sync-github-prs`/`--sync-gitlab-mrs` no longer offers to create a PR/MR for a branch annotated with `push=no`

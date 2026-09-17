@@ -1282,3 +1282,38 @@ class TestGitHubCreatePR(BaseTest):
             Creating a PR from feature to master... OK, see www.github.com
             """
         )
+
+    def test_github_create_pr_from_fork_with_advice_enabled(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
+        self.setup_repo_with_base_in_separate_remote()
+        set_git_config_key('machete.github.baseRemote', 'fork')
+        set_git_config_key('advice.macheteCreateFromFork', 'true')
+        assert_success(['github', 'create-pr'], """
+        Warn: base branch master lives in example-org/example-repo-1 repository,
+        while head branch feature lives in example-org/example-repo repository.
+        git-machete will now attempt to create a PR in example-org/example-repo-1.
+
+        Note that due to the limitations of GitHub's PR model, it is not possible to cleanly create stacked PRs from forks.
+        For example, in a hypothetical chain some-other-branch -> feature -> master, a PR from some-other-branch to feature
+        could not be created in example-org/example-repo-1, since its head branch feature lives in example-org/example-repo.
+        Generally, PRs need to be created in whatever repository the base branch lives.
+
+        Checking if head branch feature exists in origin remote... YES
+        Checking if base branch master exists in fork remote... YES
+        Creating a PR from feature to master... OK, see www.github.com
+        """)
+
+    def test_github_create_pr_from_fork_with_advice_disabled(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitHubAPIState.with_prs()))
+        self.setup_repo_with_base_in_separate_remote()
+        set_git_config_key('machete.github.baseRemote', 'fork')
+        set_git_config_key('advice.macheteCreateFromFork', 'false')
+        assert_success(['github', 'create-pr'], """
+        Checking if head branch feature exists in origin remote... YES
+        Checking if base branch master exists in fork remote... YES
+        Creating a PR from feature to master... OK, see www.github.com
+        """)
