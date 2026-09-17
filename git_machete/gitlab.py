@@ -296,7 +296,7 @@ class GitLabApi(CodeHostingApi):
         mrs = self.__fire_gitlab_api_project_request(method='GET', path_suffix=f'/merge_requests?state=opened&source_branch={head}')
         return [self.__get_merge_request_from_json(mr) for mr in mrs]
 
-    def get_open_pull_requests(self) -> List[PullRequest]:
+    def get_all_open_pull_requests(self) -> List[PullRequest]:
         mrs = self.__fire_gitlab_api_project_request(method='GET',
                                                      path_suffix=f'/merge_requests?state=opened&per_page={self.MAX_PULLS_PER_PAGE_COUNT}')
         return [self.__get_merge_request_from_json(mr) for mr in mrs]

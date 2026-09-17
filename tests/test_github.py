@@ -54,7 +54,7 @@ class TestGitHub(BaseTest):
         api.add_assignees_to_pull_request(15, ['tester'])
         assert requests.call_args[0][0].full_url == f'{prefix}/issues/15/assignees'
         assert json.loads(requests.call_args[0][0].data) == {'assignees': ['tester']}
-        pulls = api.get_open_pull_requests()
+        pulls = api.get_all_open_pull_requests()
         assert requests.call_args[0][0].full_url == f'{prefix}/pulls?per_page=100'
         assert len(pulls) == 1
         assert pulls[0].base == 'develop'

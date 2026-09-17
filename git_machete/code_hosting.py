@@ -248,7 +248,7 @@ class CodeHostingApi(metaclass=ABCMeta):  # pragma: no cover
         pass
 
     @abstractmethod
-    def get_open_pull_requests(self) -> List[PullRequest]:
+    def get_all_open_pull_requests(self) -> List[PullRequest]:
         pass
 
     @abstractmethod

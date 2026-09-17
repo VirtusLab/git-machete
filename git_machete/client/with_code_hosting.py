@@ -48,7 +48,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
             spec = self.code_hosting_spec
             print_fmt(f'Checking for open {spec.display_name} {spec.pr_short_name}s... ',
                       newline=False)
-            self.__all_open_prs = self.code_hosting_client.get_open_pull_requests()
+            self.__all_open_prs = self.code_hosting_client.get_all_open_pull_requests()
             print_fmt(green_ok())
         return self.__all_open_prs
 

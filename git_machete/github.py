@@ -401,7 +401,7 @@ class GitHubApi(CodeHostingApi):
         prs = self.__fire_github_api_repo_request(method='GET', path_suffix=f'/pulls?head={self.organization}:{head}')
         return [self.__get_pull_request_from_json(pr) for pr in prs]
 
-    def get_open_pull_requests(self) -> List[PullRequest]:
+    def get_all_open_pull_requests(self) -> List[PullRequest]:
         prs = self.__fire_github_api_repo_request(method='GET', path_suffix=f'/pulls?per_page={self.MAX_PULLS_PER_PAGE_COUNT}')
         return [self.__get_pull_request_from_json(pr) for pr in prs]
 
