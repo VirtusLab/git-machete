@@ -46,7 +46,7 @@ class MacheteClientWithCodeHosting(StatusMacheteClient):
 
     def _get_relevant_open_prs(self, author: Optional[str] = None) -> List[PullRequest]:
         # Honor `machete.{github,gitlab}.retrieveByAuthor`: download PRs by a single author rather than every open PR.
-        # `author` is the `--by`/`--mine` selection when one was given; otherwise the current user.
+        # `author` is the `--by` login or the author of an explicit PR number; otherwise the current user.
         # Callers that need every open PR regardless of this key (e.g. the `--all` flag) call `_get_all_open_prs` directly instead;
         # once that has happened, reuse the already-downloaded full list here too (e.g. for reconstructing PR chains)
         # rather than issuing a second, narrower query.
