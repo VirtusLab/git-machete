@@ -30,7 +30,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .TH "GIT-MACHETE" "1" "" "" "git-machete"
 .SH NAME
-git-machete \- git-machete 3.45.0
+git-machete \- git-machete 3.46.0
 .sp
 git machete is a robust tool that \fBsimplifies your git workflows\fP\&.
 .sp
@@ -408,6 +408,25 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 .UNINDENT
 .UNINDENT
 .TP
+.B \fBmachete.github.retrieveByAuthor\fP
+When set to \fBtrue\fP, commands that need to list open pull requests in the repository
+(such as \fBgithub anno\-prs\fP, \fBgithub checkout\-prs\fP and \fBtraverse\fP with GitHub integration)
+download open PRs by author rather than every open PR in the repository.
+.sp
+By default (and with \fB\-\-mine\fP), that author is the current user as determined from the GitHub API token.
+The \fB\-\-by=<login>\fP flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
+uses that same author\(aqs PRs, not the current user\(aqs.
+When checking out specific PR numbers, the author of the first given PR is used instead.
+.sp
+This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
+at the cost of not being able to discover PRs opened by other users when traversing PR chains
+(for example, when checking out an entire stack that includes PRs from multiple authors).
+.sp
+A valid GitHub API token is required when this key is set.
+.sp
+The \fB\-\-all\fP flag to \fBgithub checkout\-prs\fP and \fBgithub update\-pr\-descriptions\fP
+still downloads all open PRs in the repository, regardless of this setting.
+.TP
 .B \fBmachete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}\fP
 .INDENT 7.0
 .TP
@@ -486,6 +505,25 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 \fBnone\fP                \-\-\- prepend no intro to the MR description at all
 .UNINDENT
 .UNINDENT
+.TP
+.B \fBmachete.gitlab.retrieveByAuthor\fP
+When set to \fBtrue\fP, commands that need to list open merge requests in the project
+(such as \fBgitlab anno\-mrs\fP, \fBgitlab checkout\-mrs\fP and \fBtraverse\fP with GitLab integration)
+download open MRs by author rather than every open MR in the project.
+.sp
+By default (and with \fB\-\-mine\fP), that author is the current user as determined from the GitLab API token.
+The \fB\-\-by=<username>\fP flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
+uses that same author\(aqs MRs, not the current user\(aqs.
+When checking out specific MR numbers, the author of the first given MR is used instead.
+.sp
+This can speed up operations considerably in projects with hundreds or thousands of open MRs,
+at the cost of not being able to discover MRs opened by other users when traversing MR chains
+(for example, when checking out an entire stack that includes MRs from multiple authors).
+.sp
+A valid GitLab API token is required when this key is set.
+.sp
+The \fB\-\-all\fP flag to \fBgitlab checkout\-mrs\fP and \fBgitlab update\-mr\-descriptions\fP
+still downloads all open MRs in the project, regardless of this setting.
 .TP
 .B \fBmachete.overrideForkPoint.<branch>.to\fP
 Executing \fBgit machete fork\-point \-\-override\-to[\-parent|\-inferred|=<revision>] [<branch>]\fP sets up a fork point override for \fB<branch>\fP\&.
@@ -785,7 +823,8 @@ and asks whether to overwrite the existing branch layout file with the new disco
 If confirmed with a \fBy[es]\fP or \fBe[dit]\fP reply, backs up the current branch layout file (if it exists) as \fB$GIT_DIR/machete~\fP
 and saves the new tree under the usual \fB$GIT_DIR/machete\fP path.
 If the reply was \fBe[dit]\fP, additionally an editor is opened (as in: \fBgit machete\fP edit) after saving the new branch layout file.
-\fBdiscover\fP retains the existing branch qualifiers used by \fBgit machete traverse\fP (see help for traverse).
+\fBdiscover\fP retains existing annotations for branches included in the discovered tree,
+including the branch qualifiers used by \fBgit machete traverse\fP (see help for traverse).
 .sp
 \fBOptions\fP
 .INDENT 0.0
@@ -1215,6 +1254,11 @@ Update PR descriptions for all PRs both upstream and downstream of the PR for th
 \fBGit config keys\fP
 .INDENT 0.0
 .TP
+.B \fBadvice.macheteCreateFromFork\fP (\fBcreate\-pr\fP only)
+Controls the warning shown when creating a pull/merge request whose base and head branches live in different repositories.
+Set to \fBfalse\fP to suppress the warning about creating stacked pull/merge requests from forks; enabled by default.
+This setting affects only the warning, not repository selection or request creation.
+.TP
 .B \fBmachete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}\fP (all subcommands)
 .INDENT 7.0
 .TP
@@ -1293,6 +1337,25 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 \fBnone\fP                \-\-\- prepend no intro to the PR description at all
 .UNINDENT
 .UNINDENT
+.TP
+.B \fBmachete.github.retrieveByAuthor\fP (\fBanno\-prs\fP, \fBcheckout\-prs\fP and \fBupdate\-pr\-descriptions\fP)
+When set to \fBtrue\fP, commands that need to list open pull requests in the repository
+(such as \fBgithub anno\-prs\fP, \fBgithub checkout\-prs\fP and \fBtraverse\fP with GitHub integration)
+download open PRs by author rather than every open PR in the repository.
+.sp
+By default (and with \fB\-\-mine\fP), that author is the current user as determined from the GitHub API token.
+The \fB\-\-by=<login>\fP flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
+uses that same author\(aqs PRs, not the current user\(aqs.
+When checking out specific PR numbers, the author of the first given PR is used instead.
+.sp
+This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
+at the cost of not being able to discover PRs opened by other users when traversing PR chains
+(for example, when checking out an entire stack that includes PRs from multiple authors).
+.sp
+A valid GitHub API token is required when this key is set.
+.sp
+The \fB\-\-all\fP flag to \fBgithub checkout\-prs\fP and \fBgithub update\-pr\-descriptions\fP
+still downloads all open PRs in the repository, regardless of this setting.
 .UNINDENT
 .sp
 \fBEnvironment variables (all subcommands)\fP
@@ -1518,6 +1581,11 @@ Update MR descriptions for all MRs both upstream and downstream of the MR for th
 \fBGit config keys\fP
 .INDENT 0.0
 .TP
+.B \fBadvice.macheteCreateFromFork\fP (\fBcreate\-mr\fP only)
+Controls the warning shown when creating a pull/merge request whose base and head branches live in different repositories.
+Set to \fBfalse\fP to suppress the warning about creating stacked pull/merge requests from forks; enabled by default.
+This setting affects only the warning, not repository selection or request creation.
+.TP
 .B \fBmachete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}\fP (all subcommands)
 .INDENT 7.0
 .TP
@@ -1596,6 +1664,25 @@ from the message body of the first unique commit of the branch, even if \fB\&.gi
 \fBnone\fP                \-\-\- prepend no intro to the MR description at all
 .UNINDENT
 .UNINDENT
+.TP
+.B \fBmachete.gitlab.retrieveByAuthor\fP (\fBanno\-mrs\fP, \fBcheckout\-mrs\fP and \fBupdate\-mr\-descriptions\fP)
+When set to \fBtrue\fP, commands that need to list open merge requests in the project
+(such as \fBgitlab anno\-mrs\fP, \fBgitlab checkout\-mrs\fP and \fBtraverse\fP with GitLab integration)
+download open MRs by author rather than every open MR in the project.
+.sp
+By default (and with \fB\-\-mine\fP), that author is the current user as determined from the GitLab API token.
+The \fB\-\-by=<username>\fP flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
+uses that same author\(aqs MRs, not the current user\(aqs.
+When checking out specific MR numbers, the author of the first given MR is used instead.
+.sp
+This can speed up operations considerably in projects with hundreds or thousands of open MRs,
+at the cost of not being able to discover MRs opened by other users when traversing MR chains
+(for example, when checking out an entire stack that includes MRs from multiple authors).
+.sp
+A valid GitLab API token is required when this key is set.
+.sp
+The \fB\-\-all\fP flag to \fBgitlab checkout\-mrs\fP and \fBgitlab update\-mr\-descriptions\fP
+still downloads all open MRs in the project, regardless of this setting.
 .UNINDENT
 .sp
 \fBEnvironment variables (all subcommands)\fP
@@ -2348,7 +2435,7 @@ asks the user whether to \fBpull\fP the branch
 if \fB\-H\fP/\fB\-\-sync\-github\-prs\fP or \fB\-L\fP/\fB\-\-sync\-gitlab\-mrs\fP option is present:
 .INDENT 2.0
 .IP \(bu 2
-asks the user whether to \fBcreate\fP a PR/MR for the given branch if it doesn\(aqt exist yet,
+asks the user whether to \fBcreate\fP a PR/MR for the given branch if it doesn\(aqt exist yet (unless the branch is annotated with \fBpush=no\fP),
 .IP \(bu 2
 asks the user whether to \fBretarget\fP the PR/MR if it exists for the given branch,
 and its base/target branch in GitHub/GitLab is different than the upstream in machete file
@@ -2373,6 +2460,7 @@ Unlike with \fBgit rebase\fP or \fBgit cherry\-pick\fP, there is no special \fB\
 .sp
 The rebase, push and slide\-out behaviors of \fBtraverse\fP can also be customized for each branch separately using \fIbranch qualifiers\fP\&.
 There are \fBpush=no\fP, \fBrebase=no\fP and \fBslide\-out=no\fP qualifiers that can be used to opt out of default behavior (rebasing, pushing and sliding the branch out).
+\fBpush=no\fP also skips creating a PR/MR under \fB\-\-sync\-github\-prs\fP/\fB\-\-sync\-gitlab\-mrs\fP\&.
 The qualifier can appear anywhere in the annotation, but needs to be separated by a whitespace from any other character, as in: \fBsome_annotation_text rebase=no push=no slide\-out=no\fP\&.
 Qualifiers can only be overwritten by manually editing \fB\&.git/machete\fP file or modifying it with \fBgit machete e[dit]\fP, or by updating annotations with \fBgit machete anno\fP\&.
 Example machete file with branch qualifiers:

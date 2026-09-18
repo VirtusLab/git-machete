@@ -156,6 +156,9 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 
 **Git config keys**
 
+``advice.macheteCreateFromFork`` (``create-mr`` only)
+  .. include:: git-config-keys/advice.macheteCreateFromFork.rst
+
 ``machete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}`` (all subcommands)
   .. include:: git-config-keys/gitlab.access.rst
 
@@ -167,6 +170,9 @@ Create, check out and manage GitLab MRs while keeping them reflected in branch l
 
 ``machete.gitlab.mrDescriptionIntroStyle`` (``create-mr``, ``restack-mr`` and ``retarget-mr``)
   .. include:: git-config-keys/gitlab.mrDescriptionIntroStyle.rst
+
+``machete.gitlab.retrieveByAuthor`` (``anno-mrs``, ``checkout-mrs`` and ``update-mr-descriptions``)
+  .. include:: git-config-keys/gitlab.retrieveByAuthor.rst
 
 **Environment variables (all subcommands)**
 

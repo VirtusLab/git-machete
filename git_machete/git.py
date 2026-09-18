@@ -1073,7 +1073,7 @@ class Git:
             return
 
         debug(f"reading merge-base cache from {cache_path}")
-        with open(cache_path, 'r') as f:
+        with open(cache_path, 'r', encoding='utf-8') as f:
             for line_num, line in enumerate(f, start=1):
                 line = line.strip()
                 if not line:
@@ -1108,7 +1108,7 @@ class Git:
     def __save_merge_base_cache_entry(self, *, hash1: FullCommitHash, hash2: FullCommitHash, merge_base: Optional[FullCommitHash]) -> None:
         """Append a merge-base cache entry to the cache file."""
         cache_path = self.__get_merge_base_cache_path()
-        with open(cache_path, 'a') as f:
+        with open(cache_path, 'a', encoding='utf-8', newline='\n') as f:
             debug(f"writing merge-base cache entry to {cache_path}: {hash1} {hash2} {merge_base or '(no merge-base)'}")
             if merge_base is not None:
                 f.write(f"{hash1} {hash2}  {merge_base}\n")
@@ -1366,12 +1366,12 @@ class Git:
                     return f"{line.rstrip()}'\n" if faulty_line_regex.fullmatch(line) else line
 
                 def get_all_lines_fixed() -> Iterator[str]:
-                    with open(author_script) as f_read:
+                    with open(author_script, encoding='utf-8') as f_read:
                         return map(fix_if_needed, f_read.readlines())
 
                 fixed_lines = get_all_lines_fixed()  # must happen before we open for writing
                 # See https://github.com/VirtusLab/git-machete/issues/935 for why author-script needs to be saved in this manner
-                io.open(author_script, "w", newline="").write("".join(fixed_lines))
+                io.open(author_script, "w", encoding='utf-8', newline="").write("".join(fixed_lines))
 
     # === Commits & log/diff display ===
 

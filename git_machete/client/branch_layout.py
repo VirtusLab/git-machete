@@ -19,7 +19,7 @@ def parse(path: AbsPath, *, display_path: Optional[Path] = None) -> Tuple[Machet
     useful when `path` is an absolute internal location and the caller wants a more compact cwd-relative form shown to the user.
     """
     msg_path: Path = display_path if display_path is not None else path
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
         lines: List[str] = [line.rstrip() for line in f.readlines()]
 
     state = MacheteState()
@@ -103,5 +103,5 @@ def render(state: MacheteState, indent: str) -> List[str]:
 
 def save(path: AbsPath, state: MacheteState, *, indent: str) -> None:
     """Write *state* to the branch layout file at *path*."""
-    with open(path, "w") as f:
+    with open(path, "w", encoding='utf-8', newline='\n') as f:
         f.write("\n".join(render(state, indent)) + "\n")

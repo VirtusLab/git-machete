@@ -1,5 +1,20 @@
 # Release notes
 
+## New in git-machete 3.46.0
+
+- added: `machete.github.retrieveByAuthor` and `machete.gitlab.retrieveByAuthor` git config keys
+  that make PR/MR-listing commands download open PRs/MRs by author (the current user by default, or `--by=<user>` when given) instead of all of them,
+  which can speed up operations considerably in repositories/projects with many open PRs/MRs
+
+## New in git-machete 3.45.1
+
+- added: `advice.macheteCreateFromFork` git config key suppresses the fork warning in `github create-pr` and `gitlab create-mr` when set to `false` (contributed by @be-student)
+- fixed: GitHub API calls reuse the resolved repository path after a rename redirect,
+  avoiding repeated redirects during one command (contributed by @be-student)
+- fixed: `git machete traverse --sync-github-prs`/`--sync-gitlab-mrs` no longer offers to create a PR/MR for a branch annotated with `push=no`
+- fixed: `git machete discover` preserves full annotations on rediscovered branches, rather than only their traversal qualifiers (contributed by @be-student)
+- fixed: branch layout files are now always read and written as UTF-8 rather than the process locale encoding, so annotations with non-ASCII characters no longer break on Windows
+
 ## New in git-machete 3.45.0
 
 - added: `GIT_MACHETE_PUSH_OPTS` environment variable forwards arbitrary extra options to every `git push` invocation (contributed by @HWiese1980)

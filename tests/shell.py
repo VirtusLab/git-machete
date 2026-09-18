@@ -23,7 +23,7 @@ def write_to_file(file_path: str, file_content: str) -> None:
     dirname = os.path.dirname(file_path)
     if dirname:
         os.makedirs(dirname, exist_ok=True)
-    with open(file_path, 'w', encoding='utf-8') as f:
+    with open(file_path, 'w', encoding='utf-8', newline='\n') as f:
         f.write(file_content)
 
 

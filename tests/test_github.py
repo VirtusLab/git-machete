@@ -1,4 +1,5 @@
 import itertools
+import json
 import os
 import textwrap
 from contextlib import contextmanager
@@ -7,6 +8,7 @@ from typing import Iterator
 from pytest_mock import MockerFixture
 
 from git_machete.code_hosting import OrganizationAndRepository
+from git_machete.git import LocalBranchShortName
 from git_machete.github import GitHubApi, GitHubToken
 from tests.base_test import BaseTest
 from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
@@ -31,6 +33,36 @@ class TestGitHub(BaseTest):
     def test_github_api_constructor(self) -> None:
         # This is solely to make mypy check if the class correctly implements abstract methods from CodeHostingApi.
         GitHubApi(domain="github.com", organization="my-org", repository="my-repo")
+
+    def test_github_reuses_renamed_repository(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.github.GitHubToken.for_domain', mock_github_token_for_domain_none)
+        state = MockGitHubAPIState.with_prs(mock_pr_json(head='feature', base='master', number=15))
+        state.repositories[2].update(owner={'login': 'renamed-org'}, name='renamed-repo')
+        requests = mocker.Mock(side_effect=mock_urlopen(state))
+        self.patch_symbol(mocker, 'urllib.request.urlopen', requests)
+        api = GitHubApi(domain='github.com', organization='example-org', repository='old-example-repo')
+
+        api.set_base_of_pull_request(15, LocalBranchShortName.of('develop'))
+        api.set_description_of_pull_request(15, 'Updated description')
+        prefix = 'https://api.github.com/repos/renamed-org/renamed-repo'
+        assert [(call[0][0].method, call[0][0].full_url) for call in requests.call_args_list] == [
+            ('PATCH', 'https://api.github.com/repos/example-org/old-example-repo/pulls/15'),
+            ('GET', 'https://api.github.com/repositories/2'),
+            ('PATCH', 'https://api.github.com/repositories/2/pulls/15'),
+            ('PATCH', f'{prefix}/pulls/15'),
+        ]
+        api.add_assignees_to_pull_request(15, ['tester'])
+        assert requests.call_args[0][0].full_url == f'{prefix}/issues/15/assignees'
+        assert json.loads(requests.call_args[0][0].data) == {'assignees': ['tester']}
+        pulls = api.get_all_open_pull_requests()
+        assert requests.call_args[0][0].full_url == f'{prefix}/pulls?per_page=100'
+        assert len(pulls) == 1
+        assert pulls[0].base == 'develop'
+        assert pulls[0].description == 'Updated description'
+
+        other_api = GitHubApi(domain='github.com', organization='tester', repository='repo_sandbox')
+        other_api.set_description_of_pull_request(15, 'Other repository')
+        assert requests.call_args[0][0].full_url == 'https://api.github.com/repos/tester/repo_sandbox/pulls/15'
 
     def test_github_remote_patterns(self) -> None:
         organization = 'virtuslab'
@@ -85,8 +117,14 @@ class TestGitHub(BaseTest):
 
         launch_command('github', 'checkout-prs', '--all')
         launch_command('discover', '--checked-out-since=1 day ago')
-        expected_status_output = 'develop *\n' + '\n'.join([f'|\no-feature_{i:02d}  rebase=no push=no'
-                                                            for i in range(self.PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION)]) + '\n'
+        expected_status_output = ''.join([
+            'develop *  *\n',
+            '\n'.join([
+                f'|\no-feature_{i:02d}  PR #{i} (some_other_user) rebase=no push=no'
+                for i in range(self.PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION)
+            ]),
+            '\n',
+        ])
         assert_success(['status'], expected_status_output)
 
     def test_github_enterprise_domain_unauthorized_without_token(self, mocker: MockerFixture) -> None:

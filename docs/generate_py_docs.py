@@ -10,7 +10,7 @@ def resolve_includes(rst_content: str, docs_source_dir: str) -> str:
     # example match:
     #     .. include:: status.extraSpaceBeforeBranchName.rst
     for include_indent, included_file in matches:
-        with open(f'{docs_source_dir}/{included_file}', 'r') as handle:
+        with open(f'{docs_source_dir}/{included_file}', 'r', encoding='utf-8') as handle:
             include_text = handle.read()
         replace_from = f'{include_indent}.. include:: {included_file}'
         replace_to = indent(dedent(include_text), include_indent)
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     # build short docs
     output_text += 'short_docs: Dict[str, str] = {\n'
     short_docs_rst_file = docs_source_path + '/short_docs.rst'
-    with open(short_docs_rst_file, 'r') as f:
+    with open(short_docs_rst_file, 'r', encoding='utf-8') as f:
         rst = f.read()
     for line in rst.splitlines():
         if line.startswith('* :ref:'):
@@ -156,7 +156,7 @@ if __name__ == '__main__':
     commands_and_file_paths = {f.split('.')[0]: join(path, f) for f in sorted(os.listdir(path)) if isfile(join(path, f))}
 
     for command, file in commands_and_file_paths.items():
-        with open(file, 'r') as f:
+        with open(file, 'r', encoding='utf-8') as f:
             rst = f.read()
         rst = resolve_includes(rst_content=rst, docs_source_dir=docs_source_path)
         plain_text = rst2txt(rst).rstrip()

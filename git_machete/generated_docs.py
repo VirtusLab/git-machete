@@ -316,6 +316,25 @@ long_docs: Dict[str, str] = {
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only PR numbers & titles)
               * `none`                — prepend no intro to the PR description at all
 
+           `machete.github.retrieveByAuthor`
+             When set to `true`, commands that need to list open pull requests in the repository
+             (such as `github anno-prs`, `github checkout-prs` and `traverse` with GitHub integration)
+             download open PRs by author rather than every open PR in the repository.
+
+             By default (and with `--mine`), that author is the current user as determined from the GitHub API token.
+             The `--by=<login>` flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
+             uses that same author's PRs, not the current user's.
+             When checking out specific PR numbers, the author of the first given PR is used instead.
+
+             This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
+             at the cost of not being able to discover PRs opened by other users when traversing PR chains
+             (for example, when checking out an entire stack that includes PRs from multiple authors).
+
+             A valid GitHub API token is required when this key is set.
+
+             The `--all` flag to `github checkout-prs` and `github update-pr-descriptions`
+             still downloads all open PRs in the repository, regardless of this setting.
+
            `machete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}`
              `machete.gitlab.domain`
                 The domain of the GitLab API server, for use with a GitLab self-managed instance; otherwise inferred from the remote URL.
@@ -381,6 +400,25 @@ long_docs: Dict[str, str] = {
               * `up-only`             — default, include only a chain of upstream MRs
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only MR numbers & titles)
               * `none`                — prepend no intro to the MR description at all
+
+           `machete.gitlab.retrieveByAuthor`
+             When set to `true`, commands that need to list open merge requests in the project
+             (such as `gitlab anno-mrs`, `gitlab checkout-mrs` and `traverse` with GitLab integration)
+             download open MRs by author rather than every open MR in the project.
+
+             By default (and with `--mine`), that author is the current user as determined from the GitLab API token.
+             The `--by=<username>` flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
+             uses that same author's MRs, not the current user's.
+             When checking out specific MR numbers, the author of the first given MR is used instead.
+
+             This can speed up operations considerably in projects with hundreds or thousands of open MRs,
+             at the cost of not being able to discover MRs opened by other users when traversing MR chains
+             (for example, when checking out an entire stack that includes MRs from multiple authors).
+
+             A valid GitLab API token is required when this key is set.
+
+             The `--all` flag to `gitlab checkout-mrs` and `gitlab update-mr-descriptions`
+             still downloads all open MRs in the project, regardless of this setting.
 
            `machete.overrideForkPoint.<branch>.to`
               Executing `git machete fork-point --override-to[-parent|-inferred|=<revision>] [<branch>]` sets up a fork point override for `<branch>`.
@@ -526,7 +564,8 @@ long_docs: Dict[str, str] = {
         If confirmed with a `y[es]` or `e[dit]` reply, backs up the current branch layout file (if it exists) as `$GIT_DIR/machete~`
         and saves the new tree under the usual `$GIT_DIR/machete` path.
         If the reply was `e[dit]`, additionally an editor is opened (as in: `git machete` `edit`) after saving the new branch layout file.
-        `discover` retains the existing branch qualifiers used by `git machete traverse` (see help for `traverse`).
+        `discover` retains existing annotations for branches included in the discovered tree,
+        including the branch qualifiers used by `git machete traverse` (see help for `traverse`).
 
         <b>Options</b>
 
@@ -843,6 +882,11 @@ long_docs: Dict[str, str] = {
 
         <b>Git config keys</b>
 
+           `advice.macheteCreateFromFork` (`create-pr` only)
+             Controls the warning shown when creating a pull/merge request whose base and head branches live in different repositories.
+             Set to `false` to suppress the warning about creating stacked pull/merge requests from forks; enabled by default.
+             This setting affects only the warning, not repository selection or request creation.
+
            `machete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}` (all subcommands)
              `machete.github.domain`
                 The domain of the GitHub API server, for use with GitHub Enterprise; otherwise inferred from the remote URL.
@@ -908,6 +952,25 @@ long_docs: Dict[str, str] = {
               * `up-only`             — default, include only a chain of upstream PRs
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only PR numbers & titles)
               * `none`                — prepend no intro to the PR description at all
+
+           `machete.github.retrieveByAuthor` (`anno-prs`, `checkout-prs` and `update-pr-descriptions`)
+             When set to `true`, commands that need to list open pull requests in the repository
+             (such as `github anno-prs`, `github checkout-prs` and `traverse` with GitHub integration)
+             download open PRs by author rather than every open PR in the repository.
+
+             By default (and with `--mine`), that author is the current user as determined from the GitHub API token.
+             The `--by=<login>` flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
+             uses that same author's PRs, not the current user's.
+             When checking out specific PR numbers, the author of the first given PR is used instead.
+
+             This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
+             at the cost of not being able to discover PRs opened by other users when traversing PR chains
+             (for example, when checking out an entire stack that includes PRs from multiple authors).
+
+             A valid GitHub API token is required when this key is set.
+
+             The `--all` flag to `github checkout-prs` and `github update-pr-descriptions`
+             still downloads all open PRs in the repository, regardless of this setting.
 
         <b>Environment variables (all subcommands)</b>
 
@@ -1069,6 +1132,11 @@ long_docs: Dict[str, str] = {
 
         <b>Git config keys</b>
 
+           `advice.macheteCreateFromFork` (`create-mr` only)
+             Controls the warning shown when creating a pull/merge request whose base and head branches live in different repositories.
+             Set to `false` to suppress the warning about creating stacked pull/merge requests from forks; enabled by default.
+             This setting affects only the warning, not repository selection or request creation.
+
            `machete.gitlab.{domain,remote,namespace,project,baseRemote,baseNamespace,baseProject}` (all subcommands)
              `machete.gitlab.domain`
                 The domain of the GitLab API server, for use with a GitLab self-managed instance; otherwise inferred from the remote URL.
@@ -1134,6 +1202,25 @@ long_docs: Dict[str, str] = {
               * `up-only`             — default, include only a chain of upstream MRs
               * `up-only-no-branches` — same as `up-only`, but no branch names are included (only MR numbers & titles)
               * `none`                — prepend no intro to the MR description at all
+
+           `machete.gitlab.retrieveByAuthor` (`anno-mrs`, `checkout-mrs` and `update-mr-descriptions`)
+             When set to `true`, commands that need to list open merge requests in the project
+             (such as `gitlab anno-mrs`, `gitlab checkout-mrs` and `traverse` with GitLab integration)
+             download open MRs by author rather than every open MR in the project.
+
+             By default (and with `--mine`), that author is the current user as determined from the GitLab API token.
+             The `--by=<username>` flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
+             uses that same author's MRs, not the current user's.
+             When checking out specific MR numbers, the author of the first given MR is used instead.
+
+             This can speed up operations considerably in projects with hundreds or thousands of open MRs,
+             at the cost of not being able to discover MRs opened by other users when traversing MR chains
+             (for example, when checking out an entire stack that includes MRs from multiple authors).
+
+             A valid GitLab API token is required when this key is set.
+
+             The `--all` flag to `gitlab checkout-mrs` and `gitlab update-mr-descriptions`
+             still downloads all open MRs in the project, regardless of this setting.
 
         <b>Environment variables (all subcommands)</b>
 
@@ -1685,7 +1772,7 @@ long_docs: Dict[str, str] = {
 
            * if `-H`/`--sync-github-prs` or `-L`/`--sync-gitlab-mrs` option is present:
 
-             - asks the user whether to <b>create</b> a PR/MR for the given branch if it doesn't exist yet,
+             - asks the user whether to <b>create</b> a PR/MR for the given branch if it doesn't exist yet (unless the branch is annotated with `push=no`),
 
              - asks the user whether to <b>retarget</b> the PR/MR if it exists for the given branch,
               and its base/target branch in GitHub/GitLab is different than the upstream in machete file
@@ -1704,6 +1791,7 @@ long_docs: Dict[str, str] = {
 
         The rebase, push and slide-out behaviors of `traverse` can also be customized for each branch separately using branch qualifiers.
         There are `push=no`, `rebase=no` and `slide-out=no` qualifiers that can be used to opt out of default behavior (rebasing, pushing and sliding the branch out).
+        `push=no` also skips creating a PR/MR under `--sync-github-prs`/`--sync-gitlab-mrs`.
         The qualifier can appear anywhere in the annotation, but needs to be separated by a whitespace from any other character, as in: `some_annotation_text rebase=no push=no slide-out=no`.
         Qualifiers can only be overwritten by manually editing `.git/machete` file or modifying it with `git machete e[dit]`, or by updating annotations with `git machete anno`.
         Example machete file with branch qualifiers:
