@@ -398,3 +398,170 @@ class TestGitLabUpdateMRDescriptions(BaseTest):
             Warn: user gitlab_user has no open merge request in project example-org/example-repo
             """
         )
+
+    def test_gitlab_update_mr_descriptions_related_retrieve_by_author(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        mrs = [
+            mock_mr_json(head='branch1', base='root', number=1, user='gitlab_user', body='# Summary\n'),
+            mock_mr_json(head='branch2', base='branch1', number=2, user='gitlab_user', body='# Summary\n'),
+            mock_mr_json(head='branch3', base='branch2', number=3, user='gitlab_user', body='# Summary\n')
+        ]
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs(*mrs)))
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        push()
+        new_branch("branch1")
+        commit("branch1 commit")
+        push()
+        new_branch("branch2")
+        commit("branch2 commit")
+        push()
+        new_branch("branch3")
+        commit("branch3 commit")
+        push()
+
+        rewrite_branch_layout_file("""
+            root
+              branch1
+                branch2
+                  branch3
+            """)
+        check_out('branch2')
+        set_git_config_key('machete.gitlab.retrieveByAuthor', 'true')
+
+        assert_success(
+            ['gitlab', 'update-mr-descriptions', '--related'],
+            """
+            Checking for open GitLab MRs by gitlab_user... OK
+            Updating description of MR !2 (branch2 -> branch1)... OK
+            Updating description of MR !3 (branch3 -> branch2)... OK
+            """
+        )
+
+    def test_gitlab_update_mr_descriptions_retrieve_by_author_by_other_user(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        mrs = [
+            mock_mr_json(head='branch1', base='root', number=1, user='some_other_user', body='# Summary\n'),
+            mock_mr_json(head='branch2', base='branch1', number=2, user='some_other_user', body='# Summary\n'),
+        ]
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs(*mrs)))
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        push()
+        new_branch("branch1")
+        commit("branch1 commit")
+        push()
+        new_branch("branch2")
+        commit("branch2 commit")
+        push()
+
+        rewrite_branch_layout_file("""
+            root
+              branch1
+                branch2
+            """)
+        set_git_config_key('machete.gitlab.retrieveByAuthor', 'true')
+
+        assert_success(
+            ['gitlab', 'update-mr-descriptions', '--by', 'some_other_user'],
+            """
+            Checking for open GitLab MRs by some_other_user... OK
+            Updating description of MR !2 (branch2 -> branch1)... OK
+            """
+        )
+
+    def test_gitlab_update_mr_descriptions_retrieve_by_author_all(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        mrs = [
+            mock_mr_json(head='branch1', base='root', number=1, user='gitlab_user', body='# Summary\n'),
+            mock_mr_json(head='branch2', base='branch1', number=2, user='gitlab_user', body='# Summary\n'),
+            mock_mr_json(head='theirs', base='root', number=3, user='some_other_user', body='# Summary\n'),
+        ]
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs(*mrs)))
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        push()
+        new_branch("branch1")
+        commit("branch1 commit")
+        push()
+        new_branch("branch2")
+        commit("branch2 commit")
+        push()
+        check_out("root")
+        new_branch("theirs")
+        commit("theirs commit")
+        push()
+
+        rewrite_branch_layout_file("""
+            root
+              branch1
+                branch2
+              theirs
+            """)
+        set_git_config_key('machete.gitlab.retrieveByAuthor', 'true')
+        set_git_config_key('machete.gitlab.mrDescriptionIntroStyle', 'full')
+
+        assert_success(
+            ['gitlab', 'update-mr-descriptions', '--all'],
+            """
+            Checking for open GitLab MRs... OK
+            Updating description of MR !1 (branch1 -> root)... OK
+            Updating description of MR !2 (branch2 -> branch1)... OK
+            """
+        )
+
+    def test_gitlab_update_mr_descriptions_retrieve_by_author_mine(self, mocker: MockerFixture) -> None:
+        self.patch_symbol(mocker, 'git_machete.code_hosting.OrganizationAndRepository.from_url', mock_from_url)
+        self.patch_symbol(mocker, 'git_machete.gitlab.GitLabToken.for_domain', mock_gitlab_token_for_domain_fake)
+        mrs = [
+            mock_mr_json(head='branch1', base='root', number=1, user='gitlab_user', body='# Summary\n'),
+            mock_mr_json(head='branch2', base='branch1', number=2, user='gitlab_user', body='# Summary\n'),
+            mock_mr_json(head='theirs', base='root', number=3, user='some_other_user', body='# Summary\n'),
+        ]
+        self.patch_symbol(mocker, 'urllib.request.urlopen', mock_urlopen(MockGitLabAPIState.with_mrs(*mrs)))
+        self.patch_symbol(mocker, 'git_machete.utils.date.get_current_date', lambda: '2023-12-31')
+
+        create_repo_with_remote()
+        new_branch("root")
+        commit("initial commit")
+        push()
+        new_branch("branch1")
+        commit("branch1 commit")
+        push()
+        new_branch("branch2")
+        commit("branch2 commit")
+        push()
+        check_out("root")
+        new_branch("theirs")
+        commit("theirs commit")
+        push()
+
+        rewrite_branch_layout_file("""
+            root
+              branch1
+                branch2
+              theirs
+            """)
+        set_git_config_key('machete.gitlab.retrieveByAuthor', 'true')
+        set_git_config_key('machete.gitlab.mrDescriptionIntroStyle', 'full')
+
+        assert_success(
+            ['gitlab', 'update-mr-descriptions', '--mine'],
+            """
+            Checking for open GitLab MRs by gitlab_user... OK
+            Updating description of MR !1 (branch1 -> root)... OK
+            Updating description of MR !2 (branch2 -> branch1)... OK
+            """
+        )
