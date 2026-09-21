@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.46.1
+
 ## New in git-machete 3.46.0
 
 - added: `machete.github.retrieveByAuthor` and `machete.gitlab.retrieveByAuthor` git config keys
