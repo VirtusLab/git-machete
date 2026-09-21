@@ -329,6 +329,15 @@ Note: \fBconfig\fP is not a command as such, just a help topic (there is no \fBg
 \fBGit config keys\fP
 .INDENT 0.0
 .TP
+.B \fBadvice.macheteCreateFromFork\fP
+Controls the warning shown when creating a pull/merge request whose base and head branches live in different repositories.
+Set to \fBfalse\fP to suppress the warning about creating stacked pull/merge requests from forks; enabled by default.
+This setting affects only the warning, not repository selection or request creation.
+.TP
+.B \fBadvice.macheteEditorSelection\fP
+Controls the hint shown when \fBgit machete edit\fP opens an editor other than \fBGIT_MACHETE_EDITOR\fP\&.
+Set to \fBfalse\fP to suppress the message about editor selection; enabled by default.
+.TP
 .B \fBmachete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}\fP
 .INDENT 7.0
 .TP

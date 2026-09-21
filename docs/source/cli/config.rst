@@ -8,6 +8,12 @@ Note: ``config`` is not a command as such, just a help topic (there is no ``git 
 
 **Git config keys**
 
+``advice.macheteCreateFromFork``
+  .. include:: git-config-keys/advice.macheteCreateFromFork.rst
+
+``advice.macheteEditorSelection``
+  .. include:: git-config-keys/advice.macheteEditorSelection.rst
+
 ``machete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}``
   .. include:: git-config-keys/github.access.rst
 

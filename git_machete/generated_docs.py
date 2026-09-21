@@ -250,6 +250,15 @@ long_docs: Dict[str, str] = {
 
         <b>Git config keys</b>
 
+           `advice.macheteCreateFromFork`
+             Controls the warning shown when creating a pull/merge request whose base and head branches live in different repositories.
+             Set to `false` to suppress the warning about creating stacked pull/merge requests from forks; enabled by default.
+             This setting affects only the warning, not repository selection or request creation.
+
+           `advice.macheteEditorSelection`
+             Controls the hint shown when `git machete edit` opens an editor other than `GIT_MACHETE_EDITOR`.
+             Set to `false` to suppress the message about editor selection; enabled by default.
+
            `machete.github.{domain,remote,organization,repository,baseRemote,baseOrganization,baseRepository}`
              `machete.github.domain`
                 The domain of the GitHub API server, for use with GitHub Enterprise; otherwise inferred from the remote URL.
