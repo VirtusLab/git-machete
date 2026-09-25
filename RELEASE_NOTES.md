@@ -2,8 +2,7 @@
 
 ## New in git-machete 3.46.1
 
-- fixed: boolean git config keys now accept the same true/false literals as `git config --bool` (`yes`/`on`/`1`/`no`/`off`/`0`/empty, case-insensitive), and reject invalid values instead of silently treating them as false
-- improved: docs for `machete.github.retrieveByAuthor` and `machete.gitlab.retrieveByAuthor` now spell out that `--mine`/`--by` apply only to checkout and description-update subcommands, not to `anno-prs`/`anno-mrs`
+- fixed: boolean git config keys now accept the same true/false literals as `git config --bool`, and reject invalid values instead of silently treating them as false
 
 ## New in git-machete 3.46.0
 

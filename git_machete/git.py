@@ -562,7 +562,7 @@ class Git:
     def unset_config_attr(self, key: str) -> None:
         self.__ensure_config_loaded()
         assert self.__config_cached is not None
-        if self.get_config_attr_or_none(key) is not None:
+        if self.get_config_attr_or_none(key):
             self._run_git("config", "--unset", key, flush_caches=False)
             del self.__config_cached[key.lower()]
 
