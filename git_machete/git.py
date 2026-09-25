@@ -525,9 +525,33 @@ class Git:
     def get_boolean_config_attr_or_none(self, key: str) -> Optional[bool]:
         self.__ensure_config_loaded()
         assert self.__config_cached is not None
-        if self.__config_cached.get(key.lower()) is not None:
-            return self.__config_cached.get(key.lower()) == 'true'
-        return None
+        raw_value = self.__config_cached.get(key.lower())
+        if raw_value is None:
+            return None
+        parsed = self.__parse_boolean_config_value(raw_value)
+        if parsed is None:
+            raise MacheteException(f"Invalid value for `{key}` git config key: `{raw_value}`. Expected a boolean value")
+        return parsed
+
+    @staticmethod
+    def __parse_boolean_config_value(value: str) -> Optional[bool]:
+        # Reimplementation of git's `git config --bool` value parsing (see `git_parse_maybe_bool` in git's `config.c`):
+        # recognized string literals (case-insensitive) come first, then a fallback to integer parsing where 0 is false and any
+        # non-zero integer is true. Returns `None` for values git would reject (`fatal: bad boolean config value`).
+        # We deliberately don't chase every corner of git's integer grammar (e.g. C-style octal); those cases don't change the
+        # zero/non-zero verdict that a boolean cares about, so any divergence as git evolves is harmless here.
+        lowercased = value.lower()
+        if lowercased in ("true", "yes", "on"):
+            return True
+        if lowercased in ("false", "no", "off", ""):
+            return False
+        # Optional sign, a decimal or `0x`-prefixed hex magnitude, and an optional k/m/g unit suffix (which is always non-zero).
+        match = re.fullmatch(r"[+-]?(0[xX][0-9a-fA-F]+|[0-9]+)[kKmMgG]?", value)
+        if match is None:
+            return None
+        magnitude = match.group(1)
+        number = int(magnitude, 16) if magnitude[:2].lower() == "0x" else int(magnitude)
+        return number != 0
 
     def set_config_attr(self, key: str, value: str) -> None:  # noqa: KW
         self._run_git("config", "--", key, value, flush_caches=False)
@@ -538,7 +562,7 @@ class Git:
     def unset_config_attr(self, key: str) -> None:
         self.__ensure_config_loaded()
         assert self.__config_cached is not None
-        if self.get_config_attr_or_none(key):
+        if self.get_config_attr_or_none(key) is not None:
             self._run_git("config", "--unset", key, flush_caches=False)
             del self.__config_cached[key.lower()]
 

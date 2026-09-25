@@ -6,6 +6,7 @@ import pytest
 
 from git_machete.git import AnyBranchName, AnyRevision, FullCommitHash, Git, LocalBranchShortName
 from git_machete.git_version_thresholds import WORKTREE_COMMAND
+from git_machete.utils.exceptions import MacheteException
 from git_machete.utils.paths import AbsPath
 from tests.base_test import BaseTest
 from tests.git_repository import (add_worktree, check_out, commit, create_repo, get_current_commit_hash, get_git_version,
@@ -173,6 +174,49 @@ class TestGitOperations(BaseTest):
         write_to_file(".git/config", '[foo]\n  bar = "hello\\nworld"')
         git = Git()
         assert git.get_config_attr_or_none("foo.bar") == "hello\nworld"
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("true", True),
+            ("TRUE", True),
+            ("yes", True),
+            ("YeS", True),
+            ("on", True),
+            ("ON", True),
+            ("1", True),
+            ("2", True),
+            ("-1", True),
+            ("1k", True),
+            ("0x1", True),
+            ("false", False),
+            ("FALSE", False),
+            ("no", False),
+            ("No", False),
+            ("off", False),
+            ("OFF", False),
+            ("0", False),
+            ("00", False),
+            ("-0", False),
+            ("", False),
+        ],
+    )
+    def test_get_boolean_config_attr(self, value: str, expected: bool) -> None:
+        create_repo()
+        set_git_config_key("example.boolean", value)
+
+        assert Git().get_boolean_config_attr_or_none("example.boolean") is expected
+
+    def test_get_boolean_config_attr_with_invalid_value_fails_only_when_retrieved(self) -> None:
+        create_repo()
+        set_git_config_key("example.boolean", "not-a-boolean")
+        git = Git()
+
+        assert git.get_config_attr_or_none("example.boolean") == "not-a-boolean"
+        with pytest.raises(MacheteException) as exc_info:
+            git.get_boolean_config_attr_or_none("example.boolean")
+        assert str(exc_info.value) == (
+            "Invalid value for example.boolean git config key: not-a-boolean. Expected a boolean value")
 
     def test_get_reflog_when_log_showsignature_is_true(self) -> None:
         create_repo()

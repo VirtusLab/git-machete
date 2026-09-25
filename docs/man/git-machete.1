@@ -422,9 +422,11 @@ When set to \fBtrue\fP, commands that need to list open pull requests in the rep
 (such as \fBgithub anno\-prs\fP, \fBgithub checkout\-prs\fP and \fBtraverse\fP with GitHub integration)
 download open PRs by author rather than every open PR in the repository.
 .sp
-By default (and with \fB\-\-mine\fP), that author is the current user as determined from the GitHub API token.
-The \fB\-\-by=<login>\fP flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
-uses that same author\(aqs PRs, not the current user\(aqs.
+The author defaults to the current user as determined from the GitHub API token.
+For \fBgithub checkout\-prs\fP and \fBgithub update\-pr\-descriptions\fP, \fB\-\-mine\fP explicitly selects the current user,
+while \fB\-\-by=<login>\fP selects a different author; chain reconstruction (walking upstream/downstream PRs)
+uses that same author\(aqs PRs.
+\fBgithub anno\-prs\fP does not support \fB\-\-mine\fP or \fB\-\-by\fP; it always retrieves the current user\(aqs PRs when this key is enabled.
 When checking out specific PR numbers, the author of the first given PR is used instead.
 .sp
 This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
@@ -520,9 +522,11 @@ When set to \fBtrue\fP, commands that need to list open merge requests in the pr
 (such as \fBgitlab anno\-mrs\fP, \fBgitlab checkout\-mrs\fP and \fBtraverse\fP with GitLab integration)
 download open MRs by author rather than every open MR in the project.
 .sp
-By default (and with \fB\-\-mine\fP), that author is the current user as determined from the GitLab API token.
-The \fB\-\-by=<username>\fP flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
-uses that same author\(aqs MRs, not the current user\(aqs.
+The author defaults to the current user as determined from the GitLab API token.
+For \fBgitlab checkout\-mrs\fP and \fBgitlab update\-mr\-descriptions\fP, \fB\-\-mine\fP explicitly selects the current user,
+while \fB\-\-by=<username>\fP selects a different author; chain reconstruction (walking upstream/downstream MRs)
+uses that same author\(aqs MRs.
+\fBgitlab anno\-mrs\fP does not support \fB\-\-mine\fP or \fB\-\-by\fP; it always retrieves the current user\(aqs MRs when this key is enabled.
 When checking out specific MR numbers, the author of the first given MR is used instead.
 .sp
 This can speed up operations considerably in projects with hundreds or thousands of open MRs,
@@ -1352,9 +1356,11 @@ When set to \fBtrue\fP, commands that need to list open pull requests in the rep
 (such as \fBgithub anno\-prs\fP, \fBgithub checkout\-prs\fP and \fBtraverse\fP with GitHub integration)
 download open PRs by author rather than every open PR in the repository.
 .sp
-By default (and with \fB\-\-mine\fP), that author is the current user as determined from the GitHub API token.
-The \fB\-\-by=<login>\fP flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
-uses that same author\(aqs PRs, not the current user\(aqs.
+The author defaults to the current user as determined from the GitHub API token.
+For \fBgithub checkout\-prs\fP and \fBgithub update\-pr\-descriptions\fP, \fB\-\-mine\fP explicitly selects the current user,
+while \fB\-\-by=<login>\fP selects a different author; chain reconstruction (walking upstream/downstream PRs)
+uses that same author\(aqs PRs.
+\fBgithub anno\-prs\fP does not support \fB\-\-mine\fP or \fB\-\-by\fP; it always retrieves the current user\(aqs PRs when this key is enabled.
 When checking out specific PR numbers, the author of the first given PR is used instead.
 .sp
 This can speed up operations considerably in repositories with hundreds or thousands of open PRs,
@@ -1679,9 +1685,11 @@ When set to \fBtrue\fP, commands that need to list open merge requests in the pr
 (such as \fBgitlab anno\-mrs\fP, \fBgitlab checkout\-mrs\fP and \fBtraverse\fP with GitLab integration)
 download open MRs by author rather than every open MR in the project.
 .sp
-By default (and with \fB\-\-mine\fP), that author is the current user as determined from the GitLab API token.
-The \fB\-\-by=<username>\fP flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
-uses that same author\(aqs MRs, not the current user\(aqs.
+The author defaults to the current user as determined from the GitLab API token.
+For \fBgitlab checkout\-mrs\fP and \fBgitlab update\-mr\-descriptions\fP, \fB\-\-mine\fP explicitly selects the current user,
+while \fB\-\-by=<username>\fP selects a different author; chain reconstruction (walking upstream/downstream MRs)
+uses that same author\(aqs MRs.
+\fBgitlab anno\-mrs\fP does not support \fB\-\-mine\fP or \fB\-\-by\fP; it always retrieves the current user\(aqs MRs when this key is enabled.
 When checking out specific MR numbers, the author of the first given MR is used instead.
 .sp
 This can speed up operations considerably in projects with hundreds or thousands of open MRs,
