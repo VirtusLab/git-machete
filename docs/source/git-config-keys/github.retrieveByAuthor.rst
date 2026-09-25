@@ -2,9 +2,11 @@ When set to ``true``, commands that need to list open pull requests in the repos
 (such as ``github anno-prs``, ``github checkout-prs`` and ``traverse`` with GitHub integration)
 download open PRs by author rather than every open PR in the repository.
 
-By default (and with ``--mine``), that author is the current user as determined from the GitHub API token.
-The ``--by=<login>`` flag selects a different author instead; chain reconstruction (walking upstream/downstream PRs)
-uses that same author's PRs, not the current user's.
+The author defaults to the current user as determined from the GitHub API token.
+For ``github checkout-prs`` and ``github update-pr-descriptions``, ``--mine`` explicitly selects the current user,
+while ``--by=<login>`` selects a different author; chain reconstruction (walking upstream/downstream PRs)
+uses that same author's PRs.
+``github anno-prs`` does not support ``--mine`` or ``--by``; it always retrieves the current user's PRs when this key is enabled.
 When checking out specific PR numbers, the author of the first given PR is used instead.
 
 This can speed up operations considerably in repositories with hundreds or thousands of open PRs,

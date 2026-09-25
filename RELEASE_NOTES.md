@@ -2,6 +2,8 @@
 
 ## New in git-machete 3.46.1
 
+- fixed: boolean git config keys now accept the same true/false literals as `git config --bool`, and reject invalid values instead of silently treating them as false
+
 ## New in git-machete 3.46.0
 
 - added: `machete.github.retrieveByAuthor` and `machete.gitlab.retrieveByAuthor` git config keys

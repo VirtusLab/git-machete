@@ -2,9 +2,11 @@ When set to ``true``, commands that need to list open merge requests in the proj
 (such as ``gitlab anno-mrs``, ``gitlab checkout-mrs`` and ``traverse`` with GitLab integration)
 download open MRs by author rather than every open MR in the project.
 
-By default (and with ``--mine``), that author is the current user as determined from the GitLab API token.
-The ``--by=<username>`` flag selects a different author instead; chain reconstruction (walking upstream/downstream MRs)
-uses that same author's MRs, not the current user's.
+The author defaults to the current user as determined from the GitLab API token.
+For ``gitlab checkout-mrs`` and ``gitlab update-mr-descriptions``, ``--mine`` explicitly selects the current user,
+while ``--by=<username>`` selects a different author; chain reconstruction (walking upstream/downstream MRs)
+uses that same author's MRs.
+``gitlab anno-mrs`` does not support ``--mine`` or ``--by``; it always retrieves the current user's MRs when this key is enabled.
 When checking out specific MR numbers, the author of the first given MR is used instead.
 
 This can speed up operations considerably in projects with hundreds or thousands of open MRs,

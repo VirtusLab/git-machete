@@ -525,8 +525,23 @@ class Git:
     def get_boolean_config_attr_or_none(self, key: str) -> Optional[bool]:
         self.__ensure_config_loaded()
         assert self.__config_cached is not None
-        if self.__config_cached.get(key.lower()) is not None:
-            return self.__config_cached.get(key.lower()) == 'true'
+        raw_value = self.__config_cached.get(key.lower())
+        if raw_value is None:
+            return None
+        parsed = self.__parse_boolean_config_value(raw_value)
+        if parsed is None:
+            raise MacheteException(f"Invalid value for `{key}` git config key: `{raw_value}`. Expected a boolean value")
+        return parsed
+
+    @staticmethod
+    def __parse_boolean_config_value(value: str) -> Optional[bool]:
+        # Loose port of git's `git config --bool` (`git_parse_maybe_bool` in `config.c`):
+        # case-insensitive string literals, then a plain `1`/`0`. Returns `None` for anything else.
+        lowercased = value.lower()
+        if lowercased in ("true", "yes", "on", "1"):
+            return True
+        if lowercased in ("false", "no", "off", "0", ""):
+            return False
         return None
 
     def set_config_attr(self, key: str, value: str) -> None:  # noqa: KW
