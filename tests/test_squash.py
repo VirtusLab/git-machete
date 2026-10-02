@@ -1,8 +1,11 @@
 
+import os
+import sys
+
 from tests.base_test import BaseTest
 from tests.cli_runner import assert_failure, assert_success
-from tests.git_repository import check_out, commit, create_repo, get_current_commit_hash, new_branch
-from tests.mockers import fixed_author_and_committer_date_in_past, overridden_environment
+from tests.git_repository import check_out, commit, create_repo, get_current_commit_hash, new_branch, set_git_config_key
+from tests.mockers import fake_executables_on_path, fixed_author_and_committer_date_in_past, overridden_environment
 from tests.shell import popen
 
 
@@ -108,3 +111,62 @@ class TestSquash(BaseTest):
             ['squash', '-f', fork_point_to_branch_1a],
             "Fork point 0ba080756ab13b6b74266c8a5e376de5f5b8bb76 is not ancestor of or the tip of the branch-1b branch."
         )
+
+    def test_squash_does_not_sign_when_commit_gpgsign_is_false(self) -> None:
+        create_repo()
+        new_branch("master")
+        commit("0")
+        new_branch("develop")
+        commit("1")
+        commit("2")
+
+        marker = os.path.abspath("gpg-was-called")
+        with fake_executables_on_path(gpg=_fake_gpg_body(marker)) as bin_dir:
+            set_git_config_key("gpg.program", _gpg_program_path(bin_dir))
+            _assert_squash_succeeds()
+            assert not os.path.exists(marker)
+            assert "gpgsig" not in popen("git cat-file -p HEAD")
+
+    def test_squash_signs_when_commit_gpgsign_is_true(self) -> None:
+        create_repo()
+        new_branch("master")
+        commit("0")
+        new_branch("develop")
+        commit("1")
+        commit("2")
+
+        marker = os.path.abspath("gpg-was-called")
+        with fake_executables_on_path(gpg=_fake_gpg_body(marker)) as bin_dir:
+            set_git_config_key("gpg.program", _gpg_program_path(bin_dir))
+            set_git_config_key("commit.gpgsign", "true")
+            _assert_squash_succeeds()
+            assert os.path.exists(marker)
+            assert "gpgsig" in popen("git cat-file -p HEAD")
+
+
+def _gpg_program_path(bin_dir: str) -> str:
+    name = "gpg.cmd" if sys.platform == "win32" else "gpg"
+    return os.path.join(bin_dir, name).replace("\\", "/")
+
+
+def _fake_gpg_body(marker_path: str) -> str:
+    return f"""
+import sys
+open({marker_path!r}, "w").close()
+sys.stderr.write("[GNUPG:] SIG_CREATED D 1EA99AD9 8 00 0 ABC\\n")
+sys.stdout.write("-----BEGIN PGP SIGNATURE-----\\n\\ndummy\\n-----END PGP SIGNATURE-----\\n")
+"""
+
+
+def _assert_squash_succeeds() -> None:
+    log_lines = popen("git log --reverse --format=%H:%h:%s master..HEAD").splitlines()
+    last_full_hash, _, _ = log_lines[-1].split(":", 2)
+    squashed_rows = "".join(
+        f"    {short_hash} {subject}\n" for _, short_hash, subject in (line.split(":", 2) for line in log_lines))
+    assert_success(
+        ["squash"],
+        f"Squashed {len(log_lines)} commits:\n\n"
+        f"{squashed_rows}\n"
+        f"To restore the original pre-squash commit, run:\n\n"
+        f"    git reset {last_full_hash}\n"
+    )
