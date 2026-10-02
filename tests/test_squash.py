@@ -1,8 +1,12 @@
 
+import os
+import sys
+import textwrap
+
 from tests.base_test import BaseTest
 from tests.cli_runner import assert_failure, assert_success
-from tests.git_repository import check_out, commit, create_repo, get_current_commit_hash, new_branch
-from tests.mockers import fixed_author_and_committer_date_in_past, overridden_environment
+from tests.git_repository import check_out, commit, create_repo, get_current_commit_hash, new_branch, set_git_config_key
+from tests.mockers import fake_executables_on_path, fixed_author_and_committer_date_in_past, overridden_environment
 from tests.shell import popen
 
 
@@ -108,3 +112,75 @@ class TestSquash(BaseTest):
             ['squash', '-f', fork_point_to_branch_1a],
             "Fork point 0ba080756ab13b6b74266c8a5e376de5f5b8bb76 is not ancestor of or the tip of the branch-1b branch."
         )
+
+    def test_squash_does_not_sign_when_commit_gpgsign_is_false(self) -> None:
+        create_repo()
+        with fixed_author_and_committer_date_in_past():
+            new_branch("master")
+            commit("0")
+            new_branch("develop")
+            commit("1")
+            commit("2")
+
+        marker = os.path.abspath("gpg-was-called")
+        with fake_executables_on_path(gpg=_fake_gpg_body(marker)) as bin_dir:
+            set_git_config_key("gpg.program", _gpg_program_path(bin_dir))
+            assert_success(
+                ["squash"],
+                """
+                Squashed 2 commits:
+
+                    e2e8daf 1
+                    8a53453 2
+
+                To restore the original pre-squash commit, run:
+
+                    git reset 8a53453f8163365b6c645f9a4c68e134e57c3d9f
+                """
+            )
+            assert not os.path.exists(marker)
+            assert "gpgsig" not in popen("git cat-file -p HEAD")
+
+    def test_squash_signs_when_commit_gpgsign_is_true(self) -> None:
+        create_repo()
+        with fixed_author_and_committer_date_in_past():
+            new_branch("master")
+            commit("0")
+            new_branch("develop")
+            commit("1")
+            commit("2")
+
+        marker = os.path.abspath("gpg-was-called")
+        with fake_executables_on_path(gpg=_fake_gpg_body(marker)) as bin_dir:
+            set_git_config_key("gpg.program", _gpg_program_path(bin_dir))
+            set_git_config_key("commit.gpgsign", "true")
+            assert_success(
+                ["squash"],
+                """
+                Squashed 2 commits:
+
+                    e2e8daf 1
+                    8a53453 2
+
+                To restore the original pre-squash commit, run:
+
+                    git reset 8a53453f8163365b6c645f9a4c68e134e57c3d9f
+                """
+            )
+            assert os.path.exists(marker)
+            assert "gpgsig" in popen("git cat-file -p HEAD")
+
+
+def _gpg_program_path(bin_dir: str) -> str:
+    name = "gpg.cmd" if sys.platform == "win32" else "gpg"
+    return os.path.join(bin_dir, name).replace("\\", "/")
+
+
+def _fake_gpg_body(marker_path: str) -> str:
+    return textwrap.dedent(f"""
+        import sys
+        open({marker_path!r}, "w").close()
+        sys.stderr.write("[GNUPG:] NEWSIG\\n")
+        sys.stderr.write("[GNUPG:] SIG_CREATED D 1EA99AD9 8 00 0 ABC\\n")
+        sys.stdout.write("-----BEGIN PGP SIGNATURE-----\\n\\ndummy\\n-----END PGP SIGNATURE-----\\n")
+    """)

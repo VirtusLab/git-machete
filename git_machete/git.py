@@ -1468,8 +1468,11 @@ class Git:
     def commit_tree_with_given_parent_and_message_and_env(  # noqa: KW
             self, parent_revision: AnyRevision, msg: str, env: Dict[str, str]) -> FullCommitHash:
         # returns hash of the new commit
+        # Since git 2.9, `commit-tree` ignores `commit.gpgsign` (honoring it was deemed an accidental coupling with a high-level command).
+        # Scripts must pass `-S` themselves; `-S` without a key id uses `user.signingkey`.
+        extra_opts = ["-S"] if self.get_boolean_config_attr("commit.gpgsign", default_value=False) else []
         return FullCommitHash.of(self._popen_git(
-            "commit-tree", "HEAD^{tree}", "-p", parent_revision, "-m", msg, env=env).stdout.strip())  # noqa: FS003
+            "commit-tree", "HEAD^{tree}", *extra_opts, "-p", parent_revision, "-m", msg, env=env).stdout.strip())  # noqa: FS003
 
     def update_head_ref_to_new_hash_with_reflog_subject(self, hash: FullCommitHash, reflog_subject: str) -> int:  # noqa: KW
         return self._run_git("update-ref", "HEAD", hash, "-m", reflog_subject, flush_caches=True)

@@ -19,6 +19,9 @@ def create_repo(name: str = "local", bare: bool = False, switch_dir_to_new_repo:
     if not bare:
         set_git_config_key("user.email", "tester@test.com")
         set_git_config_key("user.name", "Tester Test")
+        # Local override so a developer's global `commit.gpgsign=true` cannot leak into tests.
+        # `squash` now honors that setting (via `git commit-tree -S`), and would otherwise try to sign.
+        set_git_config_key("commit.gpgsign", "false")
     if not switch_dir_to_new_repo:
         os.chdir(previous_dir)
     return path

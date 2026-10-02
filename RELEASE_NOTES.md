@@ -3,6 +3,7 @@
 ## New in git-machete 3.46.1
 
 - fixed: boolean git config keys now accept the same true/false literals as `git config --bool`, and reject invalid values instead of silently treating them as false
+- fixed: `git machete squash` now GPG/SSH-signs the resulting commit when `commit.gpgsign` is true (reported by @mcitoler)
 
 ## New in git-machete 3.46.0
 
