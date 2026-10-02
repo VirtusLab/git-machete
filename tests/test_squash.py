@@ -153,7 +153,7 @@ def _fake_gpg_body(marker_path: str) -> str:
     return f"""
 import sys
 open({marker_path!r}, "w").close()
-sys.stderr.write("[GNUPG:] SIG_CREATED D 1EA99AD9 8 00 0 ABC\\n")
+sys.stderr.write("[GNUPG:] NEWSIG\\\\n\n[GNUPG:] SIG_CREATED D 1EA99AD9 8 00 0 ABC\\n")
 sys.stdout.write("-----BEGIN PGP SIGNATURE-----\\n\\ndummy\\n-----END PGP SIGNATURE-----\\n")
 """
 
