@@ -1,5 +1,7 @@
 # Release notes
 
+## New in git-machete 3.46.2
+
 ## New in git-machete 3.46.1
 
 - fixed: boolean git config keys now accept the same true/false literals as `git config --bool`, and reject invalid values instead of silently treating them as false
