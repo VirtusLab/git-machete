@@ -5,7 +5,7 @@ from pytest_mock import MockerFixture
 from git_machete.utils.terminal import FullTerminalAnsiOutputCodes
 from tests.base_test import BaseTest
 from tests.cli_runner import assert_failure, assert_success, launch_command, rewrite_branch_layout_file
-from tests.git_repository import (add_remote, check_out, commit, create_repo, create_repo_with_remote, delete_branch, fetch,
+from tests.git_repository import (add_remote, amend_commit, check_out, commit, create_repo, create_repo_with_remote, delete_branch, fetch,
                                   get_commit_hash, get_current_commit_hash, merge, new_branch, new_orphan_branch, pull, push, reset_to,
                                   set_git_config_key)
 from tests.mockers import fixed_author_and_committer_date_in_past
@@ -552,3 +552,158 @@ class TestForkPoint(BaseTest):
         master_commit = get_commit_hash("master")
         develop_fork_point = launch_command("fork-point", "develop").rstrip()
         assert develop_fork_point == master_commit
+
+    def test_fork_point_after_ff_merge_of_child_branch(self) -> None:
+        # See https://github.com/VirtusLab/git-machete/issues/99.
+        # Once `feature` has been fast-forward-merged into `develop`, the tip of `feature` (and every other commit of `develop`)
+        # occurs on the filtered reflog of `feature`. A branch whose tip already contains the tip of `develop` only vouches
+        # for commits that `develop` absorbed from it, so it must not be used for inferring the fork point of `develop` -
+        # otherwise the fork point of `develop` is inferred as the tip of `develop` itself.
+        with fixed_author_and_committer_date_in_past():
+            create_repo()
+            new_branch("master")
+            commit("master commit.")
+            master_commit_hash = get_current_commit_hash()
+            new_branch("develop")
+            commit("develop commit.")
+            new_branch("feature")
+            commit("feature commit 1.")
+            commit("feature commit 2.")
+            check_out("develop")
+            merge("feature")  # fast-forward
+
+        rewrite_branch_layout_file("""
+            master
+                develop
+                    feature
+            """)
+
+        assert_success(["fork-point", "develop"], master_commit_hash + "\n")
+        assert_success(["fork-point", "develop", "--inferred"], master_commit_hash + "\n")
+        # The merged-in `feature` must not be credited for the fork point.
+        assert_success(
+            ["fork-point", "develop", "--explain"],
+            master_commit_hash + "\n"
+            "this commit seems to be a part of the unique history of master\n"
+        )
+
+        # `status --list-commits` used to warn about the fork point of `develop` (`fork point ??? commit ... seems to be
+        # a part of the unique history of feature`) and to list no commits over the yellow edge to `develop`.
+        assert_success(
+            ["status", "--list-commits"],
+            """
+            master
+            |
+            | develop commit.
+            | feature commit 1.
+            | feature commit 2.
+            o-develop *
+              |
+              m-feature
+            """
+        )
+
+        # The fork point of the fast-forward-merged branch itself must remain its parent's (= its own) tip,
+        # so that e.g. `git machete squash` still reports that there are no commits to squash.
+        assert_success(["fork-point", "feature"], get_commit_hash("develop") + "\n")
+
+        # Inference must not depend on whether the fast-forward-merged branch is managed.
+        rewrite_branch_layout_file("""
+            master
+                develop
+            """)
+        assert_success(["fork-point", "develop"], master_commit_hash + "\n")
+
+    def test_fork_point_after_ff_merge_when_parent_branch_was_amended(self) -> None:
+        # A trickier variant of https://github.com/VirtusLab/git-machete/issues/99: once `master` has been amended
+        # after `develop` forked off, the merge base of `master` and `develop` falls further back in history
+        # than the actual fork point. The fork point must be the commit the filtered reflogs still remember
+        # (the pre-amend tip of `master`) - just as it would be for a branch that never had a child fast-forward-merged in.
+        with fixed_author_and_committer_date_in_past():
+            create_repo()
+            new_branch("master")
+            commit("master commit 1.")
+            merge_base_hash = get_current_commit_hash()
+            commit("master commit 2.")
+            pre_amend_master_commit_hash = get_current_commit_hash()
+            new_branch("develop")
+            commit("develop commit.")
+            check_out("master")
+            amend_commit("master commit 2, amended.")
+            check_out("develop")
+            new_branch("feature")
+            commit("feature commit 1.")
+            commit("feature commit 2.")
+            check_out("develop")
+            merge("feature")  # fast-forward
+
+        rewrite_branch_layout_file("""
+            master
+                develop
+                    feature
+            """)
+
+        assert get_commit_hash("master") != pre_amend_master_commit_hash, "the amend should have moved the tip of master"
+        develop_fork_point = launch_command("fork-point", "develop").rstrip()
+        assert develop_fork_point != merge_base_hash, \
+            "fork point of develop should not fall back to the merge base with the amended master"
+        assert develop_fork_point == pre_amend_master_commit_hash
+
+    def test_fork_point_after_real_merge_of_child_branch(self) -> None:
+        # Unlike after a fast-forward merge, after a real (non-fast-forward) merge the tip of the merged branch
+        # does NOT contain the tip of the receiving branch, and the fork point inference must stay as it is today.
+        with fixed_author_and_committer_date_in_past():
+            create_repo()
+            new_branch("master")
+            commit("master commit.")
+            new_branch("develop")
+            commit("develop commit.")
+            new_branch("feature")
+            commit("feature commit.")
+            feature_commit_hash = get_current_commit_hash()
+            check_out("develop")
+            commit("other develop commit.")
+            execute('git merge --no-ff -m "Merge feature into develop." feature')
+
+        rewrite_branch_layout_file("""
+            master
+                develop
+                    feature
+            """)
+
+        assert_success(
+            ["fork-point", "develop", "--explain"],
+            feature_commit_hash + "\n"
+            "this commit seems to be a part of the unique history of feature\n"
+        )
+
+    def test_fork_point_of_branch_forked_off_a_ff_merged_tip(self) -> None:
+        # The `merge side: Fast-forward` entry in the filtered reflog of `integration` is the only evidence
+        # of where `anchored` was forked off (`side` is deleted and `integration` is not even managed).
+        # Fast-forward-merge reflog entries must therefore still count for inferring the fork point of OTHER branches;
+        # it's only the branches whose tip contains the tip of the branch in question that must not be used.
+        with fixed_author_and_committer_date_in_past():
+            create_repo()
+            new_branch("master")
+            commit("master commit.")
+            new_branch("side")
+            commit("side commit 1.")
+            commit("side commit 2.")
+            side_commit_hash = get_current_commit_hash()
+            check_out("master")
+            new_branch("integration")
+            merge("side")  # fast-forward
+            new_branch("anchored")
+            commit("anchored commit.")
+            delete_branch("side")
+
+        rewrite_branch_layout_file("""
+            master
+                anchored
+            """)
+
+        assert_success(
+            ["fork-point", "anchored", "--explain"],
+            side_commit_hash + "\n"
+            "this commit seems to be a part of the unique history of integration\n"
+        )

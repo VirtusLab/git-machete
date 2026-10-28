@@ -2,6 +2,10 @@
 
 ## New in git-machete 3.46.2
 
+- fixed: a child branch that has been fast-forward-merged into its parent is no longer considered when inferring the parent's fork point;
+  the fork point of the parent used to be inferred as the parent's own tip, which made `git machete status --list-commits` warn about a yellow edge
+  and `git machete fork-point` print that tip instead of the commit the parent was forked off
+
 ## New in git-machete 3.46.1
 
 - fixed: boolean git config keys now accept the same true/false literals as `git config --bool`, and reject invalid values instead of silently treating them as false

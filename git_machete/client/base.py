@@ -3,6 +3,7 @@ import shlex
 import sys
 import textwrap
 from enum import Enum, auto
+from itertools import chain
 from typing import Callable, Dict, Iterator, List, NoReturn, Optional, Sequence, Tuple, TypeVar
 
 from git_machete.client import branch_layout
@@ -286,8 +287,16 @@ class MacheteClient:
                     debug(f"fork point of {branch} is overridden to {overridden_fork_point}; skipping inference")
                     return overridden_fork_point, []
 
+        # A branch whose tip already contains (or is equal to) the tip of `branch` - like a child branch that has just been
+        # fast-forward-merged into `branch` - only vouches for commits that got into the history of `branch` because `branch`
+        # absorbed that branch, and hence cannot tell where `branch` itself was forked off.
+        # Let's skip such branches in the first pass, but still fall back to them in the second one: for a branch that is
+        # itself already fully merged, they are the only evidence there is.
+        # Just the first match of the two passes taken together is ever consumed, so the passes cannot yield a duplicate.
+        matches = chain(self.__match_log_to_filtered_reflogs(branch, skip_branches_containing_tip=True),
+                        self.__match_log_to_filtered_reflogs(branch, skip_branches_containing_tip=False))
         try:
-            computed_fork_point, inferring_branch_pairs = next(self.__match_log_to_filtered_reflogs(branch))
+            computed_fork_point, inferring_branch_pairs = next(matches)
         except StopIteration:
             if parent and parent_hash:
                 if self._git.is_ancestor_or_equal(parent.full_name(), branch.full_name()):
@@ -463,7 +472,12 @@ class MacheteClient:
               f"and branch reset events irrelevant for fork point/parent inference): {reflog}")
         return result
 
-    def __match_log_to_filtered_reflogs(self, branch: LocalBranchShortName) -> Iterator[Tuple[FullCommitHash, List[BranchPair]]]:
+    def __match_log_to_filtered_reflogs(
+            self,
+            branch: LocalBranchShortName,
+            *,
+            skip_branches_containing_tip: bool
+    ) -> Iterator[Tuple[FullCommitHash, List[BranchPair]]]:
 
         if self.__branch_pairs_by_hash_in_reflog is None:
             def generate_entries() -> Iterator[Tuple[FullCommitHash, BranchPair]]:
@@ -517,10 +531,15 @@ class MacheteClient:
                 # (and does not depend on the order in which `generate_entries` iterated through the local branches).
                 branch_pairs: List[BranchPair] = self.__branch_pairs_by_hash_in_reflog[hash]
 
-                def lb_is_not_b(lb: str, _lb_or_rb: str) -> bool:
-                    return lb != branch
+                def is_eligible_candidate(lb: LocalBranchShortName, _lb_or_rb: AnyBranchName) -> bool:
+                    if lb == branch:
+                        return False
+                    if skip_branches_containing_tip and self._git.is_ancestor_or_equal(branch.full_name(), lb.full_name()):
+                        debug(f"{lb} already contains the tip of {branch}; skipping it as a fork point candidate")
+                        return False
+                    return True
 
-                inferring_branch_pairs = sorted(filter(tupled(lb_is_not_b), branch_pairs), key=get_second)
+                inferring_branch_pairs = sorted(filter(tupled(is_eligible_candidate), branch_pairs), key=get_second)
                 if inferring_branch_pairs:
                     debug(f"commit {hash} found in filtered reflog of {' and '.join(map(get_second, branch_pairs))}")
                     yield hash, inferring_branch_pairs
@@ -535,7 +554,8 @@ class MacheteClient:
                       *,
                       reject_reason_message: str = ""
                       ) -> Optional[LocalBranchShortName]:
-        for hash, inferring_branch_pairs in self.__match_log_to_filtered_reflogs(branch):
+        for hash, inferring_branch_pairs in self.__match_log_to_filtered_reflogs(
+                branch, skip_branches_containing_tip=False):
             debug(f"commit {hash} found in filtered reflog of {' and '.join(map(get_second, inferring_branch_pairs))}")
 
             for candidate, original_matched_branch in inferring_branch_pairs:
