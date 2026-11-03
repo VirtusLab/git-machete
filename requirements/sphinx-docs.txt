@@ -3,5 +3,6 @@
 # broke the build despite no explicit update to deps.
 pydata-sphinx-theme==0.20.0
 
-sphinx==9.2.0
+sphinx==9.1.0; python_version < '3.13'
+sphinx==9.2.0; python_version >= '3.13'
 sphinx-book-theme==1.4.0
