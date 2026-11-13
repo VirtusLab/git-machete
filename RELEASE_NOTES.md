@@ -3,7 +3,7 @@
 ## New in git-machete 3.46.2
 
 - fixed: annotation branch qualifiers (such as `push=no` or `rebase=no`) now require whitespace separation from surrounding characters,
-  preventing lookalikes like `push=no-frills` from being wrongly detected as qualifiers (contributed by @Qrytics)
+  preventing lookalikes like `push=no-frills` from being wrongly detected as qualifiers
 
 ## New in git-machete 3.46.1
 

@@ -44,6 +44,12 @@ class TestClient(BaseTest):
         check_out("master")
         new_branch('feature8')
         commit()
+        check_out("master")
+        new_branch('feature9')
+        commit()
+        check_out("master")
+        new_branch('feature10')
+        commit()
 
         body: str = \
             """
@@ -56,6 +62,8 @@ class TestClient(BaseTest):
             feature6 annotation1 rebase=nopush=no annotation2
             feature7 annotation1rebase=no push=noannotation2
             feature8 annotation rebase=no push=no rebase=no push=no
+            feature9 annotation push=no-frills ,rebase=no,
+            feature10 annotation push=no-frills ,rebase=no, rebase=no push=no
             """
         rewrite_branch_layout_file(body)
         machete_client = MacheteClient()
@@ -106,6 +114,18 @@ class TestClient(BaseTest):
         assert anno('feature8').qualifiers.push is False
         assert anno('feature8').text_without_qualifiers == 'annotation'
         assert str(anno('feature8').qualifiers) == 'rebase=no push=no'
+
+        assert anno('feature9').unformatted_full_text == 'annotation push=no-frills ,rebase=no,'
+        assert anno('feature9').qualifiers.rebase is True
+        assert anno('feature9').qualifiers.push is True
+        assert anno('feature9').text_without_qualifiers == 'annotation push=no-frills ,rebase=no,'
+        assert str(anno('feature9').qualifiers) == ''
+
+        assert anno('feature10').unformatted_full_text == 'annotation push=no-frills ,rebase=no, rebase=no push=no'
+        assert anno('feature10').qualifiers.rebase is False
+        assert anno('feature10').qualifiers.push is False
+        assert anno('feature10').text_without_qualifiers == 'annotation push=no-frills ,rebase=no,'
+        assert str(anno('feature10').qualifiers) == 'rebase=no push=no'
 
     def test_branch_layout_leading_hash_comment_lines_ignored(self) -> None:
         create_repo_with_remote()
