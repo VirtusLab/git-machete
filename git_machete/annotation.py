@@ -63,10 +63,10 @@ class Annotation(NamedTuple):
             nonlocal qualifiers, text_without_qualifiers
             # Qualifiers must be separated by whitespace (or string edges),
             # a bare \b would also match against '-', ',', etc.
-            match = re.match(f".*(?<!\\S){pattern}(?!\\S).*", text_without_qualifiers)
+            match = re.search(rf"(?<!\S){pattern}(?!\S)", text_without_qualifiers)
             if match:
                 qualifiers = qf(qualifiers)
-                text_without_qualifiers = re.sub(f"\\s*{pattern}\\s*", ' ', text_without_qualifiers)
+                text_without_qualifiers = re.sub(rf"\s*(?<!\S){pattern}(?!\S)\s*", ' ', text_without_qualifiers)
 
         parse_one('rebase=no', lambda q: q._replace(rebase=False))
         parse_one('push=no', lambda q: q._replace(push=False))
