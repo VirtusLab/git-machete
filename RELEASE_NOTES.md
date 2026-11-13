@@ -2,6 +2,9 @@
 
 ## New in git-machete 3.46.2
 
+- fixed: annotation branch qualifiers (such as `push=no` or `rebase=no`) now require whitespace separation from surrounding characters,
+  preventing lookalikes like `push=no-frills` from being wrongly detected as qualifiers
+
 ## New in git-machete 3.46.1
 
 - fixed: boolean git config keys now accept the same true/false literals as `git config --bool`, and reject invalid values instead of silently treating them as false
