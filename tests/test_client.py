@@ -10,6 +10,7 @@ from tests.cli_runner import launch_command, read_branch_layout_file, rewrite_br
 from tests.git_repository import (check_out, commit, create_repo, create_repo_with_remote, get_current_commit_hash, merge, new_branch, push,
                                   reset_to)
 from tests.mockers import fixed_author_and_committer_date_in_past
+from tests.shell import execute
 
 
 class TestClient(BaseTest):
@@ -243,6 +244,105 @@ class TestClient(BaseTest):
         assert not machete_client.is_connected_with_green_edge(
             parent=LocalBranchShortName.of("master"),
             child=LocalBranchShortName.of("develop"),
+            opt_squash_merge_detection=SquashMergeDetection.NONE)
+
+    def test_is_connected_with_green_edge_when_parent_dropped_fork_point(self) -> None:
+        create_repo_with_remote()
+        new_branch("master")
+        commit("m1")
+        push()
+        new_branch("P")
+        commit("p1")
+        push()
+        new_branch("B")
+        commit("b1")
+        check_out("P")
+        commit("p2_X")
+        check_out("B")
+        execute("git rebase P")
+        check_out("P")
+        reset_to("HEAD~1")
+        check_out("B")
+
+        rewrite_branch_layout_file(
+            """
+            P
+                B
+            """
+        )
+
+        machete_client = MacheteClient()
+        assert not machete_client.is_connected_with_green_edge(
+            parent=LocalBranchShortName.of("P"),
+            child=LocalBranchShortName.of("B"),
+            opt_squash_merge_detection=SquashMergeDetection.NONE)
+
+    def test_is_connected_with_green_edge_when_parent_is_behind_remote(self) -> None:
+        local_path, remote_path = create_repo_with_remote()
+        new_branch("master")
+        commit("m1")
+        push()
+        new_branch("P")
+        commit("p1")
+        push()
+        execute(f'git clone -q "{remote_path}" "{local_path}-other"')
+        other_path = f"{local_path}-other"
+        execute(f'git -C "{other_path}" checkout -q -b P --track origin/P')
+        execute(f'git -C "{other_path}" config user.email tester@test.com')
+        execute(f'git -C "{other_path}" config user.name "Tester Test"')
+        execute(f'git -C "{other_path}" commit --allow-empty -m p2_W')
+        execute(f'git -C "{other_path}" commit --allow-empty -m p3_W')
+        execute(f'git -C "{other_path}" push -q origin P')
+        execute("git fetch -q origin")
+        execute("git checkout -q -b B origin/P")
+        commit("b1")
+
+        rewrite_branch_layout_file(
+            """
+            P
+                B
+            """
+        )
+
+        machete_client = MacheteClient()
+        assert machete_client.is_connected_with_green_edge(
+            parent=LocalBranchShortName.of("P"),
+            child=LocalBranchShortName.of("B"),
+            opt_squash_merge_detection=SquashMergeDetection.NONE)
+
+    def test_is_connected_with_green_edge_when_parent_remote_dropped_fork_point(self) -> None:
+        local_path, remote_path = create_repo_with_remote()
+        new_branch("master")
+        commit("m1")
+        push()
+        new_branch("P")
+        commit("p1")
+        push()
+        execute(f'git clone -q "{remote_path}" "{local_path}-other"')
+        other_path = f"{local_path}-other"
+        execute(f'git -C "{other_path}" checkout -q -b P --track origin/P')
+        execute(f'git -C "{other_path}" config user.email tester@test.com')
+        execute(f'git -C "{other_path}" config user.name "Tester Test"')
+        execute(f'git -C "{other_path}" commit --allow-empty -m p2_X')
+        execute(f'git -C "{other_path}" push -q origin P')
+        execute("git fetch -q origin")
+        execute("git checkout -q -b B origin/P")
+        commit("b1")
+        execute(f'git -C "{other_path}" reset --hard HEAD~1')
+        execute(f'git -C "{other_path}" push -q --force origin P')
+        execute("git fetch -q origin")
+
+        rewrite_branch_layout_file(
+            """
+            P
+                B
+            """
+        )
+
+        machete_client = MacheteClient()
+        assert not machete_client.is_connected_with_green_edge(
+            parent=LocalBranchShortName.of("P"),
+            child=LocalBranchShortName.of("B"),
             opt_squash_merge_detection=SquashMergeDetection.NONE)
 
     def test_is_connected_with_green_edge_false_when_child_merged_to_parent(self) -> None:
