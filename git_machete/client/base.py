@@ -361,6 +361,7 @@ class MacheteClient:
             self,
             *,
             parent_branch: LocalBranchShortName,
+            fork_point: FullCommitHash,
             inferring_branches: List[BranchPair]) -> bool:
         # Suppresses the spurious yellow edge that appears when the parent branch is merely behind its remote counterpart
         # and the child branch was forked from the remote tip.
@@ -371,7 +372,9 @@ class MacheteClient:
         parent_remote = self._git.get_combined_counterpart_for_fetching_of_branch(parent_branch)
         if parent_remote is None:
             return False
-        return any(p.local_branch == parent_branch for p in inferring_branches)
+        if not any(p.local_branch == parent_branch for p in inferring_branches):
+            return False
+        return self._git.is_ancestor_or_equal(fork_point, parent_remote.full_name())
 
     def is_connected_with_green_edge(
             self,
@@ -396,6 +399,7 @@ class MacheteClient:
             return True
         return self._is_fork_point_inferred_by_parent_remote_counterpart(
             parent_branch=parent,
+            fork_point=fork_point,
             inferring_branches=inferring_branches)
 
     def sync_to_parent_status(
