@@ -103,7 +103,7 @@ class OrganizationAndRepository(NamedTuple):
 
     @classmethod
     def from_url(cls, domain: str, url: str) -> Optional["OrganizationAndRepository"]:
-        url = url if url.endswith('.git') else url + '.git'
+        url = _with_git_suffix(url)
         for pattern in remote_url_patterns(domain):
             match = re.match(pattern, url)
             if match:
@@ -128,6 +128,11 @@ class OrganizationAndRepositoryAndGitUrl(NamedTuple):
     git_url: str
 
 
+def _with_git_suffix(url: str) -> str:
+    url = url.rstrip('/')  # git accepts a trailing slash in remote URLs
+    return url if url.endswith('.git') else url + '.git'
+
+
 def remote_url_patterns(domain: str) -> List[str]:
     # Neither GitHub not GitLab allows trailing `.git` suffix in the repository name (also applies to multiple repetitions e.g. `repo_name.git.git`)
     # Note that these regexes work for both GitLab and GitHub.
@@ -138,14 +143,14 @@ def remote_url_patterns(domain: str) -> List[str]:
         # (?:...) is a non-capturing group
         f"^https://(?:.+@)?{domain_regex}/{org_repo_regex}$",
         # A very rare way to express SSH URL
-        f"^ssh://.+@{domain_regex}/{org_repo_regex}$",
+        f"^ssh://.+@{domain_regex}(?::[0-9]+)?/{org_repo_regex}$",
         # The below is way more common for SSH; the user before `@` is typically called `git`, but doesn't need to be so
         f"^[^:/]+@{domain_regex}:{org_repo_regex}$",
     ]
 
 
 def is_matching_remote_url(domain: str, url: str) -> bool:
-    url = url if url.endswith('.git') else url + '.git'
+    url = _with_git_suffix(url)
     return any((re.match(pattern, url) for pattern in remote_url_patterns(domain)))
 
 
