@@ -79,6 +79,14 @@ class TestGitHub(BaseTest):
             assert org_and_repo.organization == organization
             assert org_and_repo.repository == repository
 
+    def test_github_remote_patterns_trailing_slash_and_ssh_port(self) -> None:
+        for url in ['https://github.com/virtuslab/repo_sandbox/',
+                    'https://github.com/virtuslab/repo_sandbox.git/',
+                    'ssh://git@github.com:22/virtuslab/repo_sandbox.git',
+                    'ssh://git@github.com:2222/virtuslab/repo_sandbox']:
+            org_and_repo = OrganizationAndRepository.from_url(domain=GitHubApi.DEFAULT_GITHUB_DOMAIN, url=url)
+            assert org_and_repo == OrganizationAndRepository(organization='virtuslab', repository='repo_sandbox'), f"for {url}"
+
     PR_COUNT_FOR_TEST_GITHUB_API_PAGINATION = 12
 
     @staticmethod
