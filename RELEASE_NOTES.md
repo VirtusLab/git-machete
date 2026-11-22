@@ -4,6 +4,7 @@
 
 - fixed: annotation branch qualifiers (such as `push=no` or `rebase=no`) now require whitespace separation from surrounding characters,
   preventing lookalikes like `push=no-frills` from being wrongly detected as qualifiers
+- fixed: remote URLs with a trailing slash or an explicit port in the `ssh://` form are now recognized as GitHub/GitLab remotes
 
 ## New in git-machete 3.46.1
 
